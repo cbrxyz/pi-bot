@@ -515,6 +515,18 @@ async def divd(ctx):
     else:
         await ctx.send("Huh, doesn't look like I can do that for some reason. *scratches head*")
 
+async def assignDiv(ctx, div):
+    """Assigns a user a div"""
+    member = ctx.message.author
+    role = discord.utils.get(member.guild.roles, name=div)
+    divArole = discord.utils.get(member.guild.roles, name="Division A")
+    divBrole = discord.utils.get(member.guild.roles, name="Division B")
+    divCrole = discord.utils.get(member.guild.roles, name="Division C")
+    divDrole = discord.utils.get(member.guild.roles, name="Division D")
+    await member.remove_roles(divArole, divBrole, divCrole, divDrole)
+    await member.add_roles(role)
+    return True
+
 @bot.command()
 @commands.check(isStaff)
 async def exalt(ctx, user):
