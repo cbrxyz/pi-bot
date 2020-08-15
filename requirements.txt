@@ -1,0 +1,13 @@
+discord
+python-dotenv
+webcolors
+requests
+asyncio
+gspread
+setuptools
+pywikibot
+splinter
+markovify
+schedule
+wikitextparser
+tabulate
