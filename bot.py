@@ -642,12 +642,16 @@ async def nuke(ctx, count):
     await ctx.send(f"NUKING {count} MESSAGES IN 1...")
     await asyncio.sleep(1)
     channel = ctx.message.channel
-    logs = await channel.history(limit=(int(count) + 6)).flatten()
-    await channel.delete_messages(logs)
+    try:
+        logs = await channel.history(limit=(int(count) + 6)).flatten()
+        await channel.delete_messages(logs)
+    except:
+        # This will run if the messages are over 14 days old, and cannot be bulk deleted
+        async for m in channel.history(limit=(int(count) + 6)):
+            await m.delete()
     await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-    logs = channel.history(limit=1)
     await asyncio.sleep(5)
-    async for m in logs:
+    async for m in channel.history(limit=1):
         await m.delete()
 
 @bot.event
