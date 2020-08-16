@@ -530,16 +530,22 @@ async def assignDiv(ctx, div):
 @bot.command()
 async def wiki(ctx, *args):
     multiple = False
+    ignoreCase = False
     for arg in args:
         if arg[:1] == "-":
-            if arg.lower() == "-multiple":
-                multiple = True
+            multiple = arg.lower() == "-multiple"
+            ignoreCase = arg.lower() == "-ignorecase"
     if multiple:
-        for arg in args[:-1]:
-            arg = arg.replace(" ", "_")
-            await ctx.send(f"<https://scioly.org/wiki/index.php/{arg}>")
+        for arg in args:
+            if arg[:1] != "-":
+                arg = arg.replace(" ", "_")
+                if not ignoreCase:
+                    arg = arg.title()
+                await ctx.send(f"<https://scioly.org/wiki/index.php/{arg}>")
     else:
-        stringSum = "_".join(args)
+        if not ignoreCase:
+            args = [arg.title() for arg in args]
+        stringSum = "_".join([arg for arg in args if arg[:1] != "-"])
         await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
 
 @bot.command()
