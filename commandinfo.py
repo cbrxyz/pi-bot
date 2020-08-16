@@ -609,5 +609,73 @@ COMMAND_INFO = [
         "access":[
             "Member"
         ]
+    },
+    {
+        "name": "wiki",
+        "description": "returns a wiki page",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "wikiPage1",
+                "description": "the first wiki page to get"
+            },
+            {
+                "name": "[wikiPage2]",
+                "description": "the second wiki page to get"
+            },
+            {
+                "name": "[wikiPageN]",
+                "description": "the nth wiki page to get"
+            },
+            {
+                "name": "flag: -multiple",
+                "description": "specifies you are retrieving multiple page links"
+            },
+            {
+                "name": "flag: -ignoreCase",
+                "description": "specifies you want to use your own case for page titles"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!wiki Troy Invitational",
+                "result": "gives you the `Troy Invitational` wiki page"
+            },
+            {
+                "cmd": "!wiki Florida California -mulitple",
+                "result": "gives you both the Florida and California pages"
+            },
+            {
+                "cmd": "!wiki WWPN WWPS -ignoreCase -mulitple",
+                "result": "gives you both the `WWPN` and `WWPS` pages"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
+    },
+    {
+        "name": "profile",
+        "description": "retrieves a user's profile information",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "[user]",
+                "description": "the optional user's profile information you'd like to retrieve"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!profile",
+                "result": "returns the caller's profile information"
+            },
+            {
+                "cmd": "!profile @user",
+                "result": "returns @user's profile information"
+            },
+        ],
+        "access":[
+            "Member"
+        ]
     }
 ]

@@ -62,6 +62,7 @@ PI_BOT_ID = 723767075427844106
 ##############
 fishNow = 0
 CENSORED_WORDS = []
+CENSORED_EMOJIS = []
 EVENT_INFO = 0
 REPORT_IDS = []
 PING_INFO = []
@@ -104,8 +105,12 @@ async def postSomething():
 async def refreshAlgorithm():
     """Pulls data from the administrative sheet."""
     global CENSORED_WORDS
+    global CENSORED_EMOJIS
     global EVENT_INFO
-    CENSORED_WORDS = getCensor()
+    censor = getCensor()
+    print(censor)
+    CENSORED_WORDS = censor[0]
+    CENSORED_EMOJIS = censor[1]
     EVENT_INFO = await getEvents()
     print("Refreshed data from sheet.")
     return True
@@ -371,6 +376,8 @@ async def censor(message):
     content = message.content
     for word in CENSORED_WORDS:
         content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
+    for word in CENSORED_EMOJIS:
+        content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
     await wh.delete()
 
@@ -702,10 +709,15 @@ async def nuke(ctx, count):
 
 @bot.event
 async def on_message(message):
+    print(repr(message.content))
     if message.author.id == 723767075427844106: return
     content = message.content
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", content, re.I)):
+            await message.delete()
+            await censor(message)
+    for word in CENSORED_EMOJIS:
+        if len(re.findall(fr"{word}", content)):
             await message.delete()
             await censor(message)
     print('Message from {0.author}: {0.content}'.format(message))
