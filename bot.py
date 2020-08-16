@@ -528,6 +528,21 @@ async def assignDiv(ctx, div):
     return True
 
 @bot.command()
+async def wiki(ctx, *args):
+    multiple = False
+    for arg in args:
+        if arg[:1] == "-":
+            if arg.lower() == "-multiple":
+                multiple = True
+    if multiple:
+        for arg in args[:-1]:
+            arg = arg.replace(" ", "_")
+            await ctx.send(f"<https://scioly.org/wiki/index.php/{arg}>")
+    else:
+        stringSum = "_".join(args)
+        await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
+
+@bot.command()
 @commands.check(isStaff)
 async def exalt(ctx, user):
     """Exalts a user."""
