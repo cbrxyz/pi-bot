@@ -85,7 +85,7 @@ COMMAND_INFO = [
     },
     {
         "name": "help",
-        "description": "provdies help for a command",
+        "description": "provides help for a command",
         "aliases": [],
         "parameters": [
             {
