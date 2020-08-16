@@ -549,6 +549,19 @@ async def wiki(ctx, *args):
         await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
 
 @bot.command()
+async def profile(ctx, name:discord.Member=False):
+    if name == False:
+        name = ctx.message.author.name
+    if type(name) == discord.Member:
+        name = name.name
+    embed = assembleEmbed(
+        title=f"Scioly.org Information for {name}",
+        desc=(f"[`Forums`](https://scioly.org/forums/memberlist.php?mode=viewprofile&un={name}) | [`Wiki`](https://scioly.org/wiki/index.php?title=User:{name})"),
+        hexcolor="#2E66B6"
+    )
+    await ctx.send(embed=embed)
+
+@bot.command()
 @commands.check(isStaff)
 async def exalt(ctx, user):
     """Exalts a user."""
