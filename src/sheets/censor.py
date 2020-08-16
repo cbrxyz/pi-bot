@@ -7,7 +7,6 @@ def getCensor():
     words = eventSheet.get("B3:C1000")
     CENSORED_WORDS = []
     CENSORED_EMOJIS = []
-    print(words)
     for row in words:
         if len(row[0]) > 1:
             CENSORED_WORDS.append(row[0])

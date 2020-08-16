@@ -48,6 +48,15 @@ async def sendVariables(dataArr):
     varSheet.update("C3:C6", dataArr)
     print("Stored variables in Google Sheet.")
 
+async def getVariables():
+    """Gets the previous variables, so that when Pi-Bot is restarted, the ping information is not lost."""
+    sheet = getWorksheet()
+    varSheet = sheet.worksheet("Variable Backup")
+    dataArr = varSheet.get("C3:C6")
+    for row in dataArr:
+        row[0] = json.loads(row[0])
+    return dataArr
+
 buildServiceAccount()
 gc = gspread.service_account(filename="service_account.json")
 discordSheet = gc.open("Pi-Bot Administrative Sheet")
