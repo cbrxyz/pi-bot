@@ -34,7 +34,6 @@ async def getHelp(ctx, cmd):
             webcolor="red"
         )
     else:
-        print(cmdInfo)
         roles = [(discord.utils.get(ctx.message.author.guild.roles, name=r)) for r in cmdInfo['access']]
         return assembleEmbed(
             title=f"`!{cmdInfo['name']}`",

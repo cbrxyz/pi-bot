@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
-from src.sheets.sheets import sendVariables
+from src.sheets.sheets import sendVariables, getVariables
 from src.forums.forums import openBrowser
 from info import getAbout
 from doggo import getDoggo, getShiba
@@ -56,6 +56,7 @@ async def isAdmin(ctx):
 # CONSTANTS
 ##############
 PI_BOT_ID = 723767075427844106
+PI_BOT_BETA_ID = 743254543952904197
 
 ##############
 # VARIABLES
@@ -82,6 +83,7 @@ bot.remove_command("help")
 async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
+    await pullPrevInfo()
     refreshSheet.start()
     postSomething.start()
 
@@ -108,7 +110,6 @@ async def refreshAlgorithm():
     global CENSORED_EMOJIS
     global EVENT_INFO
     censor = getCensor()
-    print(censor)
     CENSORED_WORDS = censor[0]
     CENSORED_EMOJIS = censor[1]
     EVENT_INFO = await getEvents()
@@ -123,6 +124,18 @@ async def prepareForSending():
     r4 = json.dumps(COACH_REPORT_IDS)
     await sendVariables([[r1], [r2], [r3], [r4]])
     print("Stored variables in sheet.")
+
+async def pullPrevInfo():
+    data = await getVariables()
+    global PING_INFO
+    global REPORT_IDS
+    global TOURNEY_REPORT_IDS
+    global COACH_REPORT_IDS
+    REPORT_IDS = data[0][0]
+    PING_INFO = data[1][0]
+    TOURNEY_REPORT_IDS = data[2][0]
+    COACH_REPORT_IDS = data[3][0]
+    print("Fetched previous variables.")
 
 @bot.command()
 @commands.check(isAdmin)
@@ -300,35 +313,89 @@ async def autoReport(reason, color, message):
     await message.add_reaction("\U0000274C")
 
 @bot.command()
-async def ping(ctx, command="", regex=""):
+async def ping(ctx, command="", *args):
     """Controls Pi-Bot's ping interface."""
     if command == "":
         return await ctx.send("Uh, I need a command you want to run.")
     member = ctx.message.author.id
-    if command in ["add", "new", "delete", "remove"] and regex == "":
+    if command.lower() in ["add", "new", "delete", "remove", "test", "try"] and len(args) < 1:
         return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
-    if command in ["add", "new"]:
+    if command.lower() in ["add", "new"]:
         # Check to see if author in ping info already
-        if any([True for u in PING_INFO if u['id'] == member]): #yes
+        ignoredList = []
+        if any([True for u in PING_INFO if u['id'] == member]): 
+            #yes
             user = next((u for u in PING_INFO if u['id'] == member), None)
             pings = user['pings']
-            pings.append(fr"{regex}")
-        else: #nope
+            for arg in args:
+                try:
+                    re.findall(arg, "test phrase")
+                except:
+                    await ctx.send(f"Ignoring adding the `{arg}` ping because it uses illegal characters.")
+                    ignoredList.append(arg)
+                    continue
+                if arg in pings:
+                    await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
+                    ignoredList.append(arg)
+                else:
+                    pings.append(fr"{arg}")
+        else:
+            # nope
             PING_INFO.append({
                 "id": member,
-                "pings": [fr"{regex}"]
+                "pings": [fr"{arg}" for arg in args]
             })
-        return await ctx.send(f"Alrighty... I've got you all set up for the `{regex}` ping :D")
-    if command in ["delete", "remove"]:
+        return await ctx.send(f"Alrighty... I've got you all set up for the following pings: " + (" ".join([f"`{arg}`" for arg in args if arg not in ignoredList])))
+    elif command.lower() in ["delete", "remove"]:
         user = next((u for u in PING_INFO if u['id'] == member), None)
-        if regex in user['pings']:
-            user['pings'].remove(regex)
-            return await ctx.send("Found the ping you are referencing... attemping to remove.")
+        if user == None or len(user['pings']) == 0:
+            return await ctx.send("You have no registered pings.")
+        for arg in args:
+            if arg == "all":
+                user['pings'] = []
+                return await ctx.send("I removed all of your pings.")
+            if arg in user['pings']:
+                user['pings'].remove(arg)
+                await ctx.send("Found the ping you are referencing... attemping to remove.")
+            else:
+                return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
+        return await ctx.send("I removed all pings you requested.")
+    elif command.lower() in ["list", "all"]:
+        user = next((u for u in PING_INFO if u['id'] == member), None)
+        if user == None or len(user['pings']) == 0:
+            return await ctx.send("You have no registered pings.")
         else:
-            return await ctx.send("I can't find my phone or the ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
-    if command in ["list", "all"]:
+            return await ctx.send("Your pings are: " + ", ".join([f"`{regex}`" for regex in user['pings']]))
+    elif command.lower() in ["test", "try"]:
         user = next((u for u in PING_INFO if u['id'] == member), None)
-        return await ctx.send("Your pings are: " + ", ".join([f"`{regex}`" for regex in user['pings']]))
+        usersPings = user['pings']
+        matched = False
+        for arg in args:
+            for ping in usersPings:
+                if len(re.findall(ping, arg, re.I)) > 0:
+                    await ctx.send(f"Your ping `{ping}` matches `{arg}`.")
+                    matched = True
+        if not matched:
+            await ctx.send("Your test matched no pings of yours.")
+    else:
+        return await ctx.send("Sorry, I can't find that command.")
+
+@bot.command()
+async def dnd(ctx):
+    member = ctx.message.author.id
+    if any([True for u in PING_INFO if u['id'] == member]):
+        user = next((u for u in PING_INFO if u['id'] == member), None)
+        if 'dnd' not in user:
+            user['dnd'] = True
+            return await ctx.send("Enabled DND mode for pings.")
+        elif user['dnd'] == True:
+            user['dnd'] = False
+            return await ctx.send("Disabled DND mode for pings.")
+        else:
+            user['dnd'] = True
+            return await ctx.send("Enabled DND mode for pings.")
+    else:
+        return await ctx.send("You can't enter DND mode without any pings!")
 
 async def pingPM(userID, pinger, pingExp, jumpUrl):
     """Allows Pi-Bot to PM a user about a ping."""
@@ -436,7 +503,6 @@ async def events(ctx, *args):
         foundEvent = False
         for event in eventInfo:
             aliases = event['eventAbbreviations']
-            print(event['eventName'])
             if arg in aliases or arg == event['eventName']:
                 eventNames.append(event['eventName'])
                 foundEvent = True
@@ -709,23 +775,35 @@ async def nuke(ctx, count):
 
 @bot.event
 async def on_message(message):
-    print(repr(message.content))
-    if message.author.id == 723767075427844106: return
-    content = message.content
-    for word in CENSORED_WORDS:
-        if len(re.findall(fr"\b({word})\b", content, re.I)):
-            await message.delete()
-            await censor(message)
-    for word in CENSORED_EMOJIS:
-        if len(re.findall(fr"{word}", content)):
-            await message.delete()
-            await censor(message)
     print('Message from {0.author}: {0.content}'.format(message))
-    for user in PING_INFO:
-        pings = user['pings']
-        for ping in pings:
-            if len(re.findall(ping, content)) > 0 and message.author.discriminator != "0000":
-                await pingPM(user['id'], str(message.author), ping, message.jump_url)
+    if message.author.id == PI_BOT_ID or message.author.id == PI_BOT_BETA_ID: return
+    content = message.content
+    pingable = True
+    if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
+        pingable = False
+    if message.channel.id == 724125653212987454:
+        # If the message is coming from #bot-spam
+        pingable = False
+    if pingable:
+        for word in CENSORED_WORDS:
+            if len(re.findall(fr"\b({word})\b", content, re.I)):
+                print(f"Censoring message by {message.author} because of the word: `{word}`")
+                await message.delete()
+                await censor(message)
+        for word in CENSORED_EMOJIS:
+            if len(re.findall(fr"{word}", content)):
+                print(f"Censoring message by {message.author} because of the emoji: `{word}`")
+                await message.delete()
+                await censor(message)
+        for user in PING_INFO:
+            if user['id'] == message.author.id:
+                continue
+            pings = user['pings']
+            for ping in pings:
+                if len(re.findall(ping, content, re.I)) > 0 and message.author.discriminator != "0000":
+                    if user['id'] in [m.id for m in message.channel.members] and (user['dnd'] != True or 'dnd' not in user):
+                        # Check that the user can actually see the message
+                        await pingPM(user['id'], str(message.author), ping, message.jump_url)
     await bot.process_commands(message)
 
 @bot.event
