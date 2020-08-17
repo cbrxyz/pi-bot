@@ -104,7 +104,7 @@ async def changeBotStatus():
     if botStatus == 0:
         await bot.change_presence(activity=discord.Game(name="Game On"))
     elif botStatus == 1:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="to my SoM instrument"))
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="my SoM instrument"))
     elif botStatus == 2:
         await bot.change_presence(activity=discord.Game(name="with Pi-Bot Beta"))
     elif botStatus == 3:
@@ -531,9 +531,9 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
 @bot.command(aliases=["event"])
 async def events(ctx, *args):
     """Adds or removes event roles from a user."""
-    if len(events) < 1:
+    if len(args) < 1:
         return await ctx.send("You need to specify at least one event to add/remove!")
-    elif len(events) > 5:
+    elif len(args) > 5:
         return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
     member = ctx.message.author
     eventInfo = EVENT_INFO
