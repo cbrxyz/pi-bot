@@ -272,9 +272,7 @@ COMMAND_INFO = [
             }
         ],
         "access":[
-            "Administrator",
-            "Global Moderator",
-            "Wiki Moderator"
+            "Member"
         ]
     },
     {
