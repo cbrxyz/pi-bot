@@ -4,6 +4,8 @@ import asyncio
 import requests
 import re
 import json
+import random
+import math
 from dotenv import load_dotenv
 from discord import channel
 from discord.ext import commands, tasks
@@ -62,6 +64,7 @@ PI_BOT_BETA_ID = 743254543952904197
 # VARIABLES
 ##############
 fishNow = 0
+canPost = False
 CENSORED_WORDS = []
 CENSORED_EMOJIS = []
 EVENT_INFO = 0
@@ -86,6 +89,7 @@ async def on_ready():
     await pullPrevInfo()
     refreshSheet.start()
     postSomething.start()
+    changeBotStatus.start()
 
 @tasks.loop(seconds=30.0)
 async def refreshSheet():
@@ -94,9 +98,34 @@ async def refreshSheet():
     await prepareForSending()
     print("Attempted to refresh/store data from/to sheet.")
 
-canPost = False
+@tasks.loop(hours=1)
+async def changeBotStatus():
+    botStatus = math.floor(random.random() * 10)
+    if botStatus == 0:
+        await bot.change_presence(activity=discord.Game(name="Game On"))
+    elif botStatus == 1:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="to my SoM instrument"))
+    elif botStatus == 2:
+        await bot.change_presence(activity=discord.Game(name="with Pi-Bot Beta"))
+    elif botStatus == 3:
+        await bot.change_presence(activity=discord.Game(name="with my gravity vehicle"))
+    elif botStatus == 4:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the WS trials"))
+    elif botStatus == 5:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="birds"))
+    elif botStatus == 6:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="2018 Nationals again"))
+    elif botStatus == 7:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the sparkly stars"))
+    elif botStatus == 8:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the wiki"))
+    elif botStatus == 9:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for tourney results"))
+    print("Changed the bot's status.")
+
 @tasks.loop(hours=28)
 async def postSomething():
+    global canPost
     """Allows Pi-Bot to post markov-generated statements to the forums."""
     if canPost:
         print("Attempting to post something.")
