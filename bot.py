@@ -622,11 +622,15 @@ async def wiki(ctx, *args):
         await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
 
 @bot.command()
-async def profile(ctx, name:discord.Member=False):
+async def profile(ctx, name:str=False):
     if name == False:
         name = ctx.message.author.name
-    if type(name) == discord.Member:
-        name = name.name
+    if name.find("<@") != -1:
+        iden = await harvestID(name)
+        member = ctx.message.author.guild.get_member(int(iden))
+        name = member.nick
+        if name == None:
+            name = member.name
     embed = assembleEmbed(
         title=f"Scioly.org Information for {name}",
         desc=(f"[`Forums`](https://scioly.org/forums/memberlist.php?mode=viewprofile&un={name}) | [`Wiki`](https://scioly.org/wiki/index.php?title=User:{name})"),
