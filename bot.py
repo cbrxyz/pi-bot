@@ -260,6 +260,10 @@ async def states(ctx, *args):
     member = ctx.message.author
     removedRoles = []
     addedRoles = []
+    if len(args) < 1:
+        return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
+    elif len(args) > 5:
+        return await ctx.send("Sorry, you are attempting to add/remove too many states at once.")
     for arg in args:
         if arg == "California" or arg == "Cali" or arg == "CA":
             return await ctx.send("Which California, North or South??")
@@ -347,6 +351,8 @@ async def ping(ctx, command="", *args):
     if command == "":
         return await ctx.send("Uh, I need a command you want to run.")
     member = ctx.message.author.id
+    if len(args) > 8:
+        return await ctx.send("You are giving me too many pings at once! Please separate your requests over multiple commands.")
     if command.lower() in ["add", "new", "delete", "remove", "test", "try"] and len(args) < 1:
         return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
     if command.lower() in ["add", "new"]:
@@ -525,6 +531,10 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
 @bot.command(aliases=["event"])
 async def events(ctx, *args):
     """Adds or removes event roles from a user."""
+    if len(events) < 1:
+        return await ctx.send("You need to specify at least one event to add/remove!")
+    elif len(events) > 5:
+        return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
     member = ctx.message.author
     eventInfo = EVENT_INFO
     eventNames = []
@@ -637,6 +647,8 @@ async def wiki(ctx, *args):
         if arg[:1] == "-":
             multiple = arg.lower() == "-multiple"
             ignoreCase = arg.lower() == "-ignorecase"
+    if len(args) > 5 and multiple:
+        return await ctx.send("Slow down there buster. Please 5 or less wiki pages at a time.")
     if multiple:
         for arg in args:
             if arg[:1] != "-":
