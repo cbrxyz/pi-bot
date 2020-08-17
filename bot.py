@@ -880,6 +880,7 @@ async def on_command_error(ctx, error):
 async def lookupRole(name):
     name = name.title()
     if name == "Al" or name == "Alabama": return "Alabama"
+    elif name == "All" or name == "All States": return "All States"
     elif name == "Ak" or name == "Alaska": return "Alaska"
     elif name == "Ar" or name == "Arkansas": return "Arkansas"
     elif name == "Az" or name == "Arizona": return "Arizona"
@@ -887,6 +888,7 @@ async def lookupRole(name):
     elif name == "Can" or name == "Ca-N" or name == "California (North)" or name == "Nocal" or name == "California North": return "California (North)"
     if name == "Co" or name == "Colorado": return "Colorado"
     elif name == "Ct" or name == "Connecticut": return "Connecticut"
+    elif name == "Dc" or name == "District Of Columbia": return "District of Columbia"
     elif name == "De" or name == "Delaware": return "Delaware"
     elif name == "Fl" or name == "Florida": return "Florida"
     elif name == "Ga" or name == "Georgia": return "Georgia"
