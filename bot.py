@@ -19,6 +19,7 @@ from doggo import getDoggo, getShiba
 from bear import getBearMessage
 from embed import assembleEmbed
 from commands import getList, getHelp
+from list import getStateList
 from src.wiki.tournaments import getInviteTable
 
 load_dotenv()
@@ -464,10 +465,25 @@ async def shibabomb(ctx, member:str=False):
     await ctx.send(f"{member}, <@{ctx.message.author.id}> shiba bombed you!!")
 
 @bot.command()
-async def list(ctx):
+async def list(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
-    ls = await getList(ctx)
-    await ctx.send(embed=ls)
+    if cmd == False or cmd == "commands":
+        ls = await getList(ctx)
+        await ctx.send(embed=ls)
+    elif cmd == "states":
+        statesList = await getStateList()
+        list = assembleEmbed(
+            title="List of all states",
+            desc="\n".join([f"`{state}`" for state in statesList])
+        )
+        await ctx.send(embed=list)
+    elif cmd == "events":
+        eventsList = [r['eventName'] for r in EVENT_INFO]
+        list = assembleEmbed(
+            title="List of all events",
+            desc="\n".join([f"`{name}`" for name in eventsList])
+        )
+        await ctx.send(embed=list)
 
 async def censor(message):
     """Constructs Pi-Bot's censor."""
@@ -721,6 +737,8 @@ async def ban(ctx, member:discord.User=None, reason =None):
         return
     if reason == None:
         reason = "No reason given."
+    if member.id == PI_BOT_ID or member.id == PI_BOT_BETA_ID:
+        return await ctx.send("Hey! You can't ban me!!")
     message = f"You have been banned from the Scioly.org Discord server for {reason}."
     await member.send(message)
     await ctx.guild.ban(member, reason=reason)

@@ -11,3 +11,5 @@ markovify
 schedule
 wikitextparser
 tabulate
+numpy
+matplotlib
