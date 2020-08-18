@@ -675,5 +675,33 @@ COMMAND_INFO = [
         "access":[
             "Member"
         ]
+    },
+    {
+        "name": "list",
+        "description": "gives the user a list of commands/states/events",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "[information]",
+                "description": "the information the user would like to retrieve"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!list",
+                "result": "returns commands accessible to the caller"
+            },
+            {
+                "cmd": "!list states",
+                "result": "returns the list of state roles/channels to the caller"
+            },
+            {
+                "cmd": "!list events",
+                "result": "returns the list of event roles to the caller"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
     }
 ]

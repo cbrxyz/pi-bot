@@ -17,5 +17,4 @@ async def getEvents():
     res = []
     for i, v in enumerate(eventNames):
         res.append({'eventName': v,'eventAbbreviations': eventAbbreviations[i]})
-    print(res)
     return res
