@@ -557,8 +557,8 @@ async def events(ctx, *args):
     for arg in args:
         foundEvent = False
         for event in eventInfo:
-            aliases = event['eventAbbreviations']
-            if arg in aliases or arg == event['eventName']:
+            aliases = [abbr.lower() for abbr in event['eventAbbreviations']]
+            if arg.lower() in aliases or arg.lower() == event['eventName'].lower():
                 eventNames.append(event['eventName'])
                 foundEvent = True
                 break
