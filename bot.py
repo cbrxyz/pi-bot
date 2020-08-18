@@ -73,6 +73,7 @@ REPORT_IDS = []
 PING_INFO = []
 TOURNEY_REPORT_IDS = []
 COACH_REPORT_IDS = []
+SHELLS_OPEN = []
 
 ##############
 # FfCTIONS TO BE REMOVED
@@ -101,7 +102,7 @@ async def refreshSheet():
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
-    botStatus = math.floor(random.random() * 10)
+    botStatus = math.floor(random.random() * 12)
     if botStatus == 0:
         await bot.change_presence(activity=discord.Game(name="Game On"))
     elif botStatus == 1:
@@ -122,6 +123,14 @@ async def changeBotStatus():
         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the wiki"))
     elif botStatus == 9:
         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for tourney results"))
+    elif botStatus == 10:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="birb sounds"))
+    elif botStatus == 11:
+        await bot.change_presence(activity=discord.Game(name="with proteins"))
+    elif botStatus == 12:
+        await bot.change_presence(activity=discord.Game(name="with my detector"))
+    elif botStatus == 13:
+        await bot.change_presence(activity=discord.Game(name="with my detector"))
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)

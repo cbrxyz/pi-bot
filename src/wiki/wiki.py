@@ -17,4 +17,8 @@ def getPageText(pageName):
     """Gets the text of a page on the wiki."""
     return pywikibot.Page(site, pageName).text
 
+def uploadFile(filePath, title, comment):
+    site = pywikibot.Site()
+    site.upload()
+
 initWiki()
