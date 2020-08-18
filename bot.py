@@ -75,7 +75,7 @@ TOURNEY_REPORT_IDS = []
 COACH_REPORT_IDS = []
 
 ##############
-# FUNCTIONS TO BE REMOVED
+# FfCTIONS TO BE REMOVED
 ##############
 bot.remove_command("help")
 
@@ -708,6 +708,17 @@ async def exalt(ctx, user):
 
 @bot.command()
 @commands.check(isStaff)
+async def unexalt(ctx, user):
+    """Unexalts a user."""
+    member = ctx.message.author
+    role = discord.utils.get(member.guild.roles, name="Exalted Member")
+    iden = await harvestID(user)
+    userObj = member.guild.get_member(int(iden))
+    await userObj.remove_roles(role)
+    await ctx.send(f"Successfully unexalted.")
+
+@bot.command()
+@commands.check(isStaff)
 async def mute(ctx, user):
     """Mutes a user."""
     member = ctx.message.author
@@ -889,10 +900,71 @@ async def on_member_join(member):
 
 @bot.event
 async def on_command_error(ctx, error):
+    print("ERROR:")
+    print(error)
+    # Argument parsing errors
+    if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(error, discord.ext.commands.InvalidEndOfQuotedStringError):
+        return await ctx.send("Sorry, it appears that your quotation marks are misaligned, and I can't read your query.")
+    if isinstance(error, discord.ext.commands.ExpectedClosingQuoteError):
+        return await ctx.send("Oh. I was expecting you were going to close out your command with a quote somewhere, but never found it!")
+
+    # User input errors
+    if isinstance(error, discord.ext.commands.MissingRequiredArgument):
+        return await ctx.send("Oops, you are missing a required argument in the command.")
+    if isinstance(error, discord.ext.commands.ArgumentParsingError):
+        return await ctx.send("Sorry, I had trouble parsing one of your arguments.")
+    if isinstance(error, discord.ext.commands.TooManyArguments):
+        return await ctx.send("Woahhh!! Too many arguments for this command!")
+    if isinstance(error, discord.ext.commands.BadArgument) or isinstance(error, discord.ext.commands.BadUnionArgument):
+        return await ctx.send("Sorry, I'm having trouble reading one of the arguments you just used. Try again!")
+
+    # Check failure errors
+    if isinstance(error, discord.ext.commands.CheckAnyFailure):
+        return await ctx.send("It looks like you aren't able to run this command, sorry.")
+    if isinstance(error, discord.ext.commands.PrivateMessageOnly):
+        return await ctx.send("Pssttt. You're going to have to DM me to run this command!")
+    if isinstance(error, discord.ext.commands.NoPrivateMessage):
+        return await ctx.send("Ope. You can't run this command in the DM's!")
+    if isinstance(error, discord.ext.commands.NotOwner):
+        return await ctx.send("Oof. You have to be the bot's master to run that command!")
+    if isinstance(error, discord.ext.commands.MissingPermissions) or isinstance(error, discord.ext.commands.BotMissingPermissions):
+        return await ctx.send("Er, you don't have the permissions to run this command.")
+    if isinstance(error, discord.ext.commands.MissingRole) or isinstance(error, discord.ext.commands.BotMissingRole):
+        return await ctx.send("Oh no... you don't have the required role to run this command.")
+    if isinstance(error, discord.ext.commands.MissingAnyRole) or isinstance(error, discord.ext.commands.BotMissingAnyRole):
+        return await ctx.send("Oh no... you don't have the required role to run this command.")
+    if isinstance(error, discord.ext.commands.NSFWChannelRequired):
+        return await ctx.send("Uh... this channel can only be run in a NSFW channel... sorry to disappoint.")
+        
+    # Command errors
+    if isinstance(error, discord.ext.commands.ConversionError):
+        return await ctx.send("Oops, there was a bot error here, sorry about that.")
+    if isinstance(error, discord.ext.commands.UserInputError):
+        return await ctx.send("Hmmm... I'm having trouble reading what you're trying to tell me.")
     if isinstance(error, discord.ext.commands.CommandNotFound):
-        await ctx.send("Sorry, I couldn't find that command.")
-    if isinstance(error, discord.ext.commands.MissingPermissions):
-        await cxt.send("Sorry, you do not have the permissons to do that.")
+        return await ctx.send("Sorry, I couldn't find that command.")
+    if isinstance(error, discord.ext.commands.CheckFailure):
+        return await ctx.send("Sorry, but I don't think you can run that command.")
+    if isinstance(error, discord.ext.commands.DisabledCommand):
+        return await ctx.send("Sorry, but this command is disabled.")
+    if isinstance(error, discord.ext.commands.CommandInvokeError):
+        return await ctx.send("Sorry, but an error incurred when the command was invoked.")
+    if isinstance(error, discord.ext.commands.CommandOnCooldown):
+        return await ctx.send("Slow down buster! This command's on cooldown.")
+    if isinstance(error, discord.ext.commands.MaxConcurrencyReached):
+        return await ctx.send("Uh oh. This command has reached MAXIMUM CONCURRENCY. *lightning flash*. Try again later.")
+
+    # Extension errors (not doing specifics)
+    if isinstance(error, discord.ext.commands.ExtensionError):
+        return await ctx.send("Oh no. There's an extension error. Please ping a developer about this one.")
+
+    # Client exception errors (not doing specifics)
+    if isinstance(error, discord.ext.commands.CommandRegistrationError):
+        return await ctx.send("Oh boy. Command registration error. Please ping a developer about this.")
+
+    # Overall errors
+    if isinstance(error, discord.ext.commands.CommandError):
+        return await ctx.send("Oops, there was a command error. Try again.")
     return
 
 async def lookupRole(name):
