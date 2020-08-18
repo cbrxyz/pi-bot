@@ -1,4 +1,4 @@
-version = "3.1.7"
+version = "3.1.8"
 developers = "Created and developed by <@715048392408956950>."
 repo = "https://github.com/cbrxyz/pi-bot"
 wikiLink = "https://scioly.org/wiki/index.php/User:Pi-Bot"
