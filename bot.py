@@ -102,7 +102,7 @@ async def refreshSheet():
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
-    botStatus = math.floor(random.random() * 12)
+    botStatus = math.floor(random.random() * 24)
     if botStatus == 0:
         await bot.change_presence(activity=discord.Game(name="Game On"))
     elif botStatus == 1:
@@ -130,7 +130,27 @@ async def changeBotStatus():
     elif botStatus == 12:
         await bot.change_presence(activity=discord.Game(name="with my detector"))
     elif botStatus == 13:
-        await bot.change_presence(activity=discord.Game(name="with my detector"))
+        await bot.change_presence(activity=discord.Game(name="Minecraft"))
+    elif botStatus == 14:
+        await bot.change_presence(activity=discord.Game(name="with circuits"))
+    elif botStatus == 15:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="my PPP fall"))
+    elif botStatus == 16:
+        await bot.change_presence(activity=discord.Game(name="a major scale"))
+    elif botStatus == 17:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="clinking medals"))
+    elif botStatus == 18:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the world learn"))
+    elif botStatus == 19:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="SciOly grow"))
+    elif botStatus == 20:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="tutorials"))
+    elif botStatus == 21:
+        await bot.change_presence(activity=discord.Game(name="with wiki templates"))
+    elif botStatus == 22:
+        await bot.change_presence(activity=discord.Game(name="the flute"))
+    elif botStatus == 23:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="bear eat users"))
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)
