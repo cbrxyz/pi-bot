@@ -13,3 +13,4 @@ wikitextparser
 tabulate
 numpy
 matplotlib
+dateparser

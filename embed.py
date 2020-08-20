@@ -19,11 +19,8 @@ def assembleEmbed(
     if len(webcolor) > 1:
         hexcolor = webcolors.name_to_hex(webcolor)
     hexcolor = hexcolor[1:]
-    print(hexcolor)
-    print(int(hexcolor, 16))
     embed = discord.Embed(title=title, description=desc, url=titleUrl, color=int(hexcolor, 16))
     embed.set_author(name=authorName, url=authorUrl, icon_url=authorIcon)
-    print(embed.author)
     embed.set_thumbnail(url=thumbnailUrl)
     for field in fields:
         embed.add_field(name=field['name'], value=field['value'], inline=(field['inline'] == "True"))

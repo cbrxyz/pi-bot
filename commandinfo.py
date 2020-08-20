@@ -159,12 +159,20 @@ COMMAND_INFO = [
             {
                 "name": "user",
                 "description": "the user that needs to be muted"
+            },
+            {
+                "name": "time",
+                "description": "the length of the mute"
             }
         ],
         "usage":[
             {
-                "cmd": "!mute @user",
-                "result": "mutes @user"
+                "cmd": "!mute @user \"1 day\"",
+                "result": "mutes @user for 1 day"
+            },
+            {
+                "cmd": "!mute @user \"indef\"",
+                "result": "mutes @user for an indefinite amount of time"
             }
         ],
         "access":[
@@ -207,12 +215,20 @@ COMMAND_INFO = [
             {
                 "name": "reason",
                 "description": "the reason for the ban"
+            },
+            {
+                "name": "time",
+                "description": "the length for the ban"
             }
         ],
         "usage":[
             {
-                "cmd": "!ban @user \"spamming\"",
-                "result": "bans @user for \"spamming\""
+                "cmd": "!ban @user \"spamming\" \"7 days\"",
+                "result": "bans @user for \"spamming\" for 7 days"
+            },
+            {
+                "cmd": "!ban @user \"spamming\" \"indef\"",
+                "result": "bans @user for \"spamming\" for an infinite amount of time"
             }
         ],
         "access":[
@@ -298,59 +314,23 @@ COMMAND_INFO = [
         ]
     },
     {
-        "name": "diva",
-        "description": "gives the user exclusively a Division A role",
+        "name": "division",
+        "description": "gives the user a division role",
         "aliases": [],
-        "parameters": [],
-        "usage":[
+        "parameters": [
             {
-                "cmd": "!diva",
-                "result": "moves the user into Division A, giving them the role"
+                "name": "division",
+                "description": "the division to apply"
             }
         ],
-        "access":[
-            "Member"
-        ]
-    },
-    {
-        "name": "divb",
-        "description": "gives the user exclusively a Division B role",
-        "aliases": [],
-        "parameters": [],
         "usage":[
             {
-                "cmd": "!divb",
-                "result": "moves the user into Division B, giving them the role"
-            }
-        ],
-        "access":[
-            "Member"
-        ]
-    },
-    {
-        "name": "divc",
-        "description": "gives the user exclusively a Division C role",
-        "aliases": [],
-        "parameters": [],
-        "usage":[
+                "cmd": "!division a",
+                "result": "gives the user the Division A role"
+            },
             {
-                "cmd": "!divc",
-                "result": "moves the user into Division C, giving them the role"
-            }
-        ],
-        "access":[
-            "Member"
-        ]
-    },
-    {
-        "name": "divd",
-        "description": "gives the user exclusively a Division D role",
-        "aliases": [],
-        "parameters": [],
-        "usage":[
-            {
-                "cmd": "!divd",
-                "result": "moves the user into Division D, giving them the role"
+                "cmd": "!division d",
+                "result": "gives the user the Division D role"
             }
         ],
         "access":[

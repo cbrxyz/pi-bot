@@ -45,14 +45,14 @@ async def sendVariables(dataArr):
     """Sends variable backups to the Administrative Sheet."""
     sheet = getWorksheet()
     varSheet = sheet.worksheet("Variable Backup")
-    varSheet.update("C3:C6", dataArr)
+    varSheet.update("C3:C7", dataArr)
     print("Stored variables in Google Sheet.")
 
 async def getVariables():
     """Gets the previous variables, so that when Pi-Bot is restarted, the ping information is not lost."""
     sheet = getWorksheet()
     varSheet = sheet.worksheet("Variable Backup")
-    dataArr = varSheet.get("C3:C6")
+    dataArr = varSheet.get("C3:C7")
     for row in dataArr:
         row[0] = json.loads(row[0])
     return dataArr
