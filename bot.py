@@ -499,9 +499,9 @@ async def ping(ctx, command="", *args):
     member = ctx.message.author.id
     if len(args) > 8:
         return await ctx.send("You are giving me too many pings at once! Please separate your requests over multiple commands.")
-    if command.lower() in ["add", "new", "delete", "remove", "test", "try"] and len(args) < 1:
+    if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp", "delete", "remove", "test", "try"] and len(args) < 1:
         return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
-    if command.lower() in ["add", "new"]:
+    if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp"]:
         # Check to see if author in ping info already
         ignoredList = []
         if any([True for u in PING_INFO if u['id'] == member]): 
@@ -519,7 +519,12 @@ async def ping(ctx, command="", *args):
                     await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
                     ignoredList.append(arg)
                 else:
-                    pings.append(fr"{arg}")
+                    if command.lower() in ["add", "new"]:
+                        print("adding word")
+                        pings.append(fr"\b({arg})\b")
+                    else:
+                        print("adding regexp")
+                        pings.append(fr"{arg}")
         else:
             # nope
             PING_INFO.append({
@@ -706,15 +711,12 @@ async def events(ctx, *args):
     addedRoles = []
     couldNotHandle = []
     tripleWordEvents = [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == 3]
-    print(tripleWordEvents)
     doubleWordEvents = [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == 2]
-    print(doubleWordEvents)
     for triple in tripleWordEvents:
         words = triple.split(" ")
         allHere = 0
         allHere = sum(1 for word in words if word.lower() in newArgs)
         if allHere == 3:
-            print(triple)
             # Word is in args
             role = discord.utils.get(member.guild.roles, name=triple)
             if role in member.roles: 
@@ -740,7 +742,6 @@ async def events(ctx, *args):
                 addedRoles.append(double)
             for word in words:
                 newArgs.remove(word.lower())
-    print(newArgs)
     for arg in newArgs:
         foundEvent = False
         for event in eventInfo:
@@ -836,7 +837,6 @@ async def sanitizeMention(member):
     if member == False: return True
     if member == "@everyone" or member == "@here": return False
     if member[:3] == "<@&": return False
-    print(member)
     return True
 
 @bot.command(aliases=["div"])
