@@ -8,10 +8,13 @@ import random
 import math
 import datetime
 import dateparser
+import wikipedia as wikip
+from aioify import aioify
 from dotenv import load_dotenv
 from discord import channel
 from discord.ext import commands, tasks
 
+from src.wiki.tournaments import getInviteTable
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
@@ -22,7 +25,6 @@ from bear import getBearMessage
 from embed import assembleEmbed
 from commands import getList, getHelp
 from list import getStateList
-from src.wiki.tournaments import getInviteTable
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -72,6 +74,7 @@ DELETED_CHANNEL_ID = 745799668411400304
 ##############
 fishNow = 0
 canPost = False
+doHourlySync = False
 CENSORED_WORDS = []
 CENSORED_EMOJIS = []
 EVENT_INFO = 0
@@ -81,11 +84,18 @@ TOURNEY_REPORT_IDS = []
 COACH_REPORT_IDS = []
 SHELLS_OPEN = []
 CRON_LIST = []
+RECENT_MESSAGES = []
+STOPNUKE = False
 
 ##############
 # FfCTIONS TO BE REMOVED
 ##############
 bot.remove_command("help")
+
+##############
+# ASYNC WRAPPERS
+##############
+aiowikip = aioify(obj=wikip)
 
 ##############
 # FUNCTIONS
@@ -99,6 +109,7 @@ async def on_ready():
     refreshSheet.start()
     postSomething.start()
     cron.start()
+    storeVariables.start()
     changeBotStatus.start()
 
 @tasks.loop(seconds=30.0)
@@ -107,6 +118,10 @@ async def refreshSheet():
     await refreshAlgorithm()
     await prepareForSending()
     print("Attempted to refresh/store data from/to sheet.")
+
+@tasks.loop(hours=10)
+async def storeVariables():
+    await prepareForSending("store")
 
 @tasks.loop(minutes=1)
 async def cron():
@@ -205,21 +220,21 @@ async def refreshAlgorithm():
     global CENSORED_WORDS
     global CENSORED_EMOJIS
     global EVENT_INFO
-    censor = getCensor()
+    censor = await getCensor()
     CENSORED_WORDS = censor[0]
     CENSORED_EMOJIS = censor[1]
     EVENT_INFO = await getEvents()
     print("Refreshed data from sheet.")
     return True
 
-async def prepareForSending():
+async def prepareForSending(type="variable"):
     """Sends local variables to the administrative sheet as a backup."""
     r1 = json.dumps(REPORT_IDS)
     r2 = json.dumps(PING_INFO)
     r3 = json.dumps(TOURNEY_REPORT_IDS)
     r4 = json.dumps(COACH_REPORT_IDS)
     r5 = json.dumps(CRON_LIST, default = datetimeConverter)
-    await sendVariables([[r1], [r2], [r3], [r4], [r5]])
+    await sendVariables([[r1], [r2], [r3], [r4], [r5]], type)
     print("Stored variables in sheet.")
 
 def datetimeConverter(o):
@@ -264,8 +279,8 @@ async def eat(ctx, user):
     message = await getBearMessage(user)
     await ctx.send(message)
 
-@commands.check(isStaff)
 @bot.command()
+@commands.check(isStaff)
 async def refresh(ctx):
     """Refreshes data from the sheet."""
     res = await refreshAlgorithm()
@@ -284,11 +299,14 @@ async def getuserid(ctx, user=None):
     """Gets the user ID of the caller or another user."""
     if user == None:
         await ctx.send(f"Your user ID is `{ctx.message.author.id}`.")
+    elif user[:3] != "<@!":
+        member = ctx.message.guild.get_member_named(user)
+        await ctx.send(f"The user ID of {user} is: `{member.id}`")
     else:
         user = user.replace("<@!", "").replace(">", "")
         await ctx.send(f"The user ID of <@{user}> is `{user}`.")
 
-@bot.command()
+@bot.command(aliases=["hi"])
 async def hello(ctx):
     """Simply says hello. Used for testing the bot."""
     await ctx.send("Well, hello there.")
@@ -334,17 +352,68 @@ async def tourney(ctx):
 @bot.command(aliases=["state"])
 async def states(ctx, *args):
     """Assigns someone with specific states."""
+    newArgs = [str(arg).lower() for arg in args]
     member = ctx.message.author
+    states = await getStateList()
+    states = [s[:s.rfind(" (")] for s in states]
+    tripleWordStates = [s for s in states if len(s.split(" ")) > 2]
+    doubleWordStates = [s for s in states if len(s.split(" ")) > 1]
     removedRoles = []
     addedRoles = []
-    if len(args) < 1:
+    if len(newArgs) < 1:
         return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
-    elif len(args) > 5:
+    elif len(newArgs) > 10:
         return await ctx.send("Sorry, you are attempting to add/remove too many states at once.")
-    for arg in args:
-        if arg == "California" or arg == "Cali" or arg == "CA":
-            return await ctx.send("Which California, North or South??")
-    for arg in args:
+    for string in ["South", "North"]:
+        californiaList = [f"California ({string})", f"California-{string}", f"California {string}", f"{string}ern California", f"{string} California", f"{string} Cali", f"Cali {string}", f"{string} CA", f"CA {string}"]
+        if string == "North":
+            californiaList.append("NorCal")
+        else:
+            californiaList.append("SoCal")
+        for listing in californiaList:
+            words = listing.split(" ")
+            allHere = sum(1 for word in words if word.lower() in newArgs)
+            if allHere == len(words):
+                role = discord.utils.get(member.guild.roles, name=f"California ({string})")
+                if role in member.roles: 
+                    await member.remove_roles(role)
+                    removedRoles.append(f"California ({string})")
+                else:
+                    await member.add_roles(role)
+                    addedRoles.append(f"California ({string})")
+                for word in words:
+                    newArgs.remove(word.lower())
+    for triple in tripleWordStates:
+        words = triple.split(" ")
+        allHere = 0
+        allHere = sum(1 for word in words if word.lower() in newArgs)
+        if allHere == 3:
+            # Word is in args
+            role = discord.utils.get(member.guild.roles, name=triple)
+            if role in member.roles: 
+                await member.remove_roles(role)
+                removedRoles.append(triple)
+            else:
+                await member.add_roles(role)
+                addedRoles.append(triple)
+            for word in words:
+                newArgs.remove(word.lower())
+    for double in doubleWordStates:
+        words = double.split(" ")
+        allHere = 0
+        allHere = sum(1 for word in words if word.lower() in newArgs)
+        if allHere == 2:
+            # Word is in args
+            role = discord.utils.get(member.guild.roles, name=double)
+            if role in member.roles: 
+                await member.remove_roles(role)
+                removedRoles.append(double)
+            else:
+                await member.add_roles(role)
+                addedRoles.append(double)
+            for word in words:
+                newArgs.remove(word.lower())
+    for arg in newArgs:
         roleName = await lookupRole(arg)
         if roleName == False:
             return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
@@ -379,7 +448,7 @@ async def games(ctx):
         await ctx.send(f"You are now in the channel. Come and have fun in <#{GAMES_CHANNEL}>! :tada:")
         await jbcObj.send(f"Please welcome {member.mention} to the party!!")
 
-@bot.command()
+@bot.command(aliases=["r"])
 async def report(ctx, *args):
     """Creates a report that is sent to staff members."""
     if len(args) > 1:
@@ -492,7 +561,7 @@ async def ping(ctx, command="", *args):
     else:
         return await ctx.send("Sorry, I can't find that command.")
 
-@bot.command()
+@bot.command(aliases=["donotdisturb"])
 async def dnd(ctx):
     member = ctx.message.author.id
     if any([True for u in PING_INFO if u['id'] == member]):
@@ -522,7 +591,7 @@ async def pingPM(userID, pinger, pingExp, jumpUrl):
     )
     await userToSend.send(embed=embed)
 
-@bot.command()
+@bot.command(aliases=["doggobomb"])
 async def dogbomb(ctx, member:str=False):
     """Dog bombs someone!"""
     if member == False:
@@ -594,7 +663,7 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     title = jso['title'] if 'title' in jso else ""
     desc = jso['description'] if 'description' in jso else ""
     titleUrl = jso['titleUrl'] if 'titleUrl' in jso else ""
-    hexcolor = jso['hexColor'] if 'hexColor' in jso else ""
+    hexcolor = jso['hexColor'] if 'hexColor' in jso else "#2E66B6"
     webcolor = jso['webColor'] if 'webColor' in jso else ""
     thumbnailUrl = jso['thumbnailUrl'] if 'thumbnailUrl' in jso else ""
     authorName = jso['authorName'] if 'authorName' in jso else ""
@@ -627,12 +696,52 @@ async def events(ctx, *args):
     """Adds or removes event roles from a user."""
     if len(args) < 1:
         return await ctx.send("You need to specify at least one event to add/remove!")
-    elif len(args) > 5:
+    elif len(args) > 10:
         return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
     member = ctx.message.author
+    newArgs = [str(arg).lower() for arg in args]
     eventInfo = EVENT_INFO
     eventNames = []
-    for arg in args:
+    removedRoles = []
+    addedRoles = []
+    couldNotHandle = []
+    tripleWordEvents = [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == 3]
+    print(tripleWordEvents)
+    doubleWordEvents = [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == 2]
+    print(doubleWordEvents)
+    for triple in tripleWordEvents:
+        words = triple.split(" ")
+        allHere = 0
+        allHere = sum(1 for word in words if word.lower() in newArgs)
+        if allHere == 3:
+            print(triple)
+            # Word is in args
+            role = discord.utils.get(member.guild.roles, name=triple)
+            if role in member.roles: 
+                await member.remove_roles(role)
+                removedRoles.append(triple)
+            else:
+                await member.add_roles(role)
+                addedRoles.append(triple)
+            for word in words:
+                newArgs.remove(word.lower())
+    for double in doubleWordEvents:
+        words = double.split(" ")
+        allHere = 0
+        allHere = sum(1 for word in words if word.lower() in newArgs)
+        if allHere == 2:
+            # Word is in args
+            role = discord.utils.get(member.guild.roles, name=double)
+            if role in member.roles: 
+                await member.remove_roles(role)
+                removedRoles.append(double)
+            else:
+                await member.add_roles(role)
+                addedRoles.append(double)
+            for word in words:
+                newArgs.remove(word.lower())
+    print(newArgs)
+    for arg in newArgs:
         foundEvent = False
         for event in eventInfo:
             aliases = [abbr.lower() for abbr in event['eventAbbreviations']]
@@ -640,10 +749,8 @@ async def events(ctx, *args):
                 eventNames.append(event['eventName'])
                 foundEvent = True
                 break
-        if foundEvent == False:
-            return await ctx.send(f"Sorry, I couldn't find the `{arg}` event.")
-    removedRoles = []
-    addedRoles = []
+        if not foundEvent:
+            couldNotHandle.append(arg)
     for event in eventNames:
         role = discord.utils.get(member.guild.roles, name=event)
         if role in member.roles: 
@@ -653,11 +760,11 @@ async def events(ctx, *args):
             await member.add_roles(role)
             addedRoles.append(event)
     if len(addedRoles) > 0 and len(removedRoles) == 0:
-        eventRes = "Added events " + (' '.join([f'`{arg}`' for arg in addedRoles])) + "."
+        eventRes = "Added events " + (' '.join([f'`{arg}`' for arg in addedRoles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in couldNotHandle])) if len(couldNotHandle) else "") + "."
     elif len(removedRoles) > 0 and len(addedRoles) == 0:
-        eventRes = "Removed events " + (' '.join([f'`{arg}`' for arg in removedRoles])) + "."
+        eventRes = "Removed events " + (' '.join([f'`{arg}`' for arg in removedRoles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in couldNotHandle])) if len(couldNotHandle) else "") + "."
     else:
-        eventRes = "Added events " + (' '.join([f'`{arg}`' for arg in addedRoles])) + ", and removed events " + (' '.join([f'`{arg}`' for arg in removedRoles])) + "."
+        eventRes = "Added events " + (' '.join([f'`{arg}`' for arg in addedRoles])) + ", " + ("and " if not len(couldNotHandle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removedRoles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in couldNotHandle])) if len(couldNotHandle) else "") + "."
     await ctx.send(eventRes)
 
 async def getWords():
@@ -671,14 +778,14 @@ async def help(ctx, command="help"):
     hlp = await getHelp(ctx, command)
     await ctx.send(embed=hlp)
 
-@bot.command()
+@bot.command(aliases=["feedbear"])
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
     fishNow += 1
     await ctx.send(f"You feed bear one fish. Bear now has {fishNow} fish!")
 
-@bot.command()
+@bot.command(aliases=["badbear"])
 async def nofish(ctx):
     """Removes all of bear's fish."""
     global fishNow
@@ -783,6 +890,29 @@ async def wiki(ctx, *args):
             args = [arg.title() for arg in args]
         stringSum = "_".join([arg for arg in args if arg[:1] != "-"])
         await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
+
+@bot.command(aliases=["wp"])
+async def wikipedia(ctx, request:str=False, term:str=False):
+    if request == False or term == False:
+        return await ctx.send("You must specifiy a command and keyword, such as `!wikipedia search \"Science Olympiad\"`")
+    if request == "search":
+        return await ctx.send("\n".join([f"`{result}`" for result in aiowikip.search(term, results=5)]))
+    elif request == "summary":
+        try:
+            term = term.title()
+            page = await aiowikip.page(term)
+            return await ctx.send(aiowikip.summary(term, sentences=3) + f"\n\nRead more on Wikipedia here: <{page.url}>!")
+        except wikip.exceptions.DisambiguationError as e:
+            return await ctx.send(f"Sorry, the `{term}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
+        except wikip.exceptions.PageError as e:
+            return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
+    elif request in ["link", "url"]:
+        try:
+            term = term.title()
+            page = await aiowikip.page(term)
+            return await ctx.send(f"Sure, here's the link: <{page.url}>")
+        except wikip.exceptions.PageError as e:
+            return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
 
 @bot.command()
 async def profile(ctx, name:str=False):
@@ -965,24 +1095,53 @@ async def confirm(ctx, *args: discord.Member):
 @commands.check(isStaff)
 async def nuke(ctx, count):
     """Nukes (deletes) a specified amount of messages."""
+    global STOPNUKE
+    if STOPNUKE:
+        return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
         return await ctx.send("Chill. No more than deleting 100 messages at a time.")
-    await ctx.send("INCOMING TRANSMISSION.")
+    await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
     await ctx.send("PREPARE FOR IMPACT.")
-    await ctx.send(f"NUKING {count} MESSAGES IN 3...")
-    await asyncio.sleep(1)
-    await ctx.send(f"NUKING {count} MESSAGES IN 2...")
-    await asyncio.sleep(1)
-    await ctx.send(f"NUKING {count} MESSAGES IN 1...")
-    await asyncio.sleep(1)
-    channel = ctx.message.channel
-    async for m in channel.history(limit=(int(count) + 6)):
-        if not m.pinned:
+    for i in range(10, 0, -1):
+        await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
+        await asyncio.sleep(1)
+        if STOPNUKE:
+            return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
+    if not STOPNUKE:
+        channel = ctx.message.channel
+        async for m in channel.history(limit=(int(count) + 13)):
+            if not m.pinned:
+                await m.delete()
+        await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+        await asyncio.sleep(5)
+        async for m in channel.history(limit=1):
             await m.delete()
-    await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-    await asyncio.sleep(5)
-    async for m in channel.history(limit=1):
-        await m.delete()
+
+@bot.command()
+@commands.check(isStaff)
+async def stopnuke(ctx):
+    global STOPNUKE
+    STOPNUKE = True
+    await ctx.send("TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES.")
+    await asyncio.sleep(15)
+    for i in range(5, 0, -1):
+        await ctx.send(f"NUKING WILL BE ALLOWED IN {i}. BE WARNED COMMANDER.")
+        await asyncio.sleep(1)
+    STOPNUKE = False
+
+@bot.event
+async def on_message_edit(before, after):
+    print('Message from {0.author} edited to: {0.content}, from: {1.content}'.format(after, before))
+    for word in CENSORED_WORDS:
+        if len(re.findall(fr"\b({word})\b", after.content, re.I)):
+            print(f"Censoring message by {after.author} because of the word: `{word}`")
+            await after.delete()
+            await censor(after)
+    for word in CENSORED_EMOJIS:
+        if len(re.findall(fr"{word}", after.content)):
+            print(f"Censoring message by {after.author} because of the emoji: `{word}`")
+            await after.delete()
+            await censor(after)
 
 @bot.event
 async def on_message(message):
@@ -1015,6 +1174,33 @@ async def on_message(message):
                     if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True):
                         # Check that the user can actually see the message
                         await pingPM(user['id'], str(message.author), ping, message.jump_url)
+    # SPAM TESTING
+    global RECENT_MESSAGES
+    caps = False
+    u = sum(1 for c in message.content if c.isupper())
+    l = sum(1 for c in message.content if c.islower())
+    if u > l: caps = True
+    RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
+    # Spam checker
+    if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
+        mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
+        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
+        CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
+        await message.author.add_roles(mutedRole)
+        await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+        await autoReport("User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
+    elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
+        await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
+    # Caps checker
+    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 6 and caps:
+        mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
+        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
+        CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
+        await message.author.add_roles(mutedRole)
+        await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+        await autoReport("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
+    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
+        await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
     await bot.process_commands(message)
 
 @bot.event
@@ -1082,6 +1268,9 @@ async def on_user_update(before, after):
 async def on_raw_message_delete(payload):
     if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]: 
         print("Ignoring deletion event because of the channel it's from.")
+        return
+    if payload.cached_message.author.id == PI_BOT_BETA_ID or payload.cached_message.author.id == PI_BOT_ID:
+        print("Ignoring deletion event because message is from Pi-Bot.")
         return
     deletedChannel = bot.get_channel(DELETED_CHANNEL_ID)
     try:

@@ -3,7 +3,6 @@ python-dotenv
 webcolors
 requests
 asyncio
-gspread
 setuptools
 pywikibot
 splinter
@@ -14,3 +13,6 @@ tabulate
 numpy
 matplotlib
 dateparser
+wikipedia
+aioify
+gspread-asyncio

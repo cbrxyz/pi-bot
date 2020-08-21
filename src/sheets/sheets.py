@@ -1,16 +1,37 @@
-import gspread
+import gspread_asyncio
+from oauth2client.service_account import ServiceAccountCredentials
 import json
 import os
+import asyncio
+from datetime import datetime
+from aioify import aioify
 from dotenv import load_dotenv
 
-def getWorksheet():
-    """Returns the Pi-Bot Administrative Sheet, accessible to Pi-Bot administrators."""
-    return discordSheet
+SHEET_NAME = "Pi-Bot Administrative Sheet"
 
-def buildServiceAccount():
+def get_creds():
+    return ServiceAccountCredentials.from_json_keyfile_name(
+        "service_account.json",
+        [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive",
+            "https://www.googleapis.com/auth/spreadsheets",
+        ],
+    )
+
+agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
+
+aios = aioify(obj=os, name='aios')
+
+async def getWorksheet():
+    """Returns the Pi-Bot Administrative Sheet, accessible to Pi-Bot administrators."""
+    agc = await agcm.authorize()
+    return await agc.open(SHEET_NAME)
+
+async def buildServiceAccount():
     """Builds the service account used to access the administrative sheet."""
     load_dotenv()
-    devMode = os.getenv('DEV_MODE') == "TRUE"
+    devMode = await aios.getenv('DEV_MODE') == "TRUE"
     if devMode:
         data = {
             "type": "service_account",
@@ -41,23 +62,41 @@ def buildServiceAccount():
         json.dump(data, f)
     print("Service account built.")
 
-async def sendVariables(dataArr):
+async def sendVariables(dataArr, type):
     """Sends variable backups to the Administrative Sheet."""
-    sheet = getWorksheet()
-    varSheet = sheet.worksheet("Variable Backup")
-    varSheet.update("C3:C7", dataArr)
-    print("Stored variables in Google Sheet.")
+    agc = await agcm.authorize()
+    ss = await agc.open(SHEET_NAME)
+    if type == "variable":
+        varSheet = await ss.worksheet("Variable Backup")
+        await varSheet.batch_update([{
+            'range': "C3:C7",
+            'values': dataArr
+        }])
+        print("Stored variables in Google Sheet.")
+    elif type == "store":
+        storedVarSheet = await ss.worksheet("Stored Variable Backup")
+        await storedVarSheet.append_row([str(datetime.now())] + [v[0] for v in dataArr])
+        print("Stored variables in the long-term area.")
 
 async def getVariables():
     """Gets the previous variables, so that when Pi-Bot is restarted, the ping information is not lost."""
-    sheet = getWorksheet()
-    varSheet = sheet.worksheet("Variable Backup")
-    dataArr = varSheet.get("C3:C7")
+    agc = await agcm.authorize()
+    ss = await agc.open(SHEET_NAME)
+    varSheet = await ss.worksheet("Variable Backup")
+    dataArr = await varSheet.batch_get(["C3:C7"])
+    dataArr = dataArr[0]
     for row in dataArr:
         row[0] = json.loads(row[0])
     return dataArr
 
-buildServiceAccount()
-gc = gspread.service_account(filename="service_account.json")
-discordSheet = gc.open("Pi-Bot Administrative Sheet")
-print("Initialized gspread.")
+async def getStarted():
+    await buildServiceAccount()
+    agc = await agcm.authorize()
+    ss = await agc.open("Pi-Bot Administrative Sheet")
+    print("Initialized gspread.")
+
+async def getRawCensor():
+    ss = await getWorksheet()
+
+event_loop = asyncio.get_event_loop()
+asyncio.ensure_future(getStarted(), loop = event_loop)

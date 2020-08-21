@@ -1,10 +1,12 @@
 from src.sheets.sheets import getWorksheet
 
-def getCensor():
+async def getCensor():
     """Creates Pi-Bot's censor."""
-    discordSheet = getWorksheet()
-    eventSheet = discordSheet.worksheet("Censor Management")
-    words = eventSheet.get("B3:C1000")
+    discordSheet = await getWorksheet()
+    eventSheet = await discordSheet.worksheet("Censor Management")
+    words = await eventSheet.batch_get(["B3:C1000"])
+    words = words[0]
+    words = words[0]
     CENSORED_WORDS = []
     CENSORED_EMOJIS = []
     for row in words:
