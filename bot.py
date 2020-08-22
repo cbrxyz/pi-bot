@@ -15,6 +15,7 @@ from discord import channel
 from discord.ext import commands, tasks
 
 from src.wiki.tournaments import getInviteTable
+from src.wiki.stylist import prettifyTemplates
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
@@ -109,6 +110,7 @@ async def on_ready():
     refreshSheet.start()
     postSomething.start()
     cron.start()
+    goStylist.start()
     storeVariables.start()
     changeBotStatus.start()
 
@@ -122,6 +124,10 @@ async def refreshSheet():
 @tasks.loop(hours=10)
 async def storeVariables():
     await prepareForSending("store")
+
+@tasks.loop(hours=24)
+async def goStylist():
+    await prettifyTemplates()
 
 @tasks.loop(minutes=1)
 async def cron():
@@ -320,7 +326,7 @@ async def about(ctx):
 async def invites(ctx):
     """Fetches the invite table."""
     await ctx.send("Fetching invites...")
-    message = getInviteTable()
+    message = await getInviteTable()
     await ctx.send(f"```\n{message}```")
 
 @bot.command()

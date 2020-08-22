@@ -2,23 +2,38 @@ from dotenv import load_dotenv, find_dotenv
 import os
 load_dotenv(find_dotenv())
 import pywikibot
+import asyncio
+from aioify import aioify
+
+aiopwb = aioify(obj=pywikibot, name='aiopwb')
 
 site = None
 
-def initWiki():
+async def initWiki():
     """Initializes the wiki function."""
     with open("password.py", "w+") as f:
         f.write(f"(\"{os.getenv('PI_BOT_WIKI_USERNAME')}\", \"{os.getenv('PI_BOT_WIKI_PASSWORD')}\")")
     global site
-    site = pywikibot.Site()
+    site = await aiopwb.Site()
+    site.login()
     print("Wiki initalized.")
 
-def getPageText(pageName):
+async def getPageText(pageName):
     """Gets the text of a page on the wiki."""
-    return pywikibot.Page(site, pageName).text
+    site = await aiopwb.Site()
+    return aiopwb.Page(site, pageName).text
 
-def uploadFile(filePath, title, comment):
-    site = pywikibot.Site()
-    site.upload()
+async def setPageText(pageName, text, summary, minor=False):
+    page = aiopwb.Page(site, pageName)
+    page.text = text
+    await page.save(summary=summary, minor=minor, asynchronous=True)
 
-initWiki()
+async def uploadFile(filePath, title, comment):
+    site = await aiopwb.Site()
+    await site.upload()
+
+async def allPages():
+    return site.allpages()
+
+event_loop = asyncio.get_event_loop()
+asyncio.ensure_future(initWiki(), loop = event_loop)

@@ -1,17 +1,21 @@
 import wikitextparser as wtp
 import time
 from tabulate import tabulate
+from aioify import aioify
 
 from src.wiki.wiki import getPageText
 
-def getInvitesPage():
+aiowtp = aioify(obj=wtp, name='aiowtp')
+
+async def getInvitesPage():
     """Handles the invitational page."""
-    tournamentsPage = getPageText("Invitational")
+    tournamentsPage = await getPageText("Invitational")
+    tournamentsPage = str(tournamentsPage)
     wikitext = wtp.parse(tournamentsPage)
     return wikitext.tables
 
-def getInviteTable():
-    tables = getInvitesPage()
+async def getInviteTable():
+    tables = await getInvitesPage()
     tables = [table.data() for table in tables]
     inviteTable = tables[0]
     iTHeaders = inviteTable.pop(0)
@@ -23,8 +27,9 @@ def getInviteTable():
         del row[4]
         del row[4]
         del row[4]
+    print("made it to here 2")
     for row in inviteTable:
         for i, cell in enumerate(row):
-            if len(wtp.parse(cell).wikilinks) > 0:
-                row[i] = wtp.parse(cell).wikilinks[0].title
+            if len(aiowtp.parse(cell).wikilinks) > 0:
+                row[i] = aiowtp.parse(cell).wikilinks[0].title
     return tabulate(tables[0], iTHeaders, tablefmt="psql")
