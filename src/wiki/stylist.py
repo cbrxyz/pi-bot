@@ -16,6 +16,10 @@ async def prettifyTemplates():
         title = page.title()
         parsed = wtp.parse(text)
         for template in parsed.templates:
+            print(template)
+            print(template.normal_name())
+            print(template.pformat())
+            print(template.arguments)
             if len(template.arguments) > 3:
                 pformat = template.pformat()
                 text = text.replace(str(template), pformat)
