@@ -22,6 +22,6 @@ async def prettifyTemplates():
             print(template.arguments)
             if len(template.arguments) > 3:
                 pformat = template.pformat()
-                text = text.replace(str(template), pformat)
+                # text = text.replace(str(template), pformat)
         await setPageText(str(title), str(text), "Styled templates into pretty format. For any comments/concerns, please contact [[User:Pepperonipi]].", minor=True)
         await asyncio.sleep(20)
