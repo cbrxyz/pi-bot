@@ -16,6 +16,8 @@ async def initWiki():
     global site
     site = await aiopwb.Site()
     site.login()
+    await testSave()
+    await asyncio.sleep(12)
     print("Wiki initalized.")
 
 async def getPageText(pageName):
@@ -27,6 +29,9 @@ async def setPageText(pageName, text, summary, minor=False):
     page = aiopwb.Page(site, pageName)
     page.text = text
     await page.save(summary=summary, minor=minor, asynchronous=True)
+
+async def testSave():
+    await setPageText("User:Pi-Bot/Test", "test 2", "Testing.")
 
 async def uploadFile(filePath, title, comment):
     site = await aiopwb.Site()
