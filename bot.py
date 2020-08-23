@@ -34,8 +34,10 @@ devMode = os.getenv('DEV_MODE') == "TRUE"
 
 if devMode:
     bot = commands.Bot(command_prefix=("bp", "?"))
+    SERVER_ID = 739647413093924864
 else:
     bot = commands.Bot(command_prefix=("pb ", "!"))
+    SERVER_ID = 698306997287780363
 
 ##############
 # CHECKS
@@ -63,11 +65,12 @@ async def isAdmin(ctx):
 ##############
 # CONSTANTS
 ##############
-PI_BOT_ID = 723767075427844106
-PI_BOT_BETA_ID = 743254543952904197
+PI_BOT_IDS = [
+    723767075427844106,
+    743254543952904197
+]
 RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
-SERVER_ID = 698306997287780363
 DELETED_CHANNEL_ID = 745799668411400304
 
 ##############
@@ -661,7 +664,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
     """Kicks a user for the specified reason."""
     if reason == False:
         return await ctx.send("Please specify a reason why you want to kick this user!")
-    if user.id == PI_BOT_ID or user.id == PI_BOT_BETA_ID:
+    if user.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't kick me!!")
     await user.kick(reason=reason)
     await ctx.send("The user was kicked.")
@@ -966,7 +969,7 @@ async def unexalt(ctx, user):
 @commands.check(isStaff)
 async def mute(ctx, user:discord.Member, time=None):
     """Mutes a user."""
-    if user.id == PI_BOT_ID or user.id == PI_BOT_BETA_ID:
+    if user.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
         return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
@@ -1001,7 +1004,7 @@ async def ban(ctx, member:discord.User=None, reason=None, time=None):
         return await ctx.send("You need to give a reason for you banning this user.")
     if time == None:
         return await ctx.send("You need to specify a length that this used will be banned. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-    if member.id == PI_BOT_ID or member.id == PI_BOT_BETA_ID:
+    if member.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't ban me!!")
     message = f"You have been banned from the Scioly.org Discord server for {reason}."
     parsed = "indef"
@@ -1078,7 +1081,7 @@ async def confirm(ctx, *args: discord.Member):
         async for message in ctx.message.channel.history(oldest_first=True):
             # Delete any messages sent by Pi-Bot where message before is by member
             if f > 0:
-                if message.author.id == PI_BOT_ID and beforeMessage.author == member and len(message.embeds) == 0:
+                if message.author.id in PI_BOT_IDS and beforeMessage.author == member and len(message.embeds) == 0:
                     await message.delete()
                 
                 # Delete any messages by user
@@ -1152,7 +1155,7 @@ async def on_message_edit(before, after):
 @bot.event
 async def on_message(message):
     print('Message from {0.author}: {0.content}'.format(message))
-    if message.author.id == PI_BOT_ID or message.author.id == PI_BOT_BETA_ID: return
+    if message.author.id in PI_BOT_IDS: return
     content = message.content
     pingable = True
     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
@@ -1211,7 +1214,7 @@ async def on_message(message):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.user_id != PI_BOT_ID and payload.user_id != PI_BOT_BETA_ID:
+    if payload.user_id not in PI_BOT_IDS:
         reportsChannel = bot.get_channel(739596418762801213)
         if payload.message_id in REPORT_IDS:
             messageObj = await reportsChannel.fetch_message(payload.message_id)
@@ -1275,7 +1278,7 @@ async def on_raw_message_delete(payload):
     if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]: 
         print("Ignoring deletion event because of the channel it's from.")
         return
-    if payload.cached_message.author.id == PI_BOT_BETA_ID or payload.cached_message.author.id == PI_BOT_ID:
+    if payload.cached_message.author.id in PI_BOT_IDS:
         print("Ignoring deletion event because message is from Pi-Bot.")
         return
     deletedChannel = bot.get_channel(DELETED_CHANNEL_ID)
