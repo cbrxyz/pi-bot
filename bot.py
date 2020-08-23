@@ -527,6 +527,9 @@ async def ping(ctx, command="", *args):
                 if arg in pings:
                     await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
                     ignoredList.append(arg)
+                if f"\\b({arg})\\b" in pings:
+                    await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
+                    ignoredList.append(arg)
                 else:
                     if command.lower() in ["add", "new"]:
                         print("adding word")
@@ -549,9 +552,14 @@ async def ping(ctx, command="", *args):
             if arg == "all":
                 user['pings'] = []
                 return await ctx.send("I removed all of your pings.")
+            print(user['pings'])
+            print(f"\\b({arg})\\b" in user['pings'])
             if arg in user['pings']:
                 user['pings'].remove(arg)
-                await ctx.send("Found the ping you are referencing... attemping to remove.")
+                await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
+            elif f"\\b({arg})\\b" in user['pings']:
+                user['pings'].remove(f"\\b({arg})\\b")
+                await ctx.send(f"I removed the `{arg}` word ping you were referencing.")
             else:
                 return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
         return await ctx.send("I removed all pings you requested.")
@@ -560,7 +568,18 @@ async def ping(ctx, command="", *args):
         if user == None or len(user['pings']) == 0:
             return await ctx.send("You have no registered pings.")
         else:
-            return await ctx.send("Your pings are: " + ", ".join([f"`{regex}`" for regex in user['pings']]))
+            pings = user['pings']
+            regexPings = []
+            wordPings = []
+            for ping in pings:
+                if ping[:2] == "\\b":
+                    wordPings.append(ping)
+                else:
+                    regexPings.append(ping)
+            if len(regexPings) > 0:
+                await ctx.send("Your RegEx pings are: " + ", ".join([f"`{regex}`" for regex in regexPings]))
+            if len(wordPings) > 0:
+                await ctx.send("Your word pings are: " + ", ".join([f"`{word[3:-3]}`" for word in wordPings]))
     elif command.lower() in ["test", "try"]:
         user = next((u for u in PING_INFO if u['id'] == member), None)
         usersPings = user['pings']
