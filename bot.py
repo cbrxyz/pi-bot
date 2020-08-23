@@ -643,6 +643,11 @@ async def shibabomb(ctx, member:str=False):
     await ctx.send(f"{member}, <@{ctx.message.author.id}> shiba bombed you!!")
 
 @bot.command()
+async def me(ctx, *args):
+    """Replaces the good ol' /me"""
+    await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
+
+@bot.command()
 async def list(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
     if cmd == False or cmd == "commands":
