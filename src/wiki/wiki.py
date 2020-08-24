@@ -32,8 +32,8 @@ async def uploadFile(filePath, title, comment):
     site = await aiopwb.Site()
     await site.upload()
 
-async def allPages():
-    return site.allpages()
+async def allPages(startTitle):
+    return site.allpages(start=startTitle)
 
 event_loop = asyncio.get_event_loop()
 asyncio.ensure_future(initWiki(), loop = event_loop)

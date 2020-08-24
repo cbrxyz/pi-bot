@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from discord import channel
 from discord.ext import commands, tasks
 
-from src.wiki.tournaments import getInviteTable
+from src.wiki.tournaments import getTournamentList
 from src.wiki.stylist import prettifyTemplates
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
@@ -357,6 +357,11 @@ async def tourney(ctx):
         await member.add_roles(role)
         await autoReport("Member Applied for Tournament Role", "DarkCyan", f"{ctx.message.author.name} applied for the Tournament role. Please verify that they are a tournament.")
         await ctx.send("Successfully gave you the Tournament role, and sent a verification message to staff.")
+
+@bot.command(aliases=["tourneys", "comps", "competitions"])
+async def tournaments(ctx, *args):
+    """Coming soon"""
+    pass
 
 @bot.command(aliases=["state"])
 async def states(ctx, *args):

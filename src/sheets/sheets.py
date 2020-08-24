@@ -101,5 +101,16 @@ async def getRawCensor():
     words = await eventSheet.batch_get(["B3:C1000"])
     return words
 
+async def updateWikiPage(title):
+    ss = await getWorksheet()
+    varSheet = await ss.worksheet("Variable Backup")
+    await varSheet.update_acell('C8', title)
+
+async def getWikiPage():
+    ss = await getWorksheet()
+    varSheet = await ss.worksheet("Variable Backup")
+    res = await varSheet.batch_get(["C8"])
+    return res[0][0][0]
+
 event_loop = asyncio.get_event_loop()
 asyncio.ensure_future(getStarted(), loop = event_loop)
