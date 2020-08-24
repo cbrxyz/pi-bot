@@ -97,6 +97,9 @@ async def getStarted():
 
 async def getRawCensor():
     ss = await getWorksheet()
+    eventSheet = await ss.worksheet("Censor Management")
+    words = await eventSheet.batch_get(["B3:C1000"])
+    return words
 
 event_loop = asyncio.get_event_loop()
 asyncio.ensure_future(getStarted(), loop = event_loop)

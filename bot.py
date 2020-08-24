@@ -268,7 +268,7 @@ async def pullPrevInfo():
     print("Fetched previous variables.")
 
 @bot.command()
-@commands.check(isAdmin)
+@commands.check(isStaff)
 async def getVariable(ctx, var):
     """Fetches a local variable."""
     if ctx.message.channel.id != 724125340733145140:
@@ -1181,6 +1181,16 @@ async def on_message(message):
     print('Message from {0.author}: {0.content}'.format(message))
     if message.author.id in PI_BOT_IDS: return
     content = message.content
+    for word in CENSORED_WORDS:
+        if len(re.findall(fr"\b({word})\b", content, re.I)):
+            print(f"Censoring message by {message.author} because of the word: `{word}`")
+            await message.delete()
+            await censor(message)
+    for word in CENSORED_EMOJIS:
+        if len(re.findall(fr"{word}", content)):
+            print(f"Censoring message by {message.author} because of the emoji: `{word}`")
+            await message.delete()
+            await censor(message)
     pingable = True
     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
         pingable = False
@@ -1188,16 +1198,6 @@ async def on_message(message):
         # If the message is coming from #bot-spam
         pingable = False
     if pingable:
-        for word in CENSORED_WORDS:
-            if len(re.findall(fr"\b({word})\b", content, re.I)):
-                print(f"Censoring message by {message.author} because of the word: `{word}`")
-                await message.delete()
-                await censor(message)
-        for word in CENSORED_EMOJIS:
-            if len(re.findall(fr"{word}", content)):
-                print(f"Censoring message by {message.author} because of the emoji: `{word}`")
-                await message.delete()
-                await censor(message)
         for user in PING_INFO:
             if user['id'] == message.author.id:
                 continue

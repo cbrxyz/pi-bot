@@ -1,11 +1,8 @@
-from src.sheets.sheets import getWorksheet
+from src.sheets.sheets import getRawCensor
 
 async def getCensor():
     """Creates Pi-Bot's censor."""
-    discordSheet = await getWorksheet()
-    eventSheet = await discordSheet.worksheet("Censor Management")
-    words = await eventSheet.batch_get(["B3:C1000"])
-    words = words[0]
+    words = await getRawCensor()
     words = words[0]
     CENSORED_WORDS = []
     CENSORED_EMOJIS = []
