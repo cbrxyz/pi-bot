@@ -14,12 +14,12 @@ from dotenv import load_dotenv
 from discord import channel
 from discord.ext import commands, tasks
 
-from src.wiki.tournaments import getTournamentList
-from src.wiki.stylist import prettifyTemplates
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
 from src.forums.forums import openBrowser
+from src.wiki.stylist import prettifyTemplates
+from src.wiki.tournaments import getTournamentList
 from info import getAbout
 from doggo import getDoggo, getShiba
 from bear import getBearMessage

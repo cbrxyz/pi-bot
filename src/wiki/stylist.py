@@ -14,6 +14,7 @@ CURRENT_WIKI_PAGE = ""
 aiopwb = aioify(obj=pywikibot, name='aiopwb')
 
 async def prettifyTemplates():
+    await init()
     global CURRENT_WIKI_PAGE
     pages = await allPages(CURRENT_WIKI_PAGE)
     pageId = 0
@@ -37,9 +38,7 @@ async def prettifyTemplates():
         pageId += 1
 
 async def init():
+    await asyncio.sleep(5)
     global CURRENT_WIKI_PAGE
     CURRENT_WIKI_PAGE = await getWikiPage()
     print(f"Wiki module set to start at the {CURRENT_WIKI_PAGE} page.")
-
-event_loop = asyncio.get_event_loop()
-asyncio.ensure_future(init(), loop = event_loop)
