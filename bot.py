@@ -34,7 +34,7 @@ devMode = os.getenv('DEV_MODE') == "TRUE"
 
 if devMode:
     bot = commands.Bot(command_prefix=("bp", "?"))
-    SERVER_ID = 739647413093924864
+    SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
     bot = commands.Bot(command_prefix=("pb ", "!"))
     SERVER_ID = 698306997287780363
@@ -170,6 +170,7 @@ async def handleCron(string):
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
+    """
     botStatus = math.floor(random.random() * 24)
     if botStatus == 0:
         await bot.change_presence(activity=discord.Game(name="Game On"))
@@ -218,7 +219,11 @@ async def changeBotStatus():
     elif botStatus == 22:
         await bot.change_presence(activity=discord.Game(name="the flute"))
     elif botStatus == 23:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="bear eat users"))
+    await
+    bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
+    name="bear eat users"))
+    """
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the server launch!"))
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)
@@ -888,16 +893,22 @@ async def sanitizeMention(member):
 async def division(ctx, div):
     if div.lower() == "a":
         res = await assignDiv(ctx, "Division A")
-        await ctx.send("Assigned you the Division A role.")
+        await ctx.send("Assigned you the Division A role, and removed all other divison/alumni roles.")
     elif div.lower() == "b":
         res = await assignDiv(ctx, "Division B")
-        await ctx.send("Assigned you the Division B role.")
+        await ctx.send("Assigned you the Division B role, and removed all other divison/alumni roles.")
     elif div.lower() == "c":
         res = await assignDiv(ctx, "Division C")
-        await ctx.send("Assigned you the Division C role.")
+        await ctx.send("Assigned you the Division C role, and removed all other divison/alumni roles.")
     elif div.lower() == "d":
-        res = await assignDiv(ctx, "Division D")
-        await ctx.send("Assigned you the Division D role.")
+        await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
+    elif div.lower() in ["remove", "clear", "none", "x"]:
+        member = ctx.message.author
+        divArole = discord.utils.get(member.guild.roles, name="Division A")
+        divBrole = discord.utils.get(member.guild.roles, name="Division B")
+        divCrole = discord.utils.get(member.guild.roles, name="Division C")
+        await member.remove_roles(divArole, divBrole, divCrole)
+        await ctx.send("Removed all of your division/alumni roles.")
     else:
         return await ctx.send("Sorry, I don't seem to see that division. Try `!division c` to assign the Division C role, or `!division d` to assign the Division D role.")
 
@@ -908,10 +919,26 @@ async def assignDiv(ctx, div):
     divArole = discord.utils.get(member.guild.roles, name="Division A")
     divBrole = discord.utils.get(member.guild.roles, name="Division B")
     divCrole = discord.utils.get(member.guild.roles, name="Division C")
-    divDrole = discord.utils.get(member.guild.roles, name="Division D")
-    await member.remove_roles(divArole, divBrole, divCrole, divDrole)
+    alumnirole = discord.utils.get(member.guild.roles, name="Alumni")
+    await member.remove_roles(divArole, divBrole, divCrole, alumnirole)
     await member.add_roles(role)
     return True
+
+@bot.command()
+async def alumni(ctx):
+    """Removes or adds the alumni role from a user."""
+    member = ctx.message.author
+    divArole = discord.utils.get(member.guild.roles, name="Division A")
+    divBrole = discord.utils.get(member.guild.roles, name="Division B")
+    divCrole = discord.utils.get(member.guild.roles, name="Division C")
+    await member.remove_roles(divArole, divBrole, divCrole)
+    role = discord.utils.get(member.guild.roles, name="Alumni")
+    if role in member.roles:
+        await member.remove_roles(role)
+        await ctx.send("Removed your alumni status.")
+    else:
+        await member.add_roles(role)
+        await ctx.send(f"Added the alumni role, and removed all other division roles.")
 
 @bot.command()
 async def wiki(ctx, *args):
