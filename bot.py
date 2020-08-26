@@ -60,7 +60,7 @@ async def isLauncher(ctx):
     """Checks to see if the user is a launch helper."""
     member = ctx.message.author
     staff = await isStaff(ctx)
-    lhRole = discord.utils.get(member.guild.roles, name="Launch Helper 🚀")
+    lhRole = discord.utils.get(member.guild.roles, name="Launch Helper")
     if staff or lhRole in member.roles: return True
 
 async def isAdmin(ctx):
