@@ -21,6 +21,9 @@ async def prettifyTemplates():
     for page in pages:
         text = page.text
         title = page.title()
+        
+        ## Action 1: Replacing {{PAGENAME}} magic word with actual page title
+        text = text.replace(r"{{PAGENAME}}", title)
         CURRENT_WIKI_PAGE = title
         if pageId > 5:
             pageId = 0
@@ -29,11 +32,13 @@ async def prettifyTemplates():
         for template in parsed.templates:
             if len(template.arguments) > 3:
                 try:
+
+                    ## Action 2: Replacing template with pretty styled format
                     text = text.replace(str(template), str(template.pformat()))
                 except Exception as e:
                     print("ERROR on text replace:")
                     print(e)
-        await setPageText(str(title), str(text), "Styled templates into pretty format. For any comments/concerns, please contact [[User:Pepperonipi]].", minor=True)
+        await setPageText(str(title), str(text), "Styled the page according to my stylist. For concerns, see my user page.", minor=True)
         await asyncio.sleep(20)
         pageId += 1
 

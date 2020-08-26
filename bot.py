@@ -55,6 +55,13 @@ async def isStaff(ctx):
     aRole = discord.utils.get(member.guild.roles, name="Administrator")
     vipRole = discord.utils.get(member.guild.roles, name="VIP")
     if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
+    
+async def isLauncher(ctx):
+    """Checks to see if the user is a launch helper."""
+    member = ctx.message.author
+    staff = await isStaff(ctx)
+    lhRole = discord.utils.get(member.guild.roles, name="Launch Helper 🚀")
+    if staff or lhRole in member.roles: return True
 
 async def isAdmin(ctx):
     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
@@ -1101,7 +1108,7 @@ async def pronouns(ctx, *args):
             "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(isLauncher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
     for i, member in enumerate(args):
