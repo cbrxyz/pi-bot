@@ -262,7 +262,7 @@ COMMAND_INFO = [
     {
         "name": "states",
         "description": "toggles specific state roles for a user",
-        "aliases": [],
+        "aliases": ["state"],
         "parameters": [
             {
                 "name": "state1",
@@ -316,7 +316,7 @@ COMMAND_INFO = [
     {
         "name": "division",
         "description": "gives the user a division role",
-        "aliases": [],
+        "aliases": ["div"],
         "parameters": [
             {
                 "name": "division",
