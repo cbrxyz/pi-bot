@@ -33,10 +33,10 @@ DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
 devMode = os.getenv('DEV_MODE') == "TRUE"
 
 if devMode:
-    bot = commands.Bot(command_prefix=("bp", "?"))
+    bot = commands.Bot(command_prefix=("bp", "?"), case_insensitive=True)
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
-    bot = commands.Bot(command_prefix=("pb ", "!"))
+    bot = commands.Bot(command_prefix=("pb ", "!"), case_insensitive=True)
     SERVER_ID = 698306997287780363
 
 ##############
@@ -1215,12 +1215,13 @@ async def on_message_edit(before, after):
         if len(re.findall(fr"\b({word})\b", after.content, re.I)):
             print(f"Censoring message by {after.author} because of the word: `{word}`")
             await after.delete()
-            await censor(after)
     for word in CENSORED_EMOJIS:
         if len(re.findall(fr"{word}", after.content)):
             print(f"Censoring message by {after.author} because of the emoji: `{word}`")
             await after.delete()
-            await censor(after)
+    if len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0:
+        print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
+        await after.delete()
 
 @bot.event
 async def on_message(message):
@@ -1237,6 +1238,10 @@ async def on_message(message):
             print(f"Censoring message by {message.author} because of the emoji: `{word}`")
             await message.delete()
             await censor(message)
+    if len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0:
+        print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
+        await message.delete()
+        await message.channel.send("<censored>")
     pingable = True
     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
         pingable = False
