@@ -386,6 +386,9 @@ async def states(ctx, *args):
     doubleWordStates = [s for s in states if len(s.split(" ")) > 1]
     removedRoles = []
     addedRoles = []
+    for term in ["california", "ca", "cali"]:
+        if term in [arg.lower() for arg in args]:
+            return await ctx.send("Which California, North or South? Try `!state norcal` or `!state socal`.")
     if len(newArgs) < 1:
         return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
     elif len(newArgs) > 10:
@@ -461,8 +464,7 @@ async def states(ctx, *args):
 @bot.command()
 async def games(ctx):
     """Removes or adds someone to the games channel."""
-    GAMES_CHANNEL = 740046587006419014
-    jbcObj = bot.get_channel(GAMES_CHANNEL)
+    jbcObj = channel = discord.utils.get(ctx.message.author.guild.text_channels, name="games")
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name="Games")
     if role in member.roles:
@@ -481,7 +483,7 @@ async def report(ctx, *args):
         return await ctx.send("Please report one message wrapped in double quotes. (`!report \"Message!\"`)")
     message = args[0]
     poster = str(ctx.message.author)
-    reportsChannel = bot.get_channel(739596418762801213)
+    reportsChannel = discord.utils.get(ctx.message.author.guild.text_channels, name="reports")
     embed = assembleEmbed(
         title=f"Report Received (using `!report`)",
         webcolor="red",
@@ -1164,10 +1166,13 @@ async def confirm(ctx, *args: discord.Member):
         await message.delete()
 
 @bot.command()
-@commands.check(isStaff)
 async def nuke(ctx, count):
     """Nukes (deletes) a specified amount of messages."""
     global STOPNUKE
+    launcher = await isLauncher(ctx)
+    staff = await isStaff(ctx)
+    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if STOPNUKE:
         return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
