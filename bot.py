@@ -690,7 +690,6 @@ async def list(ctx, cmd:str=False):
 async def censor(message):
     """Constructs Pi-Bot's censor."""
     channel = message.channel
-    author = message.author.name
     ava = message.author.avatar_url
     wh = await channel.create_webhook(name="Censor (Automated)")
     content = message.content
@@ -698,6 +697,9 @@ async def censor(message):
         content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
     for word in CENSORED_EMOJIS:
         content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
+    author = message.author.nick
+    if author == None:
+        author = message.author.name
     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
     await wh.delete()
 
