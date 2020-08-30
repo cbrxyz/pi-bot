@@ -464,7 +464,7 @@ async def states(ctx, *args):
 @bot.command()
 async def games(ctx):
     """Removes or adds someone to the games channel."""
-    jbcObj = channel = discord.utils.get(ctx.message.author.guild.text_channels, name="games")
+    jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name="games")
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name="Games")
     if role in member.roles:
@@ -1010,6 +1010,11 @@ async def profile(ctx, name:str=False):
     )
     await ctx.send(embed=embed)
 
+@bot.command(aliases=["membercount"])
+async def count(ctx):
+    guild = ctx.message.author.guild
+    await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
+
 @bot.command()
 @commands.check(isStaff)
 async def exalt(ctx, user):
@@ -1303,37 +1308,17 @@ async def on_raw_reaction_add(payload):
 @bot.event
 async def on_member_join(member):
     role = discord.utils.get(member.guild.roles, name="Unconfirmed")
-    message = ("We're super excited to have you here. Whether you've never competed before, or are a long-standing tournament director, there's something here for everyone." +
-        "\n\n" + 
-        "**__What do I do first?__**\n" + 
-        f"First, read over the rules in the <#{RULES_CHANNEL_ID}> channel. That will help you get yourself familiarzied for the guidelines we expect all of our users to hold. " + 
-        f"After doing that, head over to the <#{WELCOME_CHANNEL_ID}> channel, where all new users join." +
-        "\n\n" + 
-        "**__What do I do in the #welcome channel?__**\n" + 
-        "In this channel, you can request roles to identify yourself around the server using the server's resident bot, Pi-Bot. (Yep, that's me!) " +
-        "Here's a list of the commands you can run:\n" +
-        "`!pronouns he / she / they` (such as `!pronouns they`) will give you pronoun roles.\n" + 
-        "`!division a / b / c / d` (such as `!division c`) will give you division roles.\n" +
-        "`!events ...` (such as `!events detector`) will give you event roles.\n" +
-        "`!state ...` (such as `!state FL AK`) will give you state roles.\n" +
-        "`!coach` will give you the Coach role, if you're a team coach." +
-        "\n\n" + 
-        "**__I've done that, now what?__**\n" + 
-        "After adding some roles, a moderator will confirm you, which gives you access to the rest of the server. There might be a slight delay until a moderator confirms you." +
-        "\n\n" + 
-        f"That's pretty much it. If you need any help, you're welcome to ask for it in <#{WELCOME_CHANNEL_ID}>. Thanks for joining; I'll see you around!")
-    embed = assembleEmbed(
-        title=":wave: Welcome to the Scioly.org Discord Server!",
-        desc=message,
-        hexcolor="#2E66B6",
-        thumbnailUrl="https://cdn.discordapp.com/avatars/739217945174999060/7527722a4ba976f6bdd1fb441db727b2.png"
-    )
+    joinChannel = discord.utils.get(member.guild.text_channels, name="welcome")
     await member.add_roles(role)
     name = member.name
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
             await autoReport("Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
-    await member.send(embed=embed)
+    await joinChannel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " + 
+    "You can add roles here, using the commands shown at the top of this channel. " + 
+    "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." + 
+    "\n\n" + 
+    "A helper or moderator will confirm you ASAP. You will then have access to the rest of the server to chat with other members!")
 
 @bot.event
 async def on_member_update(before, after):
