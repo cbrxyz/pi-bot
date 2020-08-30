@@ -33,10 +33,10 @@ DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
 devMode = os.getenv('DEV_MODE') == "TRUE"
 
 if devMode:
-    bot = commands.Bot(command_prefix=("bp", "?"))
+    bot = commands.Bot(command_prefix=("bp", "?"), case_insensitive=True)
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
-    bot = commands.Bot(command_prefix=("pb ", "!"))
+    bot = commands.Bot(command_prefix=("pb ", "!"), case_insensitive=True)
     SERVER_ID = 698306997287780363
 
 ##############
@@ -386,6 +386,9 @@ async def states(ctx, *args):
     doubleWordStates = [s for s in states if len(s.split(" ")) > 1]
     removedRoles = []
     addedRoles = []
+    for term in ["california", "ca", "cali"]:
+        if term in [arg.lower() for arg in args]:
+            return await ctx.send("Which California, North or South? Try `!state norcal` or `!state socal`.")
     if len(newArgs) < 1:
         return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
     elif len(newArgs) > 10:
@@ -461,8 +464,7 @@ async def states(ctx, *args):
 @bot.command()
 async def games(ctx):
     """Removes or adds someone to the games channel."""
-    GAMES_CHANNEL = 740046587006419014
-    jbcObj = bot.get_channel(GAMES_CHANNEL)
+    jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name="games")
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name="Games")
     if role in member.roles:
@@ -481,7 +483,7 @@ async def report(ctx, *args):
         return await ctx.send("Please report one message wrapped in double quotes. (`!report \"Message!\"`)")
     message = args[0]
     poster = str(ctx.message.author)
-    reportsChannel = bot.get_channel(739596418762801213)
+    reportsChannel = discord.utils.get(ctx.message.author.guild.text_channels, name="reports")
     embed = assembleEmbed(
         title=f"Report Received (using `!report`)",
         webcolor="red",
@@ -688,7 +690,6 @@ async def list(ctx, cmd:str=False):
 async def censor(message):
     """Constructs Pi-Bot's censor."""
     channel = message.channel
-    author = message.author.name
     ava = message.author.avatar_url
     wh = await channel.create_webhook(name="Censor (Automated)")
     content = message.content
@@ -696,6 +697,9 @@ async def censor(message):
         content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
     for word in CENSORED_EMOJIS:
         content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
+    author = message.author.nick
+    if author == None:
+        author = message.author.name
     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
     await wh.delete()
 
@@ -954,11 +958,11 @@ async def wiki(ctx, *args):
         for arg in args:
             if arg[:1] != "-":
                 arg = arg.replace(" ", "_")
-                if not ignoreCase:
+                if not ignoreCase and arg.find("SO:") == -1:
                     arg = arg.title()
                 await ctx.send(f"<https://scioly.org/wiki/index.php/{arg}>")
     else:
-        if not ignoreCase:
+        if not ignoreCase and arg.find("SO:") == -1:
             args = [arg.title() for arg in args]
         stringSum = "_".join([arg for arg in args if arg[:1] != "-"])
         await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
@@ -1005,6 +1009,11 @@ async def profile(ctx, name:str=False):
         hexcolor="#2E66B6"
     )
     await ctx.send(embed=embed)
+
+@bot.command(aliases=["membercount"])
+async def count(ctx):
+    guild = ctx.message.author.guild
+    await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -1164,10 +1173,13 @@ async def confirm(ctx, *args: discord.Member):
         await message.delete()
 
 @bot.command()
-@commands.check(isStaff)
 async def nuke(ctx, count):
     """Nukes (deletes) a specified amount of messages."""
     global STOPNUKE
+    launcher = await isLauncher(ctx)
+    staff = await isStaff(ctx)
+    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if STOPNUKE:
         return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
@@ -1208,12 +1220,13 @@ async def on_message_edit(before, after):
         if len(re.findall(fr"\b({word})\b", after.content, re.I)):
             print(f"Censoring message by {after.author} because of the word: `{word}`")
             await after.delete()
-            await censor(after)
     for word in CENSORED_EMOJIS:
         if len(re.findall(fr"{word}", after.content)):
             print(f"Censoring message by {after.author} because of the emoji: `{word}`")
             await after.delete()
-            await censor(after)
+    if len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0:
+        print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
+        await after.delete()
 
 @bot.event
 async def on_message(message):
@@ -1230,6 +1243,10 @@ async def on_message(message):
             print(f"Censoring message by {message.author} because of the emoji: `{word}`")
             await message.delete()
             await censor(message)
+    if len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0:
+        print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
+        await message.delete()
+        await message.channel.send("<censored>")
     pingable = True
     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
         pingable = False
@@ -1251,7 +1268,7 @@ async def on_message(message):
     caps = False
     u = sum(1 for c in message.content if c.isupper())
     l = sum(1 for c in message.content if c.islower())
-    if u > l: caps = True
+    if u > (l + 3): caps = True
     RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
     # Spam checker
     if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
@@ -1291,37 +1308,17 @@ async def on_raw_reaction_add(payload):
 @bot.event
 async def on_member_join(member):
     role = discord.utils.get(member.guild.roles, name="Unconfirmed")
-    message = ("We're super excited to have you here. Whether you've never competed before, or are a long-standing tournament director, there's something here for everyone." +
-        "\n\n" + 
-        "**__What do I do first?__**\n" + 
-        f"First, read over the rules in the <#{RULES_CHANNEL_ID}> channel. That will help you get yourself familiarzied for the guidelines we expect all of our users to hold. " + 
-        f"After doing that, head over to the <#{WELCOME_CHANNEL_ID}> channel, where all new users join." +
-        "\n\n" + 
-        "**__What do I do in the #welcome channel?__**\n" + 
-        "In this channel, you can request roles to identify yourself around the server using the server's resident bot, Pi-Bot. (Yep, that's me!) " +
-        "Here's a list of the commands you can run:\n" +
-        "`!pronouns he / she / they` (such as `!pronouns they`) will give you pronoun roles.\n" + 
-        "`!division a / b / c / d` (such as `!division c`) will give you division roles.\n" +
-        "`!events ...` (such as `!events detector`) will give you event roles.\n" +
-        "`!state ...` (such as `!state FL AK`) will give you state roles.\n" +
-        "`!coach` will give you the Coach role, if you're a team coach." +
-        "\n\n" + 
-        "**__I've done that, now what?__**\n" + 
-        "After adding some roles, a moderator will confirm you, which gives you access to the rest of the server. There might be a slight delay until a moderator confirms you." +
-        "\n\n" + 
-        f"That's pretty much it. If you need any help, you're welcome to ask for it in <#{WELCOME_CHANNEL_ID}>. Thanks for joining; I'll see you around!")
-    embed = assembleEmbed(
-        title=":wave: Welcome to the Scioly.org Discord Server!",
-        desc=message,
-        hexcolor="#2E66B6",
-        thumbnailUrl="https://cdn.discordapp.com/avatars/739217945174999060/7527722a4ba976f6bdd1fb441db727b2.png"
-    )
+    joinChannel = discord.utils.get(member.guild.text_channels, name="welcome")
     await member.add_roles(role)
     name = member.name
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
             await autoReport("Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
-    await member.send(embed=embed)
+    await joinChannel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " + 
+    "You can add roles here, using the commands shown at the top of this channel. " + 
+    "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." + 
+    "\n\n" + 
+    "A helper or moderator will confirm you ASAP. You will then have access to the rest of the server to chat with other members!")
 
 @bot.event
 async def on_member_update(before, after):
