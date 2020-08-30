@@ -958,11 +958,11 @@ async def wiki(ctx, *args):
         for arg in args:
             if arg[:1] != "-":
                 arg = arg.replace(" ", "_")
-                if not ignoreCase:
+                if not ignoreCase and arg.find("SO:") == -1:
                     arg = arg.title()
                 await ctx.send(f"<https://scioly.org/wiki/index.php/{arg}>")
     else:
-        if not ignoreCase:
+        if not ignoreCase and arg.find("SO:") == -1:
             args = [arg.title() for arg in args]
         stringSum = "_".join([arg for arg in args if arg[:1] != "-"])
         await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
@@ -1263,7 +1263,7 @@ async def on_message(message):
     caps = False
     u = sum(1 for c in message.content if c.isupper())
     l = sum(1 for c in message.content if c.islower())
-    if u > l: caps = True
+    if u > (l + 3): caps = True
     RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
     # Spam checker
     if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
