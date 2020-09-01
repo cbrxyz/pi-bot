@@ -78,7 +78,6 @@ PI_BOT_IDS = [
 ]
 RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
-DELETED_CHANNEL_ID = 745799668411400304
 
 ##############
 # VARIABLES
@@ -473,7 +472,7 @@ async def games(ctx):
         await jbcObj.send(f"{member.mention} left the party.")
     else:
         await member.add_roles(role)
-        await ctx.send(f"You are now in the channel. Come and have fun in <#{GAMES_CHANNEL}>! :tada:")
+        await ctx.send(f"You are now in the channel. Come and have fun in {jbcObj.mention}! :tada:")
         await jbcObj.send(f"Please welcome {member.mention} to the party!!")
 
 @bot.command(aliases=["r"])
@@ -1334,14 +1333,126 @@ async def on_user_update(before, after):
             await autoReport("Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
 
 @bot.event
+async def on_raw_message_edit(payload):
+    channel = bot.get_channel(payload.channel_id)
+    editedChannel = discord.utils.get(channel.guild.text_channels, name="edited-messages")
+    if channel.name in ["edited-messages", "deleted-messages"]:
+        return
+    try:
+        message = payload.cached_message
+        msgNow = await channel.fetch_message(message.id)
+        embed = assembleEmbed(
+            title=":pencil: Edited Message",
+            fields=[
+                {
+                    "name": "Author",
+                    "value": message.author,
+                    "inline": "True"
+                },
+                {
+                    "name": "Channel",
+                    "value": message.channel.mention,
+                    "inline": "True"
+                },
+                {
+                    "name": "Message ID",
+                    "value": message.id,
+                    "inline": "True"
+                },
+                {
+                    "name": "Created At (UTC)",
+                    "value": message.created_at,
+                    "inline": "True"
+                },
+                {
+                    "name": "Edited At (UTC)",
+                    "value": msgNow.edited_at,
+                    "inline": "True"
+                },
+                {
+                    "name": "Attachments",
+                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Past Content",
+                    "value": message.content if len(message.content) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "New Content",
+                    "value": msgNow.content if len(msgNow.content) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Embed",
+                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
+                    "inline": "False"
+                }
+            ]
+        )
+        await editedChannel.send(embed=embed)
+    except Exception as e:
+        msgNow = await channel.fetch_message(payload.message_id)
+        embed = assembleEmbed(
+            title=":pencil: Edited Message",
+            fields=[
+                {
+                    "name": "Channel",
+                    "value": bot.get_channel(payload.channel_id).mention,
+                    "inline": "True"
+                },
+                {
+                    "name": "Message ID",
+                    "value": payload.message_id,
+                    "inline": "True"
+                },
+                {
+                    "name": "Author",
+                    "value": msgNow.author,
+                    "inline": "True"
+                },
+                {
+                    "name": "Created At (UTC)",
+                    "value": msgNow.created_at,
+                    "inline": "True"
+                },
+                {
+                    "name": "Edited At (UTC)",
+                    "value": msgNow.edited_at,
+                    "inline": "True"
+                },
+                {
+                    "name": "New Content",
+                    "value": msgNow.content if len(msgNow.content) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Raw Payload",
+                    "value": payload.data if len(payload.data) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Current Attachments",
+                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in msgNow.attachments]) if len(msgNow.attachments) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Current Embed",
+                    "value": "\n".join([str(e.to_dict()) for e in msgNow.embeds]) if len(msgNow.embeds) > 0 else "None",
+                    "inline": "False"
+                }
+            ]
+        )
+        await editedChannel.send(embed=embed)
+
+@bot.event
 async def on_raw_message_delete(payload):
     if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]: 
         print("Ignoring deletion event because of the channel it's from.")
         return
-    if payload.cached_message.author.id in PI_BOT_IDS:
-        print("Ignoring deletion event because message is from Pi-Bot.")
-        return
-    deletedChannel = bot.get_channel(DELETED_CHANNEL_ID)
+    channel = bot.get_channel(payload.channel_id)
+    deletedChannel = discord.utils.get(channel.guild.text_channels, name="deleted-messages")
     try:
         message = payload.cached_message
         embed = assembleEmbed(
