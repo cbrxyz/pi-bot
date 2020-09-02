@@ -169,7 +169,6 @@ async def handleCron(string):
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
-    """
     botStatus = math.floor(random.random() * 24)
     if botStatus == 0:
         await bot.change_presence(activity=discord.Game(name="Game On"))
@@ -218,11 +217,7 @@ async def changeBotStatus():
     elif botStatus == 22:
         await bot.change_presence(activity=discord.Game(name="the flute"))
     elif botStatus == 23:
-    await
-    bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
-    name="bear eat users"))
-    """
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the server launch!"))
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="bear eat users"))
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)
