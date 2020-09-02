@@ -373,6 +373,12 @@ async def tournaments(ctx, *args):
 async def states(ctx, *args):
     """Assigns someone with specific states."""
     newArgs = [str(arg).lower() for arg in args]
+
+    # Fix commas as possible separator
+    if len(newArgs) == 1:
+        newArgs = newArgs[0].split(",")
+    newArgs = [re.sub("[;,]", "", arg) for arg in newArgs]
+    
     member = ctx.message.author
     states = await getStateList()
     states = [s[:s.rfind(" (")] for s in states]
@@ -753,6 +759,12 @@ async def events(ctx, *args):
         return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
     member = ctx.message.author
     newArgs = [str(arg).lower() for arg in args]
+
+    # Fix commas as possible separator
+    if len(newArgs) == 1:
+        newArgs = newArgs[0].split(",")
+    newArgs = [re.sub("[;,]", "", arg) for arg in newArgs]
+
     eventInfo = EVENT_INFO
     eventNames = []
     removedRoles = []
@@ -1188,7 +1200,7 @@ async def nuke(ctx, count):
     if not STOPNUKE:
         channel = ctx.message.channel
         async for m in channel.history(limit=(int(count) + 13)):
-            if not m.pinned:
+            if not m.pinned and not STOPNUKE:
                 await m.delete()
         await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
         await asyncio.sleep(5)
@@ -1218,7 +1230,7 @@ async def on_message_edit(before, after):
         if len(re.findall(fr"{word}", after.content)):
             print(f"Censoring message by {after.author} because of the emoji: `{word}`")
             await after.delete()
-    if len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0:
+    if "discord.gg/9Z5zKtV" not in after.content and (len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0):
         print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
         await after.delete()
 
@@ -1237,7 +1249,7 @@ async def on_message(message):
             print(f"Censoring message by {message.author} because of the emoji: `{word}`")
             await message.delete()
             await censor(message)
-    if len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0:
+    if "discord.gg/9Z5zKtV" not in message.content and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
         print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
         await message.delete()
         await message.channel.send("<censored>")
@@ -1313,6 +1325,10 @@ async def on_member_join(member):
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." + 
     "\n\n" + 
     "A helper or moderator will confirm you ASAP. You will then have access to the rest of the server to chat with other members!")
+    memberCount = len(member.guild.members)
+    loungeChannel = discord.utils.get(member.guild.text_channels, name="lounge")
+    if memberCount % 100 == 0:
+        await loungeChannel.send(f"Wow! There are now `{memberCount}` members in the server!")
 
 @bot.event
 async def on_member_update(before, after):
