@@ -539,7 +539,7 @@ COMMAND_INFO = [
         "parameters": [
             {
                 "name": "command",
-                "description": "the ping command to run (add/delete/list)"
+                "description": "the ping command to run - can be `add`, `addregex`, `list`, or `remove`"
             },
             {
                 "name": "<expression>",
@@ -550,6 +550,10 @@ COMMAND_INFO = [
             {
                 "cmd": "!ping add \"florida\"",
                 "result": "adds \"florida\" to the user's ping list"
+            },
+            {
+                "cmd": "!ping addregex \"^\d{5}(?:[-\s]\d{4})?$\"",
+                "result": "adds \"^\d{5}(?:[-\s]\d{4})?$\" (a formula to match zip codes) to the user's ping list"
             },
             {
                 "cmd": "!ping remove \"florida\"",
@@ -678,6 +682,118 @@ COMMAND_INFO = [
             {
                 "cmd": "!list events",
                 "result": "returns the list of event roles to the caller"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
+    },
+    {
+        "name": "count",
+        "description": "returns a member count for the server",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!count",
+            "result": "returns the current member count"
+        }],
+        "access": [
+            "Member"
+        ]
+    },
+    {
+        "name": "wikipedia",
+        "description": "returns informtion about a wikipedia page",
+        "aliases": ["wp"],
+        "parameters": [
+            {
+                "name": "command",
+                "description": "the command to run - can be `search`, `summary`, or `link`"
+            },
+            {
+                "name": "page",
+                "description": "the page to reference"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!wp search \"calculus\"",
+                "result": "searches Wikipedia for pages relating to `calculus`"
+            },
+            {
+                "cmd": "!wp summary \"Astronomy\"",
+                "result": "returns the summmary for the `Astronomy` Wikipedia page"
+            },
+            {
+                "cmd": "!wp summary \"FTOC\"",
+                "result": "returns the summmary for the `Fundamental Theorem of Calculus` Wikipedia page"
+            },
+            {
+                "cmd": "!wp link \"Red fox\"",
+                "result": "returns the link for the `Red fox` Wikipedia page"
+            }
+        ],
+        "access": [
+            "Member"
+        ]
+    },
+    {
+        "name": "hello",
+        "description": "makes the bot say hi - can be used to check if the bot is functioning",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!hi",
+            "result": "the bot says hi!"
+        }],
+        "access": [
+            "Member"
+        ]
+    },
+    {
+        "name": "refresh",
+        "description": "refreshes data from pi-bot's administrative panel",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!refresh",
+            "result": "refreshes the data"
+        }],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki Moderator"
+        ]
+    },
+    {
+        "name": "me",
+        "description": "refrences a user's actions from the third person",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "message",
+                "description": "the message to implement"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!me can't believe that happened!",
+                "result": "@user can't believe that happened!"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
+    },
+    {
+        "name": "dnd",
+        "description": "toggles Do Not Disturb mode for pings",
+        "aliases": ["donotdisturb"],
+        "parameters": [],
+        "usage": [
+            {
+                "cmd": "!dnd",
+                "result": "toggles Do Not Disturb mode for pings"
             }
         ],
         "access":[
