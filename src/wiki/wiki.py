@@ -64,8 +64,9 @@ async def implementCommand(action, pageTitle):
             return False
         # Continue if page does exist
         pt = wtp.parse(rf"{text}").plain_text()
-        link = await page.full_url()
-        return re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", pt)[:3] + ["\n\nRead more on the Scioly.org Wiki here: " + link + "!"]
+        title = await page.title()
+        link = site.base_url(site.article_path + title.replace(" ", "_"))
+        return re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", pt)[:1] + ["\n\nRead more on the Scioly.org Wiki here: <" + link + ">!"]
 
     if action == "search":
         searches = site.search(pageTitle, where='title')
