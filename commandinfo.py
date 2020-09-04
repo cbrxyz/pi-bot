@@ -594,42 +594,50 @@ COMMAND_INFO = [
     },
     {
         "name": "wiki",
-        "description": "returns a wiki page",
+        "description": "searches the wiki or returns a wiki page link or summary",
         "aliases": [],
         "parameters": [
             {
-                "name": "wikiPage1",
-                "description": "the first wiki page to get"
+                "name": "command",
+                "description": "the command to run - can be `link`, `summary`, or `search`"
+            },
+            {
+                "name": "term",
+                "description": "the page to reference, or the term to search with"
             },
             {
                 "name": "[wikiPage2]",
-                "description": "the second wiki page to get"
+                "description": "if acceptable in the context, the second wiki page to get"
             },
             {
                 "name": "[wikiPageN]",
-                "description": "the nth wiki page to get"
+                "description": "if acceptable in the context, the nth wiki page to get"
             },
             {
                 "name": "flag: -multiple",
-                "description": "specifies you are retrieving multiple page links"
+                "description": "specifies you are retrieving multiple page links/summaries"
             },
-            {
-                "name": "flag: -ignoreCase",
-                "description": "specifies you want to use your own case for page titles"
-            }
         ],
         "usage":[
             {
-                "cmd": "!wiki Troy Invitational",
-                "result": "gives you the `Troy Invitational` wiki page"
+                "cmd": "!wiki link Troy Invitational",
+                "result": "gives you the link to the `Troy Invitational` wiki page"
             },
             {
-                "cmd": "!wiki Florida California -mulitple",
-                "result": "gives you both the Florida and California pages"
+                "cmd": "!wiki summary Florida",
+                "result": "gives you a summary of the `Florida` page"
             },
             {
-                "cmd": "!wiki WWPN WWPS -ignoreCase -mulitple",
-                "result": "gives you both the `WWPN` and `WWPS` pages"
+                "cmd": "!wiki link Food Science",
+                "result": "gives you the link to the `Food Science` wiki page"
+            },
+            {
+                "cmd": "!wiki link \"Food Science\" WWPN -multiple",
+                "result": "gives you the links to the `Food Science` and `WWPN` wiki pages"
+            },
+            {
+                "cmd": "!wiki summary \"Southeast Florida Regional\" WWPN -multiple",
+                "result": "gives you the summaries of the `Southeast Florida Regional` and `WWPN` wiki pages"
             }
         ],
         "access":[
