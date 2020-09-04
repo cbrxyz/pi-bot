@@ -1,8 +1,12 @@
 from dotenv import load_dotenv, find_dotenv
-import os
 load_dotenv(find_dotenv())
+
+import re
+import os
 import pywikibot
 import asyncio
+import wikitextparser as wtp
+
 from aioify import aioify
 
 aiopwb = aioify(obj=pywikibot, name='aiopwb')
@@ -34,6 +38,42 @@ async def uploadFile(filePath, title, comment):
 
 async def allPages(startTitle):
     return site.allpages(start=startTitle)
+
+async def implementCommand(action, pageTitle):
+    site = await aiopwb.Site()
+    page = aiopwb.Page(site, pageTitle)
+    try:
+        # If page redirects, get the page it redirects to
+        page = await page.getRedirectTarget()
+        page = aiopwb.Page(site, page.title())
+    except Exception as e:
+        pass
+
+    if action == "link": 
+        text = page.text
+        if len(text) < 1:
+            # If page does not exist, return False
+            return False
+        # If page does exist, return URL
+        return await page.full_url()
+    
+    if action == "summary":
+        text = page.text
+        if len(text) < 1:
+            # If page does not exist, return False
+            return False
+        # Continue if page does exist
+        pt = wtp.parse(rf"{text}").plain_text()
+        link = await page.full_url()
+        return re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", pt)[:3] + ["\n\nRead more on the Scioly.org Wiki here: " + link + "!"]
+
+    if action == "search":
+        searches = site.search(pageTitle, where='title')
+        res = []
+        for search in searches:
+            t = search.title()
+            res.append(t)
+        return res[:5]
 
 event_loop = asyncio.get_event_loop()
 asyncio.ensure_future(initWiki(), loop = event_loop)

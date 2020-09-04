@@ -20,6 +20,7 @@ from src.sheets.sheets import sendVariables, getVariables
 from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
+from src.wiki.wiki import implementCommand
 from info import getAbout
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
@@ -951,27 +952,48 @@ async def alumni(ctx):
         await ctx.send(f"Added the alumni role, and removed all other division roles.")
 
 @bot.command()
-async def wiki(ctx, *args):
+async def wiki(ctx, command, *args):
+    # Check to make sure not too much at once
+    if (len(args) > 5 and multiple) or len(args) > 12:
+        return await ctx.send("Slow down there buster. Please keep the command to 12 or less arguments at once.")
     multiple = False
-    ignoreCase = False
     for arg in args:
         if arg[:1] == "-":
             multiple = arg.lower() == "-multiple"
-            ignoreCase = arg.lower() == "-ignorecase"
-    if len(args) > 5 and multiple:
-        return await ctx.send("Slow down there buster. Please 5 or less wiki pages at a time.")
-    if multiple:
-        for arg in args:
-            if arg[:1] != "-":
-                arg = arg.replace(" ", "_")
-                if not ignoreCase and arg.find("SO:") == -1:
-                    arg = arg.title()
-                await ctx.send(f"<https://scioly.org/wiki/index.php/{arg}>")
-    else:
-        if not ignoreCase and arg.find("SO:") == -1:
-            args = [arg.title() for arg in args]
-        stringSum = "_".join([arg for arg in args if arg[:1] != "-"])
-        await ctx.send(f"<https://scioly.org/wiki/index.php/{stringSum}>")
+    if command in ["link", "url"]:
+        if multiple:
+            for arg in [arg for arg in args if arg[:1] != "-"]:
+                url = await implementCommand("link", arg)
+                if url == False:
+                    await ctx.send(f"The `{arg}` page does not exist!")
+                await ctx.send(f"<{url}>")
+        else:
+            stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
+            url = await implementCommand("link", stringSum)
+            if url == False:
+                await ctx.send(f"The `{arg}` page does not exist!")
+            else:
+                await ctx.send(f"<{url}>")
+    if command in ["summary"]:
+        if multiple:
+            for arg in [arg for arg in args if arg[:1] != "-"]:
+                text = await implementCommand("summary", arg)
+                if text == False:
+                    await ctx.send(f"The `{arg}` page does not exist!")
+                else:
+                    await ctx.send(" ".join(text))
+        else:
+            stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
+            text = await implementCommand("summary", stringSum)
+            if text == False:
+                await ctx.send(f"The `{arg}` page does not exist!")
+            else:
+                await ctx.send(" ".join(text))
+    if command in ["search"]:
+        if multiple:
+            return await ctx.send("Ope! No multiple searches at once yet!")
+        searches = await implementCommand("search", " ".join([arg for arg in args]))
+        await ctx.send("\n".join([f"`{s}`" for s in searches]))
 
 @bot.command(aliases=["wp"])
 async def wikipedia(ctx, request:str=False, term:str=False):
