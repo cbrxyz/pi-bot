@@ -1227,10 +1227,9 @@ async def nuke(ctx, count):
         async for m in channel.history(limit=(int(count) + 13)):
             if not m.pinned and not STOPNUKE:
                 await m.delete()
-        await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+        msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
         await asyncio.sleep(5)
-        async for m in channel.history(limit=1):
-            await m.delete()
+        await msg.delete()
 
 @bot.command()
 async def stopnuke(ctx):
