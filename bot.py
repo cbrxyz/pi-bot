@@ -849,12 +849,16 @@ async def fish(ctx):
     fishNow += 1
     await ctx.send(f"You feed bear one fish. Bear now has {fishNow} fish!")
 
-@bot.command(aliases=["badbear"])
+@bot.command()
 async def nofish(ctx):
-    """Removes all of bear's fish."""
+    """DEPRECATED - Removes all of bear's fish."""
+    await ctx.send("`!nofish` no longer exists! Please use `!stealfish` instead.")
+
+@bot.command(aliases=["badbear"])
+async def stealfish(ctx):
     global fishNow
-    fishNow = 0
-    await ctx.send(f"Alright, no fish for bear!!")
+    fishNow = round(fishNow / 2)
+    await ctx.send(f"You stole half of bear's fish! Bear now has {fishNow} fish!")
 
 @bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
 async def trout(ctx, member:str=False):
