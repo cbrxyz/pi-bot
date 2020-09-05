@@ -1133,6 +1133,8 @@ async def unban(ctx, id:int=0):
 async def pronouns(ctx, *args):
     """Assigns or removes pronoun roles from a user."""
     member = ctx.message.author
+    if len(args) < 1:
+        await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
     heRole = discord.utils.get(member.guild.roles, name="He / Him / His")
     sheRole = discord.utils.get(member.guild.roles, name="She / Her / Hers")
     theyRole = discord.utils.get(member.guild.roles, name="They / Them / Theirs")
