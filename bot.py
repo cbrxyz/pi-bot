@@ -1232,9 +1232,12 @@ async def nuke(ctx, count):
             await m.delete()
 
 @bot.command()
-@commands.check(isStaff)
 async def stopnuke(ctx):
     global STOPNUKE
+    launcher = await isLauncher(ctx)
+    staff = await isStaff(ctx)
+    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
     STOPNUKE = True
     await ctx.send("TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES.")
     await asyncio.sleep(15)
