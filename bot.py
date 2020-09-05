@@ -8,6 +8,7 @@ import random
 import math
 import datetime
 import dateparser
+import time as timePackage
 import wikipedia as wikip
 from aioify import aioify
 from dotenv import load_dotenv
@@ -1068,8 +1069,9 @@ async def unexalt(ctx, user):
 
 @bot.command()
 @commands.check(isStaff)
-async def mute(ctx, user:discord.Member, time=None):
+async def mute(ctx, user:discord.Member, *args):
     """Mutes a user."""
+    time = " ".join(args)
     if user.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
@@ -1082,7 +1084,7 @@ async def mute(ctx, user:discord.Member, time=None):
             return await ctx.send("Sorry, but I don't understand that length of time.")
         CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
     await user.add_roles(role)
-    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)}`.")
+    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -1097,8 +1099,9 @@ async def unmute(ctx, user):
 
 @bot.command()
 @commands.check(isStaff)
-async def ban(ctx, member:discord.User=None, reason=None, time=None):
+async def ban(ctx, member:discord.User=None, reason=None, *args):
     """Bans a user."""
+    time = " ".join(args)
     if member == None or member == ctx.message.author:
         return await ctx.channel.send("You cannot ban yourself! >:(")
     if reason == None:
@@ -1112,11 +1115,11 @@ async def ban(ctx, member:discord.User=None, reason=None, time=None):
     if time != "indef":
         parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
         if parsed == None:
-            return await ctx.send("Sorry, but I don't understand that length of time.")
+            return await ctx.send(f"Sorry, but I don't understand the length of time: `{time}`.")
         CRON_LIST.append({"date": parsed, "do": f"unban {member.id}"})
     await member.send(message)
     await ctx.guild.ban(member, reason=reason)
-    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)}`.")
+    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
 
 @bot.command()
 @commands.check(isStaff)
