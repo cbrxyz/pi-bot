@@ -648,16 +648,22 @@ async def dnd(ctx):
     else:
         return await ctx.send("You can't enter DND mode without any pings!")
 
-async def pingPM(userID, pinger, pingExp, jumpUrl):
+async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
     """Allows Pi-Bot to PM a user about a ping."""
     userToSend = bot.get_user(userID)
+    content = re.sub(rf'{pingExp}', r'**\1**', content)
+    pingExp = pingExp.replace(r"\b(", "").replace(r")\b", "")
+    warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {pingExp}`"
     embed = assembleEmbed(
         title=":bellhop: Ping Alert!",
-        desc=f"Looks like `{pinger}` pinged a ping expression of yours.",
+        desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
         fields=[
-            {"name": "Expression Matched", "value": pingExp, "inline": True},
-            {"name": "Jump To Message", "value": f"[woosh!]({jumpUrl})", "inline": True}
-        ]
+            {"name": "Expression Matched", "value": f" `{pingExp}`", "inline": "True"},
+            {"name": "Jump To Message", "value": f"[Click here!]({jumpUrl})", "inline": "True"},
+            {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
+            {"name": "Content", "value": content, "inline": "False"}
+        ],
+        hexcolor="#2E66B6"
     )
     await userToSend.send(embed=embed)
 
@@ -1318,7 +1324,10 @@ async def on_message(message):
                 if len(re.findall(ping, content, re.I)) > 0 and message.author.discriminator != "0000":
                     if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True):
                         # Check that the user can actually see the message
-                        await pingPM(user['id'], str(message.author), ping, message.jump_url)
+                        name = message.author.nick
+                        if name == None:
+                            name = message.author.name
+                        await pingPM(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
     # SPAM TESTING
     global RECENT_MESSAGES
     caps = False
