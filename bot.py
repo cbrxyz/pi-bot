@@ -366,6 +366,22 @@ async def tourney(ctx):
         await autoReport("Member Applied for Tournament Role", "DarkCyan", f"{ctx.message.author.name} applied for the Tournament role. Please verify that they are a tournament.")
         await ctx.send("Successfully gave you the Tournament role, and sent a verification message to staff.")
 
+@bot.command(aliases=["slow", "sm"])
+async def slowmode(ctx, arg:int=None):
+    if arg == None:
+        if ctx.channel.slowmode_delay == 0:
+            await ctx.channel.edit(slowmode_delay=10)
+            await ctx.send("Enabled a 10 second slowmode.")
+        else:
+            await ctx.channel.edit(slowmode_delay=0)
+            await ctx.send("Removed slowmode.")
+    else:
+        await ctx.channel.edit(slowmode_delay=arg)
+        if arg != 0:
+            await ctx.send(f"Enabled a {arg} second slowmode.")
+        else:
+            await ctx.send(f"Removed slowmode.")
+
 @bot.command(aliases=["tourneys", "comps", "competitions"])
 async def tournaments(ctx, *args):
     """Coming soon"""

@@ -807,5 +807,35 @@ COMMAND_INFO = [
         "access":[
             "Member"
         ]
+    },
+    {
+        "name": "slowmode",
+        "description": "toggles slowmode for a channel",
+        "aliases": ["slow", "sm"],
+        "parameters": [
+            {
+                "name": "seconds",
+                "description": "the amount of seconds to enable slowmode for"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!slowmode",
+                "result": "toggles a 10 second slowmode"
+            },
+            {
+                "cmd": "!slowmode 35",
+                "result": "enables a 35 second slowmode"
+            },
+            {
+                "cmd": "!slowmode 0",
+                "result": "removes any slowmode effects"
+            }
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki Moderator"
+        ]
     }
 ]
