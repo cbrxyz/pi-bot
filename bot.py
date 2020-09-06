@@ -22,12 +22,13 @@ from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand
+from src.wiki.schools import getSchoolListing
 from info import getAbout
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
 from embed import assembleEmbed
 from commands import getList, getHelp
-from list import getStateList
+from lists import getStateList
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -711,6 +712,20 @@ async def list(ctx, cmd:str=False):
             desc="\n".join([f"`{name}`" for name in eventsList])
         )
         await ctx.send(embed=list)
+
+@bot.command()
+async def school(ctx, title, state):
+    lists = await getSchoolListing(title, state)
+    fields = []
+    for l in lists:
+        fields.append({'name': l['name'], 'value': f"```{l['wikicode']}```", 'inline': "False"})
+    embed = assembleEmbed(
+        title="School Data",
+        desc=f"Your query for `{title}` in `{state}` returned `{len(lists)}` results. Thanks for contribtuing to the wiki!",
+        fields=fields,
+        hexcolor="#2E66B6"
+    )
+    await ctx.send(embed=embed)
 
 async def censor(message):
     """Constructs Pi-Bot's censor."""

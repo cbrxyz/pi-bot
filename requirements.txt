@@ -16,3 +16,5 @@ dateparser==0.7.6
 wikipedia==1.4.0
 aioify==0.3.2
 gspread-asyncio==1.1.0
+aiohttp==3.6.2
+aiodns==2.0.0
