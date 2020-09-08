@@ -917,6 +917,11 @@ async def cookie(ctx, member:str=False):
         await ctx.send(f"{ctx.message.author.mention} gives {member} a cookie!")
     await ctx.send("http://gph.is/1UOaITh")
 
+@bot.command()
+async def treat(ctx):
+    await ctx.send("You give bernard one treat!")
+    await ctx.send("http://gph.is/11nJAH5")
+
 @bot.command(aliases=["givehershey", "hershey"])
 async def hersheybar(ctx, member:str=False):
     if await sanitizeMention(member) == False:
