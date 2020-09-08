@@ -1342,7 +1342,9 @@ async def on_message(message):
             pings = user['pings']
             for ping in pings:
                 if len(re.findall(ping, content, re.I)) > 0 and message.author.discriminator != "0000":
-                    if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True):
+                    # Do not send a ping if the user is mentioned
+                    userIsMentioned = user['id'] in [m.id for m in message.mentions]
+                    if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not userIsMentioned:
                         # Check that the user can actually see the message
                         name = message.author.nick
                         if name == None:
