@@ -807,5 +807,63 @@ COMMAND_INFO = [
         "access":[
             "Member"
         ]
+    },
+    {
+        "name": "slowmode",
+        "description": "toggles slowmode for a channel",
+        "aliases": ["slow", "sm"],
+        "parameters": [
+            {
+                "name": "seconds",
+                "description": "the amount of seconds to enable slowmode for"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!slowmode",
+                "result": "toggles a 10 second slowmode"
+            },
+            {
+                "cmd": "!slowmode 35",
+                "result": "enables a 35 second slowmode"
+            },
+            {
+                "cmd": "!slowmode 0",
+                "result": "removes any slowmode effects"
+            }
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki Moderator"
+        ]
+    },
+    {
+        "name": "school",
+        "description": "gets school data in wiki format",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "school name (in quotes)",
+                "description": "the school name to search for **(note: if you cannot find the school you are looking for at first, broaden your search by removing terms such as \"school\" or \"elementary\")**"
+            },
+            {
+                "name": "state abbreviation",
+                "description": "the abbreviation of the state the school is in"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!school \"Boca Raton Community High\" \"FL\"",
+                "result": "returns school listings for `Boca Raton Community High` in `FL`"
+            },
+            {
+                "cmd": "!school \"Interlake High\" \"WA\"",
+                "result": "returns school listings for `Interlake High` in `WA`"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
     }
 ]

@@ -8,6 +8,7 @@ import random
 import math
 import datetime
 import dateparser
+import time as timePackage
 import wikipedia as wikip
 from aioify import aioify
 from dotenv import load_dotenv
@@ -21,12 +22,13 @@ from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand
+from src.wiki.schools import getSchoolListing
 from info import getAbout
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
 from embed import assembleEmbed
 from commands import getList, getHelp
-from list import getStateList
+from lists import getStateList
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -365,6 +367,22 @@ async def tourney(ctx):
         await autoReport("Member Applied for Tournament Role", "DarkCyan", f"{ctx.message.author.name} applied for the Tournament role. Please verify that they are a tournament.")
         await ctx.send("Successfully gave you the Tournament role, and sent a verification message to staff.")
 
+@bot.command(aliases=["slow", "sm"])
+async def slowmode(ctx, arg:int=None):
+    if arg == None:
+        if ctx.channel.slowmode_delay == 0:
+            await ctx.channel.edit(slowmode_delay=10)
+            await ctx.send("Enabled a 10 second slowmode.")
+        else:
+            await ctx.channel.edit(slowmode_delay=0)
+            await ctx.send("Removed slowmode.")
+    else:
+        await ctx.channel.edit(slowmode_delay=arg)
+        if arg != 0:
+            await ctx.send(f"Enabled a {arg} second slowmode.")
+        else:
+            await ctx.send(f"Removed slowmode.")
+
 @bot.command(aliases=["tourneys", "comps", "competitions"])
 async def tournaments(ctx, *args):
     """Coming soon"""
@@ -631,16 +649,22 @@ async def dnd(ctx):
     else:
         return await ctx.send("You can't enter DND mode without any pings!")
 
-async def pingPM(userID, pinger, pingExp, jumpUrl):
+async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
     """Allows Pi-Bot to PM a user about a ping."""
     userToSend = bot.get_user(userID)
+    content = re.sub(rf'{pingExp}', r'**\1**', content)
+    pingExp = pingExp.replace(r"\b(", "").replace(r")\b", "")
+    warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {pingExp}`"
     embed = assembleEmbed(
         title=":bellhop: Ping Alert!",
-        desc=f"Looks like `{pinger}` pinged a ping expression of yours.",
+        desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
         fields=[
-            {"name": "Expression Matched", "value": pingExp, "inline": True},
-            {"name": "Jump To Message", "value": f"[woosh!]({jumpUrl})", "inline": True}
-        ]
+            {"name": "Expression Matched", "value": f" `{pingExp}`", "inline": "True"},
+            {"name": "Jump To Message", "value": f"[Click here!]({jumpUrl})", "inline": "True"},
+            {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
+            {"name": "Content", "value": content, "inline": "False"}
+        ],
+        hexcolor="#2E66B6"
     )
     await userToSend.send(embed=embed)
 
@@ -665,6 +689,7 @@ async def shibabomb(ctx, member:str=False):
 @bot.command()
 async def me(ctx, *args):
     """Replaces the good ol' /me"""
+    await ctx.message.delete()
     await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
 
 @bot.command()
@@ -687,6 +712,20 @@ async def list(ctx, cmd:str=False):
             desc="\n".join([f"`{name}`" for name in eventsList])
         )
         await ctx.send(embed=list)
+
+@bot.command()
+async def school(ctx, title, state):
+    lists = await getSchoolListing(title, state)
+    fields = []
+    for l in lists:
+        fields.append({'name': l['name'], 'value': f"```{l['wikicode']}```", 'inline': "False"})
+    embed = assembleEmbed(
+        title="School Data",
+        desc=f"Your query for `{title}` in `{state}` returned `{len(lists)}` results. Thanks for contribtuing to the wiki!",
+        fields=fields,
+        hexcolor="#2E66B6"
+    )
+    await ctx.send(embed=embed)
 
 async def censor(message):
     """Constructs Pi-Bot's censor."""
@@ -847,12 +886,16 @@ async def fish(ctx):
     fishNow += 1
     await ctx.send(f"You feed bear one fish. Bear now has {fishNow} fish!")
 
-@bot.command(aliases=["badbear"])
+@bot.command()
 async def nofish(ctx):
-    """Removes all of bear's fish."""
+    """DEPRECATED - Removes all of bear's fish."""
+    await ctx.send("`!nofish` no longer exists! Please use `!stealfish` instead.")
+
+@bot.command(aliases=["badbear"])
+async def stealfish(ctx):
     global fishNow
-    fishNow = 0
-    await ctx.send(f"Alright, no fish for bear!!")
+    fishNow = round(fishNow / 2)
+    await ctx.send(f"You stole half of bear's fish! Bear now has {fishNow} fish!")
 
 @bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
 async def trout(ctx, member:str=False):
@@ -873,6 +916,11 @@ async def cookie(ctx, member:str=False):
     else:
         await ctx.send(f"{ctx.message.author.mention} gives {member} a cookie!")
     await ctx.send("http://gph.is/1UOaITh")
+
+@bot.command()
+async def treat(ctx):
+    await ctx.send("You give bernard one treat!")
+    await ctx.send("http://gph.is/11nJAH5")
 
 @bot.command(aliases=["givehershey", "hershey"])
 async def hersheybar(ctx, member:str=False):
@@ -1067,8 +1115,9 @@ async def unexalt(ctx, user):
 
 @bot.command()
 @commands.check(isStaff)
-async def mute(ctx, user:discord.Member, time=None):
+async def mute(ctx, user:discord.Member, *args):
     """Mutes a user."""
+    time = " ".join(args)
     if user.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
@@ -1081,7 +1130,7 @@ async def mute(ctx, user:discord.Member, time=None):
             return await ctx.send("Sorry, but I don't understand that length of time.")
         CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
     await user.add_roles(role)
-    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)}`.")
+    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -1096,8 +1145,9 @@ async def unmute(ctx, user):
 
 @bot.command()
 @commands.check(isStaff)
-async def ban(ctx, member:discord.User=None, reason=None, time=None):
+async def ban(ctx, member:discord.User=None, reason=None, *args):
     """Bans a user."""
+    time = " ".join(args)
     if member == None or member == ctx.message.author:
         return await ctx.channel.send("You cannot ban yourself! >:(")
     if reason == None:
@@ -1111,11 +1161,11 @@ async def ban(ctx, member:discord.User=None, reason=None, time=None):
     if time != "indef":
         parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
         if parsed == None:
-            return await ctx.send("Sorry, but I don't understand that length of time.")
+            return await ctx.send(f"Sorry, but I don't understand the length of time: `{time}`.")
         CRON_LIST.append({"date": parsed, "do": f"unban {member.id}"})
     await member.send(message)
     await ctx.guild.ban(member, reason=reason)
-    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)}`.")
+    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -1226,15 +1276,17 @@ async def nuke(ctx, count):
         async for m in channel.history(limit=(int(count) + 13)):
             if not m.pinned and not STOPNUKE:
                 await m.delete()
-        await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+        msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
         await asyncio.sleep(5)
-        async for m in channel.history(limit=1):
-            await m.delete()
+        await msg.delete()
 
 @bot.command()
-@commands.check(isStaff)
 async def stopnuke(ctx):
     global STOPNUKE
+    launcher = await isLauncher(ctx)
+    staff = await isStaff(ctx)
+    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
     STOPNUKE = True
     await ctx.send("TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES.")
     await asyncio.sleep(15)
@@ -1290,9 +1342,14 @@ async def on_message(message):
             pings = user['pings']
             for ping in pings:
                 if len(re.findall(ping, content, re.I)) > 0 and message.author.discriminator != "0000":
-                    if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True):
+                    # Do not send a ping if the user is mentioned
+                    userIsMentioned = user['id'] in [m.id for m in message.mentions]
+                    if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not userIsMentioned:
                         # Check that the user can actually see the message
-                        await pingPM(user['id'], str(message.author), ping, message.jump_url)
+                        name = message.author.nick
+                        if name == None:
+                            name = message.author.name
+                        await pingPM(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
     # SPAM TESTING
     global RECENT_MESSAGES
     caps = False
@@ -1348,7 +1405,7 @@ async def on_member_join(member):
     "You can add roles here, using the commands shown at the top of this channel. " + 
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." + 
     "\n\n" + 
-    "A helper or moderator will confirm you ASAP. You will then have access to the rest of the server to chat with other members!")
+    "**A helper or moderator will confirm you ASAP. You will then have access to the rest of the server to chat with other members!**")
     memberCount = len(member.guild.members)
     loungeChannel = discord.utils.get(member.guild.text_channels, name="lounge")
     if memberCount % 100 == 0:
