@@ -1092,7 +1092,7 @@ async def latex(ctx, *args):
     print(newArgs)
     newArgs = newArgs.replace(" ", r"&space;")
     print(newArgs)
-    await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{300}{\color{Magenta}" + newArgs + "}")
+    await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{300}{\color{Gray}" + newArgs + "}")
 
 @bot.command(aliases=["membercount"])
 async def count(ctx):
