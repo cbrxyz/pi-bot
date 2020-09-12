@@ -98,6 +98,7 @@ COACH_REPORT_IDS = []
 SHELLS_OPEN = []
 CRON_LIST = []
 RECENT_MESSAGES = []
+STEALFISH_BAN = []
 STOPNUKE = False
 
 ##############
@@ -145,6 +146,7 @@ async def goStylist():
 async def cron():
     print("Executed cron.")
     global CRON_LIST
+    print(CRON_LIST)
     for c in CRON_LIST:
         date = c['date']
         if datetime.datetime.now() > date:
@@ -166,6 +168,10 @@ async def handleCron(string):
         role = discord.utils.get(server.roles, name="Muted")
         await member.remove_roles(role)
         print(f"Unmuted user ID: {iden}")
+    elif string.find("unstealfishban") != -1:
+        iden = int(string.split(" ")[1])
+        STEALFISH_BAN.remove(iden)
+        print(f"Un-stealfished user ID: {iden}")
     else:
         print("ERROR:")
         print(f"handleCron cannot handle this job: {string}")
@@ -885,8 +891,22 @@ async def help(ctx, command="help"):
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
-    fishNow += 1
-    await ctx.send(f"You feed bear one fish. Bear now has {fishNow} fish!")
+    r = random.random()
+    if r > 0.99:
+        fishNow = pow(fishNow, 2)
+        return await ctx.send(f":tada:\n:tada:\n:tada:\nWow, you hit the jackbox! Bear's fish was squared! Bear now has {fishNow} fish! \n:tada:\n:tada:\n:tada:")
+    if r > 0.9:
+        fishNow += 10
+        return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fishNow} fish!")
+    if r > 0.1:
+        fishNow += 1
+        return await ctx.send(f"You feed bear one fish. Bear now has {fishNow} fish!")
+    if r > 0.02:
+        fishNow += 0
+        return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fishNow} fish.")
+    else:
+        fishNow = round(pow(fishNow, 0.5))
+        return await ctx.send(f"Aww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish.")
 
 @bot.command()
 async def nofish(ctx):
@@ -896,8 +916,30 @@ async def nofish(ctx):
 @bot.command(aliases=["badbear"])
 async def stealfish(ctx):
     global fishNow
-    fishNow = round(fishNow / 2)
-    await ctx.send(f"You stole half of bear's fish! Bear now has {fishNow} fish!")
+    member = ctx.message.author
+    r = random.random()
+    if member.id in STEALFISH_BAN:
+        return await ctx.send("Hey! You've been banned from stealing fish for now.")
+    if r >= 0.75:
+        ratio = r - 0.5
+        fishNow = round(fishNow * ratio)
+        per = round(ratio * 100)
+        return await ctx.send(f"You stole {per}% of bear's fish!")
+    if r >= 0.416:
+        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
+        STEALFISH_BAN.append(member.id)
+        CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
+        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to banned from using this command for 1 hour!")
+    if r >= 0.25:
+        parsed = dateparser.parse("1 day", settings={"PREFER_DATES_FROM": "future"})
+        STEALFISH_BAN.append(member.id)
+        CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
+        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to banned from using this command for 1 day!")
+    if r >= 0.01:
+        return await ctx.send("Hmm, nothing happened. *crickets*")
+    else:
+        STEALFISH_BAN.append(member.id)
+        return await ctx.send("You are banned from using `!stealfish` until the next version of Pi-Bot is released.")
 
 @bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
 async def trout(ctx, member:str=False):
