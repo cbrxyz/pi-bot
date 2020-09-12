@@ -29,15 +29,6 @@ async def prettifyTemplates():
             pageId = 0
             await updateWikiPage(title)
         parsed = wtp.parse(text)
-        for template in parsed.templates:
-            if len(template.arguments) > 3:
-                try:
-
-                    ## Action 2: Replacing template with pretty styled format
-                    text = text.replace(str(template), str(template.pformat()))
-                except Exception as e:
-                    print("ERROR on text replace:")
-                    print(e)
         await setPageText(str(title), str(text), "Styled the page according to my stylist. For concerns, see my user page.", minor=True)
         await asyncio.sleep(20)
         pageId += 1

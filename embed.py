@@ -13,7 +13,8 @@ def assembleEmbed(
     authorIcon="",
     fields={},
     footerText="",
-    footerUrl=""
+    footerUrl="",
+    imageUrl=""
     ):
     """Assembles an embed with the specified parameters."""
     if len(webcolor) > 1:
@@ -25,4 +26,5 @@ def assembleEmbed(
     for field in fields:
         embed.add_field(name=field['name'], value=field['value'], inline=(field['inline'] == "True"))
     embed.set_footer(text=footerText, icon_url=footerUrl)
+    embed.set_image(url=imageUrl)
     return embed

@@ -774,6 +774,7 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     fields = jso['fields'] if 'fields' in jso else ""
     footerText = jso['footerText'] if 'footerText' in jso else ""
     footerUrl = jso['footerUrl'] if 'footerUrl' in jso else ""
+    imageUrl = jso['imageUrl'] if 'imageUrl' in jso else ""
     embed = assembleEmbed(
         title=title,
         desc=desc,
@@ -786,7 +787,8 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
         authorIcon=authorIcon,
         fields=fields,
         footerText=footerText,
-        footerUrl=footerUrl
+        footerUrl=footerUrl,
+        imageUrl=imageUrl
     )
     await channel.send(embed=embed)
 
