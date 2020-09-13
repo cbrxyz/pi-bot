@@ -568,10 +568,7 @@ async def ping(ctx, command="", *args):
                     await ctx.send(f"Ignoring adding the `{arg}` ping because it uses illegal characters.")
                     ignoredList.append(arg)
                     continue
-                if arg in pings:
-                    await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
-                    ignoredList.append(arg)
-                if f"\\b({arg})\\b" in pings:
+                if f"({arg})" in pings or f"\\b({arg})\\b" in pings or arg in pings:
                     await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
                     ignoredList.append(arg)
                 else:
@@ -580,13 +577,19 @@ async def ping(ctx, command="", *args):
                         pings.append(fr"\b({arg})\b")
                     else:
                         print("adding regexp")
-                        pings.append(fr"{arg}")
+                        pings.append(fr"({arg})")
         else:
             # nope
-            PING_INFO.append({
-                "id": member,
-                "pings": [fr"{arg}" for arg in args]
-            })
+            if command.lower() in ["add", "new"]:
+                PING_INFO.append({
+                    "id": member,
+                    "pings": [fr"\b({arg})\b" for arg in args]
+                })
+            else:
+                PING_INFO.append({
+                    "id": member,
+                    "pings": [fr"({arg})" for arg in args]
+                })
         return await ctx.send(f"Alrighty... I've got you all set up for the following pings: " + (" ".join([f"`{arg}`" for arg in args if arg not in ignoredList])))
     elif command.lower() in ["delete", "remove"]:
         user = next((u for u in PING_INFO if u['id'] == member), None)
@@ -596,14 +599,15 @@ async def ping(ctx, command="", *args):
             if arg == "all":
                 user['pings'] = []
                 return await ctx.send("I removed all of your pings.")
-            print(user['pings'])
-            print(f"\\b({arg})\\b" in user['pings'])
             if arg in user['pings']:
                 user['pings'].remove(arg)
                 await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
             elif f"\\b({arg})\\b" in user['pings']:
                 user['pings'].remove(f"\\b({arg})\\b")
                 await ctx.send(f"I removed the `{arg}` word ping you were referencing.")
+            elif f"({arg})" in user['pings']:
+                user['pings'].remove(f"({arg})")
+                await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
             else:
                 return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
         return await ctx.send("I removed all pings you requested.")
@@ -658,7 +662,10 @@ async def dnd(ctx):
 async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
     """Allows Pi-Bot to PM a user about a ping."""
     userToSend = bot.get_user(userID)
-    content = re.sub(rf'{pingExp}', r'**\1**', content)
+    try:
+        content = re.sub(rf'{pingExp}', r'**\1**', content)
+    except Exception as e:
+        print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
     pingExp = pingExp.replace(r"\b(", "").replace(r")\b", "")
     warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {pingExp}`"
     embed = assembleEmbed(
