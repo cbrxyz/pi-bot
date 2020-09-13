@@ -730,6 +730,8 @@ async def list(ctx, cmd:str=False):
 async def school(ctx, title, state):
     lists = await getSchoolListing(title, state)
     fields = []
+    if len(lists) > 20:
+        return await ctx.send(f"Woah! Your query returned `{len(lists)}` schools, which is too much to send at once. Try narrowing your query!")
     for l in lists:
         fields.append({'name': l['name'], 'value': f"```{l['wikicode']}```", 'inline': "False"})
     embed = assembleEmbed(
