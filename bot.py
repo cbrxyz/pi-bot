@@ -1369,8 +1369,52 @@ async def on_message_edit(before, after):
         print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
         await after.delete()
 
+async def sendToDMLog(message):
+    server = bot.get_guild(SERVER_ID)
+    dmChannel = discord.utils.get(server.text_channels, name="dm-log")
+    embed = assembleEmbed(
+        title=":speech_balloon: New DM",
+        fields=[
+            {
+                    "name": "Author",
+                    "value": message.author,
+                    "inline": "True"
+                },
+                {
+                    "name": "Message ID",
+                    "value": message.id,
+                    "inline": "True"
+                },
+                {
+                    "name": "Created At (UTC)",
+                    "value": message.created_at,
+                    "inline": "True"
+                },
+                {
+                    "name": "Attachments",
+                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Content",
+                    "value": message.content if len(message.content) > 0 else "None",
+                    "inline": "False"
+                },
+                {
+                    "name": "Embed",
+                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
+                    "inline": "False"
+                }
+            ]
+    )
+    await dmChannel.send(embed=embed)
+
 @bot.event
 async def on_message(message):
+    # Log DMs
+    if type(message.channel) == discord.DMChannel:
+        await sendToDMLog(message)
+    
     print('Message from {0.author}: {0.content}'.format(message))
     if message.author.id in PI_BOT_IDS: return
     content = message.content
