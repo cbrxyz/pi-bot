@@ -53,7 +53,7 @@ async def isBear(ctx):
 async def isStaff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
-    wmRole = discord.utils.get(member.guild.roles, name="Wiki Moderator")
+    wmRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
     gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
     aRole = discord.utils.get(member.guild.roles, name="Administrator")
     vipRole = discord.utils.get(member.guild.roles, name="VIP")
