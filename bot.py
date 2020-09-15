@@ -36,10 +36,10 @@ DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
 devMode = os.getenv('DEV_MODE') == "TRUE"
 
 if devMode:
-    bot = commands.Bot(command_prefix=("bp", "?"), case_insensitive=True)
+    bot = commands.Bot(command_prefix=("?"), case_insensitive=True)
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
-    bot = commands.Bot(command_prefix=("pb ", "!"), case_insensitive=True)
+    bot = commands.Bot(command_prefix=("!"), case_insensitive=True)
     SERVER_ID = 698306997287780363
 
 ##############
@@ -340,10 +340,14 @@ async def about(ctx):
     """Prints information about the bot."""
     await ctx.send(getAbout())
 
+@bot.command(aliases=["server", "link", "invitelink"])
+async def invite(ctx):
+    await ctx.send("https://discord.gg/9Z5zKtV")
+
 @bot.command()
 async def invites(ctx):
     """Fetches the invite table."""
-    await ctx.send("Fetching invites...")
+    return await ctx.send("In progress...")
     message = await getInviteTable()
     await ctx.send(f"```\n{message}```")
 

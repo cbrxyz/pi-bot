@@ -865,5 +865,18 @@ COMMAND_INFO = [
         "access":[
             "Member"
         ]
+    },
+    {
+        "name": "invite",
+        "description": "returns the server's invite link",
+        "aliases": ["link", "server", "invitelink"],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!link",
+            "result": "https://discord.gg/9Z5zKtV"
+        }],
+        "access": [
+            "Member"
+        ]
     }
 ]
