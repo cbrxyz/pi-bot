@@ -922,7 +922,7 @@ async def fish(ctx):
         return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fishNow} fish.")
     else:
         fishNow = round(pow(fishNow, 0.5))
-        return await ctx.send(f"Aww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish.")
+        return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish. \n:sob:\n:sob:\n:sob:")
 
 @bot.command()
 async def nofish(ctx):
