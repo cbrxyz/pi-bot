@@ -706,8 +706,11 @@ async def shibabomb(ctx, member:str=False):
 @bot.command()
 async def me(ctx, *args):
     """Replaces the good ol' /me"""
-    await ctx.message.delete()
-    await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
+    if len(args) < 1:
+        return await ctx.send(f"*{ctx.message.author.mention} " + "is cool!*")
+    else:
+        await ctx.message.delete()
+        await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
 
 @bot.command()
 async def list(ctx, cmd:str=False):
