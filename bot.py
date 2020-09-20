@@ -506,6 +506,62 @@ async def games(ctx):
         await ctx.send(f"You are now in the channel. Come and have fun in {jbcObj.mention}! :tada:")
         await jbcObj.send(f"Please welcome {member.mention} to the party!!")
 
+@bot.command()
+@commands.check(isStaff)
+async def lock(ctx):
+    """Locks a channel to Member access."""
+    member = ctx.message.author
+    channel = ctx.message.channel
+
+    if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
+        return await ctx.send("This command is not suitable for this channel because of its category.")
+
+    memberRole = discord.utils.get(member.guild.roles, name="Member")
+    if (channel.category.name == "states"):
+        await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False)
+    else:
+        await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False, read_messages=True)
+    
+    wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
+    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
+    aRole = discord.utils.get(member.guild.roles, name="Administrator")
+    bRole = discord.utils.get(member.guild.roles, name="Bots")
+    await ctx.channel.set_permissions(wikiRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.channel.set_permissions(gmRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.send("Locked the channel to Member access.")
+
+@bot.command()
+@commands.check(isStaff)
+async def unlock(ctx):
+    """Unlocks a channel to Member access."""
+    member = ctx.message.author
+    channel = ctx.message.channel
+
+    if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
+        return await ctx.send("This command is not suitable for this channel because of its category.")
+
+    if (channel.category.name == "Science Olympiad" or channel.category.name == "general"):
+        await ctx.send("Synced permissions with channel category.")
+        return await channel.edit(sync_permissions=True)
+
+    memberRole = discord.utils.get(member.guild.roles, name="Member")
+    if (channel.category.name != "states"):
+        await ctx.channel.set_permissions(memberRole, add_reactions=True, send_messages=True, read_messages=True)
+    else:
+        await ctx.channel.set_permissions(memberRole, add_reactions=True, send_messages=True)
+
+    wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
+    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
+    aRole = discord.utils.get(member.guild.roles, name="Administrator")
+    bRole = discord.utils.get(member.guild.roles, name="Bots")
+    await ctx.channel.set_permissions(wikiRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.channel.set_permissions(gmRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
+    await ctx.send("Unlocked the channel to Member access. Please check if permissions need to be synced.")
+
 @bot.command(aliases=["r"])
 async def report(ctx, *args):
     """Creates a report that is sent to staff members."""

@@ -126,7 +126,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -148,7 +148,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -178,7 +178,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -200,7 +200,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -234,7 +234,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -256,7 +256,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -310,7 +310,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -428,7 +428,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -494,7 +494,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -770,7 +770,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -835,7 +835,7 @@ COMMAND_INFO = [
         "access":[
             "Administrator",
             "Global Moderator",
-            "Wiki Moderator"
+            "Wiki/Gallery Moderator"
         ]
     },
     {
@@ -877,6 +877,36 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
+        ]
+    },
+    {
+        "name": "lock",
+        "description": "locks the current channel to non-staff",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!lock",
+            "result": "locks the current channel to non-staff"
+        }],
+        "access": [
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ]
+    },
+    {
+        "name": "unlock",
+        "description": "unlocks the current channel to non-staff",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!unlock",
+            "result": "unlocks the current channel to non-staff"
+        }],
+        "access": [
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
         ]
     }
 ]
