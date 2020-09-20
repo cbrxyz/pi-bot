@@ -81,6 +81,7 @@ PI_BOT_IDS = [
 ]
 RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
+DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK"]
 
 ##############
 # VARIABLES
@@ -342,7 +343,7 @@ async def about(ctx):
 
 @bot.command(aliases=["server", "link", "invitelink"])
 async def invite(ctx):
-    await ctx.send("https://discord.gg/9Z5zKtV")
+    await ctx.send("https://discord.gg/C9PGV6h")
 
 @bot.command()
 async def invites(ctx):
@@ -1374,7 +1375,7 @@ async def on_message_edit(before, after):
         if len(re.findall(fr"{word}", after.content)):
             print(f"Censoring message by {after.author} because of the emoji: `{word}`")
             await after.delete()
-    if "discord.gg/9Z5zKtV" not in after.content and (len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0):
+    if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in after.content) and (len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0):
         print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
         await after.delete()
 
@@ -1437,7 +1438,7 @@ async def on_message(message):
             print(f"Censoring message by {message.author} because of the emoji: `{word}`")
             await message.delete()
             await censor(message)
-    if "discord.gg/9Z5zKtV" not in message.content and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
+    if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
         print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
         await message.delete()
         await message.channel.send("<censored>")
