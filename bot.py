@@ -668,7 +668,7 @@ async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
     """Allows Pi-Bot to PM a user about a ping."""
     userToSend = bot.get_user(userID)
     try:
-        content = re.sub(rf'{pingExp}', r'**\1**', content)
+        content = re.sub(rf'{pingExp}', r'**\1**', content, flags=re.I)
     except Exception as e:
         print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
     pingExp = pingExp.replace(r"\b(", "").replace(r")\b", "")
