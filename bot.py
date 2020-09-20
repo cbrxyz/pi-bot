@@ -938,7 +938,7 @@ async def stealfish(ctx):
         return await ctx.send("Hey! You've been banned from stealing fish for now.")
     if r >= 0.75:
         ratio = r - 0.5
-        fishNow = round(fishNow * ratio)
+        fishNow = round(fishNow * (1 - ratio))
         per = round(ratio * 100)
         return await ctx.send(f"You stole {per}% of bear's fish!")
     if r >= 0.416:
