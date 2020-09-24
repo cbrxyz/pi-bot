@@ -5,6 +5,7 @@ throttle.ctrl
 apicache-py3/
 *password*
 .DS_Store
+met.png
 
 # Python gitignore template
 # Byte-compiled / optimized / DLL files

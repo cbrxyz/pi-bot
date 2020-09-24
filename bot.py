@@ -10,6 +10,7 @@ import datetime
 import dateparser
 import time as timePackage
 import wikipedia as wikip
+import matplotlib.pyplot as plt
 from aioify import aioify
 from dotenv import load_dotenv
 from discord import channel
@@ -23,6 +24,7 @@ from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand
 from src.wiki.schools import getSchoolListing
+from src.wiki.mosteditstable import runTable
 from info import getAbout
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
@@ -832,6 +834,44 @@ async def kick(ctx, user:discord.Member, reason:str=False):
         return await ctx.send("Hey! You can't kick me!!")
     await user.kick(reason=reason)
     await ctx.send("The user was kicked.")
+
+@bot.command()
+@commands.check(isStaff)
+async def met(ctx):
+    """Runs Pi-Bot's Most Edits Table"""
+    msg1 = await ctx.send("Attemping to run the Most Edits Table.")
+    res = await runTable()
+    print(res)
+    names = [v['name'] for v in res]
+    data = [v['increase'] for v in res]
+    names = names[:10]
+    data = data[:10]
+
+    fig = plt.figure()
+    plt.bar(names, data, color="#2E66B6")
+    plt.xlabel("Usernames")
+    plt.xticks(rotation=90)
+    plt.ylabel("Edits past week") 
+    plt.title("Top wiki editors for the past week!")
+    plt.tight_layout()
+    plt.savefig("met.png")
+    await msg1.delete()
+    msg2 = await ctx.send("Generating graph...")
+    await asyncio.sleep(3)
+    await msg2.delete()
+
+    file = discord.File("met.png", filename="met.png")
+    embed = assembleEmbed(
+        title="**Top wiki editors for the past week!**",
+        desc=("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" + 
+        f"`1st` - **{names[0]}** ({data[0]} edits)\n" +
+        f"`2nd` - **{names[1]}** ({data[1]} edits)\n" +
+        f"`3rd` - **{names[2]}** ({data[2]} edits)\n" +
+        f"`4th` - **{names[3]}** ({data[3]} edits)\n" +
+        f"`5th` - **{names[4]}** ({data[4]} edits)"),
+        imageUrl="attachment://met.png",
+    )
+    await ctx.send(file=file, embed=embed)
 
 @bot.command()
 @commands.check(isStaff)

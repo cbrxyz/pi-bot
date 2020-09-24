@@ -5,7 +5,7 @@ def assembleEmbed(
     title="",
     desc="",
     titleUrl="",
-    hexcolor="#ffffff",
+    hexcolor="#2E66B6",
     webcolor="",
     thumbnailUrl="",
     authorName="",
