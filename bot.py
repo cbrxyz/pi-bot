@@ -348,6 +348,18 @@ async def invite(ctx):
     await ctx.send("https://discord.gg/C9PGV6h")
 
 @bot.command()
+async def obb(ctx):
+    await ctx.send("<https://scioly.org/obb>")
+
+@bot.command(aliases=["tests", "testexchange"])
+async def exchange(ctx):
+    await ctx.send("<https://scioly.org/tests>")
+
+@bot.command()
+async def gallery(ctx):
+    await ctx.send("<https://scioly.org/gallery>")
+
+@bot.command()
 async def invites(ctx):
     """Fetches the invite table."""
     return await ctx.send("In progress...")
