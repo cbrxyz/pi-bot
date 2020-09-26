@@ -943,38 +943,25 @@ async def events(ctx, *args):
     removedRoles = []
     addedRoles = []
     couldNotHandle = []
-    tripleWordEvents = [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == 3]
-    doubleWordEvents = [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == 2]
-    for triple in tripleWordEvents:
-        words = triple.split(" ")
-        allHere = 0
-        allHere = sum(1 for word in words if word.lower() in newArgs)
-        if allHere == 3:
-            # Word is in args
-            role = discord.utils.get(member.guild.roles, name=triple)
-            if role in member.roles: 
-                await member.remove_roles(role)
-                removedRoles.append(triple)
-            else:
-                await member.add_roles(role)
-                addedRoles.append(triple)
-            for word in words:
-                newArgs.remove(word.lower())
-    for double in doubleWordEvents:
-        words = double.split(" ")
-        allHere = 0
-        allHere = sum(1 for word in words if word.lower() in newArgs)
-        if allHere == 2:
-            # Word is in args
-            role = discord.utils.get(member.guild.roles, name=double)
-            if role in member.roles: 
-                await member.remove_roles(role)
-                removedRoles.append(double)
-            else:
-                await member.add_roles(role)
-                addedRoles.append(double)
-            for word in words:
-                newArgs.remove(word.lower())
+    multiWordEvents = []
+    for i in range(7, 2, -1):
+        # Supports adding 7-word to 2-word long events
+        multiWordEvents += [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == i]
+        for event in multiWordEvents:
+            words = event.split(" ")
+            allHere = 0
+            allHere = sum(1 for word in words if word.lower() in newArgs)
+            if allHere == i:
+                # Word is in args
+                role = discord.utils.get(member.guild.roles, name=event)
+                if role in member.roles: 
+                    await member.remove_roles(role)
+                    removedRoles.append(event)
+                else:
+                    await member.add_roles(role)
+                    addedRoles.append(event)
+                for word in words:
+                    newArgs.remove(word.lower())
     for arg in newArgs:
         foundEvent = False
         for event in eventInfo:
