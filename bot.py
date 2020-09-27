@@ -1613,7 +1613,7 @@ async def on_member_join(member):
     "You can add roles here, using the commands shown at the top of this channel. " + 
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." + 
     "\n\n" + 
-    "**A helper or moderator will confirm you ASAP. You will then have access to the rest of the server to chat with other members!**")
+    "**Please add roles using the commands above, and if you have a question, please type it here. After adding roles, a moderator will give you access to the rest of the server to chat with other members!**")
     memberCount = len(member.guild.members)
     loungeChannel = discord.utils.get(member.guild.text_channels, name="lounge")
     if memberCount % 100 == 0:

@@ -908,5 +908,44 @@ COMMAND_INFO = [
             "Global Moderator",
             "Wiki/Gallery Moderator"
         ]
+    },
+    {
+        "name": "obb",
+        "description": "returns the link to the Scioly.org Open Bulletin Board",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!obb",
+            "result": "https://scioly.org/obb"
+        }],
+        "access": [
+            "Member"
+        ]
+    },
+    {
+        "name": "exchange",
+        "description": "returns the link to the Scioly.org Test Exchange",
+        "aliases": ["tests", "testexchange"],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!exchange",
+            "result": "https://scioly.org/tests"
+        }],
+        "access": [
+            "Member"
+        ]
+    },
+    {
+        "name": "gallery",
+        "description": "returns the link to the Scioly.org Image Gallery",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!gallery",
+            "result": "https://scioly.org/gallery"
+        }],
+        "access": [
+            "Member"
+        ]
     }
 ]
