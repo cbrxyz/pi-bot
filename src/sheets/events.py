@@ -4,7 +4,7 @@ async def getEvents():
     """Creates Pi-Bot's event list."""
     discordSheet = await getWorksheet()
     eventSheet = await discordSheet.worksheet("Event Info")
-    info = await eventSheet.batch_get(["B2:C36"])
+    info = await eventSheet.batch_get(["B2:C100"])
     info = info[0]
     del info[0]
     eventNames = []
