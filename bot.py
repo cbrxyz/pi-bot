@@ -60,7 +60,7 @@ async def isStaff(ctx):
     aRole = discord.utils.get(member.guild.roles, name="Administrator")
     vipRole = discord.utils.get(member.guild.roles, name="VIP")
     if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
-    
+
 async def isLauncher(ctx):
     """Checks to see if the user is a launch helper."""
     member = ctx.message.author
@@ -422,7 +422,7 @@ async def states(ctx, *args):
     if len(newArgs) == 1:
         newArgs = newArgs[0].split(",")
     newArgs = [re.sub("[;,]", "", arg) for arg in newArgs]
-    
+
     member = ctx.message.author
     states = await getStateList()
     states = [s[:s.rfind(" (")] for s in states]
@@ -448,7 +448,7 @@ async def states(ctx, *args):
             allHere = sum(1 for word in words if word.lower() in newArgs)
             if allHere == len(words):
                 role = discord.utils.get(member.guild.roles, name=f"California ({string})")
-                if role in member.roles: 
+                if role in member.roles:
                     await member.remove_roles(role)
                     removedRoles.append(f"California ({string})")
                 else:
@@ -463,7 +463,7 @@ async def states(ctx, *args):
         if allHere == 3:
             # Word is in args
             role = discord.utils.get(member.guild.roles, name=triple)
-            if role in member.roles: 
+            if role in member.roles:
                 await member.remove_roles(role)
                 removedRoles.append(triple)
             else:
@@ -478,7 +478,7 @@ async def states(ctx, *args):
         if allHere == 2:
             # Word is in args
             role = discord.utils.get(member.guild.roles, name=double)
-            if role in member.roles: 
+            if role in member.roles:
                 await member.remove_roles(role)
                 removedRoles.append(double)
             else:
@@ -491,7 +491,7 @@ async def states(ctx, *args):
         if roleName == False:
             return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
         role = discord.utils.get(member.guild.roles, name=roleName)
-        if role in member.roles: 
+        if role in member.roles:
             await member.remove_roles(role)
             removedRoles.append(roleName)
         else:
@@ -535,7 +535,7 @@ async def lock(ctx):
         await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False)
     else:
         await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False, read_messages=True)
-    
+
     wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
     gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
     aRole = discord.utils.get(member.guild.roles, name="Administrator")
@@ -632,7 +632,7 @@ async def ping(ctx, command="", *args):
     if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp"]:
         # Check to see if author in ping info already
         ignoredList = []
-        if any([True for u in PING_INFO if u['id'] == member]): 
+        if any([True for u in PING_INFO if u['id'] == member]):
             #yes
             user = next((u for u in PING_INFO if u['id'] == member), None)
             pings = user['pings']
@@ -863,7 +863,7 @@ async def met(ctx):
     plt.bar(names, data, color="#2E66B6")
     plt.xlabel("Usernames")
     plt.xticks(rotation=90)
-    plt.ylabel("Edits past week") 
+    plt.ylabel("Edits past week")
     plt.title("Top wiki editors for the past week!")
     plt.tight_layout()
     plt.savefig("met.png")
@@ -875,7 +875,7 @@ async def met(ctx):
     file = discord.File("met.png", filename="met.png")
     embed = assembleEmbed(
         title="**Top wiki editors for the past week!**",
-        desc=("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" + 
+        desc=("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" +
         f"`1st` - **{names[0]}** ({data[0]} edits)\n" +
         f"`2nd` - **{names[1]}** ({data[1]} edits)\n" +
         f"`3rd` - **{names[2]}** ({data[2]} edits)\n" +
@@ -954,7 +954,7 @@ async def events(ctx, *args):
             if allHere == i:
                 # Word is in args
                 role = discord.utils.get(member.guild.roles, name=event)
-                if role in member.roles: 
+                if role in member.roles:
                     await member.remove_roles(role)
                     removedRoles.append(event)
                 else:
@@ -974,7 +974,7 @@ async def events(ctx, *args):
             couldNotHandle.append(arg)
     for event in eventNames:
         role = discord.utils.get(member.guild.roles, name=event)
-        if role in member.roles: 
+        if role in member.roles:
             await member.remove_roles(role)
             removedRoles.append(event)
         else:
@@ -1383,7 +1383,7 @@ async def pronouns(ctx, *args):
             return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
             "> He / Him / His (get with `!pronouns he`)\n" +
             "> She / Her / Hers (get with `!pronouns she`)\n" +
-            "> They / Them / Theirs (get with `!pronouns they`)\n" + 
+            "> They / Them / Theirs (get with `!pronouns they`)\n" +
             "To remove pronouns, use `!pronouns remove`.\n" +
             "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
 
@@ -1399,7 +1399,7 @@ async def confirm(ctx, *args: discord.Member):
             if f > 0:
                 if message.author.id in PI_BOT_IDS and beforeMessage.author == member and len(message.embeds) == 0:
                     await message.delete()
-                
+
                 # Delete any messages by user
                 if message.author == member and len(message.embeds) == 0:
                     await message.delete()
@@ -1458,6 +1458,21 @@ async def stopnuke(ctx):
         await ctx.send(f"NUKING WILL BE ALLOWED IN {i}. BE WARNED COMMANDER.")
         await asyncio.sleep(1)
     STOPNUKE = False
+
+@bot.command(name="clrReact")
+@commands.check(isStaff)
+async def clearReactions(ctx, msg: discord.Message, a: discord.User = None):
+    users = ctx.message.mentions
+    if (not users):
+        await msg.clear_reactions()
+        await ctx.send("Cleared all reactions from message.")
+    else:
+        for u in users:
+            for r in msg.reactions:
+                # print(u.id)
+                await r.remove(u)
+        # msg.reactions.remove(ctx.message.mentions[0])
+        await ctx.send(f"Cleared reactions from message from {len(users)} user(s).")
 
 @bot.event
 async def on_message_edit(before, after):
@@ -1519,7 +1534,7 @@ async def on_message(message):
     # Log DMs
     if type(message.channel) == discord.DMChannel:
         await sendToDMLog(message)
-    
+
     print('Message from {0.author}: {0.content}'.format(message))
     if message.author.id in PI_BOT_IDS: return
     content = message.content
@@ -1609,10 +1624,10 @@ async def on_member_join(member):
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
             await autoReport("Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
-    await joinChannel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " + 
-    "You can add roles here, using the commands shown at the top of this channel. " + 
-    "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." + 
-    "\n\n" + 
+    await joinChannel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " +
+    "You can add roles here, using the commands shown at the top of this channel. " +
+    "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." +
+    "\n\n" +
     "**Please add roles by typing the commands above into the text box, and if you have a question, please type it here. After adding roles, a moderator will give you access to the rest of the server to chat with other members!**")
     memberCount = len(member.guild.members)
     loungeChannel = discord.utils.get(member.guild.text_channels, name="lounge")
@@ -1748,7 +1763,7 @@ async def on_raw_message_edit(payload):
 
 @bot.event
 async def on_raw_message_delete(payload):
-    if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]: 
+    if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]:
         print("Ignoring deletion event because of the channel it's from.")
         return
     channel = bot.get_channel(payload.channel_id)
@@ -1857,7 +1872,7 @@ async def on_command_error(ctx, error):
         return await ctx.send("Oh no... you don't have the required role to run this command.")
     if isinstance(error, discord.ext.commands.NSFWChannelRequired):
         return await ctx.send("Uh... this channel can only be run in a NSFW channel... sorry to disappoint.")
-        
+
     # Command errors
     if isinstance(error, discord.ext.commands.ConversionError):
         return await ctx.send("Oops, there was a bot error here, sorry about that.")
