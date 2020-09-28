@@ -911,12 +911,16 @@ COMMAND_INFO = [
     },
     {
         "name": "clrreact",
-        "description": "clears reactions from a message",
+        "description": "clears the reactions on a given message",
         "aliases": [],
         "parameters": [
             {
-                "message_id": "the message ID",
-                "user mentions": "(optional) a list of @s of the users of whose reactions to remove"
+                "name": "message ID",
+                "description": "the ID of the message to remove reactions from"
+            },
+            {
+                "name": "user list",
+                "description": "the list of users to remove reactions from"
             }
         ],
         "usage": [

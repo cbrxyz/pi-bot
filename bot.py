@@ -1459,19 +1459,17 @@ async def stopnuke(ctx):
         await asyncio.sleep(1)
     STOPNUKE = False
 
-'''
-Clears all reactions from a given message.
-
-Parameters
-----------
-msg : discord.Message
-    The message that has the reactions
-*args : List[discord.Member], optional
-    A list used to clear reactions only from these users.
-'''
-@bot.command(name="clrreact")
+@bot.command()
 @commands.check(isStaff)
-async def clearReactions(ctx, msg: discord.Message, *args: discord.Member):
+async def clrreact(ctx, msg: discord.Message, *args: discord.Member):
+    """
+    Clears all reactions from a given message.
+
+    :param msg: the message containing the reactions
+    :type msg: discord.Message
+    :param *args: list of users to clear reactions of
+    :type *args: List[discord.Member], optional
+    """
     users = args
     if (not users):
         await msg.clear_reactions()
