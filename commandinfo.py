@@ -910,6 +910,32 @@ COMMAND_INFO = [
         ]
     },
     {
+        "name": "clrreact",
+        "description": "clears reactions from a message",
+        "aliases": [],
+        "parameters": [
+            {
+                "message_id": "the message ID",
+                "user mentions": "(optional) a list of @s of the users of whose reactions to remove"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!clrreact 1234567890",
+                "result": "clears all reactions on message id 1234567890"
+            },
+            {
+                "cmd": "!clrreact 1234567890 @Nydauron",
+                "result": "clears all reactions from Nydauron on message id 1234567890"
+            }
+        ],
+        "access": [
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ]
+    },
+    {
         "name": "obb",
         "description": "returns the link to the Scioly.org Open Bulletin Board",
         "aliases": [],

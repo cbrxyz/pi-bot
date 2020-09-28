@@ -19,7 +19,7 @@ from discord.ext import commands, tasks
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
-from src.forums.forums import openBrowser
+# from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand
@@ -1459,9 +1459,9 @@ async def stopnuke(ctx):
         await asyncio.sleep(1)
     STOPNUKE = False
 
-@bot.command(name="clrReact")
+@bot.command(name="clrreact")
 @commands.check(isStaff)
-async def clearReactions(ctx, msg: discord.Message, a: discord.User = None):
+async def clearReactions(ctx, msg: discord.Message):
     users = ctx.message.mentions
     if (not users):
         await msg.clear_reactions()
@@ -1469,9 +1469,7 @@ async def clearReactions(ctx, msg: discord.Message, a: discord.User = None):
     else:
         for u in users:
             for r in msg.reactions:
-                # print(u.id)
                 await r.remove(u)
-        # msg.reactions.remove(ctx.message.mentions[0])
         await ctx.send(f"Cleared reactions from message from {len(users)} user(s).")
 
 @bot.event
