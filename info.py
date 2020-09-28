@@ -1,5 +1,5 @@
-version = "4.3.5"
-developers = "Created and developed by <@715048392408956950>."
+version = "4.3.6"
+developers = "Created and developed mainly by <@715048392408956950>. All contributors can be found here: <https://github.com/cbrxyz/pi-bot/graphs/contributors>"
 repo = "https://github.com/cbrxyz/pi-bot"
 wikiLink = "https://scioly.org/wiki/index.php/User:Pi-Bot"
 forumsLink = "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
