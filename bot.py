@@ -79,7 +79,8 @@ async def isAdmin(ctx):
 ##############
 PI_BOT_IDS = [
     723767075427844106,
-    743254543952904197
+    743254543952904197,
+    637519324072116247
 ]
 RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
@@ -1282,6 +1283,28 @@ async def unexalt(ctx, user):
 async def mute(ctx, user:discord.Member, *args):
     """Mutes a user."""
     time = " ".join(args)
+    # if user.id in PI_BOT_IDS:
+    #     return await ctx.send("Hey! You can't mute me!!")
+    # if time == None:
+    #     return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
+    # role = discord.utils.get(user.guild.roles, name="Muted")
+    # parsed = "indef"
+    # if time != "indef":
+    #     parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
+    #     if parsed == None:
+    #         return await ctx.send("Sorry, but I don't understand that length of time.")
+    #     CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
+    # await user.add_roles(role)
+    # await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
+    await _mute(ctx, user, time)
+
+@bot.command()
+async def selfmute(ctx, *args):
+    user = ctx.message.author
+    time = " ".join(args)
+    _mute(ctx, user, time)
+
+async def _mute(ctx, user:discordMember, time: str):
     if user.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
