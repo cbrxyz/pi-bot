@@ -944,7 +944,7 @@ async def events(ctx, *args):
     addedRoles = []
     couldNotHandle = []
     multiWordEvents = []
-    for i in range(7, 2, -1):
+    for i in range(7, 1, -1):
         # Supports adding 7-word to 2-word long events
         multiWordEvents += [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == i]
         for event in multiWordEvents:
