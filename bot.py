@@ -321,6 +321,11 @@ async def getchannelid(ctx):
     """Gets the channel ID of the current channel."""
     await ctx.send("Hey <@" + str(ctx.message.author.id) + ">! The channel ID is `" + str(ctx.message.channel.id) + "`. :)")
 
+@bot.command(aliases=["gei", "eid"])
+async def getemojiid(ctx, emoji: discord.Emoji):
+    """Gets the ID of the given emoji."""
+    return await ctx.send(f"{emoji} - `{emoji}`")
+
 @bot.command(aliases=["ui"])
 async def getuserid(ctx, user=None):
     """Gets the user ID of the caller or another user."""
@@ -944,6 +949,11 @@ async def events(ctx, *args):
     addedRoles = []
     couldNotHandle = []
     multiWordEvents = []
+
+    if type(EVENT_INFO) == int:
+        # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
+        return await ctx.send("Apologies... refreshing data currently. Try again in a few seconds.")
+    
     for i in range(7, 1, -1):
         # Supports adding 7-word to 2-word long events
         multiWordEvents += [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == i]

@@ -977,5 +977,25 @@ COMMAND_INFO = [
         "access": [
             "Member"
         ]
+    },
+    {
+        "name": "getemojiid",
+        "description": "gets the ID of the given emoji",
+        "aliases": ["gei", "eid"],
+        "parameters": [
+            {
+                "name": "emoji",
+                "description": "the emoji to get the ID of"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!eid :test_emoji:",
+                "result": "prints the ID of :test_emoji:"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
     }
 ]
