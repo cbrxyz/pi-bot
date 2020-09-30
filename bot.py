@@ -1290,7 +1290,7 @@ async def mute(ctx, user:discord.Member, *args):
     :type *args: str
     """
     time = " ".join(args)
-    await __mute(ctx, user, time)
+    await _mute(ctx, user, time)
 
 @bot.command()
 async def selfmute(ctx, *args):
@@ -1302,9 +1302,9 @@ async def selfmute(ctx, *args):
     """
     user = ctx.message.author
     time = " ".join(args)
-    await __mute(ctx, user, time)
+    await _mute(ctx, user, time)
 
-async def __mute(ctx, user:discord.Member, time: str):
+async def _mute(ctx, user:discord.Member, time: str):
     """
     Helper function for muting commands.
 
