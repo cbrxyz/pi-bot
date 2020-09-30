@@ -19,7 +19,7 @@ from discord.ext import commands, tasks
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
-# from src.forums.forums import openBrowser
+from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand
@@ -1281,17 +1281,38 @@ async def unexalt(ctx, user):
 @bot.command()
 @commands.check(isStaff)
 async def mute(ctx, user:discord.Member, *args):
-    """Mutes a user."""
+    """
+    Mutes a user.
+
+    :param user: User to be muted.
+    :type user: discord.Member
+    :param *args: The time to mute the user for.
+    :type *args: str
+    """
     time = " ".join(args)
-    await _mute(ctx, user, time)
+    await __mute(ctx, user, time)
 
 @bot.command()
 async def selfmute(ctx, *args):
+    """
+    Self mutes the user that invokes the command.
+
+    :param *args: The time to mute the user for.
+    :type *args: str
+    """
     user = ctx.message.author
     time = " ".join(args)
-    await _mute(ctx, user, time)
+    await __mute(ctx, user, time)
 
-async def _mute(ctx, user:discord.Member, time: str):
+async def __mute(ctx, user:discord.Member, time: str):
+    """
+    Helper function for muting commands.
+
+    :param user: User to be muted.
+    :type user: discord.Member
+    :param time: The time to mute the user for.
+    :type time: str
+    """
     if user.id in PI_BOT_IDS:
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
