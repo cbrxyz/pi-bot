@@ -182,6 +182,30 @@ COMMAND_INFO = [
         ]
     },
     {
+        "name": "selfmute",
+        "description": "Mutes the user who calls it",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "time",
+                "description": "the length of the mute"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!selfmute \"1 day\"",
+                "result": "mutes the user who sends command for 1 day"
+            },
+            {
+                "cmd": "!selfmute \"indef\"",
+                "result": "mutes the user who sends command for an indefinite amount of time"
+            }
+        ],
+        "access":[
+            "Member"
+        ]
+    },
+    {
         "name": "unmute",
         "description": "unmutes a user",
         "aliases": [],
