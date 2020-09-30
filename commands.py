@@ -4,27 +4,6 @@ import discord
 from embed import assembleEmbed
 from commandinfo import COMMAND_INFO
 
-async def getList(ctx):
-    """Gets the list of commands a user can access."""
-    availableCommands = await _generateList(ctx.message.author, False)
-    return assembleEmbed(
-        title=f"Full List of Available Commands for {ctx.message.author}",
-        desc="\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands])
-    )
-
-async def getQuickList(ctx):
-    """Gets the quick list of commands a user can access."""
-    availableCommands = await _generateList(ctx.message.author, True)
-    return assembleEmbed(
-        title=f"Quick List of Available Commands for {ctx.message.author}",
-        desc="To view full list, please do !list all",
-        fields=[{
-            "name": "Commands",
-            "value": "\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands]),
-            "inline": False
-        }]
-    )
-
 async def _generateList(member: discord.Member, isQuick = False):
     """
     Generates a list of available commands for a user.
@@ -35,7 +14,7 @@ async def _generateList(member: discord.Member, isQuick = False):
     :type isQuick: bool, optional
 
     :return availableCommands: A list of commands to be displayed.
-    :type availableCommands: List[Dictionary]
+    :rtype availableCommands: List[Dictionary]
     """
     availableCommands = []
     for command in COMMAND_INFO:
@@ -50,6 +29,27 @@ async def _generateList(member: discord.Member, isQuick = False):
                     })
                     break
     return availableCommands
+
+async def getList(ctx):
+    """Gets the list of commands a user can access."""
+    availableCommands = await _generateList(ctx.message.author, False)
+    return assembleEmbed(
+        title=f"Full List of Available Commands for {ctx.message.author}",
+        desc="\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands])
+    )
+
+async def getQuickList(ctx):
+    """Gets the quick list of commands a user can access."""
+    availableCommands = await _generateList(ctx.message.author, True)
+    return assembleEmbed(
+        title=f"Quick List of Available Commands for {ctx.message.author}",
+        desc="To view full list, please type `!list all`.",
+        fields=[{
+            "name": "Commands",
+            "value": "\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands]),
+            "inline": False
+        }]
+    )
 
 async def getHelp(ctx, cmd):
     """Gets the help embed for a command."""
