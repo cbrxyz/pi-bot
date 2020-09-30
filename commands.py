@@ -6,7 +6,7 @@ from commandinfo import COMMAND_INFO
 
 async def getList(ctx):
     """Gets the list of commands a user can access."""
-    availableCommands = await __generateList(ctx.message.author, False)
+    availableCommands = await _generateList(ctx.message.author, False)
     return assembleEmbed(
         title=f"Full List of Available Commands for {ctx.message.author}",
         desc="\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands])
@@ -14,7 +14,7 @@ async def getList(ctx):
 
 async def getQuickList(ctx):
     """Gets the quick list of commands a user can access."""
-    availableCommands = await __generateList(ctx.message.author, True)
+    availableCommands = await _generateList(ctx.message.author, True)
     return assembleEmbed(
         title=f"Quick List of Available Commands for {ctx.message.author}",
         desc="To view full list, please do !list all",
@@ -25,7 +25,7 @@ async def getQuickList(ctx):
         }]
     )
 
-async def __generateList(member: discord.Member, isQuick = False):
+async def _generateList(member: discord.Member, isQuick = False):
     """
     Generates a list of available commands for a user.
 
