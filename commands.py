@@ -6,22 +6,39 @@ from commandinfo import COMMAND_INFO
 
 async def getList(ctx):
     """Gets the list of commands a user can access."""
-    availableCommands = []
-    member = ctx.message.author
-    for command in COMMAND_INFO:
-        access = command['access']
-        for roleName in access:
-            role = discord.utils.get(member.guild.roles, name=roleName)
-            if role in member.roles:
-                availableCommands.append({
-                    'name': command['name'],
-                    'description': command['description']
-                })
-                break
+    availableCommands = await __generateList(ctx.message.author, False)
     return assembleEmbed(
-        title=f"Available Commands for {ctx.message.author}",
+        title=f"Full List of Available Commands for {ctx.message.author}",
         desc="\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands])
     )
+
+async def getQuickList(ctx):
+    """Gets the quick list of commands a user can access."""
+    availableCommands = await __generateList(ctx.message.author, True)
+    return assembleEmbed(
+        title=f"Quick List of Available Commands for {ctx.message.author}",
+        desc="To view full list, please do !list all",
+        fields=[{
+            "name": "Commands",
+            "value": "\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands]),
+            "inline": False
+        }]
+    )
+
+async def __generateList(member: discord.Member, isQuick = False):
+    availableCommands = []
+    for command in COMMAND_INFO:
+        if not isQuick or command['inQuickList']:
+            access = command['access']
+            for roleName in access:
+                role = discord.utils.get(member.guild.roles, name=roleName)
+                if role in member.roles:
+                    availableCommands.append({
+                        'name': command['name'],
+                        'description': command['description']
+                    })
+                    break
+    return availableCommands
 
 async def getHelp(ctx, cmd):
     """Gets the help embed for a command."""
