@@ -26,6 +26,17 @@ async def getQuickList(ctx):
     )
 
 async def __generateList(member: discord.Member, isQuick = False):
+    """
+    Generates a list of available commands for a user.
+
+    :param member: The user that wants to generate a list of commands
+    :type member: discord.Member
+    :param isQuick: True if quick list should be generated. False if full list should be generated.
+    :type isQuick: bool, optional
+
+    :return availableCommands: A list of commands to be displayed.
+    :type availableCommands: List[Dictionary]
+    """
     availableCommands = []
     for command in COMMAND_INFO:
         if not isQuick or command['inQuickList']:
