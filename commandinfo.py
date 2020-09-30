@@ -12,7 +12,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "getuserid",
@@ -36,7 +37,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "about",
@@ -51,7 +53,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "fish",
@@ -66,7 +69,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "nofish",
@@ -81,7 +85,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "help",
@@ -105,7 +110,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "exalt",
@@ -127,7 +133,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "unexalt",
@@ -149,7 +156,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "mute",
@@ -179,7 +187,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "selfmute",
@@ -225,7 +234,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "ban",
@@ -259,7 +269,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "unban",
@@ -281,7 +292,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "states",
@@ -313,7 +325,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "nuke",
@@ -335,7 +348,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "division",
@@ -359,7 +373,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "dogbomb",
@@ -379,7 +394,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "shibabomb",
@@ -399,7 +415,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "events",
@@ -431,7 +448,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "kick",
@@ -453,7 +471,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "prepembed",
@@ -519,7 +538,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "report",
@@ -539,7 +559,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "games",
@@ -554,7 +575,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "ping",
@@ -590,7 +612,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "pronouns",
@@ -614,7 +637,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "wiki",
@@ -666,7 +690,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "profile",
@@ -690,7 +715,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "list",
@@ -718,7 +744,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "count",
@@ -731,7 +758,8 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "wikipedia",
@@ -767,7 +795,8 @@ COMMAND_INFO = [
         ],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "hello",
@@ -780,7 +809,8 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "refresh",
@@ -795,7 +825,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "me",
@@ -815,7 +846,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "dnd",
@@ -830,7 +862,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "slowmode",
@@ -860,7 +893,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "school",
@@ -888,7 +922,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "invite",
@@ -901,7 +936,8 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": True
     },
     {
         "name": "lock",
@@ -916,7 +952,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "unlock",
@@ -931,7 +968,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "clrreact",
@@ -961,7 +999,8 @@ COMMAND_INFO = [
             "Administrator",
             "Global Moderator",
             "Wiki/Gallery Moderator"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "obb",
@@ -974,7 +1013,8 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "exchange",
@@ -987,7 +1027,8 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "gallery",
@@ -1000,7 +1041,8 @@ COMMAND_INFO = [
         }],
         "access": [
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "getemojiid",
@@ -1020,6 +1062,7 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     }
 ]

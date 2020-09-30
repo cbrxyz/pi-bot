@@ -29,7 +29,7 @@ from info import getAbout
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
 from embed import assembleEmbed
-from commands import getList, getHelp
+from commands import getList, getQuickList, getHelp
 from lists import getStateList
 
 load_dotenv()
@@ -792,7 +792,10 @@ async def me(ctx, *args):
 @bot.command()
 async def list(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
-    if cmd == False or cmd == "commands":
+    if cmd == False: # for quick list of commands
+        ls = await getQuickList(ctx)
+        await ctx.send(embed=ls)
+    if cmd == "all" or cmd == "commands":
         ls = await getList(ctx)
         await ctx.send(embed=ls)
     elif cmd == "states":
@@ -954,7 +957,7 @@ async def events(ctx, *args):
     if type(EVENT_INFO) == int:
         # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
         return await ctx.send("Apologies... refreshing data currently. Try again in a few seconds.")
-    
+
     for i in range(7, 1, -1):
         # Supports adding 7-word to 2-word long events
         multiWordEvents += [e['eventName'] for e in eventInfo if len(e['eventName'].split(" ")) == i]
