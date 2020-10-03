@@ -278,13 +278,17 @@ COMMAND_INFO = [
         "aliases": [],
         "parameters": [
             {
-                "name": "user id",
-                "description": "the id of the user that needs to be unbanned"
+                "name": "user id/@user",
+                "description": "the id or the mention of the user that needs to be unbanned"
             }
         ],
         "usage":[
             {
                 "cmd": "!unban 12345678910",
+                "result": "unbans @user"
+            },
+            {
+                "cmd": "!unban @user",
                 "result": "unbans @user"
             }
         ],
