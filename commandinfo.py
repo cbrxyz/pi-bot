@@ -212,7 +212,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "unmute",
