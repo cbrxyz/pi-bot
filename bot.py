@@ -1438,6 +1438,17 @@ async def confirm(ctx, *args: discord.Member):
     for i, member in enumerate(args):
         beforeMessage = None
         f = 0
+        role1 = discord.utils.get(member.guild.roles, name="Unconfirmed")
+        role2 = discord.utils.get(member.guild.roles, name="Member")
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
+        await asyncio.sleep(3)
+        if not i:
+            await ctx.message.delete()
+        await message.delete()
+
+    for i, member in enumerate(args):
         async for message in ctx.message.channel.history(oldest_first=True):
             # Delete any messages sent by Pi-Bot where message before is by member
             if f > 0:
@@ -1450,15 +1461,6 @@ async def confirm(ctx, *args: discord.Member):
 
             beforeMessage = message
             f += 1
-        role1 = discord.utils.get(member.guild.roles, name="Unconfirmed")
-        role2 = discord.utils.get(member.guild.roles, name="Member")
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-        await asyncio.sleep(3)
-        if not i:
-            await ctx.message.delete()
-        await message.delete()
 
 @bot.command()
 async def nuke(ctx, count):
