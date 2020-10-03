@@ -19,7 +19,7 @@ from discord.ext import commands, tasks
 from src.sheets.events import getEvents
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
-from src.forums.forums import openBrowser
+# from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand
@@ -1435,6 +1435,7 @@ async def pronouns(ctx, *args):
 @commands.check(isLauncher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
+    msgs = []
     for i, member in enumerate(args):
         beforeMessage = None
         f = 0
@@ -1443,10 +1444,13 @@ async def confirm(ctx, *args: discord.Member):
         await member.remove_roles(role1)
         await member.add_roles(role2)
         message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-        await asyncio.sleep(3)
+        msgs.append(message)
+
+    await asyncio.sleep(3)
+    for i, m in enumerate(msgs):
         if not i:
             await ctx.message.delete()
-        await message.delete()
+        await m.delete()
 
     for i, member in enumerate(args):
         async for message in ctx.message.channel.history(oldest_first=True):
