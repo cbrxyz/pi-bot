@@ -17,6 +17,7 @@ from discord import channel
 from discord.ext import commands, tasks
 
 from src.sheets.events import getEvents
+from src.sheets.tournaments import getTournamentChannels
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables
 from src.forums.forums import openBrowser
@@ -103,10 +104,12 @@ SHELLS_OPEN = []
 CRON_LIST = []
 RECENT_MESSAGES = []
 STEALFISH_BAN = []
+TOURNAMENT_INFO = []
+REQUESTED_TOURNAMENTS = []
 STOPNUKE = False
 
 ##############
-# FfCTIONS TO BE REMOVED
+# FUNCTIONS TO BE REMOVED
 ##############
 bot.remove_command("help")
 
@@ -124,6 +127,7 @@ async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
     await pullPrevInfo()
+    await updateTournamentList()
     refreshSheet.start()
     postSomething.start()
     cron.start()
@@ -262,7 +266,8 @@ async def prepareForSending(type="variable"):
     r3 = json.dumps(TOURNEY_REPORT_IDS)
     r4 = json.dumps(COACH_REPORT_IDS)
     r5 = json.dumps(CRON_LIST, default = datetimeConverter)
-    await sendVariables([[r1], [r2], [r3], [r4], [r5]], type)
+    r6 = json.dumps(REQUESTED_TOURNAMENTS)
+    await sendVariables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
     print("Stored variables in sheet.")
 
 def datetimeConverter(o):
@@ -276,6 +281,7 @@ async def pullPrevInfo():
     global TOURNEY_REPORT_IDS
     global COACH_REPORT_IDS
     global CRON_LIST
+    global REQUESTED_TOURNAMENTS
     REPORT_IDS = data[0][0]
     PING_INFO = data[1][0]
     TOURNEY_REPORT_IDS = data[2][0]
@@ -284,7 +290,127 @@ async def pullPrevInfo():
     for c in cron:
         c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S.%f")
     CRON_LIST = cron
+    REQUESTED_TOURNAMENTS = data[5][0]
     print("Fetched previous variables.")
+
+@bot.command(aliases=["tc", "tourney", "tournaments"])
+async def tournament(ctx, *args):
+    member = ctx.message.author
+    for arg in args:
+        found = False
+        for t in TOURNAMENT_INFO:
+            if arg == t[1]:
+                found = True
+                role = discord.utils.get(member.guild.roles, name=t[0])
+                if role in member.roles:
+                    await ctx.send(f"Removed you from the `{t[0]}` channel.")
+                    await member.remove_roles(role)
+                else:
+                    await ctx.send(f"Added you to the `{t[0]}` channel.")
+                    await member.add_roles(role)
+                break
+        if not found:
+            uid = member.id
+            found2 = False
+            votes = 1
+            for t in REQUESTED_TOURNAMENTS:
+                if arg == t['iden']:
+                    found2 = True
+                    if uid in t['users']:
+                        return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
+                    t['count'] += 1
+                    t['users'].append(uid)
+                    votes = t['count']
+                    break
+            if not found2:
+                REQUESTED_TOURNAMENTS.append({'iden': arg, 'count': 1, 'users': [uid]})
+            await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
+            await updateTournamentList()
+
+async def updateTournamentList():
+    tl = await getTournamentChannels()
+    tl.sort(key=lambda x: x[0])
+    global TOURNAMENT_INFO
+    global REQUESTED_TOURNAMENTS
+    TOURNAMENT_INFO = tl
+    server = bot.get_guild(SERVER_ID)
+    tourneyChannel = discord.utils.get(server.text_channels, name="tournaments")
+    tourneyCat = discord.utils.get(server.categories, name="Tournaments")
+    botSpam = discord.utils.get(server.text_channels, name="bot-spam")
+    serverSupport = discord.utils.get(server.text_channels, name="server-support")
+    gm = discord.utils.get(server.roles, name="Global Moderator")
+    a = discord.utils.get(server.roles, name="Administrator")
+    stringList = ""
+    openSoonList = ""
+    channelsRequestedList = ""
+    now = datetime.datetime.now()
+    for t in tl: # For each tournament in the sheet
+        # Add the listing to the embed
+        print(f"Tournament List: Handling {t[0]}")
+
+        # Check if the channel needs to be made / deleted
+        ch = discord.utils.get(server.text_channels, name=t[1])
+        r = discord.utils.get(server.roles, name=t[0])
+        tourneyDate = t[4]
+        beforeDays = int(t[5])
+        afterDays = int(t[6])
+        tDDT = datetime.datetime.strptime(tourneyDate, "%Y-%m-%d")
+        dayDiff = (tDDT - now).days
+        print(f"Tournament List: Day diff for {t[0]} is {dayDiff} days.")
+        if (dayDiff < (-1 * afterDays)) and ch != None:
+            # If past tournament date, now out of range
+            await autoReport("Tournament Channel & Role Needs to be Deleted", "orange", f"The {ch.mention} channel and {r.mention} role need to be deleted, as it is after the tournament date.")
+        elif (dayDiff < beforeDays) and ch == None:
+            # If before tournament and in range
+            newRole = await server.create_role(name=t[0])
+            newCh = await server.create_text_channel(t[1], category=tourneyCat)
+            await newCh.edit(topic=f"{t[2]} - Discussion around the {t[0]} occurring on {t[4]}.", sync_permissions=True)
+            await newCh.set_permissions(newRole, read_messages=True)
+            await newCh.set_permissions(server.default_role, read_messages=False)
+            stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+        elif ch != None:
+            stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+        elif (dayDiff >= beforeDays):
+            openSoonList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+    REQUESTED_TOURNAMENTS.sort(key=lambda x: x['count'])
+    for t in REQUESTED_TOURNAMENTS:
+        channelsRequestedList += f"`#{t['iden']}` - **{t['count']} votes**\n"
+    print(stringList)
+    print(openSoonList)
+    print(channelsRequestedList)
+    embeds = []
+    embeds.append(assembleEmbed(
+        title=":medal: Tournament Channels Listing",
+        desc=(
+            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but are not finalized." + 
+            f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." + 
+            f"\n\n* To make a new request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
+            f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
+        )
+    ))
+    embeds.append(assembleEmbed(
+        title="Currently Available Channels",
+        desc=stringList if len(stringList) > 0 else "No channels are available currently."
+    ))
+    embeds.append(assembleEmbed(
+        title="Channels Opening Soon",
+        desc=openSoonList if len(openSoonList) > 0 else "No channels are opening soon currently.",
+    ))
+    embeds.append(assembleEmbed(
+        title="Channels Requested",
+        desc=channelsRequestedList if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, with the name of the tournament."
+    ))
+    hist = await tourneyChannel.history(oldest_first=True).flatten()
+    if len(hist) == 4:
+        count = 0
+        async for m in tourneyChannel.history(oldest_first=True):
+            await m.edit(embed=embeds[count])
+            count += 1
+    else:
+        pastMessages = await tourneyChannel.history(limit=100).flatten()
+        await tourneyChannel.delete_messages(pastMessages)
+        for e in embeds:
+            await tourneyChannel.send(embed=e)
 
 @bot.command()
 @commands.check(isStaff)
@@ -311,6 +437,7 @@ async def eat(ctx, user):
 @commands.check(isStaff)
 async def refresh(ctx):
     """Refreshes data from the sheet."""
+    await updateTournamentList()
     res = await refreshAlgorithm()
     if res == True:
         await ctx.send("Successfully refreshed data from sheet.")
@@ -385,19 +512,6 @@ async def coach(ctx):
         await autoReport("Member Applied for Coach Role", "DarkCyan", f"{ctx.message.author.name} applied for the Coach role. Please verify that they are a coach.")
         await ctx.send("Successfully gave you the Coach role, and sent a verification message to staff.")
 
-@bot.command()
-async def tourney(ctx):
-    """Gives an account the Tournament role."""
-    await ctx.send("Giving you the Tournament role...")
-    member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Tournament")
-    if role in member.roles:
-        await ctx.send("Oops... you already have the Tournament role. If it needs to be removed, please open a report using `!report \"message...\"`.")
-    else:
-        await member.add_roles(role)
-        await autoReport("Member Applied for Tournament Role", "DarkCyan", f"{ctx.message.author.name} applied for the Tournament role. Please verify that they are a tournament.")
-        await ctx.send("Successfully gave you the Tournament role, and sent a verification message to staff.")
-
 @bot.command(aliases=["slow", "sm"])
 async def slowmode(ctx, arg:int=None):
     if arg == None:
@@ -413,11 +527,6 @@ async def slowmode(ctx, arg:int=None):
             await ctx.send(f"Enabled a {arg} second slowmode.")
         else:
             await ctx.send(f"Removed slowmode.")
-
-@bot.command(aliases=["tourneys", "comps", "competitions"])
-async def tournaments(ctx, *args):
-    """Coming soon"""
-    pass
 
 @bot.command(aliases=["state"])
 async def states(ctx, *args):
@@ -610,7 +719,8 @@ async def report(ctx, *args):
 # Meant for Pi-Bot only
 async def autoReport(reason, color, message):
     """Allows Pi-Bot to generate a report by himself."""
-    reportsChannel = bot.get_channel(739596418762801213)
+    server = bot.get_guild(SERVER_ID)
+    reportsChannel = discord.utils.get(server.text_channels, name="reports")
     embed = assembleEmbed(
         title=f"{reason} (message from Pi-Bot)",
         webcolor=color,

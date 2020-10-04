@@ -69,7 +69,7 @@ async def sendVariables(dataArr, type):
     if type == "variable":
         varSheet = await ss.worksheet("Variable Backup")
         await varSheet.batch_update([{
-            'range': "C3:C7",
+            'range': "C3:C8",
             'values': dataArr
         }])
         print("Stored variables in Google Sheet.")
@@ -83,7 +83,7 @@ async def getVariables():
     agc = await agcm.authorize()
     ss = await agc.open(SHEET_NAME)
     varSheet = await ss.worksheet("Variable Backup")
-    dataArr = await varSheet.batch_get(["C3:C7"])
+    dataArr = await varSheet.batch_get(["C3:C8"])
     dataArr = dataArr[0]
     for row in dataArr:
         row[0] = json.loads(row[0])
@@ -104,12 +104,12 @@ async def getRawCensor():
 async def updateWikiPage(title):
     ss = await getWorksheet()
     varSheet = await ss.worksheet("Variable Backup")
-    await varSheet.update_acell('C8', title)
+    await varSheet.update_acell('C30', title)
 
 async def getWikiPage():
     ss = await getWorksheet()
     varSheet = await ss.worksheet("Variable Backup")
-    res = await varSheet.batch_get(["C8"])
+    res = await varSheet.batch_get(["C30"])
     return res[0][0][0]
 
 event_loop = asyncio.get_event_loop()
