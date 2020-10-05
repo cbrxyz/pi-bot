@@ -296,12 +296,17 @@ async def pullPrevInfo():
 @bot.command(aliases=["tc", "tourney", "tournaments"])
 async def tournament(ctx, *args):
     member = ctx.message.author
-    for arg in args:
+    newArgs = args
+    for arg in newArgs:
+        # Stop users from possibly adding the channel hash in front of arg
+        arg = arg.replace("#", "")
         found = False
         for t in TOURNAMENT_INFO:
             if arg == t[1]:
                 found = True
                 role = discord.utils.get(member.guild.roles, name=t[0])
+                if role == None:
+                    return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
                 if role in member.roles:
                     await ctx.send(f"Removed you from the `{t[0]}` channel.")
                     await member.remove_roles(role)
@@ -323,9 +328,33 @@ async def tournament(ctx, *args):
                     votes = t['count']
                     break
             if not found2:
-                REQUESTED_TOURNAMENTS.append({'iden': arg, 'count': 1, 'users': [uid]})
+                await autoReport("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tva {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tva [actual name] {uid}`.")
+                return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
             await updateTournamentList()
+
+@bot.command()
+@commands.check(isStaff)
+async def tla(ctx, iden, uid):
+    global REQUESTED_TOURNAMENTS
+    for t in REQUESTED_TOURNAMENTS:
+        if t['iden'] == iden:
+            t['count'] += 1
+            await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
+            return await updateTournamentList()
+    REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
+    await updateTournamentList()
+    return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
+
+@bot.command()
+@commands.check(isStaff)
+async def tlr(ctx, iden):
+    global REQUESTED_TOURNAMENTS
+    for t in REQUESTED_TOURNAMENTS:
+        if t['iden'] == iden:
+            REQUESTED_TOURNAMENTS.remove(t)
+    await updateTournamentList()
+    return await ctx.send(f"Removed `#{iden}` from the tournament list.")
 
 async def updateTournamentList():
     tl = await getTournamentChannels()
@@ -371,8 +400,8 @@ async def updateTournamentList():
         elif ch != None:
             stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
         elif (dayDiff >= beforeDays):
-            openSoonList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
-    REQUESTED_TOURNAMENTS.sort(key=lambda x: x['count'])
+            openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
+    REQUESTED_TOURNAMENTS.sort(key=lambda x: x['count'], reverse=True)
     for t in REQUESTED_TOURNAMENTS:
         channelsRequestedList += f"`#{t['iden']}` - **{t['count']} votes**\n"
     print(stringList)
@@ -382,7 +411,7 @@ async def updateTournamentList():
     embeds.append(assembleEmbed(
         title=":medal: Tournament Channels Listing",
         desc=(
-            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but are not finalized." + 
+            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not recevied enough votes to be considered for a channel." + 
             f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." + 
             f"\n\n* To make a new request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
             f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
