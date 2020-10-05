@@ -328,7 +328,7 @@ async def tournament(ctx, *args):
                     votes = t['count']
                     break
             if not found2:
-                await autoReport("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tva {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tva [actual name] {uid}`.")
+                await autoReport("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
             await updateTournamentList()
@@ -401,17 +401,14 @@ async def updateTournamentList():
             stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
         elif (dayDiff >= beforeDays):
             openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
-    REQUESTED_TOURNAMENTS.sort(key=lambda x: x['count'], reverse=True)
+    REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
     for t in REQUESTED_TOURNAMENTS:
         channelsRequestedList += f"`#{t['iden']}` - **{t['count']} votes**\n"
-    print(stringList)
-    print(openSoonList)
-    print(channelsRequestedList)
     embeds = []
     embeds.append(assembleEmbed(
         title=":medal: Tournament Channels Listing",
         desc=(
-            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not recevied enough votes to be considered for a channel." + 
+            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received 10 votes to be considered for a channel." + 
             f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." + 
             f"\n\n* To make a new request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
             f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
