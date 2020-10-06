@@ -297,9 +297,12 @@ async def pullPrevInfo():
 async def tournament(ctx, *args):
     member = ctx.message.author
     newArgs = args
+    if len(args) == 0:
+        return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
     for arg in newArgs:
         # Stop users from possibly adding the channel hash in front of arg
         arg = arg.replace("#", "")
+        arg = arg.lower()
         found = False
         for t in TOURNAMENT_INFO:
             if arg == t[1]:
@@ -991,7 +994,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
         return await ctx.send("Hey! You can't kick me!!")
     await user.kick(reason=reason)
     await ctx.send("The user was kicked.")
-
+    
 @bot.command()
 @commands.check(isStaff)
 async def met(ctx):
