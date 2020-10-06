@@ -1067,6 +1067,27 @@ COMMAND_INFO = [
         "inQuickList": False
     },
     {
+        "name": "latex",
+        "description": "produces a LaTeX (math-formatted) output based on given code",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "code",
+                "description": "LaTeX code to run"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!latex 2 + 2 = 4",
+                "result": "Prints `2 + 2 = 4` in LaTeX"
+            },
+            {
+                "cmd": "!latex 4 - 1 = 3 \\text{ quick maffs}",
+                "result": "Prints `$4 - 1 = 3 quick maffs` in LaTeX"
+            }
+        ]
+    },
+    {
         "name": "tournament",
         "description": "allows the user to add/remove themselves from tournament channels, or request new channels",
         "aliases": ["tournaments", "tc"],
@@ -1084,7 +1105,7 @@ COMMAND_INFO = [
                 "description": "the optional channel name of the nth tournament to toggle/request"
             }
         ],
-        "usage":[
+        "usage": [
             {
                 "cmd": "!tournament mit",
                 "result": "toggles the #mit channel for the user"
