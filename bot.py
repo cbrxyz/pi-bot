@@ -304,6 +304,15 @@ async def tournament(ctx, *args):
         arg = arg.replace("#", "")
         arg = arg.lower()
         found = False
+        if arg == "all":
+            role = discord.utils.get(member.guild.roles, name="All Tournaments")
+            if role in member.roles:
+                await ctx.send(f"Removed your `All Tournaments` role.")
+                await member.remove_roles(role)
+            else:
+                await ctx.send(f"Added your `All Tournaments` role.")
+                await member.add_roles(role)
+            continue
         for t in TOURNAMENT_INFO:
             if arg == t[1]:
                 found = True
@@ -994,7 +1003,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
         return await ctx.send("Hey! You can't kick me!!")
     await user.kick(reason=reason)
     await ctx.send("The user was kicked.")
-    
+
 @bot.command()
 @commands.check(isStaff)
 async def met(ctx):
