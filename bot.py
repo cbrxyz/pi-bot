@@ -626,7 +626,7 @@ async def autoReport(reason, color, message):
     await message.add_reaction("\U0000274C")
 
 @bot.command()
-async def ping(ctx, command, *args):
+async def ping(ctx, command=None, *args):
     """Controls Pi-Bot's ping interface."""
     if command is None:
         return await ctx.send("Uh, I need a command you want to run.")
