@@ -1067,22 +1067,22 @@ COMMAND_INFO = [
     },
     {
         "name": "latex",
-        "description": "produces a LaTeX output based on given code",
+        "description": "produces a LaTeX (math-formatted) output based on given code",
         "aliases": [],
         "parameters": [
             {
-                "name": "Code",
+                "name": "code",
                 "description": "LaTeX code to run"
             }
         ],
         "usage":[
             {
                 "cmd": "!latex 2 + 2 = 4",
-                "result": "Prints \"$2 + 2 = 4$\" in LaTeX"
+                "result": "Prints `2 + 2 = 4` in LaTeX"
             },
             {
                 "cmd": "!latex 4 - 1 = 3 \\text{ quick maffs}",
-                "result": "Prints \"$4 - 1 = 3$ quick maffs\" in LaTeX"
+                "result": "Prints `$4 - 1 = 3 quick maffs` in LaTeX"
             }
         ],
         "access":[
