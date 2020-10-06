@@ -212,7 +212,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "unmute",
@@ -1062,6 +1063,93 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "tournament",
+        "description": "allows the user to add/remove themselves from tournament channels, or request new channels",
+        "aliases": ["tournaments", "tc"],
+        "parameters": [
+            {
+                "name": "name1",
+                "description": "the channel name of the tournament to toggle/request"
+            },
+            {
+                "name": "[name2]",
+                "description": "the optional channel name of the second tournament to toggle/request"
+            },
+            {
+                "name": "[name_n]",
+                "description": "the optional channel name of the nth tournament to toggle/request"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!tournament mit",
+                "result": "toggles the #mit channel for the user"
+            },
+            {
+                "cmd": "!tournament all",
+                "result": "toggles all tournament channels for the user"
+            },
+            {
+                "cmd": "!tournament mit new-tourney",
+                "result": "toggles the #mit channel for the user and requests a #new-tourney channel"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": True
+    },
+    {
+        "name": "tla",
+        "description": "allows staff to add tournament names to the tournament list",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "name",
+                "description": "the channel name to add to the list"
+            },
+            {
+                "name": "uid",
+                "description": "the ID of the user who requested the channel"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!tla new-tourney 1234567890",
+                "result": "adds the `#new-tourney` channel to the tournaments list in `1234567890`'s name"
+            },
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "tlr",
+        "description": "allows staff to remove tournament names from the tournament list",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "name",
+                "description": "the channel name to add to the list"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!tlr new-tourney",
+                "result": "removes the `#new-tourney` channel from the tournaments list"
+            },
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
         ],
         "inQuickList": False
     }
