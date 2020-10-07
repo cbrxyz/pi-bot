@@ -1173,5 +1173,23 @@ COMMAND_INFO = [
             "Wiki/Gallery Moderator"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "vc",
+        "description": "creates/deletes a voice channel based on the current text channel",
+        "aliases": [],
+        "parameters": [],
+        "usage":[
+            {
+                "cmd": "!vc",
+                "result": "closes/opens a new voice channel for the current channel"
+            },
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ],
+        "inQuickList": False
     }
 ]

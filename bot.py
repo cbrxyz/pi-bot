@@ -159,30 +159,33 @@ async def cron():
         date = c['date']
         if datetime.datetime.now() > date:
             # The date has passed, now do
-            await handleCron(c['do'])
             CRON_LIST.remove(c)
+            await handleCron(c['do'])
 
 async def handleCron(string):
-    if string.find("unban") != -1:
-        iden = int(string.split(" ")[1])
-        server = bot.get_guild(SERVER_ID)
-        member = await bot.fetch_user(int(iden))
-        await server.unban(member)
-        print(f"Unbanned user ID: {iden}")
-    elif string.find("unmute") != -1:
-        iden = int(string.split(" ")[1])
-        server = bot.get_guild(SERVER_ID)
-        member = server.get_member(int(iden))
-        role = discord.utils.get(server.roles, name="Muted")
-        await member.remove_roles(role)
-        print(f"Unmuted user ID: {iden}")
-    elif string.find("unstealfishban") != -1:
-        iden = int(string.split(" ")[1])
-        STEALFISH_BAN.remove(iden)
-        print(f"Un-stealfished user ID: {iden}")
-    else:
-        print("ERROR:")
-        print(f"handleCron cannot handle this job: {string}")
+    try:
+        if string.find("unban") != -1:
+            iden = int(string.split(" ")[1])
+            server = bot.get_guild(SERVER_ID)
+            member = await bot.fetch_user(int(iden))
+            await server.unban(member)
+            print(f"Unbanned user ID: {iden}")
+        elif string.find("unmute") != -1:
+            iden = int(string.split(" ")[1])
+            server = bot.get_guild(SERVER_ID)
+            member = server.get_member(int(iden))
+            role = discord.utils.get(server.roles, name="Muted")
+            await member.remove_roles(role)
+            print(f"Unmuted user ID: {iden}")
+        elif string.find("unstealfishban") != -1:
+            iden = int(string.split(" ")[1])
+            STEALFISH_BAN.remove(iden)
+            print(f"Un-stealfished user ID: {iden}")
+        else:
+            print("ERROR:")
+            await autoReport("Error with a cron task", "red", f"Error: `{string}`")
+    except Exception as e:
+        await autoReport("Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
@@ -381,6 +384,7 @@ async def updateTournamentList():
     serverSupport = discord.utils.get(server.text_channels, name="server-support")
     gm = discord.utils.get(server.roles, name="Global Moderator")
     a = discord.utils.get(server.roles, name="Administrator")
+    allTournamentsRole = discord.utils.get(server.roles, name="All Tournaments")
     stringList = ""
     openSoonList = ""
     channelsRequestedList = ""
@@ -407,6 +411,7 @@ async def updateTournamentList():
             newCh = await server.create_text_channel(t[1], category=tourneyCat)
             await newCh.edit(topic=f"{t[2]} - Discussion around the {t[0]} occurring on {t[4]}.", sync_permissions=True)
             await newCh.set_permissions(newRole, read_messages=True)
+            await newCh.set_permissions(allTournamentsRole, read_messages=True)
             await newCh.set_permissions(server.default_role, read_messages=False)
             stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
         elif ch != None:
@@ -449,6 +454,33 @@ async def updateTournamentList():
         await tourneyChannel.delete_messages(pastMessages)
         for e in embeds:
             await tourneyChannel.send(embed=e)
+
+@bot.command()
+@commands.check(isStaff)
+async def vc(ctx):
+    server = ctx.message.guild
+    if ctx.message.channel.category.name == "Tournaments":
+        testVC = discord.utils.get(server.voice_channels, name=ctx.message.channel.name)
+        if testVC == None:
+            # Voice channel needs to be opened
+            newVC = await server.create_voice_channel(ctx.message.channel.name, category=ctx.message.channel.category)
+            await newVC.edit(sync_permissions=True)
+            # Make the channel invisible to normal members
+            await newVC.set_permissions(server.default_role, view_channel=False)
+            at = discord.utils.get(server.roles, name="All Tournaments")
+            for t in TOURNAMENT_INFO:
+                if ctx.message.channel.name == t[1]:
+                    tourneyRole = discord.utils.get(server.roles, name=t[0])
+                    await newVC.set_permissions(tourneyRole, view_channel=True)
+                    break
+            await newVC.set_permissions(at, view_channel=True)
+            return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+        else:
+            # Voice channel needs to be closed
+            await testVC.delete()
+            return await ctx.send("Closed the voice channel.")
+    else:
+        return await ctx.send("Apologies... voice channels can currently be opened for tournament channels.")
 
 @bot.command()
 @commands.check(isStaff)
