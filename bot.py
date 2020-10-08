@@ -1067,6 +1067,8 @@ async def censor(message):
     author = message.author.nick
     if author == None:
         author = message.author.name
+    # Make sure pinging through @everyone and @here can not happen
+    content = content.replace("@everyone", "").replace("@here", "")
     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
     await wh.delete()
 
