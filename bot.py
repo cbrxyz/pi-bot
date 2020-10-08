@@ -11,6 +11,7 @@ import dateparser
 import time as timePackage
 import wikipedia as wikip
 import matplotlib.pyplot as plt
+import numpy as np
 from aioify import aioify
 from dotenv import load_dotenv
 from discord import channel
@@ -23,7 +24,7 @@ from src.sheets.sheets import sendVariables, getVariables
 from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
-from src.wiki.wiki import implementCommand
+from src.wiki.wiki import implementCommand, getPageTables
 from src.wiki.schools import getSchoolListing
 from src.wiki.mosteditstable import runTable
 from info import getAbout
@@ -804,6 +805,50 @@ async def autoReport(reason, color, message):
     REPORT_IDS.append(message.id)
     await message.add_reaction("\U00002705")
     await message.add_reaction("\U0000274C")
+
+@bot.command()
+async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
+    temp = tempFormat.lower() in ["y", "yes", "true"]
+    await ctx.send(
+        "*Inputs read:*\n" +
+        f"Page title: `{title}`\n" +
+        f"Template: `{temp}`\n" +
+        f"Table index (staring at 0): `{tableIndex}`\n" +
+        f"Division: `{div}`\n" +
+        (f"Column with point values: `{placeCol}`" if not temp else "")
+    )
+    points = []
+    tableIndex = int(tableIndex)
+    placeCol = int(placeCol)
+    if temp:
+        template = await getPageTables(title, True)
+        template = [t for t in template if t.normal_name() == "State results box"]
+        template = template[tableIndex]
+        ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]) # Thanks https://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712
+        for i in range(100):
+            if template.has_arg(ordinal(i) + "_points"):
+                points.append(template.get_arg(ordinal(i) + "_points").value.replace("\n", ""))
+    else:
+        tables = await getPageTables(title, False)
+        tables = tables[tableIndex]
+        data = tables.data()
+        points = [r[placeCol] for r in data]
+        del points[0]
+    points = [int(p) for p in points]
+    plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
+    z = np.polyfit(range(1, len(points) + 1), points, 1)
+    p = np.poly1d(z)
+    plt.plot(range(1, len(points) + 1), p(range(1, len(points) + 1)), "--", color='#CCCCCC')
+    plt.xlabel("Place")
+    plt.ylabel("Points")
+    plt.title(title + " - Division " + div)
+    plt.savefig(title + "Div" + div + ".svg")
+    plt.close()
+    await asyncio.sleep(2)
+    with open(title + "Div" + div + ".svg") as f:
+        pic = discord.File(f)
+        await ctx.send(file=pic)
+    return await ctx.send("Attempted to graph.")
 
 @bot.command()
 async def ping(ctx, command=None, *args):

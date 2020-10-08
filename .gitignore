@@ -6,6 +6,7 @@ apicache-py3/
 *password*
 .DS_Store
 met.png
+*.svg
 
 # Python gitignore template
 # Byte-compiled / optimized / DLL files

@@ -27,6 +27,15 @@ async def getPageText(pageName):
     site = await aiopwb.Site()
     return aiopwb.Page(site, pageName).text
 
+async def getPageTables(pageName, tempFormat):
+    site = await aiopwb.Site()
+    text = aiopwb.Page(site, pageName).text
+    parsed = wtp.parse(str(text))
+    if tempFormat:
+        return parsed.templates
+    else:
+        return parsed.tables
+
 async def setPageText(pageName, text, summary, minor=False):
     page = aiopwb.Page(site, pageName)
     page.text = text
