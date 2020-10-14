@@ -1541,6 +1541,8 @@ async def selfmute(ctx, *args):
     :type *args: str
     """
     user = ctx.message.author
+    if isStaff(ctx):
+        return await ctx.send("Staff members can't self mute.")
     time = " ".join(args)
     await _mute(ctx, user, time)
 
@@ -1868,7 +1870,7 @@ async def on_message(message):
     elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
     # Caps checker
-    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 6 and caps:
+    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 8 and caps:
         mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
