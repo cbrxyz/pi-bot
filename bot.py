@@ -1914,6 +1914,11 @@ async def on_member_join(member):
         await loungeChannel.send(f"Wow! There are now `{memberCount}` members in the server!")
 
 @bot.event
+async def on_member_remove(member):
+    leaveChannel = discord.utils.get(member.guild.text_channels, name="member-leave")
+    await leaveChannel.send(f"{member.mention} has left the server.")
+
+@bot.event
 async def on_member_update(before, after):
     if after.nick == None: return
     for word in CENSORED_WORDS:

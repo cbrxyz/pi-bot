@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.8 - 2020-10-14
+### Changed
+* Hotfix for `!selfmute` being broken for all members.
+
+## 4.4.7 - 2020-10-14
+### Changed
+* `!selfmute` now sends an error message when staff members run the command, as the command will not work for them.
+* Messages needed to mute for caps changed from 6 to 8.
+
 ## 4.4.6 - 2020-10-08
 ### Added
 * Added the `!graphpage` command to assist in graphing wiki pages. For example, `!graphpage "2020 New Jersey State Tournament" Y 1 C` to graph the Division C chart for that state tournament.
