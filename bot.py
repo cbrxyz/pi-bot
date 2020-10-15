@@ -1541,7 +1541,7 @@ async def selfmute(ctx, *args):
     :type *args: str
     """
     user = ctx.message.author
-    if isStaff(ctx):
+    if await isStaff(ctx):
         return await ctx.send("Staff members can't self mute.")
     time = " ".join(args)
     await _mute(ctx, user, time)
