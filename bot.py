@@ -421,7 +421,7 @@ async def updateTournamentList():
             openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
     REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
     for t in REQUESTED_TOURNAMENTS:
-        channelsRequestedList += f"`#{t['iden']}` - **{t['count']} votes**\n"
+        channelsRequestedList += f"`#{t['iden']}` - **{t['count']} votes** (`!tournament {t['iden']}`)\n"
     embeds = []
     embeds.append(assembleEmbed(
         title=":medal: Tournament Channels Listing",
@@ -442,7 +442,7 @@ async def updateTournamentList():
     ))
     embeds.append(assembleEmbed(
         title="Channels Requested",
-        desc=channelsRequestedList if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, with the name of the tournament."
+        desc=("Vote with the command associated with the tournament channel.\n\n" + channelsRequestedList) if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, with the name of the tournament."
     ))
     hist = await tourneyChannel.history(oldest_first=True).flatten()
     if len(hist) == 4:
@@ -1008,10 +1008,10 @@ async def shibabomb(ctx, member:str=False):
 @bot.command()
 async def me(ctx, *args):
     """Replaces the good ol' /me"""
+    await ctx.message.delete()
     if len(args) < 1:
         return await ctx.send(f"*{ctx.message.author.mention} " + "is cool!*")
     else:
-        await ctx.message.delete()
         await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
 
 @bot.command()
@@ -1562,12 +1562,12 @@ async def _mute(ctx, user:discord.Member, time: str):
     role = discord.utils.get(user.guild.roles, name="Muted")
     parsed = "indef"
     if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
+        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
         if parsed == None:
             return await ctx.send("Sorry, but I don't understand that length of time.")
         CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
     await user.add_roles(role)
-    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
+    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} EST`.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -1596,13 +1596,13 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
     message = f"You have been banned from the Scioly.org Discord server for {reason}."
     parsed = "indef"
     if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
+        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
         if parsed == None:
             return await ctx.send(f"Sorry, but I don't understand the length of time: `{time}`.")
         CRON_LIST.append({"date": parsed, "do": f"unban {member.id}"})
     await member.send(message)
     await ctx.guild.ban(member, reason=reason)
-    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
+    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} EST`.")
 
 @bot.command()
 @commands.check(isStaff)

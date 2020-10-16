@@ -1085,7 +1085,11 @@ COMMAND_INFO = [
                 "cmd": "!latex 4 - 1 = 3 \\text{ quick maffs}",
                 "result": "Prints `$4 - 1 = 3 quick maffs` in LaTeX"
             }
-        ]
+        ],
+        "access": [
+            "Member"
+        ],
+        "inQuickList": False
     },
     {
         "name": "tournament",

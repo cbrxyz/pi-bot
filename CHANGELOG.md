@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.10 - 2020-10-16
+### Changed
+* `!mute`, `!ban`, and `!selfmute` now display times in Eastern time.
+* Tournament voting commands are now shown next to proposed tournament channels.
+
+### Fixed
+* `!me` called with no arguments now deletes original message.
+* `!list` fixed for regular members.
+
 ## 4.4.9 - 2020-10-15
 ### Added
 * Log member leave events to `#member-leave` channel.
