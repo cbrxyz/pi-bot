@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.11 - 2020-10-17
+### Fixed
+* `#server-support` mentions renamed to `#site-support`
+
 ## 4.4.10 - 2020-10-16
 ### Changed
 * `!mute`, `!ban`, and `!selfmute` now display times in Eastern time.

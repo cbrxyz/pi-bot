@@ -382,7 +382,7 @@ async def updateTournamentList():
     tourneyChannel = discord.utils.get(server.text_channels, name="tournaments")
     tourneyCat = discord.utils.get(server.categories, name="Tournaments")
     botSpam = discord.utils.get(server.text_channels, name="bot-spam")
-    serverSupport = discord.utils.get(server.text_channels, name="server-support")
+    serverSupport = discord.utils.get(server.text_channels, name="site-support")
     gm = discord.utils.get(server.roles, name="Global Moderator")
     a = discord.utils.get(server.roles, name="Administrator")
     allTournamentsRole = discord.utils.get(server.roles, name="All Tournaments")
