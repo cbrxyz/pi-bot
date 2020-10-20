@@ -420,8 +420,10 @@ async def updateTournamentList():
         elif (dayDiff >= beforeDays):
             openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
     REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
+    spacingNeeded = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS])
     for t in REQUESTED_TOURNAMENTS:
-        channelsRequestedList += f"`#{t['iden']}` - **{t['count']} votes** (`!tournament {t['iden']}`)\n"
+        spaces = " " * (spacingNeeded - len(t['iden']))
+        channelsRequestedList += f"`!tournament {t['iden']}{spaces}` - **{t['count']} votes**\n"
     embeds = []
     embeds.append(assembleEmbed(
         title=":medal: Tournament Channels Listing",
@@ -1654,9 +1656,9 @@ async def pronouns(ctx, *args):
             return await ctx.send("For help with pronouns, please use `!help pronouns`.")
         else:
             return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
-            "> He / Him / His (get with `!pronouns he`)\n" +
-            "> She / Her / Hers (get with `!pronouns she`)\n" +
-            "> They / Them / Theirs (get with `!pronouns they`)\n" +
+            "> `!pronouns he  ` (which gives you *He / Him / His*)\n" +
+            "> `!pronouns she ` (which gives you *She / Her / Hers*)\n" +
+            "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
             "To remove pronouns, use `!pronouns remove`.\n" +
             "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
 
@@ -1916,7 +1918,10 @@ async def on_member_join(member):
 @bot.event
 async def on_member_remove(member):
     leaveChannel = discord.utils.get(member.guild.text_channels, name="member-leave")
-    await leaveChannel.send(f"{member.mention} has left the server.")
+    if member.nick != None:
+        await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).")
+    else:
+        await leaveChannel.send(f"**{member}** has left the server (or was removed).")
 
 @bot.event
 async def on_member_update(before, after):

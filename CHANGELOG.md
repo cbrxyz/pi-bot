@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.12 - 2020-10-20
+### Changed
+* Tournament list is formatted cleaner (closes #230)
+* `!pronouns` help message is now formatted cleaner (closes #142)
+
+### Fixed
+* Member leave messages no longer mention users, as this can break after user has left the server (closes #229)
+
 ## 4.4.11 - 2020-10-17
 ### Fixed
 * `#server-support` mentions renamed to `#site-support`
