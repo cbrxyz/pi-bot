@@ -423,7 +423,7 @@ async def updateTournamentList():
     spacingNeeded = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS])
     for t in REQUESTED_TOURNAMENTS:
         spaces = " " * (spacingNeeded - len(t['iden']))
-        channelsRequestedList += f"`!tournament {t['iden']}{spaces}` - **{t['count']} votes**\n"
+        channelsRequestedList += f"`!tournament {t['iden']}{spaces}` · **{t['count']} votes**\n"
     embeds = []
     embeds.append(assembleEmbed(
         title=":medal: Tournament Channels Listing",

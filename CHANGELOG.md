@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.13 - 2020-10-21
+### Changed
+* Requested tournaments list now uses middle dot symbol rather than dash to separate command and number of votes (closes #233)
+* `!list` now shows commands in alphabetical order (closes #235)
+
 ## 4.4.12 - 2020-10-20
 ### Changed
 * Tournament list is formatted cleaner (closes #230)

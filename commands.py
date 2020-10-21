@@ -33,6 +33,7 @@ async def _generateList(member: discord.Member, isQuick = False):
 async def getList(ctx):
     """Gets the list of commands a user can access."""
     availableCommands = await _generateList(ctx.message.author, False)
+    availableCommands.sort(key=lambda x: x['name'])
     return assembleEmbed(
         title=f"Full List of Available Commands for {ctx.message.author}",
         desc="\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands])
@@ -41,6 +42,7 @@ async def getList(ctx):
 async def getQuickList(ctx):
     """Gets the quick list of commands a user can access."""
     availableCommands = await _generateList(ctx.message.author, True)
+    availableCommands.sort(key=lambda x: x['name'])
     return assembleEmbed(
         title=f"Quick List of Available Commands for {ctx.message.author}",
         desc="To view full list, please type `!list all`.",
