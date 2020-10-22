@@ -39,6 +39,54 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
 devMode = os.getenv('DEV_MODE') == "TRUE"
 
+##############
+# SERVER VARIABLES
+##############
+
+# Roles
+ROLE_WM = "Wiki/Gallery Moderator"
+ROLE_GM = "Global Moderator"
+ROLE_AD = "Administrator"
+ROLE_VIP = "VIP"
+ROLE_BT = "Bots"
+ROLE_LH = "Launch Helper"
+ROLE_AT = "All Tournaments"
+ROLE_GAMES = "Games"
+ROLE_MR = "Member"
+ROLE_UC = "Unconfirmed"
+ROLE_DIV_A = "Division A"
+ROLE_DIV_B = "Division B"
+ROLE_DIV_C = "Division C"
+ROLE_EM = "Exalted Member"
+ROLE_ALUMNI = "Alumni"
+ROLE_MUTED = "Muted"
+ROLE_PRONOUN_HE = "He / Him / His"
+ROLE_PRONOUN_SHE = "She / Her / Hers"
+ROLE_PRONOUN_THEY = "They / Their / Theirs"
+
+# Channels
+CHANNEL_TOURNAMENTS = "tournaments"
+CHANNEL_BOTSPAM = "bot-spam"
+CHANNEL_SUPPORT = "site-support"
+CHANNEL_GAMES = "games"
+CHANNEL_DMLOG = "dm-log"
+CHANNEL_WELCOME = "welcome"
+CHANNEL_LOUNGE = "lounge"
+CHANNEL_LEAVE = "member-leave"
+CHANNEL_DELETEDM = "deleted-messages"
+CHANNEL_EDITEDM = "edited-messages"
+CHANNEL_REPORTS = "reports"
+
+# Categories
+CATEGORY_TOURNAMENTS = "Tournaments"
+CATEGORY_SO = "Science Olympiad"
+CATEGORY_STATES = "states"
+CATEGORY_GENERAL = "general"
+
+##############
+# DEV MODE CONFIG
+##############
+
 if devMode:
     bot = commands.Bot(command_prefix=("?"), case_insensitive=True)
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
@@ -57,23 +105,23 @@ async def isBear(ctx):
 async def isStaff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
-    wmRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
-    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
-    vipRole = discord.utils.get(member.guild.roles, name="VIP")
+    wmRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
     if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
 
 async def isLauncher(ctx):
     """Checks to see if the user is a launch helper."""
     member = ctx.message.author
     staff = await isStaff(ctx)
-    lhRole = discord.utils.get(member.guild.roles, name="Launch Helper")
+    lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
     if staff or lhRole in member.roles: return True
 
 async def isAdmin(ctx):
     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
     member = ctx.message.author
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
     if aRole in member.roles or member.id == 715048392408956950: return True
 
 ##############
@@ -175,7 +223,7 @@ async def handleCron(string):
             iden = int(string.split(" ")[1])
             server = bot.get_guild(SERVER_ID)
             member = server.get_member(int(iden))
-            role = discord.utils.get(server.roles, name="Muted")
+            role = discord.utils.get(server.roles, name=ROLE_MUTED)
             await member.remove_roles(role)
             print(f"Unmuted user ID: {iden}")
         elif string.find("unstealfishban") != -1:
@@ -309,7 +357,7 @@ async def tournament(ctx, *args):
         arg = arg.lower()
         found = False
         if arg == "all":
-            role = discord.utils.get(member.guild.roles, name="All Tournaments")
+            role = discord.utils.get(member.guild.roles, name=ROLE_AT)
             if role in member.roles:
                 await ctx.send(f"Removed your `All Tournaments` role.")
                 await member.remove_roles(role)
@@ -379,13 +427,13 @@ async def updateTournamentList():
     global REQUESTED_TOURNAMENTS
     TOURNAMENT_INFO = tl
     server = bot.get_guild(SERVER_ID)
-    tourneyChannel = discord.utils.get(server.text_channels, name="tournaments")
-    tourneyCat = discord.utils.get(server.categories, name="Tournaments")
-    botSpam = discord.utils.get(server.text_channels, name="bot-spam")
-    serverSupport = discord.utils.get(server.text_channels, name="site-support")
-    gm = discord.utils.get(server.roles, name="Global Moderator")
-    a = discord.utils.get(server.roles, name="Administrator")
-    allTournamentsRole = discord.utils.get(server.roles, name="All Tournaments")
+    tourneyChannel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
+    tourneyCat = discord.utils.get(server.categories, name=CATEGORY_TOURNAMENTS)
+    botSpam = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
+    serverSupport = discord.utils.get(server.text_channels, name=CHANNEL_SUPPORT)
+    gm = discord.utils.get(server.roles, name=ROLE_GM)
+    a = discord.utils.get(server.roles, name=ROLE_AD)
+    allTournamentsRole = discord.utils.get(server.roles, name=ROLE_AT)
     stringList = ""
     openSoonList = ""
     channelsRequestedList = ""
@@ -462,7 +510,7 @@ async def updateTournamentList():
 @commands.check(isStaff)
 async def vc(ctx):
     server = ctx.message.guild
-    if ctx.message.channel.category.name == "Tournaments":
+    if ctx.message.channel.category.name == CATEGORY_TOURNAMENTS:
         testVC = discord.utils.get(server.voice_channels, name=ctx.message.channel.name)
         if testVC == None:
             # Voice channel needs to be opened
@@ -470,7 +518,7 @@ async def vc(ctx):
             await newVC.edit(sync_permissions=True)
             # Make the channel invisible to normal members
             await newVC.set_permissions(server.default_role, view_channel=False)
-            at = discord.utils.get(server.roles, name="All Tournaments")
+            at = discord.utils.get(server.roles, name=ROLE_AT)
             for t in TOURNAMENT_INFO:
                 if ctx.message.channel.name == t[1]:
                     tourneyRole = discord.utils.get(server.roles, name=t[0])
@@ -696,9 +744,9 @@ async def states(ctx, *args):
 @bot.command()
 async def games(ctx):
     """Removes or adds someone to the games channel."""
-    jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name="games")
+    jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name=CHANNEL_GAMES)
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Games")
+    role = discord.utils.get(member.guild.roles, name=ROLE_GAMES)
     if role in member.roles:
         await member.remove_roles(role)
         await ctx.send("Removed you from the games club... feel free to come back anytime!")
@@ -718,16 +766,16 @@ async def lock(ctx):
     if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
         return await ctx.send("This command is not suitable for this channel because of its category.")
 
-    memberRole = discord.utils.get(member.guild.roles, name="Member")
-    if (channel.category.name == "states"):
+    memberRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    if (channel.category.name == CATEGORY_STATES):
         await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False)
     else:
         await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False, read_messages=True)
 
-    wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
-    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
-    bRole = discord.utils.get(member.guild.roles, name="Bots")
+    wikiRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    bRole = discord.utils.get(member.guild.roles, name=ROLE_BT)
     await ctx.channel.set_permissions(wikiRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(gmRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
@@ -744,20 +792,20 @@ async def unlock(ctx):
     if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
         return await ctx.send("This command is not suitable for this channel because of its category.")
 
-    if (channel.category.name == "Science Olympiad" or channel.category.name == "general"):
+    if (channel.category.name == CATEGORY_SO or channel.category.name == CATEGORY_GENERAL):
         await ctx.send("Synced permissions with channel category.")
         return await channel.edit(sync_permissions=True)
 
-    memberRole = discord.utils.get(member.guild.roles, name="Member")
-    if (channel.category.name != "states"):
+    memberRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    if (channel.category.name != CATEGORY_STATES):
         await ctx.channel.set_permissions(memberRole, add_reactions=True, send_messages=True, read_messages=True)
     else:
         await ctx.channel.set_permissions(memberRole, add_reactions=True, send_messages=True)
 
-    wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
-    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
-    bRole = discord.utils.get(member.guild.roles, name="Bots")
+    wikiRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    bRole = discord.utils.get(member.guild.roles, name=ROLE_BT)
     await ctx.channel.set_permissions(wikiRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(gmRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
@@ -1362,9 +1410,9 @@ async def division(ctx, div):
         await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
     elif div.lower() in ["remove", "clear", "none", "x"]:
         member = ctx.message.author
-        divArole = discord.utils.get(member.guild.roles, name="Division A")
-        divBrole = discord.utils.get(member.guild.roles, name="Division B")
-        divCrole = discord.utils.get(member.guild.roles, name="Division C")
+        divArole = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
+        divBrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
+        divCrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
         await member.remove_roles(divArole, divBrole, divCrole)
         await ctx.send("Removed all of your division/alumni roles.")
     else:
@@ -1374,10 +1422,10 @@ async def assignDiv(ctx, div):
     """Assigns a user a div"""
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=div)
-    divArole = discord.utils.get(member.guild.roles, name="Division A")
-    divBrole = discord.utils.get(member.guild.roles, name="Division B")
-    divCrole = discord.utils.get(member.guild.roles, name="Division C")
-    alumnirole = discord.utils.get(member.guild.roles, name="Alumni")
+    divArole = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
+    divBrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
+    divCrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
+    alumnirole = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
     await member.remove_roles(divArole, divBrole, divCrole, alumnirole)
     await member.add_roles(role)
     return True
@@ -1386,11 +1434,11 @@ async def assignDiv(ctx, div):
 async def alumni(ctx):
     """Removes or adds the alumni role from a user."""
     member = ctx.message.author
-    divArole = discord.utils.get(member.guild.roles, name="Division A")
-    divBrole = discord.utils.get(member.guild.roles, name="Division B")
-    divCrole = discord.utils.get(member.guild.roles, name="Division C")
+    divArole = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
+    divBrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
+    divCrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
     await member.remove_roles(divArole, divBrole, divCrole)
-    role = discord.utils.get(member.guild.roles, name="Alumni")
+    role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
     if role in member.roles:
         await member.remove_roles(role)
         await ctx.send("Removed your alumni status.")
@@ -1503,7 +1551,7 @@ async def count(ctx):
 async def exalt(ctx, user):
     """Exalts a user."""
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Exalted Member")
+    role = discord.utils.get(member.guild.roles, name=ROLE_EM)
     iden = await harvestID(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.add_roles(role)
@@ -1514,7 +1562,7 @@ async def exalt(ctx, user):
 async def unexalt(ctx, user):
     """Unexalts a user."""
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Exalted Member")
+    role = discord.utils.get(member.guild.roles, name=ROLE_EM)
     iden = await harvestID(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.remove_roles(role)
@@ -1561,7 +1609,7 @@ async def _mute(ctx, user:discord.Member, time: str):
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
         return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-    role = discord.utils.get(user.guild.roles, name="Muted")
+    role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
     parsed = "indef"
     if time != "indef":
         parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
@@ -1576,7 +1624,7 @@ async def _mute(ctx, user:discord.Member, time: str):
 async def unmute(ctx, user):
     """Unmutes a user."""
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Muted")
+    role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
     iden = await harvestID(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.remove_roles(role)
@@ -1624,9 +1672,9 @@ async def pronouns(ctx, *args):
     member = ctx.message.author
     if len(args) < 1:
         await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
-    heRole = discord.utils.get(member.guild.roles, name="He / Him / His")
-    sheRole = discord.utils.get(member.guild.roles, name="She / Her / Hers")
-    theyRole = discord.utils.get(member.guild.roles, name="They / Them / Theirs")
+    heRole = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_HE)
+    sheRole = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_SHE)
+    theyRole = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_THEY)
     for arg in args:
         if arg.lower() in ["he", "him", "his", "he / him / his"]:
             if heRole in member.roles:
@@ -1681,8 +1729,8 @@ async def confirm(ctx, *args: discord.Member):
 
             beforeMessage = message
             f += 1
-        role1 = discord.utils.get(member.guild.roles, name="Unconfirmed")
-        role2 = discord.utils.get(member.guild.roles, name="Member")
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
         await member.remove_roles(role1)
         await member.add_roles(role2)
         message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
@@ -1724,7 +1772,7 @@ async def stopnuke(ctx):
     global STOPNUKE
     launcher = await isLauncher(ctx)
     staff = await isStaff(ctx)
-    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+    if not (staff or (launcher and ctx.message.channel.name == CHANNEL_WELCOME)):
         return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
     STOPNUKE = True
     await ctx.send("TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES.")
@@ -1772,7 +1820,7 @@ async def on_message_edit(before, after):
 
 async def sendToDMLog(message):
     server = bot.get_guild(SERVER_ID)
-    dmChannel = discord.utils.get(server.text_channels, name="dm-log")
+    dmChannel = discord.utils.get(server.text_channels, name=CHANNEL_DMLOG)
     embed = assembleEmbed(
         title=":speech_balloon: New DM",
         fields=[
@@ -1863,7 +1911,7 @@ async def on_message(message):
     RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
     # Spam checker
     if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
-        mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
+        mutedRole = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(mutedRole)
@@ -1873,7 +1921,7 @@ async def on_message(message):
         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
     # Caps checker
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 8 and caps:
-        mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
+        mutedRole = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(mutedRole)
@@ -1898,8 +1946,8 @@ async def on_raw_reaction_add(payload):
 
 @bot.event
 async def on_member_join(member):
-    role = discord.utils.get(member.guild.roles, name="Unconfirmed")
-    joinChannel = discord.utils.get(member.guild.text_channels, name="welcome")
+    role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+    joinChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
     await member.add_roles(role)
     name = member.name
     for word in CENSORED_WORDS:
@@ -1911,13 +1959,13 @@ async def on_member_join(member):
     "\n\n" +
     "**Please add roles by typing the commands above into the text box, and if you have a question, please type it here. After adding roles, a moderator will give you access to the rest of the server to chat with other members!**")
     memberCount = len(member.guild.members)
-    loungeChannel = discord.utils.get(member.guild.text_channels, name="lounge")
+    loungeChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LOUNGE)
     if memberCount % 100 == 0:
         await loungeChannel.send(f"Wow! There are now `{memberCount}` members in the server!")
 
 @bot.event
 async def on_member_remove(member):
-    leaveChannel = discord.utils.get(member.guild.text_channels, name="member-leave")
+    leaveChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
     if member.nick != None:
         await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).")
     else:
@@ -1939,8 +1987,8 @@ async def on_user_update(before, after):
 @bot.event
 async def on_raw_message_edit(payload):
     channel = bot.get_channel(payload.channel_id)
-    editedChannel = discord.utils.get(channel.guild.text_channels, name="edited-messages")
-    if channel.name in ["edited-messages", "deleted-messages"]:
+    editedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_EDITEDM)
+    if channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM]:
         return
     try:
         message = payload.cached_message
@@ -2052,11 +2100,11 @@ async def on_raw_message_edit(payload):
 
 @bot.event
 async def on_raw_message_delete(payload):
-    if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]:
+    if bot.get_channel(payload.channel_id).name in [CHANNEL_REPORTS, CHANNEL_DELETEDM]:
         print("Ignoring deletion event because of the channel it's from.")
         return
     channel = bot.get_channel(payload.channel_id)
-    deletedChannel = discord.utils.get(channel.guild.text_channels, name="deleted-messages")
+    deletedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_DELETEDM)
     try:
         message = payload.cached_message
         embed = assembleEmbed(
