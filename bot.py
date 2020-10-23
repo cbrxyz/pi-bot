@@ -454,7 +454,7 @@ async def updateTournamentList():
         if (dayDiff < (-1 * afterDays)) and ch != None:
             # If past tournament date, now out of range
             await autoReport("Tournament Channel & Role Needs to be Deleted", "orange", f"The {ch.mention} channel and {r.mention} role need to be deleted, as it is after the tournament date.")
-        elif (dayDiff < beforeDays) and ch == None:
+        elif (dayDiff <= beforeDays) and ch == None:
             # If before tournament and in range
             newRole = await server.create_role(name=t[0])
             newCh = await server.create_text_channel(t[1], category=tourneyCat)
@@ -465,7 +465,7 @@ async def updateTournamentList():
             stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
         elif ch != None:
             stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
-        elif (dayDiff >= beforeDays):
+        elif (dayDiff > beforeDays):
             openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
     REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
     spacingNeeded = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS])
