@@ -5,26 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.16 - 2020-10-24
+### Fixed
+* Fixed typo in the name of "They / Them / Theirs" role (closes [#240](https://github.com/cbrxyz/pi-bot/issues/240))
+
 ## 4.4.15 - 2020-10-23
 ### Fixed
 * Tournaments list showed channels opening in 0 days.
 
 ## 4.4.14 - 2020-10-22
 ### Added
-* Global variables for server variables (such as the names of all roles and channels) (closes #232)
+* Global variables for server variables (such as the names of all roles and channels) (closes [#232](https://github.com/cbrxyz/pi-bot/issues/232))
 
 ## 4.4.13 - 2020-10-21
 ### Changed
-* Requested tournaments list now uses middle dot symbol rather than dash to separate command and number of votes (closes #233)
-* `!list` now shows commands in alphabetical order (closes #235)
+* Requested tournaments list now uses middle dot symbol rather than dash to separate command and number of votes (closes [#233](https://github.com/cbrxyz/pi-bot/issues/233))
+* `!list` now shows commands in alphabetical order (closes [#235](https://github.com/cbrxyz/pi-bot/issues/235))
 
 ## 4.4.12 - 2020-10-20
 ### Changed
-* Tournament list is formatted cleaner (closes #230)
-* `!pronouns` help message is now formatted cleaner (closes #142)
+* Tournament list is formatted cleaner (closes [#230](https://github.com/cbrxyz/pi-bot/issues/230))
+* `!pronouns` help message is now formatted cleaner (closes [#142](https://github.com/cbrxyz/pi-bot/issues/142))
 
 ### Fixed
-* Member leave messages no longer mention users, as this can break after user has left the server (closes #229)
+* Member leave messages no longer mention users, as this can break after user has left the server (closes [#229](https://github.com/cbrxyz/pi-bot/issues/229))
 
 ## 4.4.11 - 2020-10-17
 ### Fixed
@@ -61,9 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 4.4.5 - 2020-10-07
 ### Added
-* Added a `CHANGELOG.md` file (closing #215)
-* Added the `!vc` command (closing #182)
+* Added a `CHANGELOG.md` file (closing [#215](https://github.com/cbrxyz/pi-bot/issues/215))
+* Added the `!vc` command (closing [#182](https://github.com/cbrxyz/pi-bot/issues/182))
 
 ### Fixed
-* New tournament channels now enable reading messages by members with the `All Tournaments` role (closing #212)
-* Cron list tasks that can not be completed are now skipped (closing #201)
+* New tournament channels now enable reading messages by members with the `All Tournaments` role (closing [#212](https://github.com/cbrxyz/pi-bot/issues/212))
+* Cron list tasks that can not be completed are now skipped (closing [#201](https://github.com/cbrxyz/pi-bot/issues/201))

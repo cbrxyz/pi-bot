@@ -62,7 +62,7 @@ ROLE_ALUMNI = "Alumni"
 ROLE_MUTED = "Muted"
 ROLE_PRONOUN_HE = "He / Him / His"
 ROLE_PRONOUN_SHE = "She / Her / Hers"
-ROLE_PRONOUN_THEY = "They / Their / Theirs"
+ROLE_PRONOUN_THEY = "They / Them / Theirs"
 
 # Channels
 CHANNEL_TOURNAMENTS = "tournaments"
@@ -1699,7 +1699,7 @@ async def pronouns(ctx, *args):
                 await ctx.send("Added the They / Them / Theirs role.")
         elif arg.lower() in ["remove", "clear", "delete", "nuke"]:
             await member.remove_roles(heRole, sheRole, theyRole)
-            await ctx.send("Alrighty, your pronouns have been removed.")
+            return await ctx.send("Alrighty, your pronouns have been removed.")
         elif arg.lower() in ["help", "what"]:
             return await ctx.send("For help with pronouns, please use `!help pronouns`.")
         else:
