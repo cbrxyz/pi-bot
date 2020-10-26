@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.17 - 2020-10-26
+### Added
+* `!vc` now works for `#games` (closes [#245](https://github.com/cbrxyz/pi-bot/issues/245))
+
 ## 4.4.16 - 2020-10-24
 ### Fixed
 * Fixed typo in the name of "They / Them / Theirs" role (closes [#240](https://github.com/cbrxyz/pi-bot/issues/240))

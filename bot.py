@@ -530,8 +530,25 @@ async def vc(ctx):
             # Voice channel needs to be closed
             await testVC.delete()
             return await ctx.send("Closed the voice channel.")
+    elif ctx.message.channel.name == "games":
+        # Support for opening a voice channel for #games
+        testVC = discord.utils.get(server.voice_channels, name="games")
+        if testVC == None:
+            # Voice channel needs to be opened/doesn't exist already
+            newVC = await server.create_voice_channel("games", category=ctx.message.channel.category)
+            await newVC.edit(sync_permissions=True)
+            await newVC.set_permissions(server.default_role, view_channel=False)
+            gamesRole = discord.utils.get(server.roles, name=ROLE_GAMES)
+            memberRole = discord.utils.get(server.roles, name=ROLE_MR)
+            await newVC.set_permissions(gamesRole, view_channel=True)
+            await newVC.set_permissions(memberRole, view_channel=False)
+            return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+        else:
+            # Voice channel needs to be closed
+            await testVC.delete()
+            return await ctx.send("Closed the voice channel.")
     else:
-        return await ctx.send("Apologies... voice channels can currently be opened for tournament channels.")
+        return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
 @bot.command()
 @commands.check(isStaff)
