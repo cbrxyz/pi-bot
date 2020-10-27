@@ -592,6 +592,11 @@ async def getemojiid(ctx, emoji: discord.Emoji):
     """Gets the ID of the given emoji."""
     return await ctx.send(f"{emoji} - `{emoji}`")
 
+@bot.command(aliases=["rid"])
+async def getroleid(ctx, name):
+    role = discord.utils.get(ctx.message.author.guild.roles, name=name)
+    return await ctx.send(f"`{role.mention}`")
+
 @bot.command(aliases=["ui"])
 async def getuserid(ctx, user=None):
     """Gets the user ID of the caller or another user."""
@@ -1135,7 +1140,7 @@ async def censor(message):
     if author == None:
         author = message.author.name
     # Make sure pinging through @everyone and @here can not happen
-    content = content.replace("@everyone", "").replace("@here", "")
+    content = re.sub(r'(?<!<)@', '\1\u200b', content)
     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
     await wh.delete()
 
