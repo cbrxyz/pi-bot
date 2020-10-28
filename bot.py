@@ -87,11 +87,14 @@ CATEGORY_GENERAL = "general"
 # DEV MODE CONFIG
 ##############
 
+intents = discord.Intents.default()
+intents.members = True
+
 if devMode:
-    bot = commands.Bot(command_prefix=("?"), case_insensitive=True)
+    bot = commands.Bot(command_prefix=("?"), case_insensitive=True, intents=intents)
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
-    bot = commands.Bot(command_prefix=("!"), case_insensitive=True)
+    bot = commands.Bot(command_prefix=("!"), case_insensitive=True, intents=intents)
     SERVER_ID = 698306997287780363
 
 ##############
