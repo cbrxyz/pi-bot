@@ -1195,5 +1195,26 @@ COMMAND_INFO = [
             "Wiki/Gallery Moderator"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "resultstemplate",
+        "description": "makes a `Full results template` template for copying to the wiki based on Scilympiad results",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "url",
+                "description": "the results URL"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!resultstemplate scilympiad.com/results/...",
+                "result": "makes a template based on the results at the given link"
+            },
+        ],
+        "access":[
+            "Member",
+        ],
+        "inQuickList": False
     }
 ]

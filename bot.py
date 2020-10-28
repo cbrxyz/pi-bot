@@ -26,6 +26,7 @@ from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand, getPageTables
 from src.wiki.schools import getSchoolListing
+from src.wiki.scilympiad import makeResultsTemplate
 from src.wiki.mosteditstable import runTable
 from info import getAbout
 from doggo import getDoggo, getShiba
@@ -924,6 +925,17 @@ async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
         pic = discord.File(f)
         await ctx.send(file=pic)
     return await ctx.send("Attempted to graph.")
+
+@bot.command()
+async def resultstemplate(ctx, url):
+    if url.find("scilympiad.com") == -1:
+        return await ctx.send("The URL must be a Scilympiad results link.")
+    await ctx.send("**Warning:** Because Scilympiad is constantly evolving, this command may break. Please preview the template on the wiki before saving! If this command breaks, please DM pepperonipi or open an issue on GitHub. Thanks!")
+    res = await makeResultsTemplate(url)
+    with open("resultstemplate.txt", "w+") as t:
+        t.write(res)
+    file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
+    await ctx.send(file=file)
 
 @bot.command()
 async def ping(ctx, command=None, *args):
