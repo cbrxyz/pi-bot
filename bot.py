@@ -639,6 +639,11 @@ async def exchange(ctx):
 async def gallery(ctx):
     await ctx.send("<https://scioly.org/gallery>")
 
+@bot.command(aliases=["random"])
+async def rand(ctx, a=1, b=10):
+    r = random.randrange(a, b + 1)
+    await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
+
 @bot.command()
 async def invites(ctx):
     """Fetches the invite table."""
