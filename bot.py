@@ -2008,10 +2008,16 @@ async def on_member_join(member):
 @bot.event
 async def on_member_remove(member):
     leaveChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
-    if member.nick != None:
-        await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).")
+    unconfirmedRole = discord.utils.get(member.guild.roles, name=ROLE_UC)
+    if unconfirmedRole in member.roles:
+        unconfirmedStatement = "Unconfirmed: :white_check_mark:"
     else:
-        await leaveChannel.send(f"**{member}** has left the server (or was removed).")
+        unconfirmedStatement = "Unconfirmed: :x:"
+    joinedAt = f"Joined at: `{str(member.joined_at)}`"
+    if member.nick != None:
+        await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
+    else:
+        await leaveChannel.send(f"**{member}** has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
 
 @bot.event
 async def on_member_update(before, after):

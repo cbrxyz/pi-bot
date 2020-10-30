@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.22 - 2020-10-30
+### Changed
+* `#member-leave` messages now show if user was unconfirmed and when they joined. (closes [#237](https://github.com/cbrxyz/pi-bot/issues/237))
+
 ## 4.4.21 - 2020-10-29
 ### Added
 * Added `!rand` command to generate random numbers (closes [#199](https://github.com/cbrxyz/pi-bot/issues/199))
