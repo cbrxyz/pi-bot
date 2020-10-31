@@ -1327,8 +1327,18 @@ async def getWords():
     CENSORED_WORDS = getCensor()
 
 @bot.command(aliases=["man"])
-async def help(ctx, command="help"):
+async def help(ctx, command:str=None):
     """Allows a user to request help for a command."""
+    if command == None:
+        embed = assembleEmbed(
+            title="Looking for help?",
+            desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" + 
+            "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " + 
+            "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" + 
+            "If you want to see some commands that you can use on me, just type `!list`! " + 
+            "If you need more help, please feel free to reach out to a staff member!")
+        )
+        return await ctx.send(embed=embed)
     hlp = await getHelp(ctx, command)
     await ctx.send(embed=hlp)
 
