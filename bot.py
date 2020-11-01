@@ -79,7 +79,7 @@ CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
 
 # Categories
-CATEGORY_TOURNAMENTS = "Tournaments"
+CATEGORY_TOURNAMENTS = "tournaments"
 CATEGORY_SO = "Science Olympiad"
 CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"
