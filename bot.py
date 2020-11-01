@@ -1543,8 +1543,9 @@ async def wiki(ctx, command, *args):
         await ctx.send("\n".join([f"`{s}`" for s in searches]))
 
 @bot.command(aliases=["wp"])
-async def wikipedia(ctx, request:str=False, term:str=False):
-    if request == False or term == False:
+async def wikipedia(ctx, request:str=False, *args):
+    term = " ".join(args)
+    if request == False:
         return await ctx.send("You must specifiy a command and keyword, such as `!wikipedia search \"Science Olympiad\"`")
     if request == "search":
         return await ctx.send("\n".join([f"`{result}`" for result in aiowikip.search(term, results=5)]))
@@ -1557,13 +1558,16 @@ async def wikipedia(ctx, request:str=False, term:str=False):
             return await ctx.send(f"Sorry, the `{term}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
         except wikip.exceptions.PageError as e:
             return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-    elif request in ["link", "url"]:
+    else:
         try:
+            term = f"{request} {term}".strip()
             term = term.title()
             page = await aiowikip.page(term)
             return await ctx.send(f"Sure, here's the link: <{page.url}>")
         except wikip.exceptions.PageError as e:
             return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
+        except wikip.exceptions.DisambiguationError as e:
+            return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
 
 @bot.command()
 async def profile(ctx, name:str=False):

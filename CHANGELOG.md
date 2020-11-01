@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.24 - 2020-11-01
+### Changed
+* `!wikipedia` terms with multiple words now do not need quotes (closes [#241](https://github.com/cbrxyz/pi-bot/issues/241))
+* `!wikipedia` with no function term will now assume the `link` function (ex, `!wp red bear` now assumes `!wp link red bear`)
+
 ## 4.4.23 - 2020-10-31
 ### Changed
 * `!help` with no other arguments now shows special message (closes [#140](https://github.com/cbrxyz/pi-bot/issues/140))
