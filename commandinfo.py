@@ -661,11 +661,13 @@ COMMAND_INFO = [
             {
                 "name": "[wikiPageN]",
                 "description": "if acceptable in the context, the nth wiki page to get"
-            },
+            }
+        ],
+        "flags": [
             {
-                "name": "flag: -multiple",
-                "description": "specifies you are retrieving multiple page links/summaries"
-            },
+                "name": "multiple",
+                "description": "specifies each term is a different page title, and you are expecting multiple URLs"
+            }
         ],
         "usage":[
             {
