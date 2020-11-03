@@ -84,6 +84,23 @@ CATEGORY_SO = "Science Olympiad"
 CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"
 
+# Rules
+RULES = [
+    "Treat *all* users with respect.",
+    "No profanity or inappropriate language, content, or links.",
+    "Treat delicate subjects delicately. When discussing religion, politics, instruments, or other similar topics, please remain objective and avoid voicing strong opinions.",
+    "Do not spam or flood (an excessive number of messages sent within a short timespan).",
+    "Avoid intentional repeating pinging of other users (saying another user’s name).",
+    "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
+    "Never name-drop (using a real name without permission) or dox another user.",
+    "No witch-hunting (requests of kicks or bans for other users).",
+    "While you are not required to use your Scioly.org username as your nickname for this Server, please avoid assuming the username of or otherwise impersonating another active user.",
+    "Do not use multiple accounts within this Server, unless specifically permitted. A separate tournament account may be operated alongside a personal account.",
+    "Do not violate Science Olympiad Inc. copyrights. In accordance with the Scioly.org Resource Policy, all sharing of tests on Scioly.org must occur in the designated Test Exchanges. Do not solicit test trades on this Server.",
+    "Do not advertise other servers or paid services with which you have an affiliation.",
+    "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
+]
+
 ##############
 # DEV MODE CONFIG
 ##############
@@ -645,11 +662,13 @@ async def rand(ctx, a=1, b=10):
     await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
 
 @bot.command()
-async def invites(ctx):
-    """Fetches the invite table."""
-    return await ctx.send("In progress...")
-    message = await getInviteTable()
-    await ctx.send(f"```\n{message}```")
+async def rule(ctx, num):
+    """Gets a specified rule."""
+    if not num.isdigit() or int(num) < 1 or int(num) > 13:
+        # If the rule number is not actually a number
+        return await ctx.send("Please use a valid rule number, from 1 through 13. (Ex: `!rule 7`)")
+    rule = RULES[int(num) - 1]
+    return await ctx.send(f"**Rule {num}:**\n> {rule}")
 
 @bot.command()
 async def coach(ctx):

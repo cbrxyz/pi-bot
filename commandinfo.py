@@ -1218,5 +1218,26 @@ COMMAND_INFO = [
             "Member",
         ],
         "inQuickList": False
+    },
+    {
+        "name": "rule",
+        "description": "shows a specified rule",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "num",
+                "description": "the rule num to show"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!rule 1",
+                "result": "shows rule 1"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]
