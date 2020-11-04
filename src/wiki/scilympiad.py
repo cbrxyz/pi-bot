@@ -34,3 +34,19 @@ async def makeResultsTemplate(url):
     res += "}}"
     await session.close()
     return res
+
+async def getPoints(url):
+    if not url.find("scilympiad.com") != -1:
+        return False
+    session = aiohttp.ClientSession()
+    page = await session.get(url)
+    html = await page.text()
+    soup = bs4.BeautifulSoup(html, 'html.parser')
+    table = soup.select_one(".table-bordered")
+    table_body = table.find("tbody")
+    rows = table_body.find_all("tr")
+    points = []
+    for row in rows[:-1]:
+        points.append(int(row.find_all("td")[2].text))
+    await session.close()
+    return points

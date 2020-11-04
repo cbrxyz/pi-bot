@@ -26,7 +26,7 @@ from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand, getPageTables
 from src.wiki.schools import getSchoolListing
-from src.wiki.scilympiad import makeResultsTemplate
+from src.wiki.scilympiad import makeResultsTemplate, getPoints
 from src.wiki.mosteditstable import runTable
 from info import getAbout
 from doggo import getDoggo, getShiba
@@ -369,7 +369,12 @@ async def pullPrevInfo():
 @bot.command(aliases=["tc", "tourney", "tournaments"])
 async def tournament(ctx, *args):
     member = ctx.message.author
-    newArgs = args
+    newArgs = list(args)
+    ignoreTerms = ["invitational", "invy", "tournament", "regional", "invite"]
+    for term in ignoreTerms:
+        if term in newArgs:
+            newArgs.remove(term)
+            await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
     if len(args) == 0:
         return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
     for arg in newArgs:
@@ -935,20 +940,32 @@ async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
         points = [r[placeCol] for r in data]
         del points[0]
     points = [int(p) for p in points]
+    await _graph(points, title + " - Division " + div, title + "Div" + div + ".svg")
+    with open(title + "Div" + div + ".svg") as f:
+        pic = discord.File(f)
+        await ctx.send(file=pic)
+    return await ctx.send("Attempted to graph.")
+
+@bot.command()
+async def graphscilympiad(ctx, url, title):
+    points = await getPoints(url)
+    await _graph(points, title, "graph1.svg")
+    with open("graph1.svg") as f:
+        pic = discord.File(f)
+        await ctx.send(file=pic)
+    return await ctx.send("Attempted to graph.")
+
+async def _graph(points, graph_title, title):
     plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
     z = np.polyfit(range(1, len(points) + 1), points, 1)
     p = np.poly1d(z)
     plt.plot(range(1, len(points) + 1), p(range(1, len(points) + 1)), "--", color='#CCCCCC')
     plt.xlabel("Place")
     plt.ylabel("Points")
-    plt.title(title + " - Division " + div)
-    plt.savefig(title + "Div" + div + ".svg")
+    plt.title(graph_title)
+    plt.savefig(title)
     plt.close()
     await asyncio.sleep(2)
-    with open(title + "Div" + div + ".svg") as f:
-        pic = discord.File(f)
-        await ctx.send(file=pic)
-    return await ctx.send("Attempted to graph.")
 
 @bot.command()
 async def resultstemplate(ctx, url):
@@ -1125,8 +1142,8 @@ async def me(ctx, *args):
     else:
         await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
 
-@bot.command()
-async def list(ctx, cmd:str=False):
+@bot.command(aliases=["list"])
+async def list_command(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
     if cmd == False: # for quick list of commands
         ls = await getQuickList(ctx)

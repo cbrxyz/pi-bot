@@ -1239,5 +1239,30 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "graphscilympiad",
+        "description": "makes a point graph of Scilympiad results",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "url",
+                "description": "the URL of the results"
+            },
+            {
+                "name": "title",
+                "description": "the title of the graph"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!graphscilympiad https://scilympiad.com/bearso/Info/Results/907e1af2-0c19-4be6-ad87-a5b52e140bf1 '2021 BEARSO Final Points - Division C'",
+                "result": "makes a graph of the 2021 BEARSO Division C results"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]

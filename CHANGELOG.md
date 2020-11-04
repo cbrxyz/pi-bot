@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.28 - 2020-11-04
+### Added
+* `!graphscilympiad` command added to make a graph of Scilympiad final results (closes [#243](https://github.com/cbrxyz/pi-bot/issues/243))
+
+### Changed
+* `!tournament` now ignores commonly used words to cut down on mistaken reports (closes [#250](https://github.com/cbrxyz/pi-bot/issues/250))
+* `async def list()` command was renamed to `async def list_command()` in code to avoid overwriting built-in `list()` function
+
 ## 4.4.27 - 2020-11-03
 ### Added
 * Added `!rule` command for quickly displaying a rule (closes [#200](https://github.com/cbrxyz/pi-bot/issues/200))
