@@ -1535,28 +1535,16 @@ async def alumni(ctx):
         await ctx.send(f"Added the alumni role, and removed all other division roles.")
 
 @bot.command()
-async def wiki(ctx, command, *args):
+async def wiki(ctx, command:str=False, *args):
     # Check to make sure not too much at once
-    if (len(args) > 5 and multiple) or len(args) > 12:
+    if not command:
+        return await ctx.send("<https://scioly.org/wiki>")
+    if len(args) > 7:
         return await ctx.send("Slow down there buster. Please keep the command to 12 or less arguments at once.")
     multiple = False
     for arg in args:
         if arg[:1] == "-":
             multiple = arg.lower() == "-multiple"
-    if command in ["link", "url"]:
-        if multiple:
-            for arg in [arg for arg in args if arg[:1] != "-"]:
-                url = await implementCommand("link", arg)
-                if url == False:
-                    await ctx.send(f"The `{arg}` page does not exist!")
-                await ctx.send(f"<{url}>")
-        else:
-            stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
-            url = await implementCommand("link", stringSum)
-            if url == False:
-                await ctx.send(f"The `{arg}` page does not exist!")
-            else:
-                await ctx.send(f"<{url}>")
     if command in ["summary"]:
         if multiple:
             for arg in [arg for arg in args if arg[:1] != "-"]:
@@ -1572,11 +1560,31 @@ async def wiki(ctx, command, *args):
                 await ctx.send(f"The `{arg}` page does not exist!")
             else:
                 await ctx.send(" ".join(text))
-    if command in ["search"]:
+    elif command in ["search"]:
         if multiple:
             return await ctx.send("Ope! No multiple searches at once yet!")
         searches = await implementCommand("search", " ".join([arg for arg in args]))
         await ctx.send("\n".join([f"`{s}`" for s in searches]))
+    else:
+        # Assume link
+        if multiple:
+            newArgs = [command] + list(args)
+            for arg in [arg for arg in newArgs if arg[:1] != "-"]:
+                url = await implementCommand("link", arg)
+                if url == False:
+                    await ctx.send(f"The `{arg}` page does not exist!")
+                await ctx.send(f"<{url}>")
+        else:
+            stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
+            if len(args) > 0:
+                stringSum = f"{command} {stringSum}"
+            else:
+                stringSum = command
+            url = await implementCommand("link", stringSum)
+            if url == False:
+                await ctx.send(f"The `{arg}` page does not exist!")
+            else:
+                await ctx.send(f"<{url}>")
 
 @bot.command(aliases=["wp"])
 async def wikipedia(ctx, request:str=False, *args):
@@ -2126,12 +2134,12 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "Past Content",
-                    "value": message.content if len(message.content) > 0 else "None",
+                    "value": message.content[:1024] if len(message.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
                     "name": "New Content",
-                    "value": msgNow.content if len(msgNow.content) > 0 else "None",
+                    "value": msgNow.content[:1024] if len(msgNow.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
@@ -2174,12 +2182,12 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "New Content",
-                    "value": msgNow.content if len(msgNow.content) > 0 else "None",
+                    "value": msgNow.content[:1024] if len(msgNow.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
                     "name": "Raw Payload",
-                    "value": payload.data if len(payload.data) > 0 else "None",
+                    "value": str(payload.data)[:1024] if len(payload.data) > 0 else "None",
                     "inline": "False"
                 },
                 {
@@ -2189,7 +2197,7 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "Current Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in msgNow.embeds]) if len(msgNow.embeds) > 0 else "None",
+                    "value": "\n".join([str(e.to_dict()) for e in msgNow.embeds])[:1024] if len(msgNow.embeds) > 0 else "None",
                     "inline": "False"
                 }
             ]
@@ -2240,12 +2248,12 @@ async def on_raw_message_delete(payload):
                 },
                 {
                     "name": "Content",
-                    "value": message.content if len(message.content) > 0 else "None",
+                    "value": str(message.content)[:1024] if len(message.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
                     "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
+                    "value": "\n".join([str(e.to_dict()) for e in message.embeds])[:1024] if len(message.embeds) > 0 else "None",
                     "inline": "False"
                 }
             ]
