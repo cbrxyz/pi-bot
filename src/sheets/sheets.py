@@ -101,6 +101,21 @@ async def getRawCensor():
     words = await eventSheet.batch_get(["B3:C1000"])
     return words
 
+async def getTags():
+    ss = await getWorksheet()
+    tagSheet = await ss.worksheet("Tags")
+    tags = await tagSheet.batch_get(["B3:E1000"])
+    tags = tags[0]
+    res = []
+    for row in tags:
+        res.append({
+            'name': row[0],
+            'text': row[1],
+            'launch_helpers': row[2] == "Y",
+            'members': row[3] == "Y"
+        })
+    return res
+
 async def updateWikiPage(title):
     ss = await getWorksheet()
     varSheet = await ss.worksheet("Variable Backup")

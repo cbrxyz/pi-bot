@@ -20,7 +20,7 @@ from discord.ext import commands, tasks
 from src.sheets.events import getEvents
 from src.sheets.tournaments import getTournamentChannels
 from src.sheets.censor import getCensor
-from src.sheets.sheets import sendVariables, getVariables
+from src.sheets.sheets import sendVariables, getVariables, getTags
 from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
@@ -176,6 +176,7 @@ RECENT_MESSAGES = []
 STEALFISH_BAN = []
 TOURNAMENT_INFO = []
 REQUESTED_TOURNAMENTS = []
+TAGS = []
 STOPNUKE = False
 
 ##############
@@ -325,10 +326,12 @@ async def refreshAlgorithm():
     global CENSORED_WORDS
     global CENSORED_EMOJIS
     global EVENT_INFO
+    global TAGS
     censor = await getCensor()
     CENSORED_WORDS = censor[0]
     CENSORED_EMOJIS = censor[1]
     EVENT_INFO = await getEvents()
+    TAGS = await getTags()
     print("Refreshed data from sheet.")
     return True
 
@@ -810,6 +813,22 @@ async def games(ctx):
         await member.add_roles(role)
         await ctx.send(f"You are now in the channel. Come and have fun in {jbcObj.mention}! :tada:")
         await jbcObj.send(f"Please welcome {member.mention} to the party!!")
+
+@bot.command(aliases=["tags", "t"])
+async def tag(ctx, name):
+    member = ctx.message.author
+    if len(TAGS) == 0:
+        return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
+    staff = await isStaff(ctx)
+    lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
+    member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    for t in TAGS:
+        if t['name'] == name:
+            if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
+                return await ctx.send(t['text'])
+            else:
+                return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
+    return await ctx.send("Tag not found.")
 
 @bot.command()
 @commands.check(isStaff)
