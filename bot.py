@@ -1592,18 +1592,21 @@ async def wiki(ctx, command:str=False, *args):
                 url = await implementCommand("link", arg)
                 if url == False:
                     await ctx.send(f"The `{arg}` page does not exist!")
-                await ctx.send(f"<{url}>")
+                await ctx.send(f"<{wikiUrlFix(url)}>")
         else:
             stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
-            if len(args) > 0:
+            if len(args) > 0 and command.rstrip() != "link":
                 stringSum = f"{command} {stringSum}"
-            else:
+            elif command.rstrip() != "link":
                 stringSum = command
             url = await implementCommand("link", stringSum)
             if url == False:
-                await ctx.send(f"The `{arg}` page does not exist!")
+                await ctx.send(f"The `{stringSum}` page does not exist!")
             else:
-                await ctx.send(f"<{url}>")
+                await ctx.send(f"<{wikiUrlFix(url)}>")
+
+def wikiUrlFix(url):
+    return url.replace("%3A", ":").replace(r"%2F","/")
 
 @bot.command(aliases=["wp"])
 async def wikipedia(ctx, request:str=False, *args):

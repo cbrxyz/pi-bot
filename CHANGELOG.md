@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.31 - 2020-11-07
+### Fixed
+* `!wiki pageName` where `pageName` is not a valid page name now shows proper error (closes [#257](https://github.com/cbrxyz/pi-bot/issues/257))
+* `!wiki link pageName` was fixed to actually link to `pageName` (closes [#256](https://github.com/cbrxyz/pi-bot/issues/256))
+* Wiki URLs now accurately link to page titles containing ":" or "/" (closes [#161](https://github.com/cbrxyz/pi-bot/issues/161))
+
 ## 4.4.30 - 2020-11-06
 ### Added
 * `!tag` command, which references the Tags spreadsheet (closes [#253](https://github.com/cbrxyz/pi-bot/issues/253))
