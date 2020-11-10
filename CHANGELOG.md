@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.32 - 2020-11-10
+### Added
+* Documentation for `!tag` added (closes [#265](https://github.com/cbrxyz/pi-bot/issues/265))
+
+### Changed
+* When user sends link to external Discord server, a warning is now displayed explaining why the message was censored (closes [#267](https://github.com/cbrxyz/pi-bot/issues/267))
+
 ## 4.4.31 - 2020-11-07
 ### Fixed
 * `!wiki pageName` where `pageName` is not a valid page name now shows proper error (closes [#257](https://github.com/cbrxyz/pi-bot/issues/257))

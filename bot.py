@@ -2002,7 +2002,8 @@ async def on_message(message):
     if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
         print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
         await message.delete()
-        await message.channel.send("<censored>")
+        ssChannel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
+        await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {ssChannel.mention}.*")
     pingable = True
     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
         pingable = False

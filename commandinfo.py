@@ -1264,5 +1264,26 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "tag",
+        "description": "uses a tag (a pre-determined message that is attached to a specific keyword)",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "name",
+                "description": "the name of the tag to pull"
+            },
+        ],
+        "usage": [
+            {
+                "cmd": "!tag jam",
+                "result": "pulls the `jam` tag"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]
