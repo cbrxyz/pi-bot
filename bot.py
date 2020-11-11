@@ -1884,6 +1884,8 @@ async def nuke(ctx, count):
             count = 100
         else:
             count = messageCount + int(count) - 1
+        if count <= 0:
+            return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
     await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
     await ctx.send("PREPARE FOR IMPACT.")
     for i in range(10, 0, -1):
