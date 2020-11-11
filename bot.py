@@ -83,6 +83,7 @@ CATEGORY_TOURNAMENTS = "tournaments"
 CATEGORY_SO = "Science Olympiad"
 CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"
+CATEGORY_ARCHIVE = "archives"
 
 # Rules
 RULES = [
@@ -482,7 +483,8 @@ async def updateTournamentList():
         print(f"Tournament List: Day diff for {t[0]} is {dayDiff} days.")
         if (dayDiff < (-1 * afterDays)) and ch != None:
             # If past tournament date, now out of range
-            await autoReport("Tournament Channel & Role Needs to be Deleted", "orange", f"The {ch.mention} channel and {r.mention} role need to be deleted, as it is after the tournament date.")
+            if ch.category.name != CATEGORY_ARCHIVE:
+                await autoReport("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
         elif (dayDiff <= beforeDays) and ch == None:
             # If before tournament and in range
             newRole = await server.create_role(name=t[0])
@@ -1873,6 +1875,15 @@ async def nuke(ctx, count):
         return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
         return await ctx.send("Chill. No more than deleting 100 messages at a time.")
+    channel = ctx.message.channel
+    if int(count) < 0:
+        history = await channel.history(limit=105).flatten()
+        messageCount = len(history)
+        print(messageCount)
+        if messageCount > 100:
+            count = 100
+        else:
+            count = messageCount + int(count) - 1
     await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
     await ctx.send("PREPARE FOR IMPACT.")
     for i in range(10, 0, -1):
@@ -1881,7 +1892,6 @@ async def nuke(ctx, count):
         if STOPNUKE:
             return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
     if not STOPNUKE:
-        channel = ctx.message.channel
         async for m in channel.history(limit=(int(count) + 13)):
             if not m.pinned and not STOPNUKE:
                 await m.delete()

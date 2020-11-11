@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.33 - 2020-11-11
+### Added
+* `!nuke` now accepts negative indexes to delete all but last n messages (closes [#271](https://github.com/cbrxyz/pi-bot/issues/271))
+
+### Fixed
+* Deletion needed reports for tournament channels would occur despite tournament channels not needing to be deleted (closes [#270](https://github.com/cbrxyz/pi-bot/issues/270))
+
 ## 4.4.32 - 2020-11-10
 ### Added
 * Documentation for `!tag` added (closes [#265](https://github.com/cbrxyz/pi-bot/issues/265))
