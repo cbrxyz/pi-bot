@@ -110,11 +110,13 @@ intents = discord.Intents.default()
 intents.members = True
 
 if devMode:
-    bot = commands.Bot(command_prefix=("?"), case_insensitive=True, intents=intents)
+    BOT_PREFIX = "?"
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
-    bot = commands.Bot(command_prefix=("!"), case_insensitive=True, intents=intents)
+    BOT_PREFIX = "!"
     SERVER_ID = 698306997287780363
+
+bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=intents)
 
 ##############
 # CHECKS
@@ -827,6 +829,7 @@ async def tag(ctx, name):
     for t in TAGS:
         if t['name'] == name:
             if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
+                await ctx.message.delete()
                 return await ctx.send(t['text'])
             else:
                 return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
@@ -1441,12 +1444,12 @@ async def stealfish(ctx):
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         STEALFISH_BAN.append(member.id)
         CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to banned from using this command for 1 hour!")
+        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 hour!")
     if r >= 0.25:
         parsed = dateparser.parse("1 day", settings={"PREFER_DATES_FROM": "future"})
         STEALFISH_BAN.append(member.id)
         CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to banned from using this command for 1 day!")
+        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 day!")
     if r >= 0.01:
         return await ctx.send("Hmm, nothing happened. *crickets*")
     else:
@@ -1998,7 +2001,19 @@ async def on_message(message):
     if type(message.channel) == discord.DMChannel:
         await sendToDMLog(message)
 
+    # Print to output
     print('Message from {0.author}: {0.content}'.format(message))
+
+    # Prevent command usage in channels outside of #bot-spam
+    author = message.author
+    if message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
+        if message.channel.name != CHANNEL_BOTSPAM:
+            botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
+            clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
+            await asyncio.sleep(10)
+            await clarifyMessage.delete()
+            return await message.delete()
+
     if message.author.id in PI_BOT_IDS: return
     content = message.content
     for word in CENSORED_WORDS:

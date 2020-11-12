@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.35 - 2020-11-12
+### Changed
+* Calling `!tag example` where `example` is a legitimate tag will delete the original message (closes [#274](https://github.com/cbrxyz/pi-bot/issues/274))
+* Commands run by members in channels other than `#bot-spam` will now not be processed and will direct the user to the appropriate channel. (closes [#219](https://github.com/cbrxyz/pi-bot/issues/219))
+
+### Fixed
+* Typo in `!stealfish` (closes [#273](https://github.com/cbrxyz/pi-bot/issues/273))
+
 ## 4.4.34 - 2020-11-11
 ### Fixed
 * `!nuke n` would throw an error if the user attempted to delete `-n` messages when `n` was larger than the number of messages in the channel
