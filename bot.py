@@ -85,6 +85,12 @@ CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"
 CATEGORY_ARCHIVE = "archives"
 
+# Emoji reference
+EMOJI_FAST_REVERSE = "\U000023EA"
+EMOJI_LEFT_ARROW = "\U00002B05"
+EMOJI_RIGHT_ARROW = "\U000027A1"
+EMOJI_FAST_FORWARD = "\U000023E9"
+
 # Rules
 RULES = [
     "Treat *all* users with respect.",
@@ -1173,8 +1179,12 @@ async def list_command(ctx, cmd:str=False):
         ls = await getQuickList(ctx)
         await ctx.send(embed=ls)
     if cmd == "all" or cmd == "commands":
-        ls = await getList(ctx)
-        await ctx.send(embed=ls)
+        ls = await getList(ctx.message.author, 1)
+        sentList = await ctx.send(embed=ls)
+        await sentList.add_reaction(EMOJI_FAST_REVERSE)
+        await sentList.add_reaction(EMOJI_LEFT_ARROW)
+        await sentList.add_reaction(EMOJI_RIGHT_ARROW)
+        await sentList.add_reaction(EMOJI_FAST_FORWARD)
     elif cmd == "states":
         statesList = await getStateList()
         list = assembleEmbed(
@@ -2093,6 +2103,26 @@ async def on_raw_reaction_add(payload):
             if payload.emoji.name == "\U00002705":
                 print("Report handled.")
                 await messageObj.delete()
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    msg = reaction.message
+    if len(msg.embeds) > 0:
+        if msg.embeds[0].title.startswith("List of Commands") and user.id not in PI_BOT_IDS:
+            currentPage = int(re.findall(r'(\d+)(?=\/)', msg.embeds[0].title)[0])
+            print(currentPage)
+            ls = False
+            if reaction.emoji == EMOJI_FAST_REVERSE:
+                ls = await getList(user, 1)
+            elif reaction.emoji == EMOJI_LEFT_ARROW:
+                ls = await getList(user, currentPage - 1)
+            elif reaction.emoji == EMOJI_RIGHT_ARROW:
+                ls = await getList(user, currentPage + 1)
+            elif reaction.emoji == EMOJI_FAST_FORWARD:
+                ls = await getList(user, 100)
+            if ls != False:
+                await reaction.message.edit(embed=ls)
+            await reaction.remove(user)
 
 @bot.event
 async def on_member_join(member):

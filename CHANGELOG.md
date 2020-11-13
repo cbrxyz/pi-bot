@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.36 - 2020-11-13
+### Added
+* `!list all` now shows pages of commands separately (closes [#187](https://github.com/cbrxyz/pi-bot/issues/187))
+
 ## 4.4.35 - 2020-11-12
 ### Changed
 * Calling `!tag example` where `example` is a legitimate tag will delete the original message (closes [#274](https://github.com/cbrxyz/pi-bot/issues/274))
