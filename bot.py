@@ -680,6 +680,13 @@ async def rand(ctx, a=1, b=10):
     await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
 
 @bot.command()
+async def xkcd(ctx, num):
+    if num.isdigit():
+        return await ctx.send(f"https://xkcd.com/{num}")
+    else:
+        return await ctx.send("Invalid attempted number for xkcd.")
+
+@bot.command()
 async def rule(ctx, num):
     """Gets a specified rule."""
     if not num.isdigit() or int(num) < 1 or int(num) > 13:
