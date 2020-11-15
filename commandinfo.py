@@ -1285,5 +1285,21 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "magic8ball",
+        "description": "rolls the magic 8 ball",
+        "aliases": [],
+        "parameters": [],
+        "usage": [
+            {
+                "cmd": "!magic8ball",
+                "result": "rolls the magic 8 ball once"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]

@@ -680,6 +680,36 @@ async def rand(ctx, a=1, b=10):
     await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
 
 @bot.command()
+async def magic8ball(ctx):
+    msg = await ctx.send("Swishing the magic 8 ball...")
+    await ctx.channel.trigger_typing()
+    await asyncio.sleep(3)
+    await msg.delete()
+    sayings = [
+        "Yes.",
+        "Ask again later.",
+        "Not looking good.",
+        "Cannot predict now.",
+        "It is certain.",
+        "Try again.",
+        "Without a doubt.",
+        "Don't rely on it.",
+        "Outlook good.",
+        "My reply is no.",
+        "Don't count on it.",
+        "Yes - definitely.",
+        "Signs point to yes.",
+        "I believe so.",
+        "Nope.",
+        "Concentrate and ask later.",
+        "Try asking again.",
+        "For sure not.",
+        "Definitely no."
+    ]
+    response = sayings[math.floor(random.random()*len(sayings))]
+    await ctx.send(f"**{response}**")
+
+@bot.command()
 async def xkcd(ctx, num):
     if num.isdigit():
         return await ctx.send(f"https://xkcd.com/{num}")
@@ -2023,7 +2053,7 @@ async def on_message(message):
 
     # Prevent command usage in channels outside of #bot-spam
     author = message.author
-    if message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
+    if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
         if message.channel.name != CHANNEL_BOTSPAM:
             botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
             clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")

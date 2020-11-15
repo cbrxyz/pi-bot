@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.38 - 2020-11-15
+### Added
+* Added the `!magic8ball` command (closes [#272](https://github.com/cbrxyz/pi-bot/issues/272))
+
+### Fixed
+* Commands now work in DM's again (closes [#278](https://github.com/cbrxyz/pi-bot/issues/278))
+
 ## 4.4.37 - 2020-11-14
 ### Added
 * Simple `!xkcd` command (closes [#181](https://github.com/cbrxyz/pi-bot/issues/181))
