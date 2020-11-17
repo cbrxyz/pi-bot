@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.39 - 2020-11-17
+### Changed
+* Bot statuses are now stored in array instead of long conditional (closes [#174](https://github.com/cbrxyz/pi-bot/issues/174))
+
 ## 4.4.38 - 2020-11-15
 ### Added
 * Added the `!magic8ball` command (closes [#272](https://github.com/cbrxyz/pi-bot/issues/272))

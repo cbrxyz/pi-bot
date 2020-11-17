@@ -269,55 +269,42 @@ async def handleCron(string):
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
-    botStatus = math.floor(random.random() * 24)
-    if botStatus == 0:
-        await bot.change_presence(activity=discord.Game(name="Game On"))
-    elif botStatus == 1:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="my SoM instrument"))
-    elif botStatus == 2:
-        await bot.change_presence(activity=discord.Game(name="with Pi-Bot Beta"))
-    elif botStatus == 3:
-        await bot.change_presence(activity=discord.Game(name="with my gravity vehicle"))
-    elif botStatus == 4:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the WS trials"))
-    elif botStatus == 5:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="birds"))
-    elif botStatus == 6:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="2018 Nationals again"))
-    elif botStatus == 7:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the sparkly stars"))
-    elif botStatus == 8:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the wiki"))
-    elif botStatus == 9:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for tourney results"))
-    elif botStatus == 10:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="birb sounds"))
-    elif botStatus == 11:
-        await bot.change_presence(activity=discord.Game(name="with proteins"))
-    elif botStatus == 12:
-        await bot.change_presence(activity=discord.Game(name="with my detector"))
-    elif botStatus == 13:
-        await bot.change_presence(activity=discord.Game(name="Minecraft"))
-    elif botStatus == 14:
-        await bot.change_presence(activity=discord.Game(name="with circuits"))
-    elif botStatus == 15:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="my PPP fall"))
-    elif botStatus == 16:
-        await bot.change_presence(activity=discord.Game(name="a major scale"))
-    elif botStatus == 17:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="clinking medals"))
-    elif botStatus == 18:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the world learn"))
-    elif botStatus == 19:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="SciOly grow"))
-    elif botStatus == 20:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="tutorials"))
-    elif botStatus == 21:
-        await bot.change_presence(activity=discord.Game(name="with wiki templates"))
-    elif botStatus == 22:
-        await bot.change_presence(activity=discord.Game(name="the flute"))
-    elif botStatus == 23:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="bear eat users"))
+    statuses = [
+        {"type": "playing", "message": "Game On"},
+        {"type": "listening", "message": "my SoM instrument"},
+        {"type": "playing", "message": "with Pi-Bot Beta"},
+        {"type": "playing", "message": "with my gravity vehicle"},
+        {"type": "watching", "message": "the WS trials"},
+        {"type": "watching", "message": "birbs"},
+        {"type": "watching", "message": "2018 Nationals again"},
+        {"type": "watching", "message": "the sparkly stars"},
+        {"type": "watching", "message": "over the week"},
+        {"type": "watching", "message": "for tourney results"},
+        {"type": "listening", "message": "birb sounds"},
+        {"type": "playing", "message": "with proteins"},
+        {"type": "playing", "message": "with my detector"},
+        {"type": "playing", "message": "Minecraft"},
+        {"type": "playing", "message": "with circuits"},
+        {"type": "watching", "message": "my PPP fall"},
+        {"type": "playing", "message": "a major scale"},
+        {"type": "listening", "message": "clinking medals"},
+        {"type": "watching", "message": "the world learn"},
+        {"type": "watching", "message": "SciOly grow"},
+        {"type": "watching", "message": "tutorials"},
+        {"type": "playing", "message": "with wiki templates"},
+        {"type": "playing", "message": "the flute"},
+        {"type": "watching", "message": "bear eat users"},
+        {"type": "watching", "message": "xkcd"},
+        {"type": "playing", "message": "with wiki templates"},
+        {"type": "watching", "message": "Jmol tutorials"},
+    ]
+    botStatus = statuses[math.floor(random.random() * len(statuses))]
+    if botStatus["type"] == "playing":
+        await bot.change_presence(activity=discord.Game(name=botStatus["message"]))
+    elif botStatus["type"] == "listening":
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
+    elif botStatus["type"] == "watching":
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)
