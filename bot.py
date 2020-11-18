@@ -635,6 +635,13 @@ async def getuserid(ctx, user=None):
         user = user.replace("<@!", "").replace(">", "")
         await ctx.send(f"The user ID of <@{user}> is `{user}`.")
 
+@bot.command(aliases=["ufi"])
+@commands.check(isStaff)
+async def userfromid(ctx, iden:int):
+    """Mentions a user with the given ID."""
+    user = bot.get_user(iden)
+    await ctx.send(user.mention)
+
 @bot.command(aliases=["hi"])
 async def hello(ctx):
     """Simply says hello. Used for testing the bot."""

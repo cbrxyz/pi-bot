@@ -1301,5 +1301,28 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "userfromid",
+        "description": "gets the user with the specified ID",
+        "aliases": ["ufi"],
+        "parameters": [
+            {
+                "name": "id",
+                "description": "the id of the user to get"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!userfromid 1234567890",
+                "result": "returns the user (mentions them)"
+            }
+        ],
+        "access":[
+            "Wiki/Gallery Moderator",
+            "Global Moderator",
+            "Administrator",
+        ],
+        "inQuickList": False
     }
 ]

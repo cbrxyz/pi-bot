@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.40 - 2020-11-18
+### Added
+* `!userfromid` to get a user from specified ID (closes [#283](https://github.com/cbrxyz/pi-bot/issues/283))
+
 ## 4.4.39 - 2020-11-17
 ### Changed
 * Bot statuses are now stored in array instead of long conditional (closes [#174](https://github.com/cbrxyz/pi-bot/issues/174))
