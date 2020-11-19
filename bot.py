@@ -657,6 +657,10 @@ async def invite(ctx):
     await ctx.send("https://discord.gg/C9PGV6h")
 
 @bot.command()
+async def forums(ctx):
+    await ctx.send("<https://scioly.org/forums>")
+
+@bot.command()
 async def obb(ctx):
     await ctx.send("<https://scioly.org/obb>")
 
@@ -2049,11 +2053,16 @@ async def on_message(message):
     author = message.author
     if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
         if message.channel.name != CHANNEL_BOTSPAM:
-            botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
-            clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
-            await asyncio.sleep(10)
-            await clarifyMessage.delete()
-            return await message.delete()
+            allowedCommands = ["about", "dogbomb", "exchange", "gallery", "invite", "me", "magic8ball", "latex", "obb", "profile", "r", "report", "rule", "shibabomb", "tag", "wiki", "wikipedia", "wp"]
+            allowed = False
+            for c in allowedCommands:
+                if message.content.find(BOT_PREFIX + c) != -1: allowed = True
+            if not allowed:
+                botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
+                clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
+                await asyncio.sleep(10)
+                await clarifyMessage.delete()
+                return await message.delete()
 
     if message.author.id in PI_BOT_IDS: return
     content = message.content

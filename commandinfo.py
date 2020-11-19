@@ -1020,6 +1020,20 @@ COMMAND_INFO = [
         "inQuickList": False
     },
     {
+        "name": "forums",
+        "description": "returns the link to the Scioly.org forums",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!forums",
+            "result": "https://scioly.org/forums"
+        }],
+        "access": [
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
         "name": "exchange",
         "description": "returns the link to the Scioly.org Test Exchange",
         "aliases": ["tests", "testexchange"],
