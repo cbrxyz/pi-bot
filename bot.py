@@ -502,8 +502,8 @@ async def updateTournamentList():
     embeds.append(assembleEmbed(
         title=":medal: Tournament Channels Listing",
         desc=(
-            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received 10 votes to be considered for a channel." + 
-            f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." + 
+            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received 10 votes to be considered for a channel." +
+            f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." +
             f"\n\n* To make a new request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
             f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
         )
@@ -1264,9 +1264,9 @@ async def censor(message):
     author = message.author.nick
     if author == None:
         author = message.author.name
-    # Make sure pinging through @everyone and @here can not happen
-    content = re.sub(r'(?<!<)@', '\1\u200b', content)
-    await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
+    # Make sure pinging through @everyone, @here, or any role can not happen
+    mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
+    await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava, allowed_mentions=mention_perms)
     await wh.delete()
 
 @bot.command()
@@ -1437,10 +1437,10 @@ async def help(ctx, command:str=None):
     if command == None:
         embed = assembleEmbed(
             title="Looking for help?",
-            desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" + 
-            "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " + 
-            "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" + 
-            "If you want to see some commands that you can use on me, just type `!list`! " + 
+            desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
+            "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
+            "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" +
+            "If you want to see some commands that you can use on me, just type `!list`! " +
             "If you need more help, please feel free to reach out to a staff member!")
         )
         return await ctx.send(embed=embed)
