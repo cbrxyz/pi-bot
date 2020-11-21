@@ -459,14 +459,12 @@ async def updateTournamentList():
     gm = discord.utils.get(server.roles, name=ROLE_GM)
     a = discord.utils.get(server.roles, name=ROLE_AD)
     allTournamentsRole = discord.utils.get(server.roles, name=ROLE_AT)
-    stringList = ""
+    stringLists = []
+    stringLists.append("")
     openSoonList = ""
     channelsRequestedList = ""
     now = datetime.datetime.now()
     for t in tl: # For each tournament in the sheet
-        # Add the listing to the embed
-        print(f"Tournament List: Handling {t[0]}")
-
         # Check if the channel needs to be made / deleted
         ch = discord.utils.get(server.text_channels, name=t[1])
         r = discord.utils.get(server.roles, name=t[0])
@@ -475,7 +473,7 @@ async def updateTournamentList():
         afterDays = int(t[6])
         tDDT = datetime.datetime.strptime(tourneyDate, "%Y-%m-%d")
         dayDiff = (tDDT - now).days
-        print(f"Tournament List: Day diff for {t[0]} is {dayDiff} days.")
+        print(f"Tournament List: Handling {t[0]} (Day diff: {dayDiff} days)")
         if (dayDiff < (-1 * afterDays)) and ch != None:
             # If past tournament date, now out of range
             if ch.category.name != CATEGORY_ARCHIVE:
@@ -488,9 +486,15 @@ async def updateTournamentList():
             await newCh.set_permissions(newRole, read_messages=True)
             await newCh.set_permissions(allTournamentsRole, read_messages=True)
             await newCh.set_permissions(server.default_role, read_messages=False)
-            stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+            stringToAdd = (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+            while len(stringLists[-1] + stringToAdd) > 2048:
+                stringLists.append("")
+            stringLists[-1] += stringToAdd
         elif ch != None:
-            stringList += (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+            stringToAdd = (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+            while len(stringLists[-1] + stringToAdd) > 2048:
+                stringLists.append("")
+            stringLists[-1] += stringToAdd
         elif (dayDiff > beforeDays):
             openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
     REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
@@ -508,10 +512,11 @@ async def updateTournamentList():
             f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
         )
     ))
-    embeds.append(assembleEmbed(
-        title="Currently Available Channels",
-        desc=stringList if len(stringList) > 0 else "No channels are available currently."
-    ))
+    for i, s in enumerate(stringLists):
+        embeds.append(assembleEmbed(
+            title=f"Currently Available Channels (Page {i + 1}/{len(stringLists)})",
+            desc=s if len(s) > 0 else "No channels are available currently."
+        ))
     embeds.append(assembleEmbed(
         title="Channels Opening Soon",
         desc=openSoonList if len(openSoonList) > 0 else "No channels are opening soon currently.",
@@ -521,12 +526,21 @@ async def updateTournamentList():
         desc=("Vote with the command associated with the tournament channel.\n\n" + channelsRequestedList) if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, with the name of the tournament."
     ))
     hist = await tourneyChannel.history(oldest_first=True).flatten()
-    if len(hist) == 4:
+    if len(hist) != 0:
+        # When the tourney channel already has embeds
         count = 0
         async for m in tourneyChannel.history(oldest_first=True):
             await m.edit(embed=embeds[count])
             count += 1
+        if len(embeds) > len(hist):
+            for e in embeds[len(hist):]:
+                await tourneyChannel.send(embed=e)
+        if len(embeds) < len(hist):
+            messages = await tourneyChannel.history(oldest_first=True).flatten()
+            for m in messages[len(embeds):]:
+                await m.delete()
     else:
+        # If the tournament channel is being initialized for the first time
         pastMessages = await tourneyChannel.history(limit=100).flatten()
         await tourneyChannel.delete_messages(pastMessages)
         for e in embeds:
