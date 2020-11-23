@@ -1072,8 +1072,8 @@ async def ping(ctx, command=None, *args):
                     ignoredList.append(arg)
                 else:
                     if command.lower() in ["add", "new"]:
-                        print("adding word")
-                        pings.append(fr"\b({arg})\b")
+                        print(f"adding word: {re.escape(arg)}")
+                        pings.append(fr"\b({re.escape(arg)})\b")
                     else:
                         print("adding regexp")
                         pings.append(fr"({arg})")
@@ -1082,7 +1082,7 @@ async def ping(ctx, command=None, *args):
             if command.lower() in ["add", "new"]:
                 PING_INFO.append({
                     "id": member,
-                    "pings": [fr"\b({arg})\b" for arg in args]
+                    "pings": [fr"\b({re.escape(arg)})\b" for arg in args]
                 })
             else:
                 PING_INFO.append({
