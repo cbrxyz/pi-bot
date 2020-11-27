@@ -1338,5 +1338,21 @@ COMMAND_INFO = [
             "Administrator",
         ],
         "inQuickList": False
+    },
+    {
+        "name": "info",
+        "description": "shows information about the server",
+        "aliases": [],
+        "parameters": [],
+        "usage": [
+            {
+                "cmd": "!info",
+                "result": "shows info about the server"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]
