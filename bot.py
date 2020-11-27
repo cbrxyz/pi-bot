@@ -84,6 +84,7 @@ CATEGORY_SO = "Science Olympiad"
 CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"
 CATEGORY_ARCHIVE = "archives"
+CATEGORY_STAFF = "staff"
 
 # Emoji reference
 EMOJI_FAST_REVERSE = "\U000023EA"
@@ -945,6 +946,125 @@ async def unlock(ctx):
     await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.send("Unlocked the channel to Member access. Please check if permissions need to be synced.")
+
+@bot.command()
+async def info(ctx):
+    """Gets information about the Discord server."""
+    server = ctx.message.guild
+    name = server.name
+    owner = server.owner
+    creation_date = server.created_at
+    emoji_count = len(server.emojis)
+    icon = server.icon_url_as(format=None, static_format='jpeg')
+    animated_icon = server.is_icon_animated()
+    iden = server.id
+    banner = server.banner_url
+    desc = server.description
+    mfa_level = server.mfa_level
+    verification_level = server.verification_level
+    content_filter = server.explicit_content_filter
+    default_notifs = server.default_notifications
+    features = server.features
+    splash = server.splash_url
+    premium_level = server.premium_tier
+    boosts = server.premium_subscription_count
+    channel_count = len(server.channels)
+    text_channel_count = len(server.text_channels)
+    voice_channel_count = len(server.voice_channels)
+    category_count = len(server.categories)
+    system_channel = server.system_channel
+    if type(system_channel) == discord.TextChannel: system_channel = system_channel.mention
+    rules_channel = server.rules_channel
+    if type(rules_channel) == discord.TextChannel: rules_channel = rules_channel.mention
+    public_updates_channel = server.public_updates_channel
+    if type(public_updates_channel) == discord.TextChannel: public_updates_channel = public_updates_channel.mention
+    emoji_limit = server.emoji_limit
+    bitrate_limit = server.bitrate_limit
+    filesize_limit = round(server.filesize_limit/1000000, 3)
+    boosters = server.premium_subscribers
+    for i, b in enumerate(boosters):
+        # convert user objects to mentions
+        boosters[i] = b.mention
+    boosters = ", ".join(boosters)
+    print(boosters)
+    role_count = len(server.roles)
+    member_count = len(server.members)
+    max_members = server.max_members
+    discovery_splash_url = server.discovery_splash_url
+    member_percentage = round(member_count/max_members * 100, 3)
+    emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
+    channel_percentage = round(channel_count/500 * 100, 3)
+    role_percenatege = round(role_count/250 * 100, 3)
+    
+    staff_member = await isStaff(ctx)
+    fields = [
+            {
+                "name": "Basic Information",
+                "value": (
+                    f"**Creation Date:** {creation_date}\n" + 
+                    f"**ID:** {iden}\n" +
+                    f"**Animated Icon:** {animated_icon}\n" +
+                    f"**Banner URL:** {banner}\n" + 
+                    f"**Splash URL:** {splash}\n" +
+                    f"**Discovery Splash URL:** {discovery_splash_url}"
+                ),
+                "inline": False
+            },
+            {
+                "name": "Nitro Information",
+                "value": (
+                    f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n" +
+                    f"**Boosters:** {boosters}"
+                ),
+                "inline": False
+            }
+        ]
+    if staff_member and ctx.channel.category.name == CATEGORY_STAFF:
+        fields.extend(
+            [{
+                "name": "Staff Information",
+                "value": (
+                    f"**Owner:** {owner}\n" +
+                    f"**MFA Level:** {mfa_level}\n" +
+                    f"**Verification Level:** {verification_level}\n" + 
+                    f"**Content Filter:** {content_filter}\n" +
+                    f"**Default Notifications:** {default_notifs}\n" +
+                    f"**Features:** {features}\n" + 
+                    f"**Bitrate Limit:** {bitrate_limit}\n" + 
+                    f"**Filesize Limit:** {filesize_limit} MB"
+                ),
+                "inline": False
+            },
+            {
+                "name": "Channels",
+                "value": (
+                    f"**Public Updates Channel:** {public_updates_channel}\n" + 
+                    f"**System Channel:** {system_channel}\n" +
+                    f"**Rules Channel:** {rules_channel}\n" +
+                    f"**Text Channel Count:** {text_channel_count}\n" +
+                    f"**Voice Channel Count:** {voice_channel_count}\n" +
+                    f"**Category Count:** {category_count}\n"
+                ),
+                "inline": False
+            },
+            {
+                "name": "Limits",
+                "value": (
+                    f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n" +
+                    f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n" +
+                    f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n" +
+                    f"**Roles:** *{role_percenatege}%* ({role_count}/250 roles)"
+                ),
+                "inline": False
+            }
+        ])
+    embed = assembleEmbed(
+        title=f"Information for `{name}`",
+        desc=f"**Description:** {desc}",
+        thumbnailUrl=icon,
+        fields=fields
+    )
+    await ctx.send(embed=embed)
 
 @bot.command(aliases=["r"])
 async def report(ctx, *args):
