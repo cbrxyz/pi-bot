@@ -2020,6 +2020,14 @@ async def pronouns(ctx, *args):
 @commands.check(isLauncher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
+    for member in args:
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
+        await asyncio.sleep(3)
+        await message.delete()
     for i, member in enumerate(args):
         beforeMessage = None
         f = 0
@@ -2033,17 +2041,11 @@ async def confirm(ctx, *args: discord.Member):
                 if message.author == member and len(message.embeds) == 0:
                     await message.delete()
 
+                if member in message.mentions:
+                    await message.delete()
+
             beforeMessage = message
             f += 1
-        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-        await asyncio.sleep(3)
-        if not i:
-            await ctx.message.delete()
-        await message.delete()
 
 @bot.command()
 async def nuke(ctx, count):
