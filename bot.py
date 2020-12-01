@@ -213,6 +213,7 @@ async def on_ready():
     postSomething.start()
     cron.start()
     goStylist.start()
+    cleanWelcome.start()
     storeVariables.start()
     changeBotStatus.start()
 
@@ -230,6 +231,17 @@ async def storeVariables():
 @tasks.loop(hours=24)
 async def goStylist():
     await prettifyTemplates()
+
+@tasks.loop(minutes=10)
+async def cleanWelcome():
+    server = bot.get_guild(SERVER_ID)
+    now = datetime.datetime.now()
+    channel = discord.utils.get(server.text_channels, name="welcome")
+    async for message in channel.history(limit=None):
+        # if message is over 3 hours old
+        if (now - message.created_at).seconds // 3600 > 3:
+            # delete it
+            await message.delete()
 
 @tasks.loop(minutes=1)
 async def cron():
