@@ -6,6 +6,7 @@ import re
 import json
 import random
 import math
+import time
 import datetime
 import dateparser
 import time as timePackage
@@ -108,6 +109,9 @@ RULES = [
     "Do not advertise other servers or paid services with which you have an affiliation.",
     "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
 ]
+
+# Timezone offset (in hours from EST)
+TZ_OFFSET = time.timezone/60/60 - 5
 
 ##############
 # DEV MODE CONFIG
@@ -236,12 +240,17 @@ async def goStylist():
 async def cleanWelcome():
     server = bot.get_guild(SERVER_ID)
     now = datetime.datetime.now()
-    channel = discord.utils.get(server.text_channels, name="welcome")
-    async for message in channel.history(limit=None):
-        # if message is over 3 hours old
-        if (now - message.created_at).seconds // 3600 > 3:
-            # delete it
-            await message.delete()
+    if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
+        print(f"Cleaning #{CHANNEL_WELCOME}.")
+        # if between 12AM EST and 11AM EST do not do the following:
+        channel = discord.utils.get(server.text_channels, name="welcome")
+        async for message in channel.history(limit=None):
+            # if message is over 3 hours old
+            if (now - message.created_at).seconds // 3600 > 3:
+                # delete it
+                await message.delete()
+    else:
+        print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
 
 @tasks.loop(minutes=1)
 async def cron():

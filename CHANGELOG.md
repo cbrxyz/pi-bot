@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * `!confirm` will confirm the user first, then delete message (closes [#176](https://github.com/cbrxyz/pi-bot/issues/176))
 * `!confirm` will delete the original message sent by Pi-Bot when use joins (closes [#95](https://github.com/cbrxyz/pi-bot/issues/95))
-* All messages will be deleted in `#welcome` if they exist for more than 3 hours
+* All messages will be deleted in `#welcome` if they exist for more than 3 hours (skipped between 12AM and 11AM EST)
 * Users who leave the server will have any messages mentioning them in #welcome deleted (closes [#251](https://github.com/cbrxyz/pi-bot/issues/251))
 
 ## 4.4.46 - 2020-11-27
