@@ -2344,6 +2344,12 @@ async def on_member_remove(member):
         await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
     else:
         await leaveChannel.send(f"**{member}** has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
+    welcomeChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
+    # when user leaves, determine if they are mentioned in any messages in #welcome, delete if so
+    async for message in welcomeChannel.history(oldest_first=True):
+        if not message.pinned:
+            if member in message.mentions:
+                await message.delete()
 
 @bot.event
 async def on_member_update(before, after):
