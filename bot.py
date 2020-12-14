@@ -78,6 +78,7 @@ CHANNEL_LEAVE = "member-leave"
 CHANNEL_DELETEDM = "deleted-messages"
 CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
+CHANNEL_JOIN = "join-logs"
 
 # Categories
 CATEGORY_TOURNAMENTS = "tournaments"
@@ -217,7 +218,7 @@ async def on_ready():
     postSomething.start()
     cron.start()
     goStylist.start()
-    cleanWelcome.start()
+    manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
 
@@ -237,15 +238,19 @@ async def goStylist():
     await prettifyTemplates()
 
 @tasks.loop(minutes=10)
-async def cleanWelcome():
+async def manage_welcome():
     server = bot.get_guild(SERVER_ID)
     now = datetime.datetime.now()
     if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
         print(f"Cleaning #{CHANNEL_WELCOME}.")
         # if between 12AM EST and 11AM EST do not do the following:
-        channel = discord.utils.get(server.text_channels, name="welcome")
+        channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
         async for message in channel.history(limit=None):
             # if message is over 3 hours old
+            author = message.author
+            num_of_roles = len(author.roles)
+            if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 30:
+                await _confirm([author])
             if (now - message.created_at).seconds // 3600 > 3:
                 # delete it
                 await message.delete()
@@ -2041,18 +2046,22 @@ async def pronouns(ctx, *args):
 @commands.check(isLauncher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
-    for member in args:
+    await _confirm(args)
+
+async def _confirm(members):
+    server = bot.get_guild(SERVER_ID)
+    channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+    for member in members:
         role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
         role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
         await member.remove_roles(role1)
         await member.add_roles(role2)
-        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
+        message = await channel.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
         await asyncio.sleep(3)
         await message.delete()
-    for i, member in enumerate(args):
         beforeMessage = None
         f = 0
-        async for message in ctx.message.channel.history(oldest_first=True):
+        async for message in channel.history(oldest_first=True):
             # Delete any messages sent by Pi-Bot where message before is by member
             if f > 0:
                 if message.author.id in PI_BOT_IDS and beforeMessage.author == member and len(message.embeds) == 0:
