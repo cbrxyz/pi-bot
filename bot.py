@@ -6,6 +6,7 @@ import re
 import json
 import random
 import math
+import time
 import datetime
 import dateparser
 import time as timePackage
@@ -77,6 +78,7 @@ CHANNEL_LEAVE = "member-leave"
 CHANNEL_DELETEDM = "deleted-messages"
 CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
+CHANNEL_JOIN = "join-logs"
 
 # Categories
 CATEGORY_TOURNAMENTS = "tournaments"
@@ -108,6 +110,9 @@ RULES = [
     "Do not advertise other servers or paid services with which you have an affiliation.",
     "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
 ]
+
+# Timezone offset (in hours from EST)
+TZ_OFFSET = time.timezone/60/60 - 5
 
 ##############
 # DEV MODE CONFIG
@@ -213,6 +218,7 @@ async def on_ready():
     postSomething.start()
     cron.start()
     goStylist.start()
+    manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
 
@@ -230,6 +236,26 @@ async def storeVariables():
 @tasks.loop(hours=24)
 async def goStylist():
     await prettifyTemplates()
+
+@tasks.loop(minutes=10)
+async def manage_welcome():
+    server = bot.get_guild(SERVER_ID)
+    now = datetime.datetime.now()
+    if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
+        print(f"Cleaning #{CHANNEL_WELCOME}.")
+        # if between 12AM EST and 11AM EST do not do the following:
+        channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+        async for message in channel.history(limit=None):
+            # if message is over 3 hours old
+            author = message.author
+            num_of_roles = len(author.roles)
+            if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 30:
+                await _confirm([author])
+            if (now - message.created_at).seconds // 3600 > 3:
+                # delete it
+                await message.delete()
+    else:
+        print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
 
 @tasks.loop(minutes=1)
 async def cron():
@@ -2020,10 +2046,22 @@ async def pronouns(ctx, *args):
 @commands.check(isLauncher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
-    for i, member in enumerate(args):
+    await _confirm(args)
+
+async def _confirm(members):
+    server = bot.get_guild(SERVER_ID)
+    channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+    for member in members:
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        message = await channel.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
+        await asyncio.sleep(3)
+        await message.delete()
         beforeMessage = None
         f = 0
-        async for message in ctx.message.channel.history(oldest_first=True):
+        async for message in channel.history(oldest_first=True):
             # Delete any messages sent by Pi-Bot where message before is by member
             if f > 0:
                 if message.author.id in PI_BOT_IDS and beforeMessage.author == member and len(message.embeds) == 0:
@@ -2033,17 +2071,11 @@ async def confirm(ctx, *args: discord.Member):
                 if message.author == member and len(message.embeds) == 0:
                     await message.delete()
 
+                if member in message.mentions:
+                    await message.delete()
+
             beforeMessage = message
             f += 1
-        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-        await asyncio.sleep(3)
-        if not i:
-            await ctx.message.delete()
-        await message.delete()
 
 @bot.command()
 async def nuke(ctx, count):
@@ -2330,6 +2362,12 @@ async def on_member_remove(member):
         await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
     else:
         await leaveChannel.send(f"**{member}** has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
+    welcomeChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
+    # when user leaves, determine if they are mentioned in any messages in #welcome, delete if so
+    async for message in welcomeChannel.history(oldest_first=True):
+        if not message.pinned:
+            if member in message.mentions:
+                await message.delete()
 
 @bot.event
 async def on_member_update(before, after):
