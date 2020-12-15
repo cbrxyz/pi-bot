@@ -1354,5 +1354,30 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "xkcd",
+        "description": "shows an xkcd comic",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "num",
+                "description": "the number of the xkcd comic to show"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!xkcd",
+                "result": "shows a random xkcd comic"
+            },
+            {
+                "cmd": "!xkcd 2000",
+                "result": "shows xkcd comic #2000"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]

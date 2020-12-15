@@ -35,6 +35,7 @@ from bear import getBearMessage
 from embed import assembleEmbed
 from commands import getList, getQuickList, getHelp
 from lists import getStateList
+import xkcd as xkcd_module # not to interfere with xkcd method
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -762,8 +763,12 @@ async def magic8ball(ctx):
     await ctx.send(f"**{response}**")
 
 @bot.command()
-async def xkcd(ctx, num):
-    if num.isdigit():
+async def xkcd(ctx, num = None):
+    max_num = await xkcd_module.get_max()
+    if num == None:
+        rand = random.randrange(1, int(max_num))
+        return await xkcd(ctx, str(rand))
+    if num.isdigit() and 1 <= int(num) <= int(max_num):
         return await ctx.send(f"https://xkcd.com/{num}")
     else:
         return await ctx.send("Invalid attempted number for xkcd.")

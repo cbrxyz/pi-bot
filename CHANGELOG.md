@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.2 - 2020-12-15
+### Changed
+* `!xkcd` command now returns random comic if no second argument is given (closes [#302](https://github.com/cbrxyz/pi-bot/issues/302))
+
+### Fixed
+* `!xkcd` now correctly handles comics requested that are above maximum number
+* `!help xkcd` now works (closes [#301](https://github.com/cbrxyz/pi-bot/issues/301))
+
 ## 4.5.1 - 2020-12-14
 ### Fixed
 * Messages by Launch Helper+ are no longer deleted in #welcome by the #welcome manager task
