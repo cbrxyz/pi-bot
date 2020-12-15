@@ -154,6 +154,18 @@ async def isLauncher(ctx):
     lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
     if staff or lhRole in member.roles: return True
 
+async def is_launcher_no_ctx(member):
+    server = bot.get_guild(SERVER_ID)
+    wmRole = discord.utils.get(server.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(server.roles, name=ROLE_GM)
+    aRole = discord.utils.get(server.roles, name=ROLE_AD)
+    vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
+    lhRole = discord.utils.get(server.roles, name=ROLE_LH)
+    roles = [wmRole, gmRole, aRole, vipRole, lhRole]
+    for role in roles:
+        if role in member.roles: return True
+    return False
+
 async def isAdmin(ctx):
     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
     member = ctx.message.author
@@ -248,10 +260,11 @@ async def manage_welcome():
         async for message in channel.history(limit=None):
             # if message is over 3 hours old
             author = message.author
+            user_no_delete = await is_launcher_no_ctx(message.author)
             num_of_roles = len(author.roles)
-            if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 30:
+            if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 1 and not user_no_delete:
                 await _confirm([author])
-            if (now - message.created_at).seconds // 3600 > 3:
+            if (now - message.created_at).seconds // 3600 > 3 and not message.pinned:
                 # delete it
                 await message.delete()
     else:
