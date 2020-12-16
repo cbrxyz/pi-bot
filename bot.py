@@ -401,7 +401,10 @@ async def pullPrevInfo():
     COACH_REPORT_IDS = data[3][0]
     cron = data[4][0]
     for c in cron:
-        c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S")
+        try:
+            c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S.%f")
+        except Exception as e:
+            print("ERROR WITH CRON TASK: ", e)
     CRON_LIST = cron
     REQUESTED_TOURNAMENTS = data[5][0]
     print("Fetched previous variables.")
