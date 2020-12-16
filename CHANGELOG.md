@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.3 - 2020-12-16
+### Fixed
+* Fixed error in datetime string that would cause cron task times to become unreadable
+
 ## 4.5.2 - 2020-12-15
 ### Changed
 * `!xkcd` command now returns random comic if no second argument is given (closes [#302](https://github.com/cbrxyz/pi-bot/issues/302))
