@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.4 - 2020-12-17
+### Changed
+* `!beareats` now deletes original command message (closes [#304](https://github.com/cbrxyz/pi-bot/issues/304))
+* Messages with only exclamation marks are no longer thought to be commands (closes [#282](https://github.com/cbrxyz/pi-bot/issues/282))
+
 ## 4.5.3 - 2020-12-16
 ### Fixed
 * Fixed error in datetime string that would cause cron task times to become unreadable

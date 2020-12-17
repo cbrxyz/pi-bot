@@ -653,6 +653,7 @@ async def getVariable(ctx, var):
 async def eat(ctx, user):
     """Allows bear to eat users >:D"""
     message = await getBearMessage(user)
+    await ctx.message.delete()
     await ctx.send(message)
 
 @bot.command()
@@ -2316,7 +2317,10 @@ async def on_message(message):
         await autoReport("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-    await bot.process_commands(message)
+    
+    # Do not treat messages with only exclamations as command
+    if message.content.count(BOT_PREFIX) != len(message.content):
+        await bot.process_commands(message)
 
 @bot.event
 async def on_raw_reaction_add(payload):
