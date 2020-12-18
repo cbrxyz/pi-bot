@@ -51,6 +51,7 @@ ROLE_WM = "Wiki/Gallery Moderator"
 ROLE_GM = "Global Moderator"
 ROLE_AD = "Administrator"
 ROLE_VIP = "VIP"
+ROLE_STAFF = "Staff"
 ROLE_BT = "Bots"
 ROLE_LH = "Launch Helper"
 ROLE_AT = "All Tournaments"
@@ -142,11 +143,14 @@ async def isBear(ctx):
 async def isStaff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
-    wmRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
-    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
-    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    # wmRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    # gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    # aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    # vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
+    # if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
     vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
-    if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
+    staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
+    return vipRole in member.roles or staffRole in member.roles
 
 async def isLauncher(ctx):
     """Checks to see if the user is a launch helper."""
@@ -467,7 +471,7 @@ async def tournament(ctx, *args):
             await updateTournamentList()
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def tla(ctx, iden, uid):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
@@ -480,7 +484,7 @@ async def tla(ctx, iden, uid):
     return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def tlr(ctx, iden):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
@@ -591,7 +595,7 @@ async def updateTournamentList():
             await tourneyChannel.send(embed=e)
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def vc(ctx):
     server = ctx.message.guild
     if ctx.message.channel.category.name == CATEGORY_TOURNAMENTS:
@@ -635,7 +639,7 @@ async def vc(ctx):
         return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def getVariable(ctx, var):
     """Fetches a local variable."""
     if ctx.message.channel.id != 724125340733145140:
@@ -657,7 +661,7 @@ async def eat(ctx, user):
     await ctx.send(message)
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def refresh(ctx):
     """Refreshes data from the sheet."""
     await updateTournamentList()
@@ -695,7 +699,7 @@ async def getuserid(ctx, user=None):
         await ctx.send(f"The user ID of <@{user}> is `{user}`.")
 
 @bot.command(aliases=["ufi"])
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def userfromid(ctx, iden:int):
     """Mentions a user with the given ID."""
     user = bot.get_user(iden)
@@ -940,7 +944,7 @@ async def tag(ctx, name):
     return await ctx.send("Tag not found.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def lock(ctx):
     """Locks a channel to Member access."""
     member = ctx.message.author
@@ -966,7 +970,7 @@ async def lock(ctx):
     await ctx.send("Locked the channel to Member access.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def unlock(ctx):
     """Unlocks a channel to Member access."""
     member = ctx.message.author
@@ -1043,16 +1047,16 @@ async def info(ctx):
     emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
     channel_percentage = round(channel_count/500 * 100, 3)
     role_percenatege = round(role_count/250 * 100, 3)
-    
+
     staff_member = await isStaff(ctx)
     fields = [
             {
                 "name": "Basic Information",
                 "value": (
-                    f"**Creation Date:** {creation_date}\n" + 
+                    f"**Creation Date:** {creation_date}\n" +
                     f"**ID:** {iden}\n" +
                     f"**Animated Icon:** {animated_icon}\n" +
-                    f"**Banner URL:** {banner}\n" + 
+                    f"**Banner URL:** {banner}\n" +
                     f"**Splash URL:** {splash}\n" +
                     f"**Discovery Splash URL:** {discovery_splash_url}"
                 ),
@@ -1074,11 +1078,11 @@ async def info(ctx):
                 "value": (
                     f"**Owner:** {owner}\n" +
                     f"**MFA Level:** {mfa_level}\n" +
-                    f"**Verification Level:** {verification_level}\n" + 
+                    f"**Verification Level:** {verification_level}\n" +
                     f"**Content Filter:** {content_filter}\n" +
                     f"**Default Notifications:** {default_notifs}\n" +
-                    f"**Features:** {features}\n" + 
-                    f"**Bitrate Limit:** {bitrate_limit}\n" + 
+                    f"**Features:** {features}\n" +
+                    f"**Bitrate Limit:** {bitrate_limit}\n" +
                     f"**Filesize Limit:** {filesize_limit} MB"
                 ),
                 "inline": False
@@ -1086,7 +1090,7 @@ async def info(ctx):
             {
                 "name": "Channels",
                 "value": (
-                    f"**Public Updates Channel:** {public_updates_channel}\n" + 
+                    f"**Public Updates Channel:** {public_updates_channel}\n" +
                     f"**System Channel:** {system_channel}\n" +
                     f"**Rules Channel:** {rules_channel}\n" +
                     f"**Text Channel Count:** {text_channel_count}\n" +
@@ -1452,7 +1456,7 @@ async def censor(message):
     await wh.delete()
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def kick(ctx, user:discord.Member, reason:str=False):
     """Kicks a user for the specified reason."""
     if reason == False:
@@ -1463,7 +1467,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
     await ctx.send("The user was kicked.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def met(ctx):
     """Runs Pi-Bot's Most Edits Table"""
     msg1 = await ctx.send("Attemping to run the Most Edits Table.")
@@ -1501,7 +1505,7 @@ async def met(ctx):
     await ctx.send(file=file, embed=embed)
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     """Helps to create an embed to be sent to a channel."""
     jso = json.loads(jsonInput)
@@ -1901,7 +1905,7 @@ async def count(ctx):
     await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def exalt(ctx, user):
     """Exalts a user."""
     member = ctx.message.author
@@ -1912,7 +1916,7 @@ async def exalt(ctx, user):
     await ctx.send(f"Successfully exalted. Congratulations {user}! :tada: :tada:")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def unexalt(ctx, user):
     """Unexalts a user."""
     member = ctx.message.author
@@ -1923,7 +1927,7 @@ async def unexalt(ctx, user):
     await ctx.send(f"Successfully unexalted.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def mute(ctx, user:discord.Member, *args):
     """
     Mutes a user.
@@ -1974,7 +1978,7 @@ async def _mute(ctx, user:discord.Member, time: str):
     await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} EST`.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def unmute(ctx, user):
     """Unmutes a user."""
     member = ctx.message.author
@@ -1985,7 +1989,7 @@ async def unmute(ctx, user):
     await ctx.send(f"Successfully unmuted {user}.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def ban(ctx, member:discord.User=None, reason=None, *args):
     """Bans a user."""
     time = " ".join(args)
@@ -2009,7 +2013,7 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
     await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} EST`.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def unban(ctx, id:int=0):
     """Unbans a user."""
     if id == 0:
@@ -2153,7 +2157,7 @@ async def stopnuke(ctx):
     STOPNUKE = False
 
 @bot.command()
-@commands.check(isStaff)
+@commands.has_any_role("Staff", "VIP")
 async def clrreact(ctx, msg: discord.Message, *args: discord.Member):
     """
     Clears all reactions from a given message.
@@ -2317,7 +2321,7 @@ async def on_message(message):
         await autoReport("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-    
+
     # Do not treat messages with only exclamations as command
     if message.content.count(BOT_PREFIX) != len(message.content):
         await bot.process_commands(message)
