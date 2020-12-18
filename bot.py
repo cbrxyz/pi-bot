@@ -174,9 +174,9 @@ async def isAdmin(ctx):
     aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
     if aRole in member.roles or member.id == 715048392408956950: return True
 
-def notBlacklistedChannels(blacklist):
+def notBlacklistedChannel(blacklist):
+    """Given a string array blacklist, check if command was not invoked in specified blacklist channels."""
     async def predicate(ctx):
-        """Checks if command was invoked in specified blacklisted channel."""
         channel = ctx.message.channel
         server = bot.get_guild(SERVER_ID)
         for c in blacklist:
@@ -188,7 +188,7 @@ def notBlacklistedChannels(blacklist):
     return commands.check(predicate)
     
 def isWhitelistedChannel(whitelist):
-    """Given a string array whitelist, check if  command was invoked in specified whitelisted channel."""
+    """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
     async def predicate(ctx):
         channel = ctx.message.channel
         server = bot.get_guild(SERVER_ID)
@@ -1656,7 +1656,7 @@ async def help(ctx, command:str=None):
     await ctx.send(embed=hlp)
 
 @bot.command(aliases=["feedbear"])
-@notBlacklistedChannels(blacklist=[CHANNEL_WELCOME, CHANNEL_BOTSPAM])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME, CHANNEL_BOTSPAM])
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
