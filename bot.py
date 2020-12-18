@@ -36,6 +36,7 @@ from embed import assembleEmbed
 from commands import getList, getQuickList, getHelp
 from lists import getStateList
 import xkcd as xkcd_module # not to interfere with xkcd method
+from blacklistexception import BlacklistException
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -181,7 +182,7 @@ def notBlacklistedChannels(blacklist):
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 # print("DENIED")
-                return False
+                raise BlacklistException(channel)
         return True
     
     return commands.check(predicate)
@@ -1643,7 +1644,7 @@ async def help(ctx, command:str=None):
     await ctx.send(embed=hlp)
 
 @bot.command(aliases=["feedbear"])
-@notBlacklistedChannels(blacklist=[CHANNEL_WELCOME])
+@notBlacklistedChannels(blacklist=[CHANNEL_WELCOME, CHANNEL_BOTSPAM])
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
@@ -2648,6 +2649,8 @@ async def on_command_error(ctx, error):
         return await ctx.send("Uh... this channel can only be run in a NSFW channel... sorry to disappoint.")
 
     # Command errors
+    if isinstance(error, BlacklistException):
+        return await ctx.send(f"You are not allowed to use this command in {error.channel.mention}.")
     if isinstance(error, discord.ext.commands.ConversionError):
         return await ctx.send("Oops, there was a bot error here, sorry about that.")
     if isinstance(error, discord.ext.commands.UserInputError):
@@ -2659,6 +2662,9 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.DisabledCommand):
         return await ctx.send("Sorry, but this command is disabled.")
     if isinstance(error, discord.ext.commands.CommandInvokeError):
+        # if isinstance(error.original, BlacklistException):
+        #     return await ctx.send("You are not allowed to run that command here smh")
+        # else:
         return await ctx.send("Sorry, but an error incurred when the command was invoked.")
     if isinstance(error, discord.ext.commands.CommandOnCooldown):
         return await ctx.send("Slow down buster! This command's on cooldown.")
