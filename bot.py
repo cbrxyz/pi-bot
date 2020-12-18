@@ -454,6 +454,7 @@ async def pullPrevInfo():
     print("Fetched previous variables.")
 
 @bot.command(aliases=["tc", "tourney", "tournaments"])
+@isChannelBotSpam()
 async def tournament(ctx, *args):
     member = ctx.message.author
     newArgs = list(args)
