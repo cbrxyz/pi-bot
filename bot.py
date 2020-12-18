@@ -173,6 +173,14 @@ async def isAdmin(ctx):
     aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
     if aRole in member.roles or member.id == 715048392408956950: return True
 
+async def notBlacklistedChannels(ctx, blacklist):
+    """Checks if command was invoked in specified blacklisted channel."""
+    channel = ctx.message.channel
+    for channel in blacklist:
+        if channel.id == discord.utils.get(server.text_channels, name=channel).id:
+            return False
+    return True
+
 ##############
 # CONSTANTS
 ##############
