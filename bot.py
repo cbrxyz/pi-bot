@@ -177,9 +177,10 @@ def notBlacklistedChannels(blacklist):
     async def predicate(ctx):
         """Checks if command was invoked in specified blacklisted channel."""
         channel = ctx.message.channel
-        for channel in blacklist:
-            if channel.id == discord.utils.get(server.text_channels, name=channel).id:
-                print("DENIED")
+        server = bot.get_guild(SERVER_ID)
+        for c in blacklist:
+            if channel == discord.utils.get(server.text_channels, name=c):
+                # print("DENIED")
                 return False
         return True
     
