@@ -36,7 +36,7 @@ from embed import assembleEmbed
 from commands import getList, getQuickList, getHelp
 from lists import getStateList
 import xkcd as xkcd_module # not to interfere with xkcd method
-from blacklistexception import BlacklistException
+from commanderrors import CommandNotAllowedInChannel
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -182,7 +182,7 @@ def notBlacklistedChannels(blacklist):
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 # print("DENIED")
-                raise BlacklistException(channel)
+                raise CommandNotAllowedInChannel(channel)
         return True
     
     return commands.check(predicate)
@@ -2649,7 +2649,7 @@ async def on_command_error(ctx, error):
         return await ctx.send("Uh... this channel can only be run in a NSFW channel... sorry to disappoint.")
 
     # Command errors
-    if isinstance(error, BlacklistException):
+    if isinstance(error, CommandNotAllowedInChannel):
         return await ctx.send(f"You are not allowed to use this command in {error.channel.mention}.")
     if isinstance(error, discord.ext.commands.ConversionError):
         return await ctx.send("Oops, there was a bot error here, sorry about that.")
@@ -2662,9 +2662,6 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.DisabledCommand):
         return await ctx.send("Sorry, but this command is disabled.")
     if isinstance(error, discord.ext.commands.CommandInvokeError):
-        # if isinstance(error.original, BlacklistException):
-        #     return await ctx.send("You are not allowed to run that command here smh")
-        # else:
         return await ctx.send("Sorry, but an error incurred when the command was invoked.")
     if isinstance(error, discord.ext.commands.CommandOnCooldown):
         return await ctx.send("Slow down buster! This command's on cooldown.")
