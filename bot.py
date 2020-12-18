@@ -22,7 +22,7 @@ from src.sheets.events import getEvents
 from src.sheets.tournaments import getTournamentChannels
 from src.sheets.censor import getCensor
 from src.sheets.sheets import sendVariables, getVariables, getTags
-from src.forums.forums import openBrowser
+# from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand, getPageTables
