@@ -195,7 +195,7 @@ def isWhitelistedChannel(whitelist):
         for c in whitelist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 return True
-        return raise CommandNotAllowedInChannel(channel)
+        raise CommandNotAllowedInChannel(channel)
     
     return commands.check(predicate)
     
