@@ -203,7 +203,7 @@ def isNotMember():
     async def predicate(ctx):
         member = ctx.message.author
         mrRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        return not(mrRole in member.roles)
+        return mrRole != member.roles[-1]
     return commands.check(predicate)
 
 ##############
