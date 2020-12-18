@@ -1643,7 +1643,7 @@ async def help(ctx, command:str=None):
     await ctx.send(embed=hlp)
 
 @bot.command(aliases=["feedbear"])
-@commands.check(notBlacklistedChannels(blacklist=["welcome"]))
+@notBlacklistedChannels(blacklist=[CHANNEL_WELCOME])
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
