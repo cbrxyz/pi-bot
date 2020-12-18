@@ -180,7 +180,7 @@ def notBlacklistedChannel(blacklist):
         server = bot.get_guild(SERVER_ID)
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
-                raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
+                raise CommandNotAllowedInChannel(channel, f"Command was invoked in a blacklisted channel: {channel}.")
         return True
     
     return commands.check(predicate)
@@ -188,20 +188,30 @@ def notBlacklistedChannel(blacklist):
 def isWhitelistedChannel(whitelist):
     """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
     async def predicate(ctx):
-        channel = ctx.message.channel
-        server = bot.get_guild(SERVER_ID)
-        for c in whitelist:
-            if channel == discord.utils.get(server.text_channels, name=c):
-                return True
-        raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
+        if not(_checkWhitelistChannel(ctx, whitelist)):
+            raise CommandNotAllowedInChannel(channel, f"Command was invoked in a non-whitelisted channel: {channel}.")
+        return True
     
     return commands.check(predicate)
+
+def _checkWhitelistChannel(ctx, whitelist):
+    channel = ctx.message.channel
+    server = bot.get_guild(SERVER_ID)
+    for c in whitelist:
+        if channel == discord.utils.get(server.text_channels, name=c):
+            return True
+        return False
     
-def isNotMember():
+def _isNotMember(ctx):
+    member = ctx.message.author
+    mrRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    return mrRole != member.roles[-1]
+    
+def isChannelBotSpam():
     async def predicate(ctx):
-        member = ctx.message.author
-        mrRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        return mrRole != member.roles[-1]
+        if _isNotMember(ctx) or _checkWhitelistChannel(ctx, [CHANNEL_BOTSPAM]):
+            return True
+        raise CommandNotInvokedInBotSpam(channel, ctx.message, f"A bot-spam only command was invoked in {channel}.")
     return commands.check(predicate)
 
 ##############
@@ -441,7 +451,6 @@ async def pullPrevInfo():
     print("Fetched previous variables.")
 
 @bot.command(aliases=["tc", "tourney", "tournaments"])
-@commands.check_any(isNotMember(), isWhitelistedChannel(whitelist=[CHANNEL_BOTSPAM]))
 async def tournament(ctx, *args):
     member = ctx.message.author
     newArgs = list(args)
