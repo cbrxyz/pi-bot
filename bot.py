@@ -763,6 +763,7 @@ async def rand(ctx, a=1, b=10):
     await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
 
 @bot.command()
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def magic8ball(ctx):
     msg = await ctx.send("Swishing the magic 8 ball...")
     await ctx.channel.trigger_typing()
@@ -793,6 +794,7 @@ async def magic8ball(ctx):
     await ctx.send(f"**{response}**")
 
 @bot.command()
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def xkcd(ctx, num = None):
     max_num = await xkcd_module.get_max()
     if num == None:
@@ -1389,6 +1391,7 @@ async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
     await userToSend.send(embed=embed)
 
 @bot.command(aliases=["doggobomb"])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def dogbomb(ctx, member:str=False):
     """Dog bombs someone!"""
     if member == False:
@@ -1398,6 +1401,7 @@ async def dogbomb(ctx, member:str=False):
     await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
 
 @bot.command()
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def shibabomb(ctx, member:str=False):
     """Shiba bombs a user!"""
     if member == False:
@@ -1656,7 +1660,7 @@ async def help(ctx, command:str=None):
     await ctx.send(embed=hlp)
 
 @bot.command(aliases=["feedbear"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME, CHANNEL_BOTSPAM])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
@@ -1678,11 +1682,13 @@ async def fish(ctx):
         return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish. \n:sob:\n:sob:\n:sob:")
 
 @bot.command()
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def nofish(ctx):
     """DEPRECATED - Removes all of bear's fish."""
     await ctx.send("`!nofish` no longer exists! Please use `!stealfish` instead.")
 
 @bot.command(aliases=["badbear"])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def stealfish(ctx):
     global fishNow
     member = ctx.message.author
@@ -1711,6 +1717,7 @@ async def stealfish(ctx):
         return await ctx.send("You are banned from using `!stealfish` until the next version of Pi-Bot is released.")
 
 @bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def trout(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. Not so fast!")
@@ -1721,6 +1728,7 @@ async def trout(ctx, member:str=False):
     await ctx.send("http://gph.is/1URFXN9")
 
 @bot.command(aliases=["givecookie"])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def cookie(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
@@ -1731,11 +1739,13 @@ async def cookie(ctx, member:str=False):
     await ctx.send("http://gph.is/1UOaITh")
 
 @bot.command()
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def treat(ctx):
     await ctx.send("You give bernard one treat!")
     await ctx.send("http://gph.is/11nJAH5")
 
 @bot.command(aliases=["givehershey", "hershey"])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def hersheybar(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
@@ -1746,6 +1756,7 @@ async def hersheybar(ctx, member:str=False):
     await ctx.send("http://gph.is/2rt64CX")
 
 @bot.command(aliases=["giveicecream"])
+@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
 async def icecream(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
