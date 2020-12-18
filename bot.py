@@ -182,7 +182,7 @@ def notBlacklistedChannel(blacklist):
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 # print("DENIED")
-                raise CommandNotAllowedInChannel(channel)
+                raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
         return True
     
     return commands.check(predicate)
@@ -195,7 +195,7 @@ def isWhitelistedChannel(whitelist):
         for c in whitelist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 return True
-        raise CommandNotAllowedInChannel(channel)
+        raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
     
     return commands.check(predicate)
 
