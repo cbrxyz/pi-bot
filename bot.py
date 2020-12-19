@@ -38,6 +38,7 @@ from lists import getStateList
 import xkcd as xkcd_module # not to interfere with xkcd method
 from commanderrors import CommandNotAllowedInChannel
 from commanderrors import CommandNotInvokedInBotSpam
+from commanderrors import NukeTooLowPerms
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')

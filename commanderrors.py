@@ -11,3 +11,7 @@ class CommandNotInvokedInBotSpam(commands.CommandError):
         self.channel = channel
         self.message = message
         super().__init__(*args, **kwargs)
+        
+class NukeTooLowPerms(commands.CommandError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
