@@ -2242,6 +2242,7 @@ async def _nuke_countdown(ctx):
 
 
 @bot.command()
+@commands.check(nukeCheckPerms)
 async def nukeuntil(ctx, msgid):
     global STOPNUKE
     channel = ctx.message.channel
