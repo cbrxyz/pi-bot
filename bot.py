@@ -215,6 +215,13 @@ def isChannelBotSpam():
             return True
         raise CommandNotInvokedInBotSpam(channel, ctx.message, f"A bot-spam only command was invoked in {channel}.")
     return commands.check(predicate)
+    
+async def nukeCheckPerms(ctx):
+    hasPerms = await isStaff(ctx) or (await isLauncher(ctx) and _checkWhitelistChannel(ctx, [CHANNEL_WELCOME]))
+    print(hasPerms)
+    if hasPerms:
+        return True
+    raise NukeTooLowPerms("User has too low perms for nuking messages.")
 
 ##############
 # CONSTANTS
@@ -2187,13 +2194,10 @@ async def _confirm(members):
             f += 1
 
 @bot.command()
+@commands.check(nukeCheckPerms)
 async def nuke(ctx, count):
     """Nukes (deletes) a specified amount of messages."""
     global STOPNUKE
-    launcher = await isLauncher(ctx)
-    staff = await isStaff(ctx)
-    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
-        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if STOPNUKE:
         return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
@@ -2253,6 +2257,7 @@ async def nukeuntil(ctx, msgid):
             await msg.delete()
     else:
         return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
+
 @bot.command()
 async def stopnuke(ctx):
     global STOPNUKE
