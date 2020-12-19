@@ -2647,6 +2647,8 @@ async def on_command_error(ctx, error):
         return await ctx.send("Sorry, I'm having trouble reading one of the arguments you just used. Try again!")
 
     # Check failure errors
+    if isinstance(error, NoDMsAllowed):
+        return await ctx.send("Pings require direct messages to be sent to you. You need to turn on \"Allow direct messages from server members.\"")
     if isinstance(error, discord.ext.commands.CheckAnyFailure):
         return await ctx.send("It looks like you aren't able to run this command, sorry.")
     if isinstance(error, discord.ext.commands.PrivateMessageOnly):
