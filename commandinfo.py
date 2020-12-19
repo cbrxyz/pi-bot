@@ -353,6 +353,29 @@ COMMAND_INFO = [
         "inQuickList": False
     },
     {
+        "name": "nukeuntil",
+        "description": "nukes up to but not including a specified message. Must be called in the same channel as the message.",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "message id",
+                "description": "the id of the message to delete up to"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!nuke 788202931538493460",
+                "result": "If called in #welcome, it nukes up to, but not including, all the messages in #welcome"
+            }
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ],
+        "inQuickList": False
+    },
+    {
         "name": "division",
         "description": "gives the user a division role",
         "aliases": ["div"],
