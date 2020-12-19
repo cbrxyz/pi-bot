@@ -2213,13 +2213,7 @@ async def nuke(ctx, count):
             count = messageCount + int(count) - 1
         if count <= 0:
             return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
-    await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
-    await ctx.send("PREPARE FOR IMPACT.")
-    for i in range(10, 0, -1):
-        await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
-        await asyncio.sleep(1)
-        if STOPNUKE:
-            return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
+    await _nuke_countdown(ctx)
     if not STOPNUKE:
         async for m in channel.history(limit=(int(count) + 13)):
             if not m.pinned and not STOPNUKE:
