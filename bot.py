@@ -2741,6 +2741,8 @@ async def on_command_error(ctx, error):
         return await ctx.send("Sorry, I'm having trouble reading one of the arguments you just used. Try again!")
 
     # Check failure errors
+    if isinstance(error, NukeTooLowPerms):
+        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if isinstance(error, discord.ext.commands.CheckAnyFailure):
         return await ctx.send("It looks like you aren't able to run this command, sorry.")
     if isinstance(error, discord.ext.commands.PrivateMessageOnly):
