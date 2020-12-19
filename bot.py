@@ -1268,6 +1268,7 @@ async def resultstemplate(ctx, url):
     await ctx.send(file=file)
 
 @bot.command()
+@checkDM()
 async def ping(ctx, command=None, *args):
     """Controls Pi-Bot's ping interface."""
     if command is None:
