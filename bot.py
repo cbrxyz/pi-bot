@@ -2223,6 +2223,35 @@ async def nuke(ctx, count):
         await asyncio.sleep(5)
         await msg.delete()
 
+async def _nuke_countdown(ctx):
+    global STOPNUKE
+    if STOPNUKE:
+        return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
+    await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
+    await ctx.send("PREPARE FOR IMPACT.")
+    for i in range(10, 0, -1):
+        await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
+        await asyncio.sleep(1)
+        if STOPNUKE:
+            return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
+
+
+@bot.command()
+async def nukeuntil(ctx, msgid):
+    global STOPNUKE
+    channel = ctx.message.channel
+    message = await ctx.fetch_message(msgid)
+    if channel == message.channel:
+        await _nuke_countdown(ctx)
+        if not STOPNUKE:
+            async for m in channel.history(after=message, oldest_first=False):
+                if not m.pinned and not STOPNUKE:
+                    await m.delete()
+            msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+            await asyncio.sleep(5)
+            await msg.delete()
+    else:
+        return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
 @bot.command()
 async def stopnuke(ctx):
     global STOPNUKE
