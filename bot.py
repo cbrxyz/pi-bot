@@ -187,6 +187,20 @@ def notBlacklistedChannels(blacklist):
         return True
     
     return commands.check(predicate)
+    
+def checkDM():
+    """Checks if the user has DM permissions. If the send responds 403, then they have DMs disabled."""
+    async def predicate(ctx):
+        user = ctx.message.author
+        try:
+            await user.send("")
+        except discord.Forbidden:
+            raise NoDMsAllowed(user, f"{user} has DMs set to off.")
+        except discord.HTTPException:
+            pass
+        return True
+    
+    return commands.check(predicate)
 
 ##############
 # CONSTANTS
