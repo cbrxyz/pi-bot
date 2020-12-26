@@ -6,24 +6,28 @@ import re
 import json
 import random
 import math
+import time
 import datetime
 import dateparser
 import time as timePackage
 import wikipedia as wikip
 import matplotlib.pyplot as plt
+import numpy as np
 from aioify import aioify
 from dotenv import load_dotenv
 from discord import channel
 from discord.ext import commands, tasks
 
 from src.sheets.events import getEvents
+from src.sheets.tournaments import getTournamentChannels
 from src.sheets.censor import getCensor
-from src.sheets.sheets import sendVariables, getVariables
+from src.sheets.sheets import sendVariables, getVariables, getTags
 from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
 from src.wiki.tournaments import getTournamentList
-from src.wiki.wiki import implementCommand
+from src.wiki.wiki import implementCommand, getPageTables
 from src.wiki.schools import getSchoolListing
+from src.wiki.scilympiad import makeResultsTemplate, getPoints
 from src.wiki.mosteditstable import runTable
 from info import getAbout
 from doggo import getDoggo, getShiba
@@ -31,18 +35,101 @@ from bear import getBearMessage
 from embed import assembleEmbed
 from commands import getList, getQuickList, getHelp
 from lists import getStateList
+import xkcd as xkcd_module # not to interfere with xkcd method
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
 devMode = os.getenv('DEV_MODE') == "TRUE"
 
+##############
+# SERVER VARIABLES
+##############
+
+# Roles
+ROLE_WM = "Wiki/Gallery Moderator"
+ROLE_GM = "Global Moderator"
+ROLE_AD = "Administrator"
+ROLE_VIP = "VIP"
+ROLE_BT = "Bots"
+ROLE_LH = "Launch Helper"
+ROLE_AT = "All Tournaments"
+ROLE_GAMES = "Games"
+ROLE_MR = "Member"
+ROLE_UC = "Unconfirmed"
+ROLE_DIV_A = "Division A"
+ROLE_DIV_B = "Division B"
+ROLE_DIV_C = "Division C"
+ROLE_EM = "Exalted Member"
+ROLE_ALUMNI = "Alumni"
+ROLE_MUTED = "Muted"
+ROLE_PRONOUN_HE = "He / Him / His"
+ROLE_PRONOUN_SHE = "She / Her / Hers"
+ROLE_PRONOUN_THEY = "They / Them / Theirs"
+
+# Channels
+CHANNEL_TOURNAMENTS = "tournaments"
+CHANNEL_BOTSPAM = "bot-spam"
+CHANNEL_SUPPORT = "site-support"
+CHANNEL_GAMES = "games"
+CHANNEL_DMLOG = "dm-log"
+CHANNEL_WELCOME = "welcome"
+CHANNEL_LOUNGE = "lounge"
+CHANNEL_LEAVE = "member-leave"
+CHANNEL_DELETEDM = "deleted-messages"
+CHANNEL_EDITEDM = "edited-messages"
+CHANNEL_REPORTS = "reports"
+CHANNEL_JOIN = "join-logs"
+
+# Categories
+CATEGORY_TOURNAMENTS = "tournaments"
+CATEGORY_SO = "Science Olympiad"
+CATEGORY_STATES = "states"
+CATEGORY_GENERAL = "general"
+CATEGORY_ARCHIVE = "archives"
+CATEGORY_STAFF = "staff"
+
+# Emoji reference
+EMOJI_FAST_REVERSE = "\U000023EA"
+EMOJI_LEFT_ARROW = "\U00002B05"
+EMOJI_RIGHT_ARROW = "\U000027A1"
+EMOJI_FAST_FORWARD = "\U000023E9"
+
+# Rules
+RULES = [
+    "Treat *all* users with respect.",
+    "No profanity or inappropriate language, content, or links.",
+    "Treat delicate subjects delicately. When discussing religion, politics, instruments, or other similar topics, please remain objective and avoid voicing strong opinions.",
+    "Do not spam or flood (an excessive number of messages sent within a short timespan).",
+    "Avoid intentional repeating pinging of other users (saying another user’s name).",
+    "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
+    "Never name-drop (using a real name without permission) or dox another user.",
+    "No witch-hunting (requests of kicks or bans for other users).",
+    "While you are not required to use your Scioly.org username as your nickname for this Server, please avoid assuming the username of or otherwise impersonating another active user.",
+    "Do not use multiple accounts within this Server, unless specifically permitted. A separate tournament account may be operated alongside a personal account.",
+    "Do not violate Science Olympiad Inc. copyrights. In accordance with the Scioly.org Resource Policy, all sharing of tests on Scioly.org must occur in the designated Test Exchanges. Do not solicit test trades on this Server.",
+    "Do not advertise other servers or paid services with which you have an affiliation.",
+    "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
+]
+
+# Timezone offset (in hours from EST)
+TZ_OFFSET = time.timezone/60/60 - 5
+
+##############
+# DEV MODE CONFIG
+##############
+
+intents = discord.Intents.default()
+intents.members = True
+
 if devMode:
-    bot = commands.Bot(command_prefix=("?"), case_insensitive=True)
+    BOT_PREFIX = "?"
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
-    bot = commands.Bot(command_prefix=("!"), case_insensitive=True)
+    BOT_PREFIX = "!"
     SERVER_ID = 698306997287780363
+
+bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=intents)
 
 ##############
 # CHECKS
@@ -55,23 +142,35 @@ async def isBear(ctx):
 async def isStaff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
-    wmRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
-    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
-    vipRole = discord.utils.get(member.guild.roles, name="VIP")
+    wmRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
     if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
 
 async def isLauncher(ctx):
     """Checks to see if the user is a launch helper."""
     member = ctx.message.author
     staff = await isStaff(ctx)
-    lhRole = discord.utils.get(member.guild.roles, name="Launch Helper")
+    lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
     if staff or lhRole in member.roles: return True
+
+async def is_launcher_no_ctx(member):
+    server = bot.get_guild(SERVER_ID)
+    wmRole = discord.utils.get(server.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(server.roles, name=ROLE_GM)
+    aRole = discord.utils.get(server.roles, name=ROLE_AD)
+    vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
+    lhRole = discord.utils.get(server.roles, name=ROLE_LH)
+    roles = [wmRole, gmRole, aRole, vipRole, lhRole]
+    for role in roles:
+        if role in member.roles: return True
+    return False
 
 async def isAdmin(ctx):
     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
     member = ctx.message.author
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
     if aRole in member.roles or member.id == 715048392408956950: return True
 
 ##############
@@ -103,10 +202,13 @@ SHELLS_OPEN = []
 CRON_LIST = []
 RECENT_MESSAGES = []
 STEALFISH_BAN = []
+TOURNAMENT_INFO = []
+REQUESTED_TOURNAMENTS = []
+TAGS = []
 STOPNUKE = False
 
 ##############
-# FfCTIONS TO BE REMOVED
+# FUNCTIONS TO BE REMOVED
 ##############
 bot.remove_command("help")
 
@@ -124,10 +226,12 @@ async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
     await pullPrevInfo()
+    await updateTournamentList()
     refreshSheet.start()
     postSomething.start()
     cron.start()
     goStylist.start()
+    manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
 
@@ -146,6 +250,27 @@ async def storeVariables():
 async def goStylist():
     await prettifyTemplates()
 
+@tasks.loop(minutes=10)
+async def manage_welcome():
+    server = bot.get_guild(SERVER_ID)
+    now = datetime.datetime.now()
+    if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
+        print(f"Cleaning #{CHANNEL_WELCOME}.")
+        # if between 12AM EST and 11AM EST do not do the following:
+        channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+        async for message in channel.history(limit=None):
+            # if message is over 3 hours old
+            author = message.author
+            user_no_delete = await is_launcher_no_ctx(message.author)
+            num_of_roles = len(author.roles)
+            if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 1 and not user_no_delete:
+                await _confirm([author])
+            if (now - message.created_at).seconds // 3600 > 3 and not message.pinned:
+                # delete it
+                await message.delete()
+    else:
+        print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
+
 @tasks.loop(minutes=1)
 async def cron():
     print("Executed cron.")
@@ -155,82 +280,72 @@ async def cron():
         date = c['date']
         if datetime.datetime.now() > date:
             # The date has passed, now do
-            await handleCron(c['do'])
             CRON_LIST.remove(c)
+            await handleCron(c['do'])
 
 async def handleCron(string):
-    if string.find("unban") != -1:
-        iden = int(string.split(" ")[1])
-        server = bot.get_guild(SERVER_ID)
-        member = await bot.fetch_user(int(iden))
-        await server.unban(member)
-        print(f"Unbanned user ID: {iden}")
-    elif string.find("unmute") != -1:
-        iden = int(string.split(" ")[1])
-        server = bot.get_guild(SERVER_ID)
-        member = server.get_member(int(iden))
-        role = discord.utils.get(server.roles, name="Muted")
-        await member.remove_roles(role)
-        print(f"Unmuted user ID: {iden}")
-    elif string.find("unstealfishban") != -1:
-        iden = int(string.split(" ")[1])
-        STEALFISH_BAN.remove(iden)
-        print(f"Un-stealfished user ID: {iden}")
-    else:
-        print("ERROR:")
-        print(f"handleCron cannot handle this job: {string}")
+    try:
+        if string.find("unban") != -1:
+            iden = int(string.split(" ")[1])
+            server = bot.get_guild(SERVER_ID)
+            member = await bot.fetch_user(int(iden))
+            await server.unban(member)
+            print(f"Unbanned user ID: {iden}")
+        elif string.find("unmute") != -1:
+            iden = int(string.split(" ")[1])
+            server = bot.get_guild(SERVER_ID)
+            member = server.get_member(int(iden))
+            role = discord.utils.get(server.roles, name=ROLE_MUTED)
+            await member.remove_roles(role)
+            print(f"Unmuted user ID: {iden}")
+        elif string.find("unstealfishban") != -1:
+            iden = int(string.split(" ")[1])
+            STEALFISH_BAN.remove(iden)
+            print(f"Un-stealfished user ID: {iden}")
+        else:
+            print("ERROR:")
+            await autoReport("Error with a cron task", "red", f"Error: `{string}`")
+    except Exception as e:
+        await autoReport("Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
 @tasks.loop(hours=1)
 async def changeBotStatus():
-    botStatus = math.floor(random.random() * 24)
-    if botStatus == 0:
-        await bot.change_presence(activity=discord.Game(name="Game On"))
-    elif botStatus == 1:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="my SoM instrument"))
-    elif botStatus == 2:
-        await bot.change_presence(activity=discord.Game(name="with Pi-Bot Beta"))
-    elif botStatus == 3:
-        await bot.change_presence(activity=discord.Game(name="with my gravity vehicle"))
-    elif botStatus == 4:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the WS trials"))
-    elif botStatus == 5:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="birds"))
-    elif botStatus == 6:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="2018 Nationals again"))
-    elif botStatus == 7:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the sparkly stars"))
-    elif botStatus == 8:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the wiki"))
-    elif botStatus == 9:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for tourney results"))
-    elif botStatus == 10:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="birb sounds"))
-    elif botStatus == 11:
-        await bot.change_presence(activity=discord.Game(name="with proteins"))
-    elif botStatus == 12:
-        await bot.change_presence(activity=discord.Game(name="with my detector"))
-    elif botStatus == 13:
-        await bot.change_presence(activity=discord.Game(name="Minecraft"))
-    elif botStatus == 14:
-        await bot.change_presence(activity=discord.Game(name="with circuits"))
-    elif botStatus == 15:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="my PPP fall"))
-    elif botStatus == 16:
-        await bot.change_presence(activity=discord.Game(name="a major scale"))
-    elif botStatus == 17:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="clinking medals"))
-    elif botStatus == 18:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the world learn"))
-    elif botStatus == 19:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="SciOly grow"))
-    elif botStatus == 20:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="tutorials"))
-    elif botStatus == 21:
-        await bot.change_presence(activity=discord.Game(name="with wiki templates"))
-    elif botStatus == 22:
-        await bot.change_presence(activity=discord.Game(name="the flute"))
-    elif botStatus == 23:
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="bear eat users"))
+    statuses = [
+        {"type": "playing", "message": "Game On"},
+        {"type": "listening", "message": "my SoM instrument"},
+        {"type": "playing", "message": "with Pi-Bot Beta"},
+        {"type": "playing", "message": "with my gravity vehicle"},
+        {"type": "watching", "message": "the WS trials"},
+        {"type": "watching", "message": "birbs"},
+        {"type": "watching", "message": "2018 Nationals again"},
+        {"type": "watching", "message": "the sparkly stars"},
+        {"type": "watching", "message": "over the week"},
+        {"type": "watching", "message": "for tourney results"},
+        {"type": "listening", "message": "birb sounds"},
+        {"type": "playing", "message": "with proteins"},
+        {"type": "playing", "message": "with my detector"},
+        {"type": "playing", "message": "Minecraft"},
+        {"type": "playing", "message": "with circuits"},
+        {"type": "watching", "message": "my PPP fall"},
+        {"type": "playing", "message": "a major scale"},
+        {"type": "listening", "message": "clinking medals"},
+        {"type": "watching", "message": "the world learn"},
+        {"type": "watching", "message": "SciOly grow"},
+        {"type": "watching", "message": "tutorials"},
+        {"type": "playing", "message": "with wiki templates"},
+        {"type": "playing", "message": "the flute"},
+        {"type": "watching", "message": "bear eat users"},
+        {"type": "watching", "message": "xkcd"},
+        {"type": "playing", "message": "with wiki templates"},
+        {"type": "watching", "message": "Jmol tutorials"},
+    ]
+    botStatus = statuses[math.floor(random.random() * len(statuses))]
+    if botStatus["type"] == "playing":
+        await bot.change_presence(activity=discord.Game(name=botStatus["message"]))
+    elif botStatus["type"] == "listening":
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
+    elif botStatus["type"] == "watching":
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)
@@ -248,10 +363,12 @@ async def refreshAlgorithm():
     global CENSORED_WORDS
     global CENSORED_EMOJIS
     global EVENT_INFO
+    global TAGS
     censor = await getCensor()
     CENSORED_WORDS = censor[0]
     CENSORED_EMOJIS = censor[1]
     EVENT_INFO = await getEvents()
+    TAGS = await getTags()
     print("Refreshed data from sheet.")
     return True
 
@@ -262,7 +379,8 @@ async def prepareForSending(type="variable"):
     r3 = json.dumps(TOURNEY_REPORT_IDS)
     r4 = json.dumps(COACH_REPORT_IDS)
     r5 = json.dumps(CRON_LIST, default = datetimeConverter)
-    await sendVariables([[r1], [r2], [r3], [r4], [r5]], type)
+    r6 = json.dumps(REQUESTED_TOURNAMENTS)
+    await sendVariables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
     print("Stored variables in sheet.")
 
 def datetimeConverter(o):
@@ -276,15 +394,245 @@ async def pullPrevInfo():
     global TOURNEY_REPORT_IDS
     global COACH_REPORT_IDS
     global CRON_LIST
+    global REQUESTED_TOURNAMENTS
     REPORT_IDS = data[0][0]
     PING_INFO = data[1][0]
     TOURNEY_REPORT_IDS = data[2][0]
     COACH_REPORT_IDS = data[3][0]
     cron = data[4][0]
     for c in cron:
-        c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S.%f")
+        try:
+            c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S.%f")
+        except Exception as e:
+            print("ERROR WITH CRON TASK: ", e)
     CRON_LIST = cron
+    REQUESTED_TOURNAMENTS = data[5][0]
     print("Fetched previous variables.")
+
+@bot.command(aliases=["tc", "tourney", "tournaments"])
+async def tournament(ctx, *args):
+    member = ctx.message.author
+    newArgs = list(args)
+    ignoreTerms = ["invitational", "invy", "tournament", "regional", "invite"]
+    for term in ignoreTerms:
+        if term in newArgs:
+            newArgs.remove(term)
+            await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
+    if len(args) == 0:
+        return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
+    for arg in newArgs:
+        # Stop users from possibly adding the channel hash in front of arg
+        arg = arg.replace("#", "")
+        arg = arg.lower()
+        found = False
+        if arg == "all":
+            role = discord.utils.get(member.guild.roles, name=ROLE_AT)
+            if role in member.roles:
+                await ctx.send(f"Removed your `All Tournaments` role.")
+                await member.remove_roles(role)
+            else:
+                await ctx.send(f"Added your `All Tournaments` role.")
+                await member.add_roles(role)
+            continue
+        for t in TOURNAMENT_INFO:
+            if arg == t[1]:
+                found = True
+                role = discord.utils.get(member.guild.roles, name=t[0])
+                if role == None:
+                    return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
+                if role in member.roles:
+                    await ctx.send(f"Removed you from the `{t[0]}` channel.")
+                    await member.remove_roles(role)
+                else:
+                    await ctx.send(f"Added you to the `{t[0]}` channel.")
+                    await member.add_roles(role)
+                break
+        if not found:
+            uid = member.id
+            found2 = False
+            votes = 1
+            for t in REQUESTED_TOURNAMENTS:
+                if arg == t['iden']:
+                    found2 = True
+                    if uid in t['users']:
+                        return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
+                    t['count'] += 1
+                    t['users'].append(uid)
+                    votes = t['count']
+                    break
+            if not found2:
+                await autoReport("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
+                return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
+            await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
+            await updateTournamentList()
+
+@bot.command()
+@commands.check(isStaff)
+async def tla(ctx, iden, uid):
+    global REQUESTED_TOURNAMENTS
+    for t in REQUESTED_TOURNAMENTS:
+        if t['iden'] == iden:
+            t['count'] += 1
+            await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
+            return await updateTournamentList()
+    REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
+    await updateTournamentList()
+    return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
+
+@bot.command()
+@commands.check(isStaff)
+async def tlr(ctx, iden):
+    global REQUESTED_TOURNAMENTS
+    for t in REQUESTED_TOURNAMENTS:
+        if t['iden'] == iden:
+            REQUESTED_TOURNAMENTS.remove(t)
+    await updateTournamentList()
+    return await ctx.send(f"Removed `#{iden}` from the tournament list.")
+
+async def updateTournamentList():
+    tl = await getTournamentChannels()
+    tl.sort(key=lambda x: x[0])
+    global TOURNAMENT_INFO
+    global REQUESTED_TOURNAMENTS
+    TOURNAMENT_INFO = tl
+    server = bot.get_guild(SERVER_ID)
+    tourneyChannel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
+    tourneyCat = discord.utils.get(server.categories, name=CATEGORY_TOURNAMENTS)
+    botSpam = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
+    serverSupport = discord.utils.get(server.text_channels, name=CHANNEL_SUPPORT)
+    gm = discord.utils.get(server.roles, name=ROLE_GM)
+    a = discord.utils.get(server.roles, name=ROLE_AD)
+    allTournamentsRole = discord.utils.get(server.roles, name=ROLE_AT)
+    stringLists = []
+    stringLists.append("")
+    openSoonList = ""
+    channelsRequestedList = ""
+    now = datetime.datetime.now()
+    for t in tl: # For each tournament in the sheet
+        # Check if the channel needs to be made / deleted
+        ch = discord.utils.get(server.text_channels, name=t[1])
+        r = discord.utils.get(server.roles, name=t[0])
+        tourneyDate = t[4]
+        beforeDays = int(t[5])
+        afterDays = int(t[6])
+        tDDT = datetime.datetime.strptime(tourneyDate, "%Y-%m-%d")
+        dayDiff = (tDDT - now).days
+        print(f"Tournament List: Handling {t[0]} (Day diff: {dayDiff} days)")
+        if (dayDiff < (-1 * afterDays)) and ch != None:
+            # If past tournament date, now out of range
+            if ch.category.name != CATEGORY_ARCHIVE:
+                await autoReport("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
+        elif (dayDiff <= beforeDays) and ch == None:
+            # If before tournament and in range
+            newRole = await server.create_role(name=t[0])
+            newCh = await server.create_text_channel(t[1], category=tourneyCat)
+            await newCh.edit(topic=f"{t[2]} - Discussion around the {t[0]} occurring on {t[4]}.", sync_permissions=True)
+            await newCh.set_permissions(newRole, read_messages=True)
+            await newCh.set_permissions(allTournamentsRole, read_messages=True)
+            await newCh.set_permissions(server.default_role, read_messages=False)
+            stringToAdd = (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+            while len(stringLists[-1] + stringToAdd) > 2048:
+                stringLists.append("")
+            stringLists[-1] += stringToAdd
+        elif ch != None:
+            stringToAdd = (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
+            while len(stringLists[-1] + stringToAdd) > 2048:
+                stringLists.append("")
+            stringLists[-1] += stringToAdd
+        elif (dayDiff > beforeDays):
+            openSoonList += (t[2] + " **" + t[0] + f"** - Opens in `{dayDiff - beforeDays}` days.\n")
+    REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
+    spacingNeeded = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS])
+    for t in REQUESTED_TOURNAMENTS:
+        spaces = " " * (spacingNeeded - len(t['iden']))
+        channelsRequestedList += f"`!tournament {t['iden']}{spaces}` · **{t['count']} votes**\n"
+    embeds = []
+    embeds.append(assembleEmbed(
+        title=":medal: Tournament Channels Listing",
+        desc=(
+            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received 10 votes to be considered for a channel." +
+            f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." +
+            f"\n\n* To make a new request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
+            f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
+        )
+    ))
+    for i, s in enumerate(stringLists):
+        embeds.append(assembleEmbed(
+            title=f"Currently Available Channels (Page {i + 1}/{len(stringLists)})",
+            desc=s if len(s) > 0 else "No channels are available currently."
+        ))
+    embeds.append(assembleEmbed(
+        title="Channels Opening Soon",
+        desc=openSoonList if len(openSoonList) > 0 else "No channels are opening soon currently.",
+    ))
+    embeds.append(assembleEmbed(
+        title="Channels Requested",
+        desc=("Vote with the command associated with the tournament channel.\n\n" + channelsRequestedList) if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, with the name of the tournament."
+    ))
+    hist = await tourneyChannel.history(oldest_first=True).flatten()
+    if len(hist) != 0:
+        # When the tourney channel already has embeds
+        count = 0
+        async for m in tourneyChannel.history(oldest_first=True):
+            await m.edit(embed=embeds[count])
+            count += 1
+        if len(embeds) > len(hist):
+            for e in embeds[len(hist):]:
+                await tourneyChannel.send(embed=e)
+        if len(embeds) < len(hist):
+            messages = await tourneyChannel.history(oldest_first=True).flatten()
+            for m in messages[len(embeds):]:
+                await m.delete()
+    else:
+        # If the tournament channel is being initialized for the first time
+        pastMessages = await tourneyChannel.history(limit=100).flatten()
+        await tourneyChannel.delete_messages(pastMessages)
+        for e in embeds:
+            await tourneyChannel.send(embed=e)
+
+@bot.command()
+@commands.check(isStaff)
+async def vc(ctx):
+    server = ctx.message.guild
+    if ctx.message.channel.category.name == CATEGORY_TOURNAMENTS:
+        testVC = discord.utils.get(server.voice_channels, name=ctx.message.channel.name)
+        if testVC == None:
+            # Voice channel needs to be opened
+            newVC = await server.create_voice_channel(ctx.message.channel.name, category=ctx.message.channel.category)
+            await newVC.edit(sync_permissions=True)
+            # Make the channel invisible to normal members
+            await newVC.set_permissions(server.default_role, view_channel=False)
+            at = discord.utils.get(server.roles, name=ROLE_AT)
+            for t in TOURNAMENT_INFO:
+                if ctx.message.channel.name == t[1]:
+                    tourneyRole = discord.utils.get(server.roles, name=t[0])
+                    await newVC.set_permissions(tourneyRole, view_channel=True)
+                    break
+            await newVC.set_permissions(at, view_channel=True)
+            return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+        else:
+            # Voice channel needs to be closed
+            await testVC.delete()
+            return await ctx.send("Closed the voice channel.")
+    elif ctx.message.channel.name == "games":
+        # Support for opening a voice channel for #games
+        testVC = discord.utils.get(server.voice_channels, name="games")
+        if testVC == None:
+            # Voice channel needs to be opened/doesn't exist already
+            newVC = await server.create_voice_channel("games", category=ctx.message.channel.category)
+            await newVC.edit(sync_permissions=True)
+            await newVC.set_permissions(server.default_role, view_channel=False)
+            gamesRole = discord.utils.get(server.roles, name=ROLE_GAMES)
+            memberRole = discord.utils.get(server.roles, name=ROLE_MR)
+            await newVC.set_permissions(gamesRole, view_channel=True)
+            await newVC.set_permissions(memberRole, view_channel=False)
+            return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+        else:
+            # Voice channel needs to be closed
+            await testVC.delete()
+            return await ctx.send("Closed the voice channel.")
+    else:
+        return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -305,12 +653,14 @@ async def getVariable(ctx, var):
 async def eat(ctx, user):
     """Allows bear to eat users >:D"""
     message = await getBearMessage(user)
+    await ctx.message.delete()
     await ctx.send(message)
 
 @bot.command()
 @commands.check(isStaff)
 async def refresh(ctx):
     """Refreshes data from the sheet."""
+    await updateTournamentList()
     res = await refreshAlgorithm()
     if res == True:
         await ctx.send("Successfully refreshed data from sheet.")
@@ -327,6 +677,11 @@ async def getemojiid(ctx, emoji: discord.Emoji):
     """Gets the ID of the given emoji."""
     return await ctx.send(f"{emoji} - `{emoji}`")
 
+@bot.command(aliases=["rid"])
+async def getroleid(ctx, name):
+    role = discord.utils.get(ctx.message.author.guild.roles, name=name)
+    return await ctx.send(f"`{role.mention}`")
+
 @bot.command(aliases=["ui"])
 async def getuserid(ctx, user=None):
     """Gets the user ID of the caller or another user."""
@@ -338,6 +693,13 @@ async def getuserid(ctx, user=None):
     else:
         user = user.replace("<@!", "").replace(">", "")
         await ctx.send(f"The user ID of <@{user}> is `{user}`.")
+
+@bot.command(aliases=["ufi"])
+@commands.check(isStaff)
+async def userfromid(ctx, iden:int):
+    """Mentions a user with the given ID."""
+    user = bot.get_user(iden)
+    await ctx.send(user.mention)
 
 @bot.command(aliases=["hi"])
 async def hello(ctx):
@@ -354,6 +716,10 @@ async def invite(ctx):
     await ctx.send("https://discord.gg/C9PGV6h")
 
 @bot.command()
+async def forums(ctx):
+    await ctx.send("<https://scioly.org/forums>")
+
+@bot.command()
 async def obb(ctx):
     await ctx.send("<https://scioly.org/obb>")
 
@@ -365,12 +731,60 @@ async def exchange(ctx):
 async def gallery(ctx):
     await ctx.send("<https://scioly.org/gallery>")
 
+@bot.command(aliases=["random"])
+async def rand(ctx, a=1, b=10):
+    r = random.randrange(a, b + 1)
+    await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
+
 @bot.command()
-async def invites(ctx):
-    """Fetches the invite table."""
-    return await ctx.send("In progress...")
-    message = await getInviteTable()
-    await ctx.send(f"```\n{message}```")
+async def magic8ball(ctx):
+    msg = await ctx.send("Swishing the magic 8 ball...")
+    await ctx.channel.trigger_typing()
+    await asyncio.sleep(3)
+    await msg.delete()
+    sayings = [
+        "Yes.",
+        "Ask again later.",
+        "Not looking good.",
+        "Cannot predict now.",
+        "It is certain.",
+        "Try again.",
+        "Without a doubt.",
+        "Don't rely on it.",
+        "Outlook good.",
+        "My reply is no.",
+        "Don't count on it.",
+        "Yes - definitely.",
+        "Signs point to yes.",
+        "I believe so.",
+        "Nope.",
+        "Concentrate and ask later.",
+        "Try asking again.",
+        "For sure not.",
+        "Definitely no."
+    ]
+    response = sayings[math.floor(random.random()*len(sayings))]
+    await ctx.send(f"**{response}**")
+
+@bot.command()
+async def xkcd(ctx, num = None):
+    max_num = await xkcd_module.get_max()
+    if num == None:
+        rand = random.randrange(1, int(max_num))
+        return await xkcd(ctx, str(rand))
+    if num.isdigit() and 1 <= int(num) <= int(max_num):
+        return await ctx.send(f"https://xkcd.com/{num}")
+    else:
+        return await ctx.send("Invalid attempted number for xkcd.")
+
+@bot.command()
+async def rule(ctx, num):
+    """Gets a specified rule."""
+    if not num.isdigit() or int(num) < 1 or int(num) > 13:
+        # If the rule number is not actually a number
+        return await ctx.send("Please use a valid rule number, from 1 through 13. (Ex: `!rule 7`)")
+    rule = RULES[int(num) - 1]
+    return await ctx.send(f"**Rule {num}:**\n> {rule}")
 
 @bot.command()
 async def coach(ctx):
@@ -384,19 +798,6 @@ async def coach(ctx):
         await member.add_roles(role)
         await autoReport("Member Applied for Coach Role", "DarkCyan", f"{ctx.message.author.name} applied for the Coach role. Please verify that they are a coach.")
         await ctx.send("Successfully gave you the Coach role, and sent a verification message to staff.")
-
-@bot.command()
-async def tourney(ctx):
-    """Gives an account the Tournament role."""
-    await ctx.send("Giving you the Tournament role...")
-    member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Tournament")
-    if role in member.roles:
-        await ctx.send("Oops... you already have the Tournament role. If it needs to be removed, please open a report using `!report \"message...\"`.")
-    else:
-        await member.add_roles(role)
-        await autoReport("Member Applied for Tournament Role", "DarkCyan", f"{ctx.message.author.name} applied for the Tournament role. Please verify that they are a tournament.")
-        await ctx.send("Successfully gave you the Tournament role, and sent a verification message to staff.")
 
 @bot.command(aliases=["slow", "sm"])
 async def slowmode(ctx, arg:int=None):
@@ -413,11 +814,6 @@ async def slowmode(ctx, arg:int=None):
             await ctx.send(f"Enabled a {arg} second slowmode.")
         else:
             await ctx.send(f"Removed slowmode.")
-
-@bot.command(aliases=["tourneys", "comps", "competitions"])
-async def tournaments(ctx, *args):
-    """Coming soon"""
-    pass
 
 @bot.command(aliases=["state"])
 async def states(ctx, *args):
@@ -514,9 +910,9 @@ async def states(ctx, *args):
 @bot.command()
 async def games(ctx):
     """Removes or adds someone to the games channel."""
-    jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name="games")
+    jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name=CHANNEL_GAMES)
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Games")
+    role = discord.utils.get(member.guild.roles, name=ROLE_GAMES)
     if role in member.roles:
         await member.remove_roles(role)
         await ctx.send("Removed you from the games club... feel free to come back anytime!")
@@ -525,6 +921,23 @@ async def games(ctx):
         await member.add_roles(role)
         await ctx.send(f"You are now in the channel. Come and have fun in {jbcObj.mention}! :tada:")
         await jbcObj.send(f"Please welcome {member.mention} to the party!!")
+
+@bot.command(aliases=["tags", "t"])
+async def tag(ctx, name):
+    member = ctx.message.author
+    if len(TAGS) == 0:
+        return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
+    staff = await isStaff(ctx)
+    lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
+    member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    for t in TAGS:
+        if t['name'] == name:
+            if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
+                await ctx.message.delete()
+                return await ctx.send(t['text'])
+            else:
+                return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
+    return await ctx.send("Tag not found.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -536,16 +949,16 @@ async def lock(ctx):
     if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
         return await ctx.send("This command is not suitable for this channel because of its category.")
 
-    memberRole = discord.utils.get(member.guild.roles, name="Member")
-    if (channel.category.name == "states"):
+    memberRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    if (channel.category.name == CATEGORY_STATES):
         await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False)
     else:
         await ctx.channel.set_permissions(memberRole, add_reactions=False, send_messages=False, read_messages=True)
 
-    wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
-    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
-    bRole = discord.utils.get(member.guild.roles, name="Bots")
+    wikiRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    bRole = discord.utils.get(member.guild.roles, name=ROLE_BT)
     await ctx.channel.set_permissions(wikiRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(gmRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
@@ -562,25 +975,144 @@ async def unlock(ctx):
     if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
         return await ctx.send("This command is not suitable for this channel because of its category.")
 
-    if (channel.category.name == "Science Olympiad" or channel.category.name == "general"):
+    if (channel.category.name == CATEGORY_SO or channel.category.name == CATEGORY_GENERAL):
         await ctx.send("Synced permissions with channel category.")
         return await channel.edit(sync_permissions=True)
 
-    memberRole = discord.utils.get(member.guild.roles, name="Member")
-    if (channel.category.name != "states"):
+    memberRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    if (channel.category.name != CATEGORY_STATES):
         await ctx.channel.set_permissions(memberRole, add_reactions=True, send_messages=True, read_messages=True)
     else:
         await ctx.channel.set_permissions(memberRole, add_reactions=True, send_messages=True)
 
-    wikiRole = discord.utils.get(member.guild.roles, name="Wiki/Gallery Moderator")
-    gmRole = discord.utils.get(member.guild.roles, name="Global Moderator")
-    aRole = discord.utils.get(member.guild.roles, name="Administrator")
-    bRole = discord.utils.get(member.guild.roles, name="Bots")
+    wikiRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
+    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
+    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+    bRole = discord.utils.get(member.guild.roles, name=ROLE_BT)
     await ctx.channel.set_permissions(wikiRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(gmRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.send("Unlocked the channel to Member access. Please check if permissions need to be synced.")
+
+@bot.command()
+async def info(ctx):
+    """Gets information about the Discord server."""
+    server = ctx.message.guild
+    name = server.name
+    owner = server.owner
+    creation_date = server.created_at
+    emoji_count = len(server.emojis)
+    icon = server.icon_url_as(format=None, static_format='jpeg')
+    animated_icon = server.is_icon_animated()
+    iden = server.id
+    banner = server.banner_url
+    desc = server.description
+    mfa_level = server.mfa_level
+    verification_level = server.verification_level
+    content_filter = server.explicit_content_filter
+    default_notifs = server.default_notifications
+    features = server.features
+    splash = server.splash_url
+    premium_level = server.premium_tier
+    boosts = server.premium_subscription_count
+    channel_count = len(server.channels)
+    text_channel_count = len(server.text_channels)
+    voice_channel_count = len(server.voice_channels)
+    category_count = len(server.categories)
+    system_channel = server.system_channel
+    if type(system_channel) == discord.TextChannel: system_channel = system_channel.mention
+    rules_channel = server.rules_channel
+    if type(rules_channel) == discord.TextChannel: rules_channel = rules_channel.mention
+    public_updates_channel = server.public_updates_channel
+    if type(public_updates_channel) == discord.TextChannel: public_updates_channel = public_updates_channel.mention
+    emoji_limit = server.emoji_limit
+    bitrate_limit = server.bitrate_limit
+    filesize_limit = round(server.filesize_limit/1000000, 3)
+    boosters = server.premium_subscribers
+    for i, b in enumerate(boosters):
+        # convert user objects to mentions
+        boosters[i] = b.mention
+    boosters = ", ".join(boosters)
+    print(boosters)
+    role_count = len(server.roles)
+    member_count = len(server.members)
+    max_members = server.max_members
+    discovery_splash_url = server.discovery_splash_url
+    member_percentage = round(member_count/max_members * 100, 3)
+    emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
+    channel_percentage = round(channel_count/500 * 100, 3)
+    role_percenatege = round(role_count/250 * 100, 3)
+    
+    staff_member = await isStaff(ctx)
+    fields = [
+            {
+                "name": "Basic Information",
+                "value": (
+                    f"**Creation Date:** {creation_date}\n" + 
+                    f"**ID:** {iden}\n" +
+                    f"**Animated Icon:** {animated_icon}\n" +
+                    f"**Banner URL:** {banner}\n" + 
+                    f"**Splash URL:** {splash}\n" +
+                    f"**Discovery Splash URL:** {discovery_splash_url}"
+                ),
+                "inline": False
+            },
+            {
+                "name": "Nitro Information",
+                "value": (
+                    f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n" +
+                    f"**Boosters:** {boosters}"
+                ),
+                "inline": False
+            }
+        ]
+    if staff_member and ctx.channel.category.name == CATEGORY_STAFF:
+        fields.extend(
+            [{
+                "name": "Staff Information",
+                "value": (
+                    f"**Owner:** {owner}\n" +
+                    f"**MFA Level:** {mfa_level}\n" +
+                    f"**Verification Level:** {verification_level}\n" + 
+                    f"**Content Filter:** {content_filter}\n" +
+                    f"**Default Notifications:** {default_notifs}\n" +
+                    f"**Features:** {features}\n" + 
+                    f"**Bitrate Limit:** {bitrate_limit}\n" + 
+                    f"**Filesize Limit:** {filesize_limit} MB"
+                ),
+                "inline": False
+            },
+            {
+                "name": "Channels",
+                "value": (
+                    f"**Public Updates Channel:** {public_updates_channel}\n" + 
+                    f"**System Channel:** {system_channel}\n" +
+                    f"**Rules Channel:** {rules_channel}\n" +
+                    f"**Text Channel Count:** {text_channel_count}\n" +
+                    f"**Voice Channel Count:** {voice_channel_count}\n" +
+                    f"**Category Count:** {category_count}\n"
+                ),
+                "inline": False
+            },
+            {
+                "name": "Limits",
+                "value": (
+                    f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n" +
+                    f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n" +
+                    f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n" +
+                    f"**Roles:** *{role_percenatege}%* ({role_count}/250 roles)"
+                ),
+                "inline": False
+            }
+        ])
+    embed = assembleEmbed(
+        title=f"Information for `{name}`",
+        desc=f"**Description:** {desc}",
+        thumbnailUrl=icon,
+        fields=fields
+    )
+    await ctx.send(embed=embed)
 
 @bot.command(aliases=["r"])
 async def report(ctx, *args):
@@ -610,7 +1142,8 @@ async def report(ctx, *args):
 # Meant for Pi-Bot only
 async def autoReport(reason, color, message):
     """Allows Pi-Bot to generate a report by himself."""
-    reportsChannel = bot.get_channel(739596418762801213)
+    server = bot.get_guild(SERVER_ID)
+    reportsChannel = discord.utils.get(server.text_channels, name="reports")
     embed = assembleEmbed(
         title=f"{reason} (message from Pi-Bot)",
         webcolor=color,
@@ -626,9 +1159,76 @@ async def autoReport(reason, color, message):
     await message.add_reaction("\U0000274C")
 
 @bot.command()
-async def ping(ctx, command="", *args):
+async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
+    temp = tempFormat.lower() in ["y", "yes", "true"]
+    await ctx.send(
+        "*Inputs read:*\n" +
+        f"Page title: `{title}`\n" +
+        f"Template: `{temp}`\n" +
+        f"Table index (staring at 0): `{tableIndex}`\n" +
+        f"Division: `{div}`\n" +
+        (f"Column with point values: `{placeCol}`" if not temp else "")
+    )
+    points = []
+    tableIndex = int(tableIndex)
+    placeCol = int(placeCol)
+    if temp:
+        template = await getPageTables(title, True)
+        template = [t for t in template if t.normal_name() == "State results box"]
+        template = template[tableIndex]
+        ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]) # Thanks https://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712
+        for i in range(100):
+            if template.has_arg(ordinal(i) + "_points"):
+                points.append(template.get_arg(ordinal(i) + "_points").value.replace("\n", ""))
+    else:
+        tables = await getPageTables(title, False)
+        tables = tables[tableIndex]
+        data = tables.data()
+        points = [r[placeCol] for r in data]
+        del points[0]
+    points = [int(p) for p in points]
+    await _graph(points, title + " - Division " + div, title + "Div" + div + ".svg")
+    with open(title + "Div" + div + ".svg") as f:
+        pic = discord.File(f)
+        await ctx.send(file=pic)
+    return await ctx.send("Attempted to graph.")
+
+@bot.command()
+async def graphscilympiad(ctx, url, title):
+    points = await getPoints(url)
+    await _graph(points, title, "graph1.svg")
+    with open("graph1.svg") as f:
+        pic = discord.File(f)
+        await ctx.send(file=pic)
+    return await ctx.send("Attempted to graph.")
+
+async def _graph(points, graph_title, title):
+    plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
+    z = np.polyfit(range(1, len(points) + 1), points, 1)
+    p = np.poly1d(z)
+    plt.plot(range(1, len(points) + 1), p(range(1, len(points) + 1)), "--", color='#CCCCCC')
+    plt.xlabel("Place")
+    plt.ylabel("Points")
+    plt.title(graph_title)
+    plt.savefig(title)
+    plt.close()
+    await asyncio.sleep(2)
+
+@bot.command()
+async def resultstemplate(ctx, url):
+    if url.find("scilympiad.com") == -1:
+        return await ctx.send("The URL must be a Scilympiad results link.")
+    await ctx.send("**Warning:** Because Scilympiad is constantly evolving, this command may break. Please preview the template on the wiki before saving! If this command breaks, please DM pepperonipi or open an issue on GitHub. Thanks!")
+    res = await makeResultsTemplate(url)
+    with open("resultstemplate.txt", "w+") as t:
+        t.write(res)
+    file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
+    await ctx.send(file=file)
+
+@bot.command()
+async def ping(ctx, command=None, *args):
     """Controls Pi-Bot's ping interface."""
-    if command == "":
+    if command is None:
         return await ctx.send("Uh, I need a command you want to run.")
     member = ctx.message.author.id
     if len(args) > 8:
@@ -654,17 +1254,17 @@ async def ping(ctx, command="", *args):
                     ignoredList.append(arg)
                 else:
                     if command.lower() in ["add", "new"]:
-                        print("adding word")
-                        pings.append(fr"\b({arg})\b")
+                        print(f"adding word: {re.escape(arg)}")
+                        pings.append(fr"\b({re.escape(arg)})\b")
                     else:
-                        print("adding regexp")
+                        print(f"adding regexp: {arg}")
                         pings.append(fr"({arg})")
         else:
             # nope
             if command.lower() in ["add", "new"]:
                 PING_INFO.append({
                     "id": member,
-                    "pings": [fr"\b({arg})\b" for arg in args]
+                    "pings": [fr"\b({re.escape(arg)})\b" for arg in args]
                 })
             else:
                 PING_INFO.append({
@@ -783,21 +1383,25 @@ async def shibabomb(ctx, member:str=False):
 @bot.command()
 async def me(ctx, *args):
     """Replaces the good ol' /me"""
+    await ctx.message.delete()
     if len(args) < 1:
         return await ctx.send(f"*{ctx.message.author.mention} " + "is cool!*")
     else:
-        await ctx.message.delete()
         await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
 
-@bot.command()
-async def list(ctx, cmd:str=False):
+@bot.command(aliases=["list"])
+async def list_command(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
     if cmd == False: # for quick list of commands
         ls = await getQuickList(ctx)
         await ctx.send(embed=ls)
     if cmd == "all" or cmd == "commands":
-        ls = await getList(ctx)
-        await ctx.send(embed=ls)
+        ls = await getList(ctx.message.author, 1)
+        sentList = await ctx.send(embed=ls)
+        await sentList.add_reaction(EMOJI_FAST_REVERSE)
+        await sentList.add_reaction(EMOJI_LEFT_ARROW)
+        await sentList.add_reaction(EMOJI_RIGHT_ARROW)
+        await sentList.add_reaction(EMOJI_FAST_FORWARD)
     elif cmd == "states":
         statesList = await getStateList()
         list = assembleEmbed(
@@ -842,7 +1446,9 @@ async def censor(message):
     author = message.author.nick
     if author == None:
         author = message.author.name
-    await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava)
+    # Make sure pinging through @everyone, @here, or any role can not happen
+    mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
+    await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava, allowed_mentions=mention_perms)
     await wh.delete()
 
 @bot.command()
@@ -1008,8 +1614,18 @@ async def getWords():
     CENSORED_WORDS = getCensor()
 
 @bot.command(aliases=["man"])
-async def help(ctx, command="help"):
+async def help(ctx, command:str=None):
     """Allows a user to request help for a command."""
+    if command == None:
+        embed = assembleEmbed(
+            title="Looking for help?",
+            desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
+            "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
+            "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" +
+            "If you want to see some commands that you can use on me, just type `!list`! " +
+            "If you need more help, please feel free to reach out to a staff member!")
+        )
+        return await ctx.send(embed=embed)
     hlp = await getHelp(ctx, command)
     await ctx.send(embed=hlp)
 
@@ -1055,12 +1671,12 @@ async def stealfish(ctx):
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         STEALFISH_BAN.append(member.id)
         CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to banned from using this command for 1 hour!")
+        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 hour!")
     if r >= 0.25:
         parsed = dateparser.parse("1 day", settings={"PREFER_DATES_FROM": "future"})
         STEALFISH_BAN.append(member.id)
         CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to banned from using this command for 1 day!")
+        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 day!")
     if r >= 0.01:
         return await ctx.send("Hmm, nothing happened. *crickets*")
     else:
@@ -1133,9 +1749,9 @@ async def division(ctx, div):
         await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
     elif div.lower() in ["remove", "clear", "none", "x"]:
         member = ctx.message.author
-        divArole = discord.utils.get(member.guild.roles, name="Division A")
-        divBrole = discord.utils.get(member.guild.roles, name="Division B")
-        divCrole = discord.utils.get(member.guild.roles, name="Division C")
+        divArole = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
+        divBrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
+        divCrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
         await member.remove_roles(divArole, divBrole, divCrole)
         await ctx.send("Removed all of your division/alumni roles.")
     else:
@@ -1145,10 +1761,10 @@ async def assignDiv(ctx, div):
     """Assigns a user a div"""
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=div)
-    divArole = discord.utils.get(member.guild.roles, name="Division A")
-    divBrole = discord.utils.get(member.guild.roles, name="Division B")
-    divCrole = discord.utils.get(member.guild.roles, name="Division C")
-    alumnirole = discord.utils.get(member.guild.roles, name="Alumni")
+    divArole = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
+    divBrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
+    divCrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
+    alumnirole = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
     await member.remove_roles(divArole, divBrole, divCrole, alumnirole)
     await member.add_roles(role)
     return True
@@ -1157,11 +1773,11 @@ async def assignDiv(ctx, div):
 async def alumni(ctx):
     """Removes or adds the alumni role from a user."""
     member = ctx.message.author
-    divArole = discord.utils.get(member.guild.roles, name="Division A")
-    divBrole = discord.utils.get(member.guild.roles, name="Division B")
-    divCrole = discord.utils.get(member.guild.roles, name="Division C")
+    divArole = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
+    divBrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
+    divCrole = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
     await member.remove_roles(divArole, divBrole, divCrole)
-    role = discord.utils.get(member.guild.roles, name="Alumni")
+    role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
     if role in member.roles:
         await member.remove_roles(role)
         await ctx.send("Removed your alumni status.")
@@ -1170,28 +1786,16 @@ async def alumni(ctx):
         await ctx.send(f"Added the alumni role, and removed all other division roles.")
 
 @bot.command()
-async def wiki(ctx, command, *args):
+async def wiki(ctx, command:str=False, *args):
     # Check to make sure not too much at once
-    if (len(args) > 5 and multiple) or len(args) > 12:
+    if not command:
+        return await ctx.send("<https://scioly.org/wiki>")
+    if len(args) > 7:
         return await ctx.send("Slow down there buster. Please keep the command to 12 or less arguments at once.")
     multiple = False
     for arg in args:
         if arg[:1] == "-":
             multiple = arg.lower() == "-multiple"
-    if command in ["link", "url"]:
-        if multiple:
-            for arg in [arg for arg in args if arg[:1] != "-"]:
-                url = await implementCommand("link", arg)
-                if url == False:
-                    await ctx.send(f"The `{arg}` page does not exist!")
-                await ctx.send(f"<{url}>")
-        else:
-            stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
-            url = await implementCommand("link", stringSum)
-            if url == False:
-                await ctx.send(f"The `{arg}` page does not exist!")
-            else:
-                await ctx.send(f"<{url}>")
     if command in ["summary"]:
         if multiple:
             for arg in [arg for arg in args if arg[:1] != "-"]:
@@ -1207,15 +1811,39 @@ async def wiki(ctx, command, *args):
                 await ctx.send(f"The `{arg}` page does not exist!")
             else:
                 await ctx.send(" ".join(text))
-    if command in ["search"]:
+    elif command in ["search"]:
         if multiple:
             return await ctx.send("Ope! No multiple searches at once yet!")
         searches = await implementCommand("search", " ".join([arg for arg in args]))
         await ctx.send("\n".join([f"`{s}`" for s in searches]))
+    else:
+        # Assume link
+        if multiple:
+            newArgs = [command] + list(args)
+            for arg in [arg for arg in newArgs if arg[:1] != "-"]:
+                url = await implementCommand("link", arg)
+                if url == False:
+                    await ctx.send(f"The `{arg}` page does not exist!")
+                await ctx.send(f"<{wikiUrlFix(url)}>")
+        else:
+            stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
+            if len(args) > 0 and command.rstrip() != "link":
+                stringSum = f"{command} {stringSum}"
+            elif command.rstrip() != "link":
+                stringSum = command
+            url = await implementCommand("link", stringSum)
+            if url == False:
+                await ctx.send(f"The `{stringSum}` page does not exist!")
+            else:
+                await ctx.send(f"<{wikiUrlFix(url)}>")
+
+def wikiUrlFix(url):
+    return url.replace("%3A", ":").replace(r"%2F","/")
 
 @bot.command(aliases=["wp"])
-async def wikipedia(ctx, request:str=False, term:str=False):
-    if request == False or term == False:
+async def wikipedia(ctx, request:str=False, *args):
+    term = " ".join(args)
+    if request == False:
         return await ctx.send("You must specifiy a command and keyword, such as `!wikipedia search \"Science Olympiad\"`")
     if request == "search":
         return await ctx.send("\n".join([f"`{result}`" for result in aiowikip.search(term, results=5)]))
@@ -1228,13 +1856,16 @@ async def wikipedia(ctx, request:str=False, term:str=False):
             return await ctx.send(f"Sorry, the `{term}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
         except wikip.exceptions.PageError as e:
             return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-    elif request in ["link", "url"]:
+    else:
         try:
+            term = f"{request} {term}".strip()
             term = term.title()
             page = await aiowikip.page(term)
             return await ctx.send(f"Sure, here's the link: <{page.url}>")
         except wikip.exceptions.PageError as e:
             return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
+        except wikip.exceptions.DisambiguationError as e:
+            return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
 
 @bot.command()
 async def profile(ctx, name:str=False):
@@ -1274,7 +1905,7 @@ async def count(ctx):
 async def exalt(ctx, user):
     """Exalts a user."""
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Exalted Member")
+    role = discord.utils.get(member.guild.roles, name=ROLE_EM)
     iden = await harvestID(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.add_roles(role)
@@ -1285,7 +1916,7 @@ async def exalt(ctx, user):
 async def unexalt(ctx, user):
     """Unexalts a user."""
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Exalted Member")
+    role = discord.utils.get(member.guild.roles, name=ROLE_EM)
     iden = await harvestID(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.remove_roles(role)
@@ -1314,6 +1945,8 @@ async def selfmute(ctx, *args):
     :type *args: str
     """
     user = ctx.message.author
+    if await isStaff(ctx):
+        return await ctx.send("Staff members can't self mute.")
     time = " ".join(args)
     await _mute(ctx, user, time)
 
@@ -1330,22 +1963,22 @@ async def _mute(ctx, user:discord.Member, time: str):
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
         return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-    role = discord.utils.get(user.guild.roles, name="Muted")
+    role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
     parsed = "indef"
     if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
+        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
         if parsed == None:
             return await ctx.send("Sorry, but I don't understand that length of time.")
         CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
     await user.add_roles(role)
-    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
+    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} EST`.")
 
 @bot.command()
 @commands.check(isStaff)
 async def unmute(ctx, user):
     """Unmutes a user."""
     member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Muted")
+    role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
     iden = await harvestID(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.remove_roles(role)
@@ -1367,13 +2000,13 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
     message = f"You have been banned from the Scioly.org Discord server for {reason}."
     parsed = "indef"
     if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
+        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
         if parsed == None:
             return await ctx.send(f"Sorry, but I don't understand the length of time: `{time}`.")
         CRON_LIST.append({"date": parsed, "do": f"unban {member.id}"})
     await member.send(message)
     await ctx.guild.ban(member, reason=reason)
-    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} " + f"{timePackage.tzname[timePackage.daylight]}" + "`.")
+    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} EST`.")
 
 @bot.command()
 @commands.check(isStaff)
@@ -1391,9 +2024,9 @@ async def pronouns(ctx, *args):
     member = ctx.message.author
     if len(args) < 1:
         await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
-    heRole = discord.utils.get(member.guild.roles, name="He / Him / His")
-    sheRole = discord.utils.get(member.guild.roles, name="She / Her / Hers")
-    theyRole = discord.utils.get(member.guild.roles, name="They / Them / Theirs")
+    heRole = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_HE)
+    sheRole = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_SHE)
+    theyRole = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_THEY)
     for arg in args:
         if arg.lower() in ["he", "him", "his", "he / him / his"]:
             if heRole in member.roles:
@@ -1418,14 +2051,14 @@ async def pronouns(ctx, *args):
                 await ctx.send("Added the They / Them / Theirs role.")
         elif arg.lower() in ["remove", "clear", "delete", "nuke"]:
             await member.remove_roles(heRole, sheRole, theyRole)
-            await ctx.send("Alrighty, your pronouns have been removed.")
+            return await ctx.send("Alrighty, your pronouns have been removed.")
         elif arg.lower() in ["help", "what"]:
             return await ctx.send("For help with pronouns, please use `!help pronouns`.")
         else:
             return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
-            "> He / Him / His (get with `!pronouns he`)\n" +
-            "> She / Her / Hers (get with `!pronouns she`)\n" +
-            "> They / Them / Theirs (get with `!pronouns they`)\n" +
+            "> `!pronouns he  ` (which gives you *He / Him / His*)\n" +
+            "> `!pronouns she ` (which gives you *She / Her / Hers*)\n" +
+            "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
             "To remove pronouns, use `!pronouns remove`.\n" +
             "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
 
@@ -1433,10 +2066,22 @@ async def pronouns(ctx, *args):
 @commands.check(isLauncher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
-    for i, member in enumerate(args):
+    await _confirm(args)
+
+async def _confirm(members):
+    server = bot.get_guild(SERVER_ID)
+    channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+    for member in members:
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        message = await channel.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
+        await asyncio.sleep(3)
+        await message.delete()
         beforeMessage = None
         f = 0
-        async for message in ctx.message.channel.history(oldest_first=True):
+        async for message in channel.history(oldest_first=True):
             # Delete any messages sent by Pi-Bot where message before is by member
             if f > 0:
                 if message.author.id in PI_BOT_IDS and beforeMessage.author == member and len(message.embeds) == 0:
@@ -1446,17 +2091,11 @@ async def confirm(ctx, *args: discord.Member):
                 if message.author == member and len(message.embeds) == 0:
                     await message.delete()
 
+                if member in message.mentions:
+                    await message.delete()
+
             beforeMessage = message
             f += 1
-        role1 = discord.utils.get(member.guild.roles, name="Unconfirmed")
-        role2 = discord.utils.get(member.guild.roles, name="Member")
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        message = await ctx.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-        await asyncio.sleep(3)
-        if not i:
-            await ctx.message.delete()
-        await message.delete()
 
 @bot.command()
 async def nuke(ctx, count):
@@ -1470,6 +2109,17 @@ async def nuke(ctx, count):
         return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
         return await ctx.send("Chill. No more than deleting 100 messages at a time.")
+    channel = ctx.message.channel
+    if int(count) < 0:
+        history = await channel.history(limit=105).flatten()
+        messageCount = len(history)
+        print(messageCount)
+        if messageCount > 100:
+            count = 100
+        else:
+            count = messageCount + int(count) - 1
+        if count <= 0:
+            return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
     await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
     await ctx.send("PREPARE FOR IMPACT.")
     for i in range(10, 0, -1):
@@ -1478,7 +2128,6 @@ async def nuke(ctx, count):
         if STOPNUKE:
             return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
     if not STOPNUKE:
-        channel = ctx.message.channel
         async for m in channel.history(limit=(int(count) + 13)):
             if not m.pinned and not STOPNUKE:
                 await m.delete()
@@ -1491,7 +2140,7 @@ async def stopnuke(ctx):
     global STOPNUKE
     launcher = await isLauncher(ctx)
     staff = await isStaff(ctx)
-    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+    if not (staff or (launcher and ctx.message.channel.name == CHANNEL_WELCOME)):
         return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
     STOPNUKE = True
     await ctx.send("TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES.")
@@ -1539,7 +2188,7 @@ async def on_message_edit(before, after):
 
 async def sendToDMLog(message):
     server = bot.get_guild(SERVER_ID)
-    dmChannel = discord.utils.get(server.text_channels, name="dm-log")
+    dmChannel = discord.utils.get(server.text_channels, name=CHANNEL_DMLOG)
     embed = assembleEmbed(
         title=":speech_balloon: New DM",
         fields=[
@@ -1583,7 +2232,24 @@ async def on_message(message):
     if type(message.channel) == discord.DMChannel:
         await sendToDMLog(message)
 
+    # Print to output
     print('Message from {0.author}: {0.content}'.format(message))
+
+    # Prevent command usage in channels outside of #bot-spam
+    author = message.author
+    if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
+        if message.channel.name != CHANNEL_BOTSPAM:
+            allowedCommands = ["about", "dogbomb", "exchange", "gallery", "invite", "me", "magic8ball", "latex", "obb", "profile", "r", "report", "rule", "shibabomb", "tag", "wiki", "wikipedia", "wp"]
+            allowed = False
+            for c in allowedCommands:
+                if message.content.find(BOT_PREFIX + c) != -1: allowed = True
+            if not allowed:
+                botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
+                clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
+                await asyncio.sleep(10)
+                await clarifyMessage.delete()
+                return await message.delete()
+
     if message.author.id in PI_BOT_IDS: return
     content = message.content
     for word in CENSORED_WORDS:
@@ -1599,7 +2265,8 @@ async def on_message(message):
     if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
         print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
         await message.delete()
-        await message.channel.send("<censored>")
+        ssChannel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
+        await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {ssChannel.mention}.*")
     pingable = True
     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
         pingable = False
@@ -1630,7 +2297,7 @@ async def on_message(message):
     RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
     # Spam checker
     if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
-        mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
+        mutedRole = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(mutedRole)
@@ -1639,8 +2306,8 @@ async def on_message(message):
     elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
     # Caps checker
-    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 6 and caps:
-        mutedRole = discord.utils.get(message.author.guild.roles, name="Muted")
+    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 8 and caps:
+        mutedRole = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(mutedRole)
@@ -1648,7 +2315,10 @@ async def on_message(message):
         await autoReport("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-    await bot.process_commands(message)
+    
+    # Do not treat messages with only exclamations as command
+    if message.content.count(BOT_PREFIX) != len(message.content):
+        await bot.process_commands(message)
 
 @bot.event
 async def on_raw_reaction_add(payload):
@@ -1664,9 +2334,29 @@ async def on_raw_reaction_add(payload):
                 await messageObj.delete()
 
 @bot.event
+async def on_reaction_add(reaction, user):
+    msg = reaction.message
+    if len(msg.embeds) > 0:
+        if msg.embeds[0].title.startswith("List of Commands") and user.id not in PI_BOT_IDS:
+            currentPage = int(re.findall(r'(\d+)(?=\/)', msg.embeds[0].title)[0])
+            print(currentPage)
+            ls = False
+            if reaction.emoji == EMOJI_FAST_REVERSE:
+                ls = await getList(user, 1)
+            elif reaction.emoji == EMOJI_LEFT_ARROW:
+                ls = await getList(user, currentPage - 1)
+            elif reaction.emoji == EMOJI_RIGHT_ARROW:
+                ls = await getList(user, currentPage + 1)
+            elif reaction.emoji == EMOJI_FAST_FORWARD:
+                ls = await getList(user, 100)
+            if ls != False:
+                await reaction.message.edit(embed=ls)
+            await reaction.remove(user)
+
+@bot.event
 async def on_member_join(member):
-    role = discord.utils.get(member.guild.roles, name="Unconfirmed")
-    joinChannel = discord.utils.get(member.guild.text_channels, name="welcome")
+    role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+    joinChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
     await member.add_roles(role)
     name = member.name
     for word in CENSORED_WORDS:
@@ -1678,9 +2368,29 @@ async def on_member_join(member):
     "\n\n" +
     "**Please add roles by typing the commands above into the text box, and if you have a question, please type it here. After adding roles, a moderator will give you access to the rest of the server to chat with other members!**")
     memberCount = len(member.guild.members)
-    loungeChannel = discord.utils.get(member.guild.text_channels, name="lounge")
+    loungeChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LOUNGE)
     if memberCount % 100 == 0:
         await loungeChannel.send(f"Wow! There are now `{memberCount}` members in the server!")
+
+@bot.event
+async def on_member_remove(member):
+    leaveChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
+    unconfirmedRole = discord.utils.get(member.guild.roles, name=ROLE_UC)
+    if unconfirmedRole in member.roles:
+        unconfirmedStatement = "Unconfirmed: :white_check_mark:"
+    else:
+        unconfirmedStatement = "Unconfirmed: :x:"
+    joinedAt = f"Joined at: `{str(member.joined_at)}`"
+    if member.nick != None:
+        await leaveChannel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
+    else:
+        await leaveChannel.send(f"**{member}** has left the server (or was removed).\n{unconfirmedStatement}\n{joinedAt}")
+    welcomeChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
+    # when user leaves, determine if they are mentioned in any messages in #welcome, delete if so
+    async for message in welcomeChannel.history(oldest_first=True):
+        if not message.pinned:
+            if member in message.mentions:
+                await message.delete()
 
 @bot.event
 async def on_member_update(before, after):
@@ -1698,8 +2408,8 @@ async def on_user_update(before, after):
 @bot.event
 async def on_raw_message_edit(payload):
     channel = bot.get_channel(payload.channel_id)
-    editedChannel = discord.utils.get(channel.guild.text_channels, name="edited-messages")
-    if channel.name in ["edited-messages", "deleted-messages"]:
+    editedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_EDITEDM)
+    if channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM]:
         return
     try:
         message = payload.cached_message
@@ -1739,12 +2449,12 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "Past Content",
-                    "value": message.content if len(message.content) > 0 else "None",
+                    "value": message.content[:1024] if len(message.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
                     "name": "New Content",
-                    "value": msgNow.content if len(msgNow.content) > 0 else "None",
+                    "value": msgNow.content[:1024] if len(msgNow.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
@@ -1787,12 +2497,12 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "New Content",
-                    "value": msgNow.content if len(msgNow.content) > 0 else "None",
+                    "value": msgNow.content[:1024] if len(msgNow.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
                     "name": "Raw Payload",
-                    "value": payload.data if len(payload.data) > 0 else "None",
+                    "value": str(payload.data)[:1024] if len(payload.data) > 0 else "None",
                     "inline": "False"
                 },
                 {
@@ -1802,7 +2512,7 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "Current Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in msgNow.embeds]) if len(msgNow.embeds) > 0 else "None",
+                    "value": "\n".join([str(e.to_dict()) for e in msgNow.embeds])[:1024] if len(msgNow.embeds) > 0 else "None",
                     "inline": "False"
                 }
             ]
@@ -1811,11 +2521,11 @@ async def on_raw_message_edit(payload):
 
 @bot.event
 async def on_raw_message_delete(payload):
-    if bot.get_channel(payload.channel_id).name in ["reports", "deleted-messages"]:
+    if bot.get_channel(payload.channel_id).name in [CHANNEL_REPORTS, CHANNEL_DELETEDM]:
         print("Ignoring deletion event because of the channel it's from.")
         return
     channel = bot.get_channel(payload.channel_id)
-    deletedChannel = discord.utils.get(channel.guild.text_channels, name="deleted-messages")
+    deletedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_DELETEDM)
     try:
         message = payload.cached_message
         embed = assembleEmbed(
@@ -1853,12 +2563,12 @@ async def on_raw_message_delete(payload):
                 },
                 {
                     "name": "Content",
-                    "value": message.content if len(message.content) > 0 else "None",
+                    "value": str(message.content)[:1024] if len(message.content) > 0 else "None",
                     "inline": "False"
                 },
                 {
                     "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
+                    "value": "\n".join([str(e.to_dict()) for e in message.embeds])[:1024] if len(message.embeds) > 0 else "None",
                     "inline": "False"
                 }
             ]

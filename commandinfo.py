@@ -212,7 +212,8 @@ COMMAND_INFO = [
         ],
         "access":[
             "Member"
-        ]
+        ],
+        "inQuickList": False
     },
     {
         "name": "unmute",
@@ -278,17 +279,13 @@ COMMAND_INFO = [
         "aliases": [],
         "parameters": [
             {
-                "name": "user id/@user",
-                "description": "the id or the mention of the user that needs to be unbanned"
+                "name": "user id",
+                "description": "the id of the user that needs to be unbanned"
             }
         ],
         "usage":[
             {
                 "cmd": "!unban 12345678910",
-                "result": "unbans @user"
-            },
-            {
-                "cmd": "!unban @user",
                 "result": "unbans @user"
             }
         ],
@@ -664,11 +661,13 @@ COMMAND_INFO = [
             {
                 "name": "[wikiPageN]",
                 "description": "if acceptable in the context, the nth wiki page to get"
-            },
+            }
+        ],
+        "flags": [
             {
-                "name": "flag: -multiple",
-                "description": "specifies you are retrieving multiple page links/summaries"
-            },
+                "name": "multiple",
+                "description": "specifies each term is a different page title, and you are expecting multiple URLs"
+            }
         ],
         "usage":[
             {
@@ -1021,6 +1020,20 @@ COMMAND_INFO = [
         "inQuickList": False
     },
     {
+        "name": "forums",
+        "description": "returns the link to the Scioly.org forums",
+        "aliases": [],
+        "parameters": [],
+        "usage": [{
+            "cmd": "!forums",
+            "result": "https://scioly.org/forums"
+        }],
+        "access": [
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
         "name": "exchange",
         "description": "returns the link to the Scioly.org Test Exchange",
         "aliases": ["tests", "testexchange"],
@@ -1062,6 +1075,304 @@ COMMAND_INFO = [
             {
                 "cmd": "!eid :test_emoji:",
                 "result": "prints the ID of :test_emoji:"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "latex",
+        "description": "produces a LaTeX (math-formatted) output based on given code",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "code",
+                "description": "LaTeX code to run"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!latex 2 + 2 = 4",
+                "result": "Prints `2 + 2 = 4` in LaTeX"
+            },
+            {
+                "cmd": "!latex 4 - 1 = 3 \\text{ quick maffs}",
+                "result": "Prints `$4 - 1 = 3 quick maffs` in LaTeX"
+            }
+        ],
+        "access": [
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "tournament",
+        "description": "allows the user to add/remove themselves from tournament channels, or request new channels",
+        "aliases": ["tournaments", "tc"],
+        "parameters": [
+            {
+                "name": "name1",
+                "description": "the channel name of the tournament to toggle/request"
+            },
+            {
+                "name": "[name2]",
+                "description": "the optional channel name of the second tournament to toggle/request"
+            },
+            {
+                "name": "[name_n]",
+                "description": "the optional channel name of the nth tournament to toggle/request"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!tournament mit",
+                "result": "toggles the #mit channel for the user"
+            },
+            {
+                "cmd": "!tournament all",
+                "result": "toggles all tournament channels for the user"
+            },
+            {
+                "cmd": "!tournament mit new-tourney",
+                "result": "toggles the #mit channel for the user and requests a #new-tourney channel"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": True
+    },
+    {
+        "name": "tla",
+        "description": "allows staff to add tournament names to the tournament list",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "name",
+                "description": "the channel name to add to the list"
+            },
+            {
+                "name": "uid",
+                "description": "the ID of the user who requested the channel"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!tla new-tourney 1234567890",
+                "result": "adds the `#new-tourney` channel to the tournaments list in `1234567890`'s name"
+            },
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "tlr",
+        "description": "allows staff to remove tournament names from the tournament list",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "name",
+                "description": "the channel name to add to the list"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!tlr new-tourney",
+                "result": "removes the `#new-tourney` channel from the tournaments list"
+            },
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "vc",
+        "description": "creates/deletes a voice channel based on the current text channel",
+        "aliases": [],
+        "parameters": [],
+        "usage":[
+            {
+                "cmd": "!vc",
+                "result": "closes/opens a new voice channel for the current channel"
+            },
+        ],
+        "access":[
+            "Administrator",
+            "Global Moderator",
+            "Wiki/Gallery Moderator"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "resultstemplate",
+        "description": "makes a `Full results template` template for copying to the wiki based on Scilympiad results",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "url",
+                "description": "the results URL"
+            }
+        ],
+        "usage":[
+            {
+                "cmd": "!resultstemplate scilympiad.com/results/...",
+                "result": "makes a template based on the results at the given link"
+            },
+        ],
+        "access":[
+            "Member",
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "rule",
+        "description": "shows a specified rule",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "num",
+                "description": "the rule num to show"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!rule 1",
+                "result": "shows rule 1"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "graphscilympiad",
+        "description": "makes a point graph of Scilympiad results",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "url",
+                "description": "the URL of the results"
+            },
+            {
+                "name": "title",
+                "description": "the title of the graph"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!graphscilympiad https://scilympiad.com/bearso/Info/Results/907e1af2-0c19-4be6-ad87-a5b52e140bf1 '2021 BEARSO Final Points - Division C'",
+                "result": "makes a graph of the 2021 BEARSO Division C results"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "tag",
+        "description": "uses a tag (a pre-determined message that is attached to a specific keyword)",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "name",
+                "description": "the name of the tag to pull"
+            },
+        ],
+        "usage": [
+            {
+                "cmd": "!tag jam",
+                "result": "pulls the `jam` tag"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "magic8ball",
+        "description": "rolls the magic 8 ball",
+        "aliases": [],
+        "parameters": [],
+        "usage": [
+            {
+                "cmd": "!magic8ball",
+                "result": "rolls the magic 8 ball once"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "userfromid",
+        "description": "gets the user with the specified ID",
+        "aliases": ["ufi"],
+        "parameters": [
+            {
+                "name": "id",
+                "description": "the id of the user to get"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!userfromid 1234567890",
+                "result": "returns the user (mentions them)"
+            }
+        ],
+        "access":[
+            "Wiki/Gallery Moderator",
+            "Global Moderator",
+            "Administrator",
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "info",
+        "description": "shows information about the server",
+        "aliases": [],
+        "parameters": [],
+        "usage": [
+            {
+                "cmd": "!info",
+                "result": "shows info about the server"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
+    },
+    {
+        "name": "xkcd",
+        "description": "shows an xkcd comic",
+        "aliases": [],
+        "parameters": [
+            {
+                "name": "num",
+                "description": "the number of the xkcd comic to show"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!xkcd",
+                "result": "shows a random xkcd comic"
+            },
+            {
+                "cmd": "!xkcd 2000",
+                "result": "shows xkcd comic #2000"
             }
         ],
         "access":[
