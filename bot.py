@@ -1382,7 +1382,6 @@ async def unban(ctx, member:discord.User=None):
     if member == None:
         await ctx.channel.send("Please give either a user ID or mention a user.")
         return
-    invite = await ctx.channel.create_invite(max_age = 86400) # ngl idk wat's the pt of this if we can't send DMs to the user
     await ctx.guild.unban(member)
     await ctx.channel.send(f"Inverse ban hammer applied, user unbanned. Please remember that I cannot force them to re-join the server, they must join themselves.")
 
