@@ -1379,5 +1379,34 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": False
+    },
+    {
+        "name": "rand",
+        "description": "Generates a random number",
+        "aliases": ["random"],
+        "parameters": [
+            {
+                "name": "min",
+                "description": "the lower bound (inclusive)"
+            },
+            {
+                "name": "max",
+                "description": "the upper bound (inclusive)"
+            }
+        ],
+        "usage": [
+            {
+                "cmd": "!rand",
+                "result": "Generates a random number in the interval [1, 10]"
+            },
+            {
+                "cmd": "!rand 50 100",
+                "result": "Generates a random number in the interval [50, 100]"
+            }
+        ],
+        "access":[
+            "Member"
+        ],
+        "inQuickList": False
     }
 ]
