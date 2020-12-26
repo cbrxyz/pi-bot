@@ -143,11 +143,6 @@ async def isBear(ctx):
 async def isStaff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
-    # wmRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
-    # gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
-    # aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
-    # vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
-    # if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
     vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
     staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
     return vipRole in member.roles or staffRole in member.roles
