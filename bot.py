@@ -2010,13 +2010,11 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
 
 @bot.command()
 @commands.check(isStaff)
-async def unban(ctx, id:int=0):
+async def unban(ctx, member:discord.User=None):
     """Unbans a user."""
-    if id == 0:
-        await ctx.channel.send("Please give a user ID.")
+    if member == None:
+        await ctx.channel.send("Please give either a user ID or mention a user.")
         return
-    invite = await ctx.channel.create_invite(max_age = 86400)
-    member = await bot.fetch_user(id)
     await ctx.guild.unban(member)
     await ctx.channel.send(f"Inverse ban hammer applied, user unbanned. Please remember that I cannot force them to re-join the server, they must join themselves.")
 
