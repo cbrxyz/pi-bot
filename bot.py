@@ -466,7 +466,7 @@ async def tournament(ctx, *args):
             await updateTournamentList()
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def tla(ctx, iden, uid):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
@@ -479,7 +479,7 @@ async def tla(ctx, iden, uid):
     return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def tlr(ctx, iden):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
@@ -590,7 +590,7 @@ async def updateTournamentList():
             await tourneyChannel.send(embed=e)
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def vc(ctx):
     server = ctx.message.guild
     if ctx.message.channel.category.name == CATEGORY_TOURNAMENTS:
@@ -634,7 +634,7 @@ async def vc(ctx):
         return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def getVariable(ctx, var):
     """Fetches a local variable."""
     if ctx.message.channel.id != 724125340733145140:
@@ -656,7 +656,7 @@ async def eat(ctx, user):
     await ctx.send(message)
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def refresh(ctx):
     """Refreshes data from the sheet."""
     await updateTournamentList()
@@ -694,7 +694,7 @@ async def getuserid(ctx, user=None):
         await ctx.send(f"The user ID of <@{user}> is `{user}`.")
 
 @bot.command(aliases=["ufi"])
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def userfromid(ctx, iden:int):
     """Mentions a user with the given ID."""
     user = bot.get_user(iden)
@@ -799,7 +799,7 @@ async def coach(ctx):
         await ctx.send("Successfully gave you the Coach role, and sent a verification message to staff.")
 
 @bot.command(aliases=["slow", "sm"])
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def slowmode(ctx, arg:int=None):
     if arg == None:
         if ctx.channel.slowmode_delay == 0:
@@ -940,7 +940,7 @@ async def tag(ctx, name):
     return await ctx.send("Tag not found.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def lock(ctx):
     """Locks a channel to Member access."""
     member = ctx.message.author
@@ -966,7 +966,7 @@ async def lock(ctx):
     await ctx.send("Locked the channel to Member access.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def unlock(ctx):
     """Unlocks a channel to Member access."""
     member = ctx.message.author
@@ -1452,7 +1452,7 @@ async def censor(message):
     await wh.delete()
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def kick(ctx, user:discord.Member, reason:str=False):
     """Kicks a user for the specified reason."""
     if reason == False:
@@ -1463,7 +1463,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
     await ctx.send("The user was kicked.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def met(ctx):
     """Runs Pi-Bot's Most Edits Table"""
     msg1 = await ctx.send("Attemping to run the Most Edits Table.")
@@ -1501,7 +1501,7 @@ async def met(ctx):
     await ctx.send(file=file, embed=embed)
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     """Helps to create an embed to be sent to a channel."""
     jso = json.loads(jsonInput)
@@ -1901,7 +1901,7 @@ async def count(ctx):
     await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def exalt(ctx, user):
     """Exalts a user."""
     member = ctx.message.author
@@ -1912,7 +1912,7 @@ async def exalt(ctx, user):
     await ctx.send(f"Successfully exalted. Congratulations {user}! :tada: :tada:")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def unexalt(ctx, user):
     """Unexalts a user."""
     member = ctx.message.author
@@ -1923,7 +1923,7 @@ async def unexalt(ctx, user):
     await ctx.send(f"Successfully unexalted.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def mute(ctx, user:discord.Member, *args):
     """
     Mutes a user.
@@ -1974,7 +1974,7 @@ async def _mute(ctx, user:discord.Member, time: str):
     await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} EST`.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def unmute(ctx, user):
     """Unmutes a user."""
     member = ctx.message.author
@@ -1985,7 +1985,7 @@ async def unmute(ctx, user):
     await ctx.send(f"Successfully unmuted {user}.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def ban(ctx, member:discord.User=None, reason=None, *args):
     """Bans a user."""
     time = " ".join(args)
@@ -2009,7 +2009,7 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
     await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} EST`.")
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def unban(ctx, id:int=0):
     """Unbans a user."""
     if id == 0:
@@ -2153,7 +2153,7 @@ async def stopnuke(ctx):
     STOPNUKE = False
 
 @bot.command()
-@commands.has_any_role(ROLE_STAFF, ROLE_VIP)
+@commands.check(isStaff)
 async def clrreact(ctx, msg: discord.Message, *args: discord.Member):
     """
     Clears all reactions from a given message.
