@@ -181,7 +181,6 @@ def notBlacklistedChannel(blacklist):
         server = bot.get_guild(SERVER_ID)
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
-                # print("DENIED")
                 raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
         return True
     
