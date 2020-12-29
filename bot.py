@@ -51,6 +51,7 @@ ROLE_WM = "Wiki/Gallery Moderator"
 ROLE_GM = "Global Moderator"
 ROLE_AD = "Administrator"
 ROLE_VIP = "VIP"
+ROLE_STAFF = "Staff"
 ROLE_BT = "Bots"
 ROLE_LH = "Launch Helper"
 ROLE_AT = "All Tournaments"
@@ -142,11 +143,9 @@ async def isBear(ctx):
 async def isStaff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
-    wmRole = discord.utils.get(member.guild.roles, name=ROLE_WM)
-    gmRole = discord.utils.get(member.guild.roles, name=ROLE_GM)
-    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
     vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
-    if wmRole in member.roles or gmRole in member.roles or aRole in member.roles or vipRole in member.roles: return True
+    staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
+    return vipRole in member.roles or staffRole in member.roles
 
 async def isLauncher(ctx):
     """Checks to see if the user is a launch helper."""
@@ -800,6 +799,7 @@ async def coach(ctx):
         await ctx.send("Successfully gave you the Coach role, and sent a verification message to staff.")
 
 @bot.command(aliases=["slow", "sm"])
+@commands.check(isStaff)
 async def slowmode(ctx, arg:int=None):
     if arg == None:
         if ctx.channel.slowmode_delay == 0:
@@ -1043,16 +1043,16 @@ async def info(ctx):
     emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
     channel_percentage = round(channel_count/500 * 100, 3)
     role_percenatege = round(role_count/250 * 100, 3)
-    
+
     staff_member = await isStaff(ctx)
     fields = [
             {
                 "name": "Basic Information",
                 "value": (
-                    f"**Creation Date:** {creation_date}\n" + 
+                    f"**Creation Date:** {creation_date}\n" +
                     f"**ID:** {iden}\n" +
                     f"**Animated Icon:** {animated_icon}\n" +
-                    f"**Banner URL:** {banner}\n" + 
+                    f"**Banner URL:** {banner}\n" +
                     f"**Splash URL:** {splash}\n" +
                     f"**Discovery Splash URL:** {discovery_splash_url}"
                 ),
@@ -1074,11 +1074,11 @@ async def info(ctx):
                 "value": (
                     f"**Owner:** {owner}\n" +
                     f"**MFA Level:** {mfa_level}\n" +
-                    f"**Verification Level:** {verification_level}\n" + 
+                    f"**Verification Level:** {verification_level}\n" +
                     f"**Content Filter:** {content_filter}\n" +
                     f"**Default Notifications:** {default_notifs}\n" +
-                    f"**Features:** {features}\n" + 
-                    f"**Bitrate Limit:** {bitrate_limit}\n" + 
+                    f"**Features:** {features}\n" +
+                    f"**Bitrate Limit:** {bitrate_limit}\n" +
                     f"**Filesize Limit:** {filesize_limit} MB"
                 ),
                 "inline": False
@@ -1086,7 +1086,7 @@ async def info(ctx):
             {
                 "name": "Channels",
                 "value": (
-                    f"**Public Updates Channel:** {public_updates_channel}\n" + 
+                    f"**Public Updates Channel:** {public_updates_channel}\n" +
                     f"**System Channel:** {system_channel}\n" +
                     f"**Rules Channel:** {rules_channel}\n" +
                     f"**Text Channel Count:** {text_channel_count}\n" +
@@ -2315,7 +2315,7 @@ async def on_message(message):
         await autoReport("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-    
+
     # Do not treat messages with only exclamations as command
     if message.content.count(BOT_PREFIX) != len(message.content):
         await bot.process_commands(message)
