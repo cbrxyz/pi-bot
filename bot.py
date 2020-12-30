@@ -221,7 +221,7 @@ def _checkWhitelistChannel(ctx, whitelist):
     for c in whitelist:
         if channel == discord.utils.get(server.text_channels, name=c):
             return True
-        return False
+    return False
     
 def _isNotMember(ctx):
     member = ctx.message.author
