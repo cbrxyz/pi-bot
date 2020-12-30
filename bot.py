@@ -209,8 +209,8 @@ def checkDM():
         except discord.HTTPException:
             pass
         return True
-    return commands.check(predicate)
     
+    return commands.check(predicate)
 
 ##############
 # CONSTANTS
