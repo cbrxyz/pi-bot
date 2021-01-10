@@ -1175,7 +1175,7 @@ async def report(ctx, *args):
 async def autoReport(reason, color, message):
     """Allows Pi-Bot to generate a report by himself."""
     server = bot.get_guild(SERVER_ID)
-    reportsChannel = discord.utils.get(server.text_channels, name="reports")
+    reportsChannel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
     embed = assembleEmbed(
         title=f"{reason} (message from Pi-Bot)",
         webcolor=color,
