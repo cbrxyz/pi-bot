@@ -73,22 +73,6 @@ COMMAND_INFO = [
         "inQuickList": True
     },
     {
-        "name": "nofish",
-        "description": "takes away all of bear's fish",
-        "aliases": [],
-        "parameters": [],
-        "usage":[
-            {
-                "cmd": "!nofish",
-                "result": "removes all of bear's fish"
-            }
-        ],
-        "access":[
-            "Member"
-        ],
-        "inQuickList": False
-    },
-    {
         "name": "help",
         "description": "provides help for a command",
         "aliases": [],

@@ -1680,11 +1680,6 @@ async def fish(ctx):
         fishNow = round(pow(fishNow, 0.5))
         return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish. \n:sob:\n:sob:\n:sob:")
 
-@bot.command()
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
-async def nofish(ctx):
-    """DEPRECATED - Removes all of bear's fish."""
-    await ctx.send("`!nofish` no longer exists! Please use `!stealfish` instead.")
 
 @bot.command(aliases=["badbear"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
