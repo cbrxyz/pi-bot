@@ -1150,9 +1150,10 @@ async def report(ctx, *args):
     """Creates a report that is sent to staff members."""
     if len(args) > 1:
         return await ctx.send("Please report one message wrapped in double quotes. (`!report \"Message!\"`)")
+    server = bot.get_guild(SERVER_ID)
+    reportsChannel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
     message = args[0]
     poster = str(ctx.message.author)
-    reportsChannel = discord.utils.get(ctx.message.author.guild.text_channels, name="reports")
     embed = assembleEmbed(
         title=f"Report Received (using `!report`)",
         webcolor="red",
