@@ -83,6 +83,10 @@ CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
 CHANNEL_JOIN = "join-logs"
 
+# Channel IDs
+# (ideally should be either initailized on startup or done dynamically during command call rather than hardcoded)
+CHANNELID_REPORTS = 739596418762801213
+
 # Categories
 CATEGORY_TOURNAMENTS = "tournaments"
 CATEGORY_SO = "Science Olympiad"
@@ -2360,7 +2364,7 @@ async def on_message(message):
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id not in PI_BOT_IDS:
-        reportsChannel = bot.get_channel(739596418762801213)
+        reportsChannel = bot.get_channel(CHANNELID_REPORTS)
         if payload.message_id in REPORT_IDS:
             messageObj = await reportsChannel.fetch_message(payload.message_id)
             if payload.emoji.name == "\U0000274C":
