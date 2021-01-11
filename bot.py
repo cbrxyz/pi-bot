@@ -258,6 +258,17 @@ async def on_ready():
     manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
+    updateCount.start()
+    
+@tasks.loop(minutes=1)
+async def updateCount():
+    """Refreshes the censor list and stores variable backups."""
+    guild = bot.get_guild(SERVER_ID)
+    vc = discord.utils.get(guild.voice_channels, bitrate=8000)
+    mem_count = guild.member_count
+    print(vc)
+    await vc.edit(name=f"Member Count: {mem_count}")
+    print("Refreshed member count.")
 
 @tasks.loop(seconds=30.0)
 async def refreshSheet():
