@@ -528,6 +528,10 @@ COMMAND_INFO = [
                 "name": "footerText / footerUrl (in json)",
                 "description": "the footer text or url of the embed"
             },
+            {
+                "name": "asWebhook (in json)",
+                "description": "Displays embed as a webhook"
+            }
         ],
         "usage":[
             {
