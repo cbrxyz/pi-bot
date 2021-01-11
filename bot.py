@@ -264,7 +264,8 @@ async def on_ready():
 async def updateMemberCount():
     """Updates the member count shown on hidden VC"""
     guild = bot.get_guild(SERVER_ID)
-    vc = discord.utils.get(guild.voice_channels, bitrate=8000)
+    channel_prefix = "Member Count"
+    vc = discord.utils.find(lambda c: channel_prefix in c.name, guild.voice_channels)
     mem_count = guild.member_count
     await vc.edit(name=f"Member Count: {mem_count}")
     print("Refreshed member count.")
