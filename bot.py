@@ -266,7 +266,6 @@ async def updateMemberCount():
     guild = bot.get_guild(SERVER_ID)
     vc = discord.utils.get(guild.voice_channels, bitrate=8000)
     mem_count = guild.member_count
-    print(vc)
     await vc.edit(name=f"Member Count: {mem_count}")
     print("Refreshed member count.")
 
