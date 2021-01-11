@@ -258,10 +258,10 @@ async def on_ready():
     manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
-    updateCount.start()
+    updateMemberCount.start()
     
 @tasks.loop(minutes=1)
-async def updateCount():
+async def updateMemberCount():
     """Updates the member count shown on hidden VC"""
     guild = bot.get_guild(SERVER_ID)
     vc = discord.utils.get(guild.voice_channels, bitrate=8000)
