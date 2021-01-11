@@ -262,7 +262,7 @@ async def on_ready():
     
 @tasks.loop(minutes=1)
 async def updateCount():
-    """Refreshes the censor list and stores variable backups."""
+    """Updates the member count shown on hidden VC"""
     guild = bot.get_guild(SERVER_ID)
     vc = discord.utils.get(guild.voice_channels, bitrate=8000)
     mem_count = guild.member_count
