@@ -2445,12 +2445,14 @@ async def on_user_update(before, after):
 @bot.event
 async def on_raw_message_edit(payload):
     channel = bot.get_channel(payload.channel_id)
-    editedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_EDITEDM)
-    if channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM]:
+    guild = bot.get_guild(SERVER_ID) if channel.type == discord.ChannelType.private else channel.guild
+    editedChannel = discord.utils.get(guild.text_channels, name=CHANNEL_EDITEDM)
+    if channel.type != discord.ChannelType.private and channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]:
         return
     try:
         message = payload.cached_message
         msgNow = await channel.fetch_message(message.id)
+        channelName = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
         embed = assembleEmbed(
             title=":pencil: Edited Message",
             fields=[
@@ -2461,7 +2463,7 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "Channel",
-                    "value": message.channel.mention,
+                    "value": channelName,
                     "inline": "True"
                 },
                 {
