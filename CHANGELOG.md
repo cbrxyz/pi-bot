@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.5 - 2021-01-13
+### Fixed
+* Tournament list breaks if number of available tournaments decreases by a large margin (closes [#316](https://github.com/cbrxyz/pi-bot/issues/316))
+* `!fish` breaks if fish count gets too large (closes [#324](https://github.com/cbrxyz/pi-bot/issues/324))
+
 ## 4.5.4 - 2020-12-17
 ### Changed
 * `!beareats` now deletes original command message (closes [#304](https://github.com/cbrxyz/pi-bot/issues/304))

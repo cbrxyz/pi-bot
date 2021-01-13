@@ -596,6 +596,10 @@ async def updateTournamentList():
     hist = await tourneyChannel.history(oldest_first=True).flatten()
     if len(hist) != 0:
         # When the tourney channel already has embeds
+        if len(embeds) < len(hist):
+            messages = await tourneyChannel.history(oldest_first=True).flatten()
+            for m in messages[len(embeds):]:
+                await m.delete()
         count = 0
         async for m in tourneyChannel.history(oldest_first=True):
             await m.edit(embed=embeds[count])
@@ -603,10 +607,6 @@ async def updateTournamentList():
         if len(embeds) > len(hist):
             for e in embeds[len(hist):]:
                 await tourneyChannel.send(embed=e)
-        if len(embeds) < len(hist):
-            messages = await tourneyChannel.history(oldest_first=True).flatten()
-            for m in messages[len(embeds):]:
-                await m.delete()
     else:
         # If the tournament channel is being initialized for the first time
         pastMessages = await tourneyChannel.history(limit=100).flatten()
@@ -1664,9 +1664,9 @@ async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
     r = random.random()
-    if r > 0.99:
-        fishNow = pow(fishNow, 2)
-        return await ctx.send(f":tada:\n:tada:\n:tada:\nWow, you hit the jackbox! Bear's fish was squared! Bear now has {fishNow} fish! \n:tada:\n:tada:\n:tada:")
+    if len(str(fishNow)) > 1500:
+        fishNow = round(pow(fishNow, 0.5))
+        return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
     if r > 0.9:
         fishNow += 10
         return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fishNow} fish!")
