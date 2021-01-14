@@ -68,6 +68,7 @@ ROLE_MUTED = "Muted"
 ROLE_PRONOUN_HE = "He / Him / His"
 ROLE_PRONOUN_SHE = "She / Her / Hers"
 ROLE_PRONOUN_THEY = "They / Them / Theirs"
+ROLE_SELFMUTE = "Self Muted"
 
 # Channels
 CHANNEL_TOURNAMENTS = "tournaments"
@@ -82,6 +83,7 @@ CHANNEL_DELETEDM = "deleted-messages"
 CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
 CHANNEL_JOIN = "join-logs"
+CHANNEL_UNSELFMUTE = "un-self-mute"
 
 # Categories
 CATEGORY_TOURNAMENTS = "tournaments"
@@ -96,6 +98,8 @@ EMOJI_FAST_REVERSE = "\U000023EA"
 EMOJI_LEFT_ARROW = "\U00002B05"
 EMOJI_RIGHT_ARROW = "\U000027A1"
 EMOJI_FAST_FORWARD = "\U000023E9"
+EMOJI_UNSELFMUTE = "click_to_unmute"
+EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
 
 # Rules
 RULES = [
@@ -320,7 +324,8 @@ async def handleCron(string):
             server = bot.get_guild(SERVER_ID)
             member = server.get_member(int(iden))
             role = discord.utils.get(server.roles, name=ROLE_MUTED)
-            await member.remove_roles(role)
+            self_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+            await member.remove_roles(role, self_role)
             print(f"Unmuted user ID: {iden}")
         elif string.find("unstealfishban") != -1:
             iden = int(string.split(" ")[1])
@@ -1966,7 +1971,7 @@ async def mute(ctx, user:discord.Member, *args):
     :type *args: str
     """
     time = " ".join(args)
-    await _mute(ctx, user, time)
+    await _mute(ctx, user, time, self=False)
 
 @bot.command()
 async def selfmute(ctx, *args):
@@ -1980,9 +1985,9 @@ async def selfmute(ctx, *args):
     if await isStaff(ctx):
         return await ctx.send("Staff members can't self mute.")
     time = " ".join(args)
-    await _mute(ctx, user, time)
+    await _mute(ctx, user, time, self=True)
 
-async def _mute(ctx, user:discord.Member, time: str):
+async def _mute(ctx, user:discord.Member, time: str, self: bool):
     """
     Helper function for muting commands.
 
@@ -1995,7 +2000,11 @@ async def _mute(ctx, user:discord.Member, time: str):
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
         return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-    role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
+    role = None
+    if self:
+        role = discord.utils.get(user.guild.roles, name=ROLE_SELFMUTE)
+    else:
+        role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
     parsed = "indef"
     if time != "indef":
         parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
@@ -2355,6 +2364,19 @@ async def on_message(message):
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id not in PI_BOT_IDS:
+        if payload.emoji.name == EMOJI_UNSELFMUTE:
+            guild = bot.get_guild(payload.guild_id)
+            self_muted_role = discord.utils.get(guild.roles, name=ROLE_SELFMUTE)
+            un_self_mute_channel = discord.utils.get(guild.text_channels, name=CHANNEL_UNSELFMUTE)
+            member = payload.member
+            message = await un_self_mute_channel.fetch_message(payload.message_id)
+            if self_muted_role in member.roles:
+                await member.remove_roles(self_muted_role)
+            await message.clear_reactions()
+            await message.add_reaction(EMOJI_FULL_UNSELFMUTE)
+            for obj in CRON_LIST[:]:
+                if obj['do'] == f'unmute {payload.user_id}':
+                    CRON_LIST.remove(obj)
         reportsChannel = bot.get_channel(739596418762801213)
         if payload.message_id in REPORT_IDS:
             messageObj = await reportsChannel.fetch_message(payload.message_id)
@@ -2364,6 +2386,7 @@ async def on_raw_reaction_add(payload):
             if payload.emoji.name == "\U00002705":
                 print("Report handled.")
                 await messageObj.delete()
+            return
 
 @bot.event
 async def on_reaction_add(reaction, user):

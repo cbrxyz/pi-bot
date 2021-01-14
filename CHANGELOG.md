@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.6 - 2021-01-14
+### Added
+* Support for the "Self Muted" role
+* Option for users who self-muted to unmute through a reaction on a special message (closes [#325](https://github.com/cbrxyz/pi-bot/issues/325))
+
 ## 4.5.5 - 2021-01-13
 ### Fixed
 * Tournament list breaks if number of available tournaments decreases by a large margin (closes [#316](https://github.com/cbrxyz/pi-bot/issues/316))
