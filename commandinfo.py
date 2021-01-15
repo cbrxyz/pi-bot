@@ -354,12 +354,12 @@ COMMAND_INFO = [
     },
     {
         "name": "nukeuntil",
-        "description": "nukes up to but not including a specified message. Must be called in the same channel as the message.",
+        "description": "nukes up to but not including a specified message. Must be called in the same channel as the message. Only 1000 messages can be deleted at a time.",
         "aliases": [],
         "parameters": [
             {
                 "name": "message id",
-                "description": "the id of the message to delete up to"
+                "description": "the id of the message to delete up to (excluded)"
             }
         ],
         "usage":[
