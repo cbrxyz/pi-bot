@@ -2365,10 +2365,10 @@ async def on_raw_reaction_add(payload):
         reportsChannel = discord.utils.get(guild.text_channels, name=CHANNEL_REPORTS)
         if payload.message_id in REPORT_IDS:
             messageObj = await reportsChannel.fetch_message(payload.message_id)
-            if payload.emoji.name == "\U0000274C":
+            if payload.emoji.name == "\U0000274C": # :x:
                 print("Report cleared with no action.")
                 await messageObj.delete()
-            if payload.emoji.name == "\U00002705":
+            if payload.emoji.name == "\U00002705": # :white_check_mark:
                 print("Report handled.")
                 await messageObj.delete()
 
