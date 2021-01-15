@@ -262,6 +262,21 @@ async def on_ready():
     manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
+    updateMemberCount.start()
+    
+@tasks.loop(minutes=5)
+async def updateMemberCount():
+    """Updates the member count shown on hidden VC"""
+    guild = bot.get_guild(SERVER_ID)
+    channel_prefix = "Members"
+    vc = discord.utils.find(lambda c: channel_prefix in c.name, guild.voice_channels)
+    mem_count = guild.member_count
+    joined_today = len([m for m in guild.members if m.joined_at.date() == datetime.datetime.today().date()])
+    left_channel = discord.utils.get(guild.text_channels, name=CHANNEL_LEAVE)
+    left_messages = await left_channel.history(limit=200).flatten()
+    left_today = len([m for m in left_messages if m.created_at.date() == datetime.datetime.today().date()])
+    await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
+    print("Refreshed member count.")
 
 @tasks.loop(seconds=30.0)
 async def refreshSheet():
