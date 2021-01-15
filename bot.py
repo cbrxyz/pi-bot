@@ -2215,9 +2215,7 @@ async def nuke(ctx, count):
             return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
     await _nuke_countdown(ctx)
     if not STOPNUKE:
-        async for m in channel.history(limit=(int(count) + 13)):
-            if not m.pinned and not STOPNUKE:
-                await m.delete()
+        await channel.purge(limit=(int(count) + 13))
         msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
         await asyncio.sleep(5)
         await msg.delete()
@@ -2244,9 +2242,7 @@ async def nukeuntil(ctx, msgid):
     if channel == message.channel:
         await _nuke_countdown(ctx)
         if not STOPNUKE:
-            async for m in channel.history(after=message, oldest_first=False):
-                if not m.pinned and not STOPNUKE:
-                    await m.delete()
+            await channel.purge(limit=1000, after=message)
             msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
             await asyncio.sleep(5)
             await msg.delete()
