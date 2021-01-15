@@ -260,7 +260,7 @@ async def on_ready():
     changeBotStatus.start()
     updateMemberCount.start()
     
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=5)
 async def updateMemberCount():
     """Updates the member count shown on hidden VC"""
     guild = bot.get_guild(SERVER_ID)
