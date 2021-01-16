@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.8 - 2021-01-15
+### Changed
+* `!coach` now gives the user a link to the public Coach role application.
+
 ## 4.5.7 - 2021-01-15
 ### Added
 * Live member count channel for staff to monitor server (closes [#320](https://github.com/cbrxyz/pi-bot/issues/320))

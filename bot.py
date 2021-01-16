@@ -835,15 +835,7 @@ async def rule(ctx, num):
 @bot.command()
 async def coach(ctx):
     """Gives an account the coach role."""
-    await ctx.send("Giving you the Coach role...")
-    member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Coach")
-    if role in member.roles:
-        await ctx.send("Oops... you already have the Coach role. If it needs to be removed, please open a report using `!report \"message...\"`.")
-    else:
-        await member.add_roles(role)
-        await autoReport("Member Applied for Coach Role", "DarkCyan", f"{ctx.message.author.name} applied for the Coach role. Please verify that they are a coach.")
-        await ctx.send("Successfully gave you the Coach role, and sent a verification message to staff.")
+    await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
 
 @bot.command(aliases=["slow", "sm"])
 @commands.check(isStaff)
