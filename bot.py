@@ -2503,7 +2503,7 @@ async def on_raw_message_edit(payload):
                 }
             ]
         )
-        await editedChannel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        await editedChannel.send(embed=embed)
     except Exception as e:
         msgNow = await channel.fetch_message(payload.message_id)
         embed = assembleEmbed(
@@ -2556,7 +2556,7 @@ async def on_raw_message_edit(payload):
                 }
             ]
         )
-        await editedChannel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        await editedChannel.send(embed=embed)
 
 @bot.event
 async def on_raw_message_delete(payload):
@@ -2612,7 +2612,7 @@ async def on_raw_message_delete(payload):
                 }
             ]
         )
-        await deletedChannel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        await deletedChannel.send(embed=embed)
     except Exception as e:
         print(e)
         embed = assembleEmbed(
@@ -2630,7 +2630,7 @@ async def on_raw_message_delete(payload):
                 }
             ]
         )
-        await deletedChannel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        await deletedChannel.send(embed=embed)
 
 @bot.event
 async def on_command_error(ctx, error):
