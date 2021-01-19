@@ -2560,13 +2560,15 @@ async def on_raw_message_edit(payload):
 
 @bot.event
 async def on_raw_message_delete(payload):
-    if bot.get_channel(payload.channel_id).name in [CHANNEL_REPORTS, CHANNEL_DELETEDM]:
+    channel = bot.get_channel(payload.channel_id)
+    guild = bot.get_guild(SERVER_ID) if channel.type == discord.ChannelType.private else channel.guild
+    if channel.type != discord.ChannelType.private and channel.name in [CHANNEL_REPORTS, CHANNEL_DELETEDM]:
         print("Ignoring deletion event because of the channel it's from.")
         return
-    channel = bot.get_channel(payload.channel_id)
-    deletedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_DELETEDM)
+    deletedChannel = discord.utils.get(guild.text_channels, name=CHANNEL_DELETEDM)
     try:
         message = payload.cached_message
+        channelName = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
         embed = assembleEmbed(
             title=":fire: Deleted Message",
             fields=[
@@ -2577,7 +2579,7 @@ async def on_raw_message_delete(payload):
                 },
                 {
                     "name": "Channel",
-                    "value": message.channel.mention,
+                    "value": channelName,
                     "inline": "True"
                 },
                 {
