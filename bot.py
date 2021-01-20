@@ -68,6 +68,7 @@ ROLE_MUTED = "Muted"
 ROLE_PRONOUN_HE = "He / Him / His"
 ROLE_PRONOUN_SHE = "She / Her / Hers"
 ROLE_PRONOUN_THEY = "They / Them / Theirs"
+ROLE_SELFMUTE = "Self Muted"
 
 # Channels
 CHANNEL_TOURNAMENTS = "tournaments"
@@ -82,6 +83,7 @@ CHANNEL_DELETEDM = "deleted-messages"
 CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
 CHANNEL_JOIN = "join-logs"
+CHANNEL_UNSELFMUTE = "un-self-mute"
 
 # Categories
 CATEGORY_TOURNAMENTS = "tournaments"
@@ -96,6 +98,8 @@ EMOJI_FAST_REVERSE = "\U000023EA"
 EMOJI_LEFT_ARROW = "\U00002B05"
 EMOJI_RIGHT_ARROW = "\U000027A1"
 EMOJI_FAST_FORWARD = "\U000023E9"
+EMOJI_UNSELFMUTE = "click_to_unmute"
+EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
 
 # Rules
 RULES = [
@@ -258,6 +262,21 @@ async def on_ready():
     manage_welcome.start()
     storeVariables.start()
     changeBotStatus.start()
+    updateMemberCount.start()
+    
+@tasks.loop(minutes=5)
+async def updateMemberCount():
+    """Updates the member count shown on hidden VC"""
+    guild = bot.get_guild(SERVER_ID)
+    channel_prefix = "Members"
+    vc = discord.utils.find(lambda c: channel_prefix in c.name, guild.voice_channels)
+    mem_count = guild.member_count
+    joined_today = len([m for m in guild.members if m.joined_at.date() == datetime.datetime.today().date()])
+    left_channel = discord.utils.get(guild.text_channels, name=CHANNEL_LEAVE)
+    left_messages = await left_channel.history(limit=200).flatten()
+    left_today = len([m for m in left_messages if m.created_at.date() == datetime.datetime.today().date()])
+    await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
+    print("Refreshed member count.")
 
 @tasks.loop(seconds=30.0)
 async def refreshSheet():
@@ -320,7 +339,8 @@ async def handleCron(string):
             server = bot.get_guild(SERVER_ID)
             member = server.get_member(int(iden))
             role = discord.utils.get(server.roles, name=ROLE_MUTED)
-            await member.remove_roles(role)
+            self_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+            await member.remove_roles(role, self_role)
             print(f"Unmuted user ID: {iden}")
         elif string.find("unstealfishban") != -1:
             iden = int(string.split(" ")[1])
@@ -596,6 +616,10 @@ async def updateTournamentList():
     hist = await tourneyChannel.history(oldest_first=True).flatten()
     if len(hist) != 0:
         # When the tourney channel already has embeds
+        if len(embeds) < len(hist):
+            messages = await tourneyChannel.history(oldest_first=True).flatten()
+            for m in messages[len(embeds):]:
+                await m.delete()
         count = 0
         async for m in tourneyChannel.history(oldest_first=True):
             await m.edit(embed=embeds[count])
@@ -603,10 +627,6 @@ async def updateTournamentList():
         if len(embeds) > len(hist):
             for e in embeds[len(hist):]:
                 await tourneyChannel.send(embed=e)
-        if len(embeds) < len(hist):
-            messages = await tourneyChannel.history(oldest_first=True).flatten()
-            for m in messages[len(embeds):]:
-                await m.delete()
     else:
         # If the tournament channel is being initialized for the first time
         pastMessages = await tourneyChannel.history(limit=100).flatten()
@@ -815,15 +835,7 @@ async def rule(ctx, num):
 @bot.command()
 async def coach(ctx):
     """Gives an account the coach role."""
-    await ctx.send("Giving you the Coach role...")
-    member = ctx.message.author
-    role = discord.utils.get(member.guild.roles, name="Coach")
-    if role in member.roles:
-        await ctx.send("Oops... you already have the Coach role. If it needs to be removed, please open a report using `!report \"message...\"`.")
-    else:
-        await member.add_roles(role)
-        await autoReport("Member Applied for Coach Role", "DarkCyan", f"{ctx.message.author.name} applied for the Coach role. Please verify that they are a coach.")
-        await ctx.send("Successfully gave you the Coach role, and sent a verification message to staff.")
+    await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
 
 @bot.command(aliases=["slow", "sm"])
 @commands.check(isStaff)
@@ -1665,9 +1677,9 @@ async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
     r = random.random()
-    if r > 0.99:
-        fishNow = pow(fishNow, 2)
-        return await ctx.send(f":tada:\n:tada:\n:tada:\nWow, you hit the jackbox! Bear's fish was squared! Bear now has {fishNow} fish! \n:tada:\n:tada:\n:tada:")
+    if len(str(fishNow)) > 1500:
+        fishNow = round(pow(fishNow, 0.5))
+        return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
     if r > 0.9:
         fishNow += 10
         return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fishNow} fish!")
@@ -1681,11 +1693,6 @@ async def fish(ctx):
         fishNow = round(pow(fishNow, 0.5))
         return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish. \n:sob:\n:sob:\n:sob:")
 
-@bot.command()
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
-async def nofish(ctx):
-    """DEPRECATED - Removes all of bear's fish."""
-    await ctx.send("`!nofish` no longer exists! Please use `!stealfish` instead.")
 
 @bot.command(aliases=["badbear"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
@@ -1972,7 +1979,7 @@ async def mute(ctx, user:discord.Member, *args):
     :type *args: str
     """
     time = " ".join(args)
-    await _mute(ctx, user, time)
+    await _mute(ctx, user, time, self=False)
 
 @bot.command()
 async def selfmute(ctx, *args):
@@ -1986,9 +1993,9 @@ async def selfmute(ctx, *args):
     if await isStaff(ctx):
         return await ctx.send("Staff members can't self mute.")
     time = " ".join(args)
-    await _mute(ctx, user, time)
+    await _mute(ctx, user, time, self=True)
 
-async def _mute(ctx, user:discord.Member, time: str):
+async def _mute(ctx, user:discord.Member, time: str, self: bool):
     """
     Helper function for muting commands.
 
@@ -2001,7 +2008,11 @@ async def _mute(ctx, user:discord.Member, time: str):
         return await ctx.send("Hey! You can't mute me!!")
     if time == None:
         return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-    role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
+    role = None
+    if self:
+        role = discord.utils.get(user.guild.roles, name=ROLE_SELFMUTE)
+    else:
+        role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
     parsed = "indef"
     if time != "indef":
         parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
@@ -2363,6 +2374,19 @@ async def on_raw_reaction_add(payload):
     if payload.user_id not in PI_BOT_IDS:
         guild = bot.get_guild(payload.guild_id)
         reportsChannel = discord.utils.get(guild.text_channels, name=CHANNEL_REPORTS)
+        if payload.emoji.name == EMOJI_UNSELFMUTE:
+            guild = bot.get_guild(payload.guild_id)
+            self_muted_role = discord.utils.get(guild.roles, name=ROLE_SELFMUTE)
+            un_self_mute_channel = discord.utils.get(guild.text_channels, name=CHANNEL_UNSELFMUTE)
+            member = payload.member
+            message = await un_self_mute_channel.fetch_message(payload.message_id)
+            if self_muted_role in member.roles:
+                await member.remove_roles(self_muted_role)
+            await message.clear_reactions()
+            await message.add_reaction(EMOJI_FULL_UNSELFMUTE)
+            for obj in CRON_LIST[:]:
+                if obj['do'] == f'unmute {payload.user_id}':
+                    CRON_LIST.remove(obj)
         if payload.message_id in REPORT_IDS:
             messageObj = await reportsChannel.fetch_message(payload.message_id)
             if payload.emoji.name == "\U0000274C": # :x:
@@ -2371,6 +2395,7 @@ async def on_raw_reaction_add(payload):
             if payload.emoji.name == "\U00002705": # :white_check_mark:
                 print("Report handled.")
                 await messageObj.delete()
+            return
 
 @bot.event
 async def on_reaction_add(reaction, user):
