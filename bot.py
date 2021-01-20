@@ -1156,11 +1156,12 @@ async def info(ctx):
 @bot.command(aliases=["r"])
 async def report(ctx, *args):
     """Creates a report that is sent to staff members."""
-    if len(args) > 1:
-        return await ctx.send("Please report one message wrapped in double quotes. (`!report \"Message!\"`)")
+    server = bot.get_guild(SERVER_ID)
+    reportsChannel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
     message = args[0]
+    if len(args) > 1:
+        message = ' '.join(args)
     poster = str(ctx.message.author)
-    reportsChannel = discord.utils.get(ctx.message.author.guild.text_channels, name="reports")
     embed = assembleEmbed(
         title=f"Report Received (using `!report`)",
         webcolor="red",
@@ -1182,7 +1183,7 @@ async def report(ctx, *args):
 async def autoReport(reason, color, message):
     """Allows Pi-Bot to generate a report by himself."""
     server = bot.get_guild(SERVER_ID)
-    reportsChannel = discord.utils.get(server.text_channels, name="reports")
+    reportsChannel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
     embed = assembleEmbed(
         title=f"{reason} (message from Pi-Bot)",
         webcolor=color,
@@ -2371,6 +2372,8 @@ async def on_message(message):
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id not in PI_BOT_IDS:
+        guild = bot.get_guild(payload.guild_id)
+        reportsChannel = discord.utils.get(guild.text_channels, name=CHANNEL_REPORTS)
         if payload.emoji.name == EMOJI_UNSELFMUTE:
             guild = bot.get_guild(payload.guild_id)
             self_muted_role = discord.utils.get(guild.roles, name=ROLE_SELFMUTE)
@@ -2384,13 +2387,12 @@ async def on_raw_reaction_add(payload):
             for obj in CRON_LIST[:]:
                 if obj['do'] == f'unmute {payload.user_id}':
                     CRON_LIST.remove(obj)
-        reportsChannel = bot.get_channel(739596418762801213)
         if payload.message_id in REPORT_IDS:
             messageObj = await reportsChannel.fetch_message(payload.message_id)
-            if payload.emoji.name == "\U0000274C":
+            if payload.emoji.name == "\U0000274C": # :x:
                 print("Report cleared with no action.")
                 await messageObj.delete()
-            if payload.emoji.name == "\U00002705":
+            if payload.emoji.name == "\U00002705": # :white_check_mark:
                 print("Report handled.")
                 await messageObj.delete()
             return
