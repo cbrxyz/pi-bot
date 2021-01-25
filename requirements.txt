@@ -10,7 +10,7 @@ markovify==0.8.0
 schedule==0.6.0
 wikitextparser==0.44.0
 tabulate==0.8.7
-numpy==1.18.0
+numpy==1.18.5
 matplotlib==3.3.3
 dateparser==0.7.6
 wikipedia==1.4.0
