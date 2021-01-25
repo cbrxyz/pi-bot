@@ -37,6 +37,8 @@ from commands import getList, getQuickList, getHelp
 from lists import getStateList
 import xkcd as xkcd_module # not to interfere with xkcd method
 from commanderrors import CommandNotAllowedInChannel
+from commanderrors import CommandNotInvokedInBotSpam
+from commanderrors import NukeTooLowPerms
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -184,7 +186,7 @@ def notBlacklistedChannel(blacklist):
         server = bot.get_guild(SERVER_ID)
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
-                raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
+                raise CommandNotAllowedInChannel(channel, f"Command was invoked in a blacklisted channel: {channel}.")
         return True
     
     return commands.check(predicate)
@@ -192,14 +194,38 @@ def notBlacklistedChannel(blacklist):
 def isWhitelistedChannel(whitelist):
     """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
     async def predicate(ctx):
-        channel = ctx.message.channel
-        server = bot.get_guild(SERVER_ID)
-        for c in whitelist:
-            if channel == discord.utils.get(server.text_channels, name=c):
-                return True
-        raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
+        if not(_checkWhitelistChannel(ctx, whitelist)):
+            raise CommandNotAllowedInChannel(channel, f"Command was invoked in a non-whitelisted channel: {channel}.")
+        return True
     
     return commands.check(predicate)
+
+def _checkWhitelistChannel(ctx, whitelist):
+    channel = ctx.message.channel
+    server = bot.get_guild(SERVER_ID)
+    for c in whitelist:
+        if channel == discord.utils.get(server.text_channels, name=c):
+            return True
+    return False
+    
+def _isNotMember(ctx):
+    member = ctx.message.author
+    mrRole = discord.utils.get(member.guild.roles, name=ROLE_MR)
+    return mrRole != member.roles[-1]
+    
+def isChannelBotSpam():
+    async def predicate(ctx):
+        if _isNotMember(ctx) or _checkWhitelistChannel(ctx, [CHANNEL_BOTSPAM]):
+            return True
+        raise CommandNotInvokedInBotSpam(channel, ctx.message, f"A bot-spam only command was invoked in {channel}.")
+    return commands.check(predicate)
+    
+async def nukeCheckPerms(ctx):
+    hasPerms = await isStaff(ctx) or (await isLauncher(ctx) and _checkWhitelistChannel(ctx, [CHANNEL_WELCOME]))
+    print(hasPerms)
+    if hasPerms:
+        return True
+    raise NukeTooLowPerms("User has too low perms for nuking messages.")
 
 ##############
 # CONSTANTS
@@ -454,6 +480,7 @@ async def pullPrevInfo():
     print("Fetched previous variables.")
 
 @bot.command(aliases=["tc", "tourney", "tournaments"])
+@isChannelBotSpam()
 async def tournament(ctx, *args):
     member = ctx.message.author
     newArgs = list(args)
@@ -712,21 +739,25 @@ async def refresh(ctx):
         await ctx.send(":warning: Unsuccessfully refreshed data from sheet.")
 
 @bot.command(aliases=["gci", "cid", "channelid"])
+@isChannelBotSpam()
 async def getchannelid(ctx):
     """Gets the channel ID of the current channel."""
     await ctx.send("Hey <@" + str(ctx.message.author.id) + ">! The channel ID is `" + str(ctx.message.channel.id) + "`. :)")
 
 @bot.command(aliases=["gei", "eid"])
+@isChannelBotSpam()
 async def getemojiid(ctx, emoji: discord.Emoji):
     """Gets the ID of the given emoji."""
     return await ctx.send(f"{emoji} - `{emoji}`")
 
 @bot.command(aliases=["rid"])
+@isChannelBotSpam()
 async def getroleid(ctx, name):
     role = discord.utils.get(ctx.message.author.guild.roles, name=name)
     return await ctx.send(f"`{role.mention}`")
 
 @bot.command(aliases=["ui"])
+@isChannelBotSpam()
 async def getuserid(ctx, user=None):
     """Gets the user ID of the caller or another user."""
     if user == None:
@@ -746,6 +777,7 @@ async def userfromid(ctx, iden:int):
     await ctx.send(user.mention)
 
 @bot.command(aliases=["hi"])
+@isChannelBotSpam()
 async def hello(ctx):
     """Simply says hello. Used for testing the bot."""
     await ctx.send("Well, hello there.")
@@ -833,6 +865,7 @@ async def rule(ctx, num):
     return await ctx.send(f"**Rule {num}:**\n> {rule}")
 
 @bot.command()
+@isChannelBotSpam()
 async def coach(ctx):
     """Gives an account the coach role."""
     await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
@@ -855,6 +888,7 @@ async def slowmode(ctx, arg:int=None):
             await ctx.send(f"Removed slowmode.")
 
 @bot.command(aliases=["state"])
+@isChannelBotSpam()
 async def states(ctx, *args):
     """Assigns someone with specific states."""
     newArgs = [str(arg).lower() for arg in args]
@@ -947,6 +981,7 @@ async def states(ctx, *args):
     await ctx.send(stateRes)
 
 @bot.command()
+@isChannelBotSpam()
 async def games(ctx):
     """Removes or adds someone to the games channel."""
     jbcObj = discord.utils.get(ctx.message.author.guild.text_channels, name=CHANNEL_GAMES)
@@ -1035,6 +1070,7 @@ async def unlock(ctx):
     await ctx.send("Unlocked the channel to Member access. Please check if permissions need to be synced.")
 
 @bot.command()
+@isChannelBotSpam()
 async def info(ctx):
     """Gets information about the Discord server."""
     server = ctx.message.guild
@@ -1199,6 +1235,7 @@ async def autoReport(reason, color, message):
     await message.add_reaction("\U0000274C")
 
 @bot.command()
+@isChannelBotSpam()
 async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
     temp = tempFormat.lower() in ["y", "yes", "true"]
     await ctx.send(
@@ -1234,6 +1271,7 @@ async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
     return await ctx.send("Attempted to graph.")
 
 @bot.command()
+@isChannelBotSpam()
 async def graphscilympiad(ctx, url, title):
     points = await getPoints(url)
     await _graph(points, title, "graph1.svg")
@@ -1255,6 +1293,7 @@ async def _graph(points, graph_title, title):
     await asyncio.sleep(2)
 
 @bot.command()
+@isChannelBotSpam()
 async def resultstemplate(ctx, url):
     if url.find("scilympiad.com") == -1:
         return await ctx.send("The URL must be a Scilympiad results link.")
@@ -1266,6 +1305,7 @@ async def resultstemplate(ctx, url):
     await ctx.send(file=file)
 
 @bot.command()
+@isChannelBotSpam()
 async def ping(ctx, command=None, *args):
     """Controls Pi-Bot's ping interface."""
     if command is None:
@@ -1364,6 +1404,7 @@ async def ping(ctx, command=None, *args):
         return await ctx.send("Sorry, I can't find that command.")
 
 @bot.command(aliases=["donotdisturb"])
+@isChannelBotSpam()
 async def dnd(ctx):
     member = ctx.message.author.id
     if any([True for u in PING_INFO if u['id'] == member]):
@@ -1432,6 +1473,7 @@ async def me(ctx, *args):
         await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
 
 @bot.command(aliases=["list"])
+@isChannelBotSpam()
 async def list_command(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
     if cmd == False: # for quick list of commands
@@ -1460,6 +1502,7 @@ async def list_command(ctx, cmd:str=False):
         await ctx.send(embed=list)
 
 @bot.command()
+@isChannelBotSpam()
 async def school(ctx, title, state):
     lists = await getSchoolListing(title, state)
     fields = []
@@ -1581,6 +1624,7 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     await channel.send(embed=embed)
 
 @bot.command(aliases=["event"])
+@isChannelBotSpam()
 async def events(ctx, *args):
     """Adds or removes event roles from a user."""
     if len(args) < 1:
@@ -1656,6 +1700,7 @@ async def getWords():
     CENSORED_WORDS = getCensor()
 
 @bot.command(aliases=["man"])
+@isChannelBotSpam()
 async def help(ctx, command:str=None):
     """Allows a user to request help for a command."""
     if command == None:
@@ -1673,6 +1718,7 @@ async def help(ctx, command:str=None):
 
 @bot.command(aliases=["feedbear"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def fish(ctx):
     """Gives a fish to bear."""
     global fishNow
@@ -1696,6 +1742,7 @@ async def fish(ctx):
 
 @bot.command(aliases=["badbear"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def stealfish(ctx):
     global fishNow
     member = ctx.message.author
@@ -1725,6 +1772,7 @@ async def stealfish(ctx):
 
 @bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def trout(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. Not so fast!")
@@ -1736,6 +1784,7 @@ async def trout(ctx, member:str=False):
 
 @bot.command(aliases=["givecookie"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def cookie(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
@@ -1747,12 +1796,14 @@ async def cookie(ctx, member:str=False):
 
 @bot.command()
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def treat(ctx):
     await ctx.send("You give bernard one treat!")
     await ctx.send("http://gph.is/11nJAH5")
 
 @bot.command(aliases=["givehershey", "hershey"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def hersheybar(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
@@ -1764,6 +1815,7 @@ async def hersheybar(ctx, member:str=False):
 
 @bot.command(aliases=["giveicecream"])
 @notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@isChannelBotSpam()
 async def icecream(ctx, member:str=False):
     if await sanitizeMention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
@@ -1780,6 +1832,7 @@ async def sanitizeMention(member):
     return True
 
 @bot.command(aliases=["div"])
+@isChannelBotSpam()
 async def division(ctx, div):
     if div.lower() == "a":
         res = await assignDiv(ctx, "Division A")
@@ -1815,6 +1868,7 @@ async def assignDiv(ctx, div):
     return True
 
 @bot.command()
+@isChannelBotSpam()
 async def alumni(ctx):
     """Removes or adds the alumni role from a user."""
     member = ctx.message.author
@@ -1941,6 +1995,7 @@ async def latex(ctx, *args):
     await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}" + newArgs + "}")
 
 @bot.command(aliases=["membercount"])
+@isChannelBotSpam()
 async def count(ctx):
     guild = ctx.message.author.guild
     await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
@@ -1982,6 +2037,7 @@ async def mute(ctx, user:discord.Member, *args):
     await _mute(ctx, user, time, self=False)
 
 @bot.command()
+@isChannelBotSpam()
 async def selfmute(ctx, *args):
     """
     Self mutes the user that invokes the command.
@@ -2068,6 +2124,7 @@ async def unban(ctx, member:discord.User=None):
     await ctx.channel.send(f"Inverse ban hammer applied, user unbanned. Please remember that I cannot force them to re-join the server, they must join themselves.")
 
 @bot.command()
+@isChannelBotSpam()
 async def pronouns(ctx, *args):
     """Assigns or removes pronoun roles from a user."""
     member = ctx.message.author
@@ -2113,6 +2170,7 @@ async def pronouns(ctx, *args):
 
 @bot.command()
 @commands.check(isLauncher)
+@commands.check_any(isWhitelistedChannel(whitelist=[CHANNEL_WELCOME]))
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
     await _confirm(args)
@@ -2147,13 +2205,10 @@ async def _confirm(members):
             f += 1
 
 @bot.command()
+@commands.check(nukeCheckPerms)
 async def nuke(ctx, count):
     """Nukes (deletes) a specified amount of messages."""
     global STOPNUKE
-    launcher = await isLauncher(ctx)
-    staff = await isStaff(ctx)
-    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
-        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if STOPNUKE:
         return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     if int(count) > 100:
@@ -2169,6 +2224,17 @@ async def nuke(ctx, count):
             count = messageCount + int(count) - 1
         if count <= 0:
             return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
+    await _nuke_countdown(ctx)
+    if not STOPNUKE:
+        await channel.purge(limit=(int(count) + 13))
+        msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+        await asyncio.sleep(5)
+        await msg.delete()
+
+async def _nuke_countdown(ctx):
+    global STOPNUKE
+    if STOPNUKE:
+        return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
     await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
     await ctx.send("PREPARE FOR IMPACT.")
     for i in range(10, 0, -1):
@@ -2176,13 +2242,23 @@ async def nuke(ctx, count):
         await asyncio.sleep(1)
         if STOPNUKE:
             return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
-    if not STOPNUKE:
-        async for m in channel.history(limit=(int(count) + 13)):
-            if not m.pinned and not STOPNUKE:
-                await m.delete()
-        msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-        await asyncio.sleep(5)
-        await msg.delete()
+
+
+@bot.command()
+@commands.check(nukeCheckPerms)
+async def nukeuntil(ctx, msgid):
+    global STOPNUKE
+    channel = ctx.message.channel
+    message = await ctx.fetch_message(msgid)
+    if channel == message.channel:
+        await _nuke_countdown(ctx)
+        if not STOPNUKE:
+            await channel.purge(limit=1000, after=message)
+            msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+            await asyncio.sleep(5)
+            await msg.delete()
+    else:
+        return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
 
 @bot.command()
 async def stopnuke(ctx):
@@ -2286,18 +2362,18 @@ async def on_message(message):
 
     # Prevent command usage in channels outside of #bot-spam
     author = message.author
-    if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
-        if message.channel.name != CHANNEL_BOTSPAM:
-            allowedCommands = ["about", "dogbomb", "exchange", "gallery", "invite", "me", "magic8ball", "latex", "obb", "profile", "r", "report", "rule", "shibabomb", "tag", "wiki", "wikipedia", "wp"]
-            allowed = False
-            for c in allowedCommands:
-                if message.content.find(BOT_PREFIX + c) != -1: allowed = True
-            if not allowed:
-                botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
-                clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
-                await asyncio.sleep(10)
-                await clarifyMessage.delete()
-                return await message.delete()
+    # if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
+    #     if message.channel.name != CHANNEL_BOTSPAM:
+    #         allowedCommands = ["about", "dogbomb", "exchange", "gallery", "invite", "me", "magic8ball", "latex", "obb", "profile", "r", "report", "rule", "shibabomb", "tag", "wiki", "wikipedia", "wp"]
+    #         allowed = False
+    #         for c in allowedCommands:
+    #             if message.content.find(BOT_PREFIX + c) != -1: allowed = True
+    #         if not allowed:
+    #             botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
+    #             clarifyMessage = await message.channel.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
+    #             await asyncio.sleep(10)
+    #             await clarifyMessage.delete()
+    #             return await message.delete()
 
     if message.author.id in PI_BOT_IDS: return
     content = message.content
@@ -2678,6 +2754,8 @@ async def on_command_error(ctx, error):
         return await ctx.send("Sorry, I'm having trouble reading one of the arguments you just used. Try again!")
 
     # Check failure errors
+    if isinstance(error, NukeTooLowPerms):
+        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if isinstance(error, discord.ext.commands.CheckAnyFailure):
         return await ctx.send("It looks like you aren't able to run this command, sorry.")
     if isinstance(error, discord.ext.commands.PrivateMessageOnly):
@@ -2698,6 +2776,14 @@ async def on_command_error(ctx, error):
     # Command errors
     if isinstance(error, CommandNotAllowedInChannel):
         return await ctx.send(f"You are not allowed to use this command in {error.channel.mention}.")
+    if isinstance(error, CommandNotInvokedInBotSpam):
+        message = error.message
+        author = message.author
+        botspamChannel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
+        clarifyMessage = await ctx.send(f"{author.mention}, please use bot commands only in {botspamChannel.mention}. If you have more questions, you can ping a global moderator.")
+        await asyncio.sleep(10)
+        await clarifyMessage.delete()
+        return await message.delete()
     if isinstance(error, discord.ext.commands.ConversionError):
         return await ctx.send("Oops, there was a bot error here, sorry about that.")
     if isinstance(error, discord.ext.commands.UserInputError):
