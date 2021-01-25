@@ -1524,6 +1524,7 @@ async def met(ctx):
     plt.title("Top wiki editors for the past week!")
     plt.tight_layout()
     plt.savefig("met.png")
+    plt.close()
     await msg1.delete()
     msg2 = await ctx.send("Generating graph...")
     await asyncio.sleep(3)
