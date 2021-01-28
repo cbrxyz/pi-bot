@@ -1564,22 +1564,42 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     footerText = jso['footerText'] if 'footerText' in jso else ""
     footerUrl = jso['footerUrl'] if 'footerUrl' in jso else ""
     imageUrl = jso['imageUrl'] if 'imageUrl' in jso else ""
-    embed = assembleEmbed(
-        title=title,
-        desc=desc,
-        titleUrl=titleUrl,
-        hexcolor=hexcolor,
-        webcolor=webcolor,
-        thumbnailUrl=thumbnailUrl,
-        authorName=authorName,
-        authorUrl=authorUrl,
-        authorIcon=authorIcon,
-        fields=fields,
-        footerText=footerText,
-        footerUrl=footerUrl,
-        imageUrl=imageUrl
-    )
-    await channel.send(embed=embed)
+    
+    asWebhook = jso['asWebhook'] if 'asWebhook' in jso else False
+    
+    if asWebhook:
+        embed = assembleEmbed(
+            title=title,
+            desc=desc,
+            titleUrl=titleUrl,
+            hexcolor=hexcolor,
+            webcolor=webcolor,
+            thumbnailUrl=thumbnailUrl,
+            fields=fields,
+            footerText=footerText,
+            footerUrl=footerUrl,
+            imageUrl=imageUrl
+        )
+        wh = await channel.create_webhook(name=authorName, avatar= await authorIcon.read())
+        await wh.send(embed=embed)
+        await wh.delete()
+    else:
+        embed = assembleEmbed(
+            title=title,
+            desc=desc,
+            titleUrl=titleUrl,
+            hexcolor=hexcolor,
+            webcolor=webcolor,
+            thumbnailUrl=thumbnailUrl,
+            authorName=authorName,
+            authorUrl=authorUrl,
+            authorIcon=authorIcon,
+            fields=fields,
+            footerText=footerText,
+            footerUrl=footerUrl,
+            imageUrl=imageUrl
+        )
+        await channel.send(embed=embed)
 
 @bot.command(aliases=["event"])
 async def events(ctx, *args):
