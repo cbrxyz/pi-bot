@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import json
 
-from lists import getStateList
+from lists import get_state_list
 
 SCHOOLS_URL="https://inventory.data.gov/api/3/action/datastore_search?resource_id=102fd9bd-4737-401b-b88f-5c5b0fab94ec&q="
 
@@ -13,9 +13,9 @@ async def getRawResponse(searchTerm, state):
     await session.close()
     return text
 
-async def getSchoolListing(searchTerm, state):
+async def get_school_listing(searchTerm, state):
     returnObj = []
-    states = await getStateList()
+    states = await get_state_list()
     jsonObj = json.loads(await getRawResponse(searchTerm, state))
     results = jsonObj['result']['records']
     for r in results:

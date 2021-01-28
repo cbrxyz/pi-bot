@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import bs4
 
-async def makeResultsTemplate(url):
+async def make_results_template(url):
     if not url.find("scilympiad.com") != -1:
         return False
     session = aiohttp.ClientSession()
@@ -35,7 +35,7 @@ async def makeResultsTemplate(url):
     await session.close()
     return res
 
-async def getPoints(url):
+async def get_points(url):
     if not url.find("scilympiad.com") != -1:
         return False
     session = aiohttp.ClientSession()

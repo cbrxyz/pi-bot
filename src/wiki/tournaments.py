@@ -34,5 +34,5 @@ async def getInviteTable():
                 row[i] = aiowtp.parse(cell).wikilinks[0].title
     return tabulate(tables[0], iTHeaders, tablefmt="psql")
 
-async def getTournamentList():
+async def get_tournament_list():
     pass

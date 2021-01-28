@@ -24,7 +24,7 @@ BEAR_MESSAGES = [
     r"*{1} thinks that {2} tastes out of this world* :alien:",
 ]
 
-async def getBearMessage(user):
+async def get_bear_message(user):
     i = random.random()
     messageIndex = math.floor(i*len(BEAR_MESSAGES))
     message = BEAR_MESSAGES[messageIndex]

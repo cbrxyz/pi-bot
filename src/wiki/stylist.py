@@ -13,7 +13,7 @@ CURRENT_WIKI_PAGE = ""
 
 aiopwb = aioify(obj=pywikibot, name='aiopwb')
 
-async def prettifyTemplates():
+async def prettify_templates():
     await init()
     global CURRENT_WIKI_PAGE
     pages = await allPages(CURRENT_WIKI_PAGE)

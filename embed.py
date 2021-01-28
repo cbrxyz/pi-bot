@@ -1,7 +1,7 @@
 import discord
 import webcolors
 
-def assembleEmbed(
+def assemble_embed(
     title="",
     desc="",
     titleUrl="",

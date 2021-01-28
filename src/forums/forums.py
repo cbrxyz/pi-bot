@@ -77,7 +77,7 @@ async def makePost(allPosts):
     await asyncio.sleep(6)
     browser.find_by_css(".default-submit-action").click()
 
-async def openBrowser():
+async def open_browser():
     """Opens the browser for Pi-Bot to interact with."""
     if not loggedIn:
         await login()

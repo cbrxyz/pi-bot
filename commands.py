@@ -2,7 +2,7 @@ import discord
 import math
 
 # Files
-from embed import assembleEmbed
+from embed import assemble_embed
 from commandinfo import COMMAND_INFO
 
 async def _generateList(member: discord.Member, isQuick = False):
@@ -31,7 +31,7 @@ async def _generateList(member: discord.Member, isQuick = False):
                     break
     return availableCommands
 
-async def getList(author, page):
+async def get_list(author, page):
     """Gets the list of commands a user can access."""
     availableCommands = await _generateList(author, False)
     availableCommands.sort(key=lambda x: x['name'])
@@ -41,16 +41,16 @@ async def getList(author, page):
     if page > totalPages or page < 1:
         return False
     availableCommands = availableCommands[(page-1)*10:(page)*10]
-    return assembleEmbed(
+    return assemble_embed(
         title=f"List of Commands for `{author}` (Page {page}/{totalPages})",
         desc="\n".join([f"`{c['name']}` - {c['description']}" for c in availableCommands])
     )
 
-async def getQuickList(ctx):
+async def get_quick_list(ctx):
     """Gets the quick list of commands a user can access."""
     availableCommands = await _generateList(ctx.message.author, True)
     availableCommands.sort(key=lambda x: x['name'])
-    return assembleEmbed(
+    return assemble_embed(
         title=f"Quick List of Available Commands for {ctx.message.author}",
         desc="To view full list, please type `!list all`.",
         fields=[{
@@ -60,12 +60,12 @@ async def getQuickList(ctx):
         }]
     )
 
-async def getHelp(ctx, cmd):
+async def get_help(ctx, cmd):
     """Gets the help embed for a command."""
     wikiMods = discord.utils.get(ctx.message.author.guild.roles, name="Wiki Moderator")
     cmdInfo = next((c for c in COMMAND_INFO if c["name"] == cmd or cmd in c["aliases"]), None)
     if cmdInfo == None:
-        return assembleEmbed(
+        return assemble_embed(
             title=f"`{cmd}`",
             desc="Cannot find command with this name. Try again buddy.",
             webcolor="red"
@@ -100,7 +100,7 @@ async def getHelp(ctx, cmd):
                 }
             ]
         )
-        return assembleEmbed(
+        return assemble_embed(
             title=f"`!{cmdInfo['name']}`",
             desc=f"{cmdInfo['description']}",
             fields=commandFields,

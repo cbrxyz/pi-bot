@@ -62,7 +62,7 @@ async def buildServiceAccount():
         json.dump(data, f)
     print("Service account built.")
 
-async def sendVariables(dataArr, type):
+async def send_variables(dataArr, type):
     """Sends variable backups to the Administrative Sheet."""
     agc = await agcm.authorize()
     ss = await agc.open(SHEET_NAME)
@@ -78,7 +78,7 @@ async def sendVariables(dataArr, type):
         await storedVarSheet.append_row([str(datetime.now())] + [v[0] for v in dataArr])
         print("Stored variables in the long-term area.")
 
-async def getVariables():
+async def get_variables():
     """Gets the previous variables, so that when Pi-Bot is restarted, the ping information is not lost."""
     agc = await agcm.authorize()
     ss = await agc.open(SHEET_NAME)
@@ -101,7 +101,7 @@ async def get_raw_censor():
     words = await eventSheet.batch_get(["B3:C1000"])
     return words
 
-async def getTags():
+async def get_tags():
     ss = await get_worksheet()
     tagSheet = await ss.worksheet("Tags")
     tags = await tagSheet.batch_get(["B3:E1000"])

@@ -27,7 +27,7 @@ async def getPageText(pageName):
     site = await aiopwb.Site()
     return aiopwb.Page(site, pageName).text
 
-async def getPageTables(pageName, tempFormat):
+async def get_page_tables(pageName, tempFormat):
     site = await aiopwb.Site()
     text = aiopwb.Page(site, pageName).text
     parsed = wtp.parse(str(text))
@@ -48,7 +48,7 @@ async def uploadFile(filePath, title, comment):
 async def allPages(startTitle):
     return site.allpages(start=startTitle)
 
-async def implementCommand(action, pageTitle):
+async def implement_command(action, pageTitle):
     site = await aiopwb.Site()
     page = aiopwb.Page(site, pageTitle)
     try:

@@ -9,7 +9,7 @@ import math
 import time
 import datetime
 import dateparser
-import time as timePackage
+import time as time_module
 import wikipedia as wikip
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,22 +19,22 @@ from discord import channel
 from discord.ext import commands, tasks
 
 from src.sheets.events import get_events
-from src.sheets.tournaments import getTournamentChannels
+from src.sheets.tournaments import get_tournament_channels
 from src.sheets.censor import get_censor
-from src.sheets.sheets import sendVariables, getVariables, getTags
-from src.forums.forums import openBrowser
-from src.wiki.stylist import prettifyTemplates
-from src.wiki.tournaments import getTournamentList
-from src.wiki.wiki import implementCommand, getPageTables
-from src.wiki.schools import getSchoolListing
-from src.wiki.scilympiad import makeResultsTemplate, getPoints
+from src.sheets.sheets import send_variables, get_variables, get_tags
+from src.forums.forums import open_browser
+from src.wiki.stylist import prettify_templates
+from src.wiki.tournaments import get_tournament_list
+from src.wiki.wiki import implement_command, get_page_tables
+from src.wiki.schools import get_school_listing
+from src.wiki.scilympiad import make_results_template, get_points
 from src.wiki.mosteditstable import run_table
 from info import get_about
-from doggo import getDoggo, getShiba
-from bear import getBearMessage
-from embed import assembleEmbed
-from commands import getList, getQuickList, getHelp
-from lists import getStateList
+from doggo import get_doggo, get_shiba
+from bear import get_bear_message
+from embed import assemble_embed
+from commands import get_list, get_quick_list, get_help
+from lists import get_state_list
 import xkcd as xkcd_module # not to interfere with xkcd method
 from commanderrors import CommandNotAllowedInChannel
 
@@ -291,7 +291,7 @@ async def store_variables():
 
 @tasks.loop(hours=24)
 async def go_stylist():
-    await prettifyTemplates()
+    await prettify_templates()
 
 @tasks.loop(minutes=10)
 async def manage_welcome():
@@ -348,9 +348,9 @@ async def handle_cron(string):
             print(f"Un-stealfished user ID: {iden}")
         else:
             print("ERROR:")
-            await autoReport("Error with a cron task", "red", f"Error: `{string}`")
+            await auto_report("Error with a cron task", "red", f"Error: `{string}`")
     except Exception as e:
-        await autoReport("Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
+        await auto_report("Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
 @tasks.loop(hours=1)
 async def change_bot_status():
@@ -398,7 +398,7 @@ async def post_something():
     """Allows Pi-Bot to post markov-generated statements to the forums."""
     if can_post:
         print("Attempting to post something.")
-        await openBrowser()
+        await open_browser()
     else:
         can_post = True
 
@@ -412,7 +412,7 @@ async def refresh_algorithm():
     CENSORED_WORDS = censor[0]
     CENSORED_EMOJIS = censor[1]
     EVENT_INFO = await get_events()
-    TAGS = await getTags()
+    TAGS = await get_tags()
     print("Refreshed data from sheet.")
     return True
 
@@ -424,7 +424,7 @@ async def prepare_for_sending(type="variable"):
     r4 = json.dumps(COACH_REPORT_IDS)
     r5 = json.dumps(CRON_LIST, default = datetime_converter)
     r6 = json.dumps(REQUESTED_TOURNAMENTS)
-    await sendVariables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
+    await send_variables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
     print("Stored variables in sheet.")
 
 def datetime_converter(o):
@@ -432,7 +432,7 @@ def datetime_converter(o):
         return o.__str__()
 
 async def pull_prev_info():
-    data = await getVariables()
+    data = await get_variables()
     global PING_INFO
     global REPORT_IDS
     global TOURNEY_REPORT_IDS
@@ -456,15 +456,15 @@ async def pull_prev_info():
 @bot.command(aliases=["tc", "tourney", "tournaments"])
 async def tournament(ctx, *args):
     member = ctx.message.author
-    newArgs = list(args)
-    ignoreTerms = ["invitational", "invy", "tournament", "regional", "invite"]
-    for term in ignoreTerms:
-        if term in newArgs:
-            newArgs.remove(term)
+    new_args = list(args)
+    ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
+    for term in ignore_terms:
+        if term in new_args:
+            new_args.remove(term)
             await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
     if len(args) == 0:
         return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
-    for arg in newArgs:
+    for arg in new_args:
         # Stop users from possibly adding the channel hash in front of arg
         arg = arg.replace("#", "")
         arg = arg.lower()
@@ -505,7 +505,7 @@ async def tournament(ctx, *args):
                     votes = t['count']
                     break
             if not found2:
-                await autoReport("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
+                await auto_report("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
             await update_tournament_list()
@@ -534,16 +534,16 @@ async def tlr(ctx, iden):
     return await ctx.send(f"Removed `#{iden}` from the tournament list.")
 
 async def update_tournament_list():
-    tl = await getTournamentChannels()
+    tl = await get_tournament_channels()
     tl.sort(key=lambda x: x[0])
     global TOURNAMENT_INFO
     global REQUESTED_TOURNAMENTS
     TOURNAMENT_INFO = tl
     server = bot.get_guild(SERVER_ID)
-    tourneyChannel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
-    tourneyCat = discord.utils.get(server.categories, name=CATEGORY_TOURNAMENTS)
-    botSpam = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
-    serverSupport = discord.utils.get(server.text_channels, name=CHANNEL_SUPPORT)
+    tourney_channel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
+    tournament_category = discord.utils.get(server.categories, name=CATEGORY_TOURNAMENTS)
+    bot_spam_channel = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
+    server_support_channel = discord.utils.get(server.text_channels, name=CHANNEL_SUPPORT)
     gm = discord.utils.get(server.roles, name=ROLE_GM)
     a = discord.utils.get(server.roles, name=ROLE_AD)
     allTournamentsRole = discord.utils.get(server.roles, name=ROLE_AT)
@@ -565,11 +565,11 @@ async def update_tournament_list():
         if (dayDiff < (-1 * afterDays)) and ch != None:
             # If past tournament date, now out of range
             if ch.category.name != CATEGORY_ARCHIVE:
-                await autoReport("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
+                await auto_report("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
         elif (dayDiff <= beforeDays) and ch == None:
             # If before tournament and in range
             newRole = await server.create_role(name=t[0])
-            newCh = await server.create_text_channel(t[1], category=tourneyCat)
+            newCh = await server.create_text_channel(t[1], category=tournament_category)
             await newCh.edit(topic=f"{t[2]} - Discussion around the {t[0]} occurring on {t[4]}.", sync_permissions=True)
             await newCh.set_permissions(newRole, read_messages=True)
             await newCh.set_permissions(allTournamentsRole, read_messages=True)
@@ -591,48 +591,48 @@ async def update_tournament_list():
         spaces = " " * (spacingNeeded - len(t['iden']))
         channelsRequestedList += f"`!tournament {t['iden']}{spaces}` · **{t['count']} votes**\n"
     embeds = []
-    embeds.append(assembleEmbed(
+    embeds.append(assemble_embed(
         title=":medal: Tournament Channels Listing",
         desc=(
             "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received 10 votes to be considered for a channel." +
-            f"\n\n* To join an available tournament channel, head to {botSpam.mention} and type `!tournament [name]`." +
-            f"\n\n* To make a new request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
-            f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {serverSupport.mention}"
+            f"\n\n* To join an available tournament channel, head to {bot_spam_channel.mention} and type `!tournament [name]`." +
+            f"\n\n* To make a new request for a tournament channel, head to {bot_spam_channel.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
+            f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {server_support_channel.mention}"
         )
     ))
     for i, s in enumerate(stringLists):
-        embeds.append(assembleEmbed(
+        embeds.append(assemble_embed(
             title=f"Currently Available Channels (Page {i + 1}/{len(stringLists)})",
             desc=s if len(s) > 0 else "No channels are available currently."
         ))
-    embeds.append(assembleEmbed(
+    embeds.append(assemble_embed(
         title="Channels Opening Soon",
         desc=openSoonList if len(openSoonList) > 0 else "No channels are opening soon currently.",
     ))
-    embeds.append(assembleEmbed(
+    embeds.append(assemble_embed(
         title="Channels Requested",
-        desc=("Vote with the command associated with the tournament channel.\n\n" + channelsRequestedList) if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {botSpam.mention} and type `!tournament [name]`, with the name of the tournament."
+        desc=("Vote with the command associated with the tournament channel.\n\n" + channelsRequestedList) if len(channelsRequestedList) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {bot_spam_channel.mention} and type `!tournament [name]`, with the name of the tournament."
     ))
-    hist = await tourneyChannel.history(oldest_first=True).flatten()
+    hist = await tourney_channel.history(oldest_first=True).flatten()
     if len(hist) != 0:
         # When the tourney channel already has embeds
         if len(embeds) < len(hist):
-            messages = await tourneyChannel.history(oldest_first=True).flatten()
+            messages = await tourney_channel.history(oldest_first=True).flatten()
             for m in messages[len(embeds):]:
                 await m.delete()
         count = 0
-        async for m in tourneyChannel.history(oldest_first=True):
+        async for m in tourney_channel.history(oldest_first=True):
             await m.edit(embed=embeds[count])
             count += 1
         if len(embeds) > len(hist):
             for e in embeds[len(hist):]:
-                await tourneyChannel.send(embed=e)
+                await tourney_channel.send(embed=e)
     else:
         # If the tournament channel is being initialized for the first time
-        pastMessages = await tourneyChannel.history(limit=100).flatten()
-        await tourneyChannel.delete_messages(pastMessages)
+        pastMessages = await tourney_channel.history(limit=100).flatten()
+        await tourney_channel.delete_messages(pastMessages)
         for e in embeds:
-            await tourneyChannel.send(embed=e)
+            await tourney_channel.send(embed=e)
 
 @bot.command()
 @commands.check(is_staff)
@@ -696,7 +696,7 @@ async def getVariable(ctx, var):
 @commands.check(is_bear)
 async def eat(ctx, user):
     """Allows bear to eat users >:D"""
-    message = await getBearMessage(user)
+    message = await get_bear_message(user)
     await ctx.message.delete()
     await ctx.send(message)
 
@@ -857,15 +857,15 @@ async def slowmode(ctx, arg:int=None):
 @bot.command(aliases=["state"])
 async def states(ctx, *args):
     """Assigns someone with specific states."""
-    newArgs = [str(arg).lower() for arg in args]
+    new_args = [str(arg).lower() for arg in args]
 
     # Fix commas as possible separator
-    if len(newArgs) == 1:
-        newArgs = newArgs[0].split(",")
-    newArgs = [re.sub("[;,]", "", arg) for arg in newArgs]
+    if len(new_args) == 1:
+        new_args = new_args[0].split(",")
+    new_args = [re.sub("[;,]", "", arg) for arg in new_args]
 
     member = ctx.message.author
-    states = await getStateList()
+    states = await get_state_list()
     states = [s[:s.rfind(" (")] for s in states]
     tripleWordStates = [s for s in states if len(s.split(" ")) > 2]
     doubleWordStates = [s for s in states if len(s.split(" ")) > 1]
@@ -874,9 +874,9 @@ async def states(ctx, *args):
     for term in ["california", "ca", "cali"]:
         if term in [arg.lower() for arg in args]:
             return await ctx.send("Which California, North or South? Try `!state norcal` or `!state socal`.")
-    if len(newArgs) < 1:
+    if len(new_args) < 1:
         return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
-    elif len(newArgs) > 10:
+    elif len(new_args) > 10:
         return await ctx.send("Sorry, you are attempting to add/remove too many states at once.")
     for string in ["South", "North"]:
         californiaList = [f"California ({string})", f"California-{string}", f"California {string}", f"{string}ern California", f"{string} California", f"{string} Cali", f"Cali {string}", f"{string} CA", f"CA {string}"]
@@ -886,7 +886,7 @@ async def states(ctx, *args):
             californiaList.append("SoCal")
         for listing in californiaList:
             words = listing.split(" ")
-            allHere = sum(1 for word in words if word.lower() in newArgs)
+            allHere = sum(1 for word in words if word.lower() in new_args)
             if allHere == len(words):
                 role = discord.utils.get(member.guild.roles, name=f"California ({string})")
                 if role in member.roles:
@@ -896,11 +896,11 @@ async def states(ctx, *args):
                     await member.add_roles(role)
                     addedRoles.append(f"California ({string})")
                 for word in words:
-                    newArgs.remove(word.lower())
+                    new_args.remove(word.lower())
     for triple in tripleWordStates:
         words = triple.split(" ")
         allHere = 0
-        allHere = sum(1 for word in words if word.lower() in newArgs)
+        allHere = sum(1 for word in words if word.lower() in new_args)
         if allHere == 3:
             # Word is in args
             role = discord.utils.get(member.guild.roles, name=triple)
@@ -911,11 +911,11 @@ async def states(ctx, *args):
                 await member.add_roles(role)
                 addedRoles.append(triple)
             for word in words:
-                newArgs.remove(word.lower())
+                new_args.remove(word.lower())
     for double in doubleWordStates:
         words = double.split(" ")
         allHere = 0
-        allHere = sum(1 for word in words if word.lower() in newArgs)
+        allHere = sum(1 for word in words if word.lower() in new_args)
         if allHere == 2:
             # Word is in args
             role = discord.utils.get(member.guild.roles, name=double)
@@ -926,8 +926,8 @@ async def states(ctx, *args):
                 await member.add_roles(role)
                 addedRoles.append(double)
             for word in words:
-                newArgs.remove(word.lower())
-    for arg in newArgs:
+                new_args.remove(word.lower())
+    for arg in new_args:
         roleName = await lookup_role(arg)
         if roleName == False:
             return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
@@ -1145,7 +1145,7 @@ async def info(ctx):
                 "inline": False
             }
         ])
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=f"Information for `{name}`",
         desc=f"**Description:** {desc}",
         thumbnailUrl=icon,
@@ -1162,7 +1162,7 @@ async def report(ctx, *args):
     if len(args) > 1:
         message = ' '.join(args)
     poster = str(ctx.message.author)
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=f"Report Received (using `!report`)",
         webcolor="red",
         authorName = poster,
@@ -1180,11 +1180,11 @@ async def report(ctx, *args):
     await ctx.send("Thanks, report created.")
 
 # Meant for Pi-Bot only
-async def autoReport(reason, color, message):
+async def auto_report(reason, color, message):
     """Allows Pi-Bot to generate a report by himself."""
     server = bot.get_guild(SERVER_ID)
     reportsChannel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=f"{reason} (message from Pi-Bot)",
         webcolor=color,
         fields = [{
@@ -1213,7 +1213,7 @@ async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
     tableIndex = int(tableIndex)
     placeCol = int(placeCol)
     if temp:
-        template = await getPageTables(title, True)
+        template = await get_page_tables(title, True)
         template = [t for t in template if t.normal_name() == "State results box"]
         template = template[tableIndex]
         ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]) # Thanks https://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712
@@ -1221,7 +1221,7 @@ async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
             if template.has_arg(ordinal(i) + "_points"):
                 points.append(template.get_arg(ordinal(i) + "_points").value.replace("\n", ""))
     else:
-        tables = await getPageTables(title, False)
+        tables = await get_page_tables(title, False)
         tables = tables[tableIndex]
         data = tables.data()
         points = [r[placeCol] for r in data]
@@ -1235,7 +1235,7 @@ async def graphpage(ctx, title, tempFormat, tableIndex, div, placeCol=0):
 
 @bot.command()
 async def graphscilympiad(ctx, url, title):
-    points = await getPoints(url)
+    points = await get_points(url)
     await _graph(points, title, "graph1.svg")
     with open("graph1.svg") as f:
         pic = discord.File(f)
@@ -1259,7 +1259,7 @@ async def resultstemplate(ctx, url):
     if url.find("scilympiad.com") == -1:
         return await ctx.send("The URL must be a Scilympiad results link.")
     await ctx.send("**Warning:** Because Scilympiad is constantly evolving, this command may break. Please preview the template on the wiki before saving! If this command breaks, please DM pepperonipi or open an issue on GitHub. Thanks!")
-    res = await makeResultsTemplate(url)
+    res = await make_results_template(url)
     with open("resultstemplate.txt", "w+") as t:
         t.write(res)
     file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
@@ -1389,7 +1389,7 @@ async def ping_pm(userID, pinger, pingExp, channel, content, jumpUrl):
         print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
     pingExp = pingExp.replace(r"\b(", "").replace(r")\b", "")
     warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {pingExp}`"
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=":bellhop: Ping Alert!",
         desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
         fields=[
@@ -1408,7 +1408,7 @@ async def dogbomb(ctx, member:str=False):
     """Dog bombs someone!"""
     if member == False:
         return await ctx.send("Tell me who you want to shiba bomb!! :dog:")
-    doggo = await getDoggo()
+    doggo = await get_doggo()
     await ctx.send(doggo)
     await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
 
@@ -1418,7 +1418,7 @@ async def shibabomb(ctx, member:str=False):
     """Shiba bombs a user!"""
     if member == False:
         return await ctx.send("Tell me who you want to shiba bomb!! :dog:")
-    doggo = await getShiba()
+    doggo = await get_shiba()
     await ctx.send(doggo)
     await ctx.send(f"{member}, <@{ctx.message.author.id}> shiba bombed you!!")
 
@@ -1435,25 +1435,25 @@ async def me(ctx, *args):
 async def list_command(ctx, cmd:str=False):
     """Lists all of the commands a user may access."""
     if cmd == False: # for quick list of commands
-        ls = await getQuickList(ctx)
+        ls = await get_quick_list(ctx)
         await ctx.send(embed=ls)
     if cmd == "all" or cmd == "commands":
-        ls = await getList(ctx.message.author, 1)
+        ls = await get_list(ctx.message.author, 1)
         sentList = await ctx.send(embed=ls)
         await sentList.add_reaction(EMOJI_FAST_REVERSE)
         await sentList.add_reaction(EMOJI_LEFT_ARROW)
         await sentList.add_reaction(EMOJI_RIGHT_ARROW)
         await sentList.add_reaction(EMOJI_FAST_FORWARD)
     elif cmd == "states":
-        statesList = await getStateList()
-        list = assembleEmbed(
+        statesList = await get_state_list()
+        list = assemble_embed(
             title="List of all states",
             desc="\n".join([f"`{state}`" for state in statesList])
         )
         await ctx.send(embed=list)
     elif cmd == "events":
         eventsList = [r['eventName'] for r in EVENT_INFO]
-        list = assembleEmbed(
+        list = assemble_embed(
             title="List of all events",
             desc="\n".join([f"`{name}`" for name in eventsList])
         )
@@ -1461,13 +1461,13 @@ async def list_command(ctx, cmd:str=False):
 
 @bot.command()
 async def school(ctx, title, state):
-    lists = await getSchoolListing(title, state)
+    lists = await get_school_listing(title, state)
     fields = []
     if len(lists) > 20:
         return await ctx.send(f"Woah! Your query returned `{len(lists)}` schools, which is too much to send at once. Try narrowing your query!")
     for l in lists:
         fields.append({'name': l['name'], 'value': f"```{l['wikicode']}```", 'inline': "False"})
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title="School Data",
         desc=f"Your query for `{title}` in `{state}` returned `{len(lists)}` results. Thanks for contribtuing to the wiki!",
         fields=fields,
@@ -1531,7 +1531,7 @@ async def met(ctx):
     await msg2.delete()
 
     file = discord.File("met.png", filename="met.png")
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title="**Top wiki editors for the past week!**",
         desc=("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" +
         f"`1st` - **{names[0]}** ({data[0]} edits)\n" +
@@ -1564,7 +1564,7 @@ async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     footerText = jso['footerText'] if 'footerText' in jso else ""
     footerUrl = jso['footerUrl'] if 'footerUrl' in jso else ""
     imageUrl = jso['imageUrl'] if 'imageUrl' in jso else ""
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=title,
         desc=desc,
         titleUrl=titleUrl,
@@ -1589,12 +1589,12 @@ async def events(ctx, *args):
     elif len(args) > 10:
         return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
     member = ctx.message.author
-    newArgs = [str(arg).lower() for arg in args]
+    new_args = [str(arg).lower() for arg in args]
 
     # Fix commas as possible separator
-    if len(newArgs) == 1:
-        newArgs = newArgs[0].split(",")
-    newArgs = [re.sub("[;,]", "", arg) for arg in newArgs]
+    if len(new_args) == 1:
+        new_args = new_args[0].split(",")
+    new_args = [re.sub("[;,]", "", arg) for arg in new_args]
 
     eventInfo = EVENT_INFO
     eventNames = []
@@ -1613,7 +1613,7 @@ async def events(ctx, *args):
         for event in multiWordEvents:
             words = event.split(" ")
             allHere = 0
-            allHere = sum(1 for word in words if word.lower() in newArgs)
+            allHere = sum(1 for word in words if word.lower() in new_args)
             if allHere == i:
                 # Word is in args
                 role = discord.utils.get(member.guild.roles, name=event)
@@ -1624,8 +1624,8 @@ async def events(ctx, *args):
                     await member.add_roles(role)
                     addedRoles.append(event)
                 for word in words:
-                    newArgs.remove(word.lower())
-    for arg in newArgs:
+                    new_args.remove(word.lower())
+    for arg in new_args:
         foundEvent = False
         for event in eventInfo:
             aliases = [abbr.lower() for abbr in event['eventAbbreviations']]
@@ -1660,7 +1660,7 @@ async def get_words():
 async def help(ctx, command:str=None):
     """Allows a user to request help for a command."""
     if command == None:
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title="Looking for help?",
             desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
             "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
@@ -1669,7 +1669,7 @@ async def help(ctx, command:str=None):
             "If you need more help, please feel free to reach out to a staff member!")
         )
         return await ctx.send(embed=embed)
-    hlp = await getHelp(ctx, command)
+    hlp = await get_help(ctx, command)
     await ctx.send(embed=hlp)
 
 @bot.command(aliases=["feedbear"])
@@ -1845,14 +1845,14 @@ async def wiki(ctx, command:str=False, *args):
     if command in ["summary"]:
         if multiple:
             for arg in [arg for arg in args if arg[:1] != "-"]:
-                text = await implementCommand("summary", arg)
+                text = await implement_command("summary", arg)
                 if text == False:
                     await ctx.send(f"The `{arg}` page does not exist!")
                 else:
                     await ctx.send(" ".join(text))
         else:
             stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
-            text = await implementCommand("summary", stringSum)
+            text = await implement_command("summary", stringSum)
             if text == False:
                 await ctx.send(f"The `{arg}` page does not exist!")
             else:
@@ -1860,14 +1860,14 @@ async def wiki(ctx, command:str=False, *args):
     elif command in ["search"]:
         if multiple:
             return await ctx.send("Ope! No multiple searches at once yet!")
-        searches = await implementCommand("search", " ".join([arg for arg in args]))
+        searches = await implement_command("search", " ".join([arg for arg in args]))
         await ctx.send("\n".join([f"`{s}`" for s in searches]))
     else:
         # Assume link
         if multiple:
-            newArgs = [command] + list(args)
-            for arg in [arg for arg in newArgs if arg[:1] != "-"]:
-                url = await implementCommand("link", arg)
+            new_args = [command] + list(args)
+            for arg in [arg for arg in new_args if arg[:1] != "-"]:
+                url = await implement_command("link", arg)
                 if url == False:
                     await ctx.send(f"The `{arg}` page does not exist!")
                 await ctx.send(f"<{wiki_url_fix(url)}>")
@@ -1877,7 +1877,7 @@ async def wiki(ctx, command:str=False, *args):
                 stringSum = f"{command} {stringSum}"
             elif command.rstrip() != "link":
                 stringSum = command
-            url = await implementCommand("link", stringSum)
+            url = await implement_command("link", stringSum)
             if url == False:
                 await ctx.send(f"The `{stringSum}` page does not exist!")
             else:
@@ -1926,7 +1926,7 @@ async def profile(ctx, name:str=False):
         name = member.nick
         if name == None:
             name = member.name
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=f"Scioly.org Information for {name}",
         desc=(f"[`Forums`](https://scioly.org/forums/memberlist.php?mode=viewprofile&un={name}) | [`Wiki`](https://scioly.org/wiki/index.php?title=User:{name})"),
         hexcolor="#2E66B6"
@@ -1935,11 +1935,11 @@ async def profile(ctx, name:str=False):
 
 @bot.command()
 async def latex(ctx, *args):
-    newArgs = " ".join(args)
-    print(newArgs)
-    newArgs = newArgs.replace(" ", r"&space;")
-    print(newArgs)
-    await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}" + newArgs + "}")
+    new_args = " ".join(args)
+    print(new_args)
+    new_args = new_args.replace(" ", r"&space;")
+    print(new_args)
+    await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}" + new_args + "}")
 
 @bot.command(aliases=["membercount"])
 async def count(ctx):
@@ -2239,7 +2239,7 @@ async def on_message_edit(before, after):
 async def send_to_dm_log(message):
     server = bot.get_guild(SERVER_ID)
     dmChannel = discord.utils.get(server.text_channels, name=CHANNEL_DMLOG)
-    embed = assembleEmbed(
+    embed = assemble_embed(
         title=":speech_balloon: New DM",
         fields=[
             {
@@ -2352,7 +2352,7 @@ async def on_message(message):
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(mutedRole)
         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await autoReport("User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
+        await auto_report("User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
     elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
     # Caps checker
@@ -2362,7 +2362,7 @@ async def on_message(message):
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(mutedRole)
         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await autoReport("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
+        await auto_report("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
 
@@ -2407,13 +2407,13 @@ async def on_reaction_add(reaction, user):
             print(currentPage)
             ls = False
             if reaction.emoji == EMOJI_FAST_REVERSE:
-                ls = await getList(user, 1)
+                ls = await get_list(user, 1)
             elif reaction.emoji == EMOJI_LEFT_ARROW:
-                ls = await getList(user, currentPage - 1)
+                ls = await get_list(user, currentPage - 1)
             elif reaction.emoji == EMOJI_RIGHT_ARROW:
-                ls = await getList(user, currentPage + 1)
+                ls = await get_list(user, currentPage + 1)
             elif reaction.emoji == EMOJI_FAST_FORWARD:
-                ls = await getList(user, 100)
+                ls = await get_list(user, 100)
             if ls != False:
                 await reaction.message.edit(embed=ls)
             await reaction.remove(user)
@@ -2426,7 +2426,7 @@ async def on_member_join(member):
     name = member.name
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
-            await autoReport("Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
+            await auto_report("Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
     await joinChannel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " +
     "You can add roles here, using the commands shown at the top of this channel. " +
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." +
@@ -2462,13 +2462,13 @@ async def on_member_update(before, after):
     if after.nick == None: return
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", after.nick, re.I)):
-            await autoReport("Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
+            await auto_report("Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
 
 @bot.event
 async def on_user_update(before, after):
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", after.name, re.I)):
-            await autoReport("Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
+            await auto_report("Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
 
 @bot.event
 async def on_raw_message_edit(payload):
@@ -2479,7 +2479,7 @@ async def on_raw_message_edit(payload):
     try:
         message = payload.cached_message
         msgNow = await channel.fetch_message(message.id)
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title=":pencil: Edited Message",
             fields=[
                 {
@@ -2532,7 +2532,7 @@ async def on_raw_message_edit(payload):
         await editedChannel.send(embed=embed)
     except Exception as e:
         msgNow = await channel.fetch_message(payload.message_id)
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title=":pencil: Edited Message",
             fields=[
                 {
@@ -2593,7 +2593,7 @@ async def on_raw_message_delete(payload):
     deletedChannel = discord.utils.get(channel.guild.text_channels, name=CHANNEL_DELETEDM)
     try:
         message = payload.cached_message
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title=":fire: Deleted Message",
             fields=[
                 {
@@ -2641,7 +2641,7 @@ async def on_raw_message_delete(payload):
         await deletedChannel.send(embed=embed)
     except Exception as e:
         print(e)
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title=":fire: Deleted Message",
             fields=[
                 {
