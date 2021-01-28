@@ -18,9 +18,9 @@ from dotenv import load_dotenv
 from discord import channel
 from discord.ext import commands, tasks
 
-from src.sheets.events import getEvents
+from src.sheets.events import get_events
 from src.sheets.tournaments import getTournamentChannels
-from src.sheets.censor import getCensor
+from src.sheets.censor import get_censor
 from src.sheets.sheets import sendVariables, getVariables, getTags
 from src.forums.forums import openBrowser
 from src.wiki.stylist import prettifyTemplates
@@ -28,7 +28,7 @@ from src.wiki.tournaments import getTournamentList
 from src.wiki.wiki import implementCommand, getPageTables
 from src.wiki.schools import getSchoolListing
 from src.wiki.scilympiad import makeResultsTemplate, getPoints
-from src.wiki.mosteditstable import runTable
+from src.wiki.mosteditstable import run_table
 from info import get_about
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
@@ -408,10 +408,10 @@ async def refresh_algorithm():
     global CENSORED_EMOJIS
     global EVENT_INFO
     global TAGS
-    censor = await getCensor()
+    censor = await get_censor()
     CENSORED_WORDS = censor[0]
     CENSORED_EMOJIS = censor[1]
-    EVENT_INFO = await getEvents()
+    EVENT_INFO = await get_events()
     TAGS = await getTags()
     print("Refreshed data from sheet.")
     return True
@@ -1509,7 +1509,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
 async def met(ctx):
     """Runs Pi-Bot's Most Edits Table"""
     msg1 = await ctx.send("Attemping to run the Most Edits Table.")
-    res = await runTable()
+    res = await run_table()
     print(res)
     names = [v['name'] for v in res]
     data = [v['increase'] for v in res]
@@ -1654,7 +1654,7 @@ async def events(ctx, *args):
 async def get_words():
     """Gets the censor list"""
     global CENSORED_WORDS
-    CENSORED_WORDS = getCensor()
+    CENSORED_WORDS = get_censor()
 
 @bot.command(aliases=["man"])
 async def help(ctx, command:str=None):
@@ -1953,8 +1953,8 @@ async def exalt(ctx, user):
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=ROLE_EM)
     iden = await harvest_id(user)
-    userObj = member.guild.get_member(int(iden))
-    await userObj.add_roles(role)
+    user_obj = member.guild.get_member(int(iden))
+    await user_obj.add_roles(role)
     await ctx.send(f"Successfully exalted. Congratulations {user}! :tada: :tada:")
 
 @bot.command()
@@ -1964,8 +1964,8 @@ async def unexalt(ctx, user):
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=ROLE_EM)
     iden = await harvest_id(user)
-    userObj = member.guild.get_member(int(iden))
-    await userObj.remove_roles(role)
+    user_obj = member.guild.get_member(int(iden))
+    await user_obj.remove_roles(role)
     await ctx.send(f"Successfully unexalted.")
 
 @bot.command()
@@ -2030,8 +2030,8 @@ async def unmute(ctx, user):
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
     iden = await harvest_id(user)
-    userObj = member.guild.get_member(int(iden))
-    await userObj.remove_roles(role)
+    user_obj = member.guild.get_member(int(iden))
+    await user_obj.remove_roles(role)
     await ctx.send(f"Successfully unmuted {user}.")
 
 @bot.command()

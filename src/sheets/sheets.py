@@ -23,7 +23,7 @@ agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
 
 aios = aioify(obj=os, name='aios')
 
-async def getWorksheet():
+async def get_worksheet():
     """Returns the Pi-Bot Administrative Sheet, accessible to Pi-Bot administrators."""
     agc = await agcm.authorize()
     return await agc.open(SHEET_NAME)
@@ -95,14 +95,14 @@ async def getStarted():
     ss = await agc.open("Pi-Bot Administrative Sheet")
     print("Initialized gspread.")
 
-async def getRawCensor():
-    ss = await getWorksheet()
+async def get_raw_censor():
+    ss = await get_worksheet()
     eventSheet = await ss.worksheet("Censor Management")
     words = await eventSheet.batch_get(["B3:C1000"])
     return words
 
 async def getTags():
-    ss = await getWorksheet()
+    ss = await get_worksheet()
     tagSheet = await ss.worksheet("Tags")
     tags = await tagSheet.batch_get(["B3:E1000"])
     tags = tags[0]
@@ -117,12 +117,12 @@ async def getTags():
     return res
 
 async def updateWikiPage(title):
-    ss = await getWorksheet()
+    ss = await get_worksheet()
     varSheet = await ss.worksheet("Variable Backup")
     await varSheet.update_acell('C30', title)
 
 async def getWikiPage():
-    ss = await getWorksheet()
+    ss = await get_worksheet()
     varSheet = await ss.worksheet("Variable Backup")
     res = await varSheet.batch_get(["C30"])
     return res[0][0][0]

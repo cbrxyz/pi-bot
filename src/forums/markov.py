@@ -5,7 +5,7 @@ with open("src/forums/ydrc.txt") as f:
 
 text_model = markovify.NewlineText(text, state_size=4)
 
-def getResponses(count):
+def get_responses(count):
     """Gets a specific number (equal to count) of generated markov strings."""
     sentences = 0
     while sentences < count:

@@ -1,4 +1,4 @@
-from src.sheets.events import getEvents
+from src.sheets.events import get_events
 
 async def getStateList():
     return ["Alabama (AL)", 

@@ -6,7 +6,7 @@ from datetime import date
 from dotenv import load_dotenv
 load_dotenv()
 
-from src.forums.markov import getResponses
+from src.forums.markov import get_responses
 from info import version
 
 dev_mode = os.getenv("DEV_MODE") == "TRUE"
@@ -35,7 +35,7 @@ async def login():
     global loggedIn
     loggedIn = True
 
-async def makeDisclaimerString():
+async def make_disclaimer_string():
     """Makes the post disclaimer string for Pi-Bot."""
     if dev_mode:
         dMString = "yes"
@@ -69,8 +69,8 @@ async def makePost(allPosts):
     finalContent = postObject.content
     post.find_by_text("Quote").find_by_xpath("..").click()
     messageText = browser.find_by_css("#message").value
-    messageText += await getResponses(1)
-    disclaimer = await makeDisclaimerString()
+    messageText += await get_responses(1)
+    disclaimer = await make_disclaimer_string()
     messageText += disclaimer
     print(messageText)
     browser.find_by_css("#message").fill(messageText)

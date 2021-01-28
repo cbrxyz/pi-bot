@@ -1,8 +1,8 @@
-from src.sheets.sheets import getWorksheet
+from src.sheets.sheets import get_worksheet
 
 async def getTournamentChannels():
     """Gets the list of tournament channels."""
-    discordSheet = await getWorksheet()
+    discordSheet = await get_worksheet()
     eventSheet = await discordSheet.worksheet("Tournament List")
     info = await eventSheet.batch_get(["B2:H100"])
     info = info[0]

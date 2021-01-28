@@ -1,8 +1,8 @@
-from src.sheets.sheets import getWorksheet
+from src.sheets.sheets import get_worksheet
 
-async def getEvents():
+async def get_events():
     """Creates Pi-Bot's event list."""
-    discordSheet = await getWorksheet()
+    discordSheet = await get_worksheet()
     eventSheet = await discordSheet.worksheet("Event Info")
     info = await eventSheet.batch_get(["B2:C100"])
     info = info[0]
