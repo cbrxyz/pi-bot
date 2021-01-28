@@ -29,7 +29,7 @@ from src.wiki.wiki import implementCommand, getPageTables
 from src.wiki.schools import getSchoolListing
 from src.wiki.scilympiad import makeResultsTemplate, getPoints
 from src.wiki.mosteditstable import runTable
-from info import getAbout
+from info import get_about
 from doggo import getDoggo, getShiba
 from bear import getBearMessage
 from embed import assembleEmbed
@@ -41,7 +41,7 @@ from commanderrors import CommandNotAllowedInChannel
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
-devMode = os.getenv('DEV_MODE') == "TRUE"
+dev_mode = os.getenv('DEV_MODE') == "TRUE"
 
 ##############
 # SERVER VARIABLES
@@ -128,7 +128,7 @@ TZ_OFFSET = time.timezone/60/60 - 5
 intents = discord.Intents.default()
 intents.members = True
 
-if devMode:
+if dev_mode:
     BOT_PREFIX = "?"
     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
 else:
@@ -141,21 +141,21 @@ bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=i
 # CHECKS
 ##############
 
-async def isBear(ctx):
+async def is_bear(ctx):
     """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""
     return ctx.message.author.id == 353730886577160203 or ctx.message.author.id == 715048392408956950
 
-async def isStaff(ctx):
+async def is_staff(ctx):
     """Checks to see if the user is a staff member."""
     member = ctx.message.author
     vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
     staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
     return vipRole in member.roles or staffRole in member.roles
 
-async def isLauncher(ctx):
+async def is_launcher(ctx):
     """Checks to see if the user is a launch helper."""
     member = ctx.message.author
-    staff = await isStaff(ctx)
+    staff = await is_staff(ctx)
     lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
     if staff or lhRole in member.roles: return True
 
@@ -171,13 +171,13 @@ async def is_launcher_no_ctx(member):
         if role in member.roles: return True
     return False
 
-async def isAdmin(ctx):
+async def is_admin(ctx):
     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
     member = ctx.message.author
     aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
     if aRole in member.roles or member.id == 715048392408956950: return True
 
-def notBlacklistedChannel(blacklist):
+def not_blacklisted_channel(blacklist):
     """Given a string array blacklist, check if command was not invoked in specified blacklist channels."""
     async def predicate(ctx):
         channel = ctx.message.channel
@@ -189,7 +189,7 @@ def notBlacklistedChannel(blacklist):
     
     return commands.check(predicate)
     
-def isWhitelistedChannel(whitelist):
+def is_whitelisted_channel(whitelist):
     """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
     async def predicate(ctx):
         channel = ctx.message.channel
@@ -216,9 +216,9 @@ DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq",
 ##############
 # VARIABLES
 ##############
-fishNow = 0
-canPost = False
-doHourlySync = False
+fish_now = 0
+can_post = False
+do_hourly_sync = False
 CENSORED_WORDS = []
 CENSORED_EMOJIS = []
 EVENT_INFO = 0
@@ -253,19 +253,19 @@ aiowikip = aioify(obj=wikip)
 async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
-    await pullPrevInfo()
-    await updateTournamentList()
-    refreshSheet.start()
-    postSomething.start()
+    await pull_prev_info()
+    await update_tournament_list()
+    refresh_sheet.start()
+    post_something.start()
     cron.start()
-    goStylist.start()
+    go_stylist.start()
     manage_welcome.start()
-    storeVariables.start()
-    changeBotStatus.start()
-    updateMemberCount.start()
+    store_variables.start()
+    change_bot_status.start()
+    update_member_count.start()
     
 @tasks.loop(minutes=5)
-async def updateMemberCount():
+async def update_member_count():
     """Updates the member count shown on hidden VC"""
     guild = bot.get_guild(SERVER_ID)
     channel_prefix = "Members"
@@ -279,18 +279,18 @@ async def updateMemberCount():
     print("Refreshed member count.")
 
 @tasks.loop(seconds=30.0)
-async def refreshSheet():
+async def refresh_sheet():
     """Refreshes the censor list and stores variable backups."""
-    await refreshAlgorithm()
-    await prepareForSending()
+    await refresh_algorithm()
+    await prepare_for_sending()
     print("Attempted to refresh/store data from/to sheet.")
 
 @tasks.loop(hours=10)
-async def storeVariables():
-    await prepareForSending("store")
+async def store_variables():
+    await prepare_for_sending("store")
 
 @tasks.loop(hours=24)
-async def goStylist():
+async def go_stylist():
     await prettifyTemplates()
 
 @tasks.loop(minutes=10)
@@ -324,9 +324,9 @@ async def cron():
         if datetime.datetime.now() > date:
             # The date has passed, now do
             CRON_LIST.remove(c)
-            await handleCron(c['do'])
+            await handle_cron(c['do'])
 
-async def handleCron(string):
+async def handle_cron(string):
     try:
         if string.find("unban") != -1:
             iden = int(string.split(" ")[1])
@@ -353,7 +353,7 @@ async def handleCron(string):
         await autoReport("Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
 @tasks.loop(hours=1)
-async def changeBotStatus():
+async def change_bot_status():
     statuses = [
         {"type": "playing", "message": "Game On"},
         {"type": "listening", "message": "my SoM instrument"},
@@ -393,16 +393,16 @@ async def changeBotStatus():
     print("Changed the bot's status.")
 
 @tasks.loop(hours=28)
-async def postSomething():
-    global canPost
+async def post_something():
+    global can_post
     """Allows Pi-Bot to post markov-generated statements to the forums."""
-    if canPost:
+    if can_post:
         print("Attempting to post something.")
         await openBrowser()
     else:
-        canPost = True
+        can_post = True
 
-async def refreshAlgorithm():
+async def refresh_algorithm():
     """Pulls data from the administrative sheet."""
     global CENSORED_WORDS
     global CENSORED_EMOJIS
@@ -416,22 +416,22 @@ async def refreshAlgorithm():
     print("Refreshed data from sheet.")
     return True
 
-async def prepareForSending(type="variable"):
+async def prepare_for_sending(type="variable"):
     """Sends local variables to the administrative sheet as a backup."""
     r1 = json.dumps(REPORT_IDS)
     r2 = json.dumps(PING_INFO)
     r3 = json.dumps(TOURNEY_REPORT_IDS)
     r4 = json.dumps(COACH_REPORT_IDS)
-    r5 = json.dumps(CRON_LIST, default = datetimeConverter)
+    r5 = json.dumps(CRON_LIST, default = datetime_converter)
     r6 = json.dumps(REQUESTED_TOURNAMENTS)
     await sendVariables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
     print("Stored variables in sheet.")
 
-def datetimeConverter(o):
+def datetime_converter(o):
     if isinstance(o, datetime.datetime):
         return o.__str__()
 
-async def pullPrevInfo():
+async def pull_prev_info():
     data = await getVariables()
     global PING_INFO
     global REPORT_IDS
@@ -508,32 +508,32 @@ async def tournament(ctx, *args):
                 await autoReport("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
-            await updateTournamentList()
+            await update_tournament_list()
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def tla(ctx, iden, uid):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
         if t['iden'] == iden:
             t['count'] += 1
             await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
-            return await updateTournamentList()
+            return await update_tournament_list()
     REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
-    await updateTournamentList()
+    await update_tournament_list()
     return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def tlr(ctx, iden):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
         if t['iden'] == iden:
             REQUESTED_TOURNAMENTS.remove(t)
-    await updateTournamentList()
+    await update_tournament_list()
     return await ctx.send(f"Removed `#{iden}` from the tournament list.")
 
-async def updateTournamentList():
+async def update_tournament_list():
     tl = await getTournamentChannels()
     tl.sort(key=lambda x: x[0])
     global TOURNAMENT_INFO
@@ -635,7 +635,7 @@ async def updateTournamentList():
             await tourneyChannel.send(embed=e)
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def vc(ctx):
     server = ctx.message.guild
     if ctx.message.channel.category.name == CATEGORY_TOURNAMENTS:
@@ -679,7 +679,7 @@ async def vc(ctx):
         return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def getVariable(ctx, var):
     """Fetches a local variable."""
     if ctx.message.channel.id != 724125340733145140:
@@ -693,7 +693,7 @@ async def getVariable(ctx, var):
             await ctx.send(f"Can't find that variable!")
 
 @bot.command(aliases=["eats", "beareats"])
-@commands.check(isBear)
+@commands.check(is_bear)
 async def eat(ctx, user):
     """Allows bear to eat users >:D"""
     message = await getBearMessage(user)
@@ -701,11 +701,11 @@ async def eat(ctx, user):
     await ctx.send(message)
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def refresh(ctx):
     """Refreshes data from the sheet."""
-    await updateTournamentList()
-    res = await refreshAlgorithm()
+    await update_tournament_list()
+    res = await refresh_algorithm()
     if res == True:
         await ctx.send("Successfully refreshed data from sheet.")
     else:
@@ -739,7 +739,7 @@ async def getuserid(ctx, user=None):
         await ctx.send(f"The user ID of <@{user}> is `{user}`.")
 
 @bot.command(aliases=["ufi"])
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def userfromid(ctx, iden:int):
     """Mentions a user with the given ID."""
     user = bot.get_user(iden)
@@ -753,7 +753,7 @@ async def hello(ctx):
 @bot.command(aliases=["what"])
 async def about(ctx):
     """Prints information about the bot."""
-    await ctx.send(getAbout())
+    await ctx.send(get_about())
 
 @bot.command(aliases=["server", "link", "invitelink"])
 async def invite(ctx):
@@ -781,7 +781,7 @@ async def rand(ctx, a=1, b=10):
     await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
 
 @bot.command()
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def magic8ball(ctx):
     msg = await ctx.send("Swishing the magic 8 ball...")
     await ctx.channel.trigger_typing()
@@ -812,7 +812,7 @@ async def magic8ball(ctx):
     await ctx.send(f"**{response}**")
 
 @bot.command()
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def xkcd(ctx, num = None):
     max_num = await xkcd_module.get_max()
     if num == None:
@@ -838,7 +838,7 @@ async def coach(ctx):
     await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
 
 @bot.command(aliases=["slow", "sm"])
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def slowmode(ctx, arg:int=None):
     if arg == None:
         if ctx.channel.slowmode_delay == 0:
@@ -928,7 +928,7 @@ async def states(ctx, *args):
             for word in words:
                 newArgs.remove(word.lower())
     for arg in newArgs:
-        roleName = await lookupRole(arg)
+        roleName = await lookup_role(arg)
         if roleName == False:
             return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
         role = discord.utils.get(member.guild.roles, name=roleName)
@@ -966,7 +966,7 @@ async def tag(ctx, name):
     member = ctx.message.author
     if len(TAGS) == 0:
         return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
-    staff = await isStaff(ctx)
+    staff = await is_staff(ctx)
     lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
     member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
     for t in TAGS:
@@ -979,7 +979,7 @@ async def tag(ctx, name):
     return await ctx.send("Tag not found.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def lock(ctx):
     """Locks a channel to Member access."""
     member = ctx.message.author
@@ -1005,7 +1005,7 @@ async def lock(ctx):
     await ctx.send("Locked the channel to Member access.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def unlock(ctx):
     """Unlocks a channel to Member access."""
     member = ctx.message.author
@@ -1083,7 +1083,7 @@ async def info(ctx):
     channel_percentage = round(channel_count/500 * 100, 3)
     role_percenatege = round(role_count/250 * 100, 3)
 
-    staff_member = await isStaff(ctx)
+    staff_member = await is_staff(ctx)
     fields = [
             {
                 "name": "Basic Information",
@@ -1380,7 +1380,7 @@ async def dnd(ctx):
     else:
         return await ctx.send("You can't enter DND mode without any pings!")
 
-async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
+async def ping_pm(userID, pinger, pingExp, channel, content, jumpUrl):
     """Allows Pi-Bot to PM a user about a ping."""
     userToSend = bot.get_user(userID)
     try:
@@ -1403,7 +1403,7 @@ async def pingPM(userID, pinger, pingExp, channel, content, jumpUrl):
     await userToSend.send(embed=embed)
 
 @bot.command(aliases=["doggobomb"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def dogbomb(ctx, member:str=False):
     """Dog bombs someone!"""
     if member == False:
@@ -1413,7 +1413,7 @@ async def dogbomb(ctx, member:str=False):
     await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
 
 @bot.command()
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def shibabomb(ctx, member:str=False):
     """Shiba bombs a user!"""
     if member == False:
@@ -1494,7 +1494,7 @@ async def censor(message):
     await wh.delete()
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def kick(ctx, user:discord.Member, reason:str=False):
     """Kicks a user for the specified reason."""
     if reason == False:
@@ -1505,7 +1505,7 @@ async def kick(ctx, user:discord.Member, reason:str=False):
     await ctx.send("The user was kicked.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def met(ctx):
     """Runs Pi-Bot's Most Edits Table"""
     msg1 = await ctx.send("Attemping to run the Most Edits Table.")
@@ -1544,7 +1544,7 @@ async def met(ctx):
     await ctx.send(file=file, embed=embed)
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def prepembed(ctx, channel:discord.TextChannel, *, jsonInput):
     """Helps to create an embed to be sent to a channel."""
     jso = json.loads(jsonInput)
@@ -1651,7 +1651,7 @@ async def events(ctx, *args):
         eventRes = "Added events " + (' '.join([f'`{arg}`' for arg in addedRoles])) + ", " + ("and " if not len(couldNotHandle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removedRoles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in couldNotHandle])) if len(couldNotHandle) else "") + "."
     await ctx.send(eventRes)
 
-async def getWords():
+async def get_words():
     """Gets the censor list"""
     global CENSORED_WORDS
     CENSORED_WORDS = getCensor()
@@ -1673,39 +1673,39 @@ async def help(ctx, command:str=None):
     await ctx.send(embed=hlp)
 
 @bot.command(aliases=["feedbear"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def fish(ctx):
     """Gives a fish to bear."""
-    global fishNow
+    global fish_now
     r = random.random()
-    if len(str(fishNow)) > 1500:
-        fishNow = round(pow(fishNow, 0.5))
+    if len(str(fish_now)) > 1500:
+        fish_now = round(pow(fish_now, 0.5))
         return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
     if r > 0.9:
-        fishNow += 10
-        return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fishNow} fish!")
+        fish_now += 10
+        return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
     if r > 0.1:
-        fishNow += 1
-        return await ctx.send(f"You feed bear one fish. Bear now has {fishNow} fish!")
+        fish_now += 1
+        return await ctx.send(f"You feed bear one fish. Bear now has {fish_now} fish!")
     if r > 0.02:
-        fishNow += 0
-        return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fishNow} fish.")
+        fish_now += 0
+        return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
     else:
-        fishNow = round(pow(fishNow, 0.5))
-        return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fishNow} fish. \n:sob:\n:sob:\n:sob:")
+        fish_now = round(pow(fish_now, 0.5))
+        return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
 
 
 @bot.command(aliases=["badbear"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def stealfish(ctx):
-    global fishNow
+    global fish_now
     member = ctx.message.author
     r = random.random()
     if member.id in STEALFISH_BAN:
         return await ctx.send("Hey! You've been banned from stealing fish for now.")
     if r >= 0.75:
         ratio = r - 0.5
-        fishNow = round(fishNow * (1 - ratio))
+        fish_now = round(fish_now * (1 - ratio))
         per = round(ratio * 100)
         return await ctx.send(f"You stole {per}% of bear's fish!")
     if r >= 0.416:
@@ -1725,9 +1725,9 @@ async def stealfish(ctx):
         return await ctx.send("You are banned from using `!stealfish` until the next version of Pi-Bot is released.")
 
 @bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def trout(ctx, member:str=False):
-    if await sanitizeMention(member) == False:
+    if await sanitize_mention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. Not so fast!")
     if member == False:
         await ctx.send(f"{ctx.message.author.mention} trout slaps themselves!")
@@ -1736,9 +1736,9 @@ async def trout(ctx, member:str=False):
     await ctx.send("http://gph.is/1URFXN9")
 
 @bot.command(aliases=["givecookie"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def cookie(ctx, member:str=False):
-    if await sanitizeMention(member) == False:
+    if await sanitize_mention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
     if member == False:
         await ctx.send(f"{ctx.message.author.mention} gives themselves a cookie.")
@@ -1747,15 +1747,15 @@ async def cookie(ctx, member:str=False):
     await ctx.send("http://gph.is/1UOaITh")
 
 @bot.command()
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def treat(ctx):
     await ctx.send("You give bernard one treat!")
     await ctx.send("http://gph.is/11nJAH5")
 
 @bot.command(aliases=["givehershey", "hershey"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def hersheybar(ctx, member:str=False):
-    if await sanitizeMention(member) == False:
+    if await sanitize_mention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
     if member == False:
         await ctx.send(f"{ctx.message.author.mention} gives themselves a Hershey bar.")
@@ -1764,9 +1764,9 @@ async def hersheybar(ctx, member:str=False):
     await ctx.send("http://gph.is/2rt64CX")
 
 @bot.command(aliases=["giveicecream"])
-@notBlacklistedChannel(blacklist=[CHANNEL_WELCOME])
+@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
 async def icecream(ctx, member:str=False):
-    if await sanitizeMention(member) == False:
+    if await sanitize_mention(member) == False:
         return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
     if member == False:
         await ctx.send(f"{ctx.message.author.mention} gives themselves some ice cream.")
@@ -1774,7 +1774,7 @@ async def icecream(ctx, member:str=False):
         await ctx.send(f"{ctx.message.author.mention} gives {member} ice cream!")
     await ctx.send("http://gph.is/YZLMMs")
 
-async def sanitizeMention(member):
+async def sanitize_mention(member):
     if member == False: return True
     if member == "@everyone" or member == "@here": return False
     if member[:3] == "<@&": return False
@@ -1783,13 +1783,13 @@ async def sanitizeMention(member):
 @bot.command(aliases=["div"])
 async def division(ctx, div):
     if div.lower() == "a":
-        res = await assignDiv(ctx, "Division A")
+        res = await assign_div(ctx, "Division A")
         await ctx.send("Assigned you the Division A role, and removed all other divison/alumni roles.")
     elif div.lower() == "b":
-        res = await assignDiv(ctx, "Division B")
+        res = await assign_div(ctx, "Division B")
         await ctx.send("Assigned you the Division B role, and removed all other divison/alumni roles.")
     elif div.lower() == "c":
-        res = await assignDiv(ctx, "Division C")
+        res = await assign_div(ctx, "Division C")
         await ctx.send("Assigned you the Division C role, and removed all other divison/alumni roles.")
     elif div.lower() == "d":
         await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
@@ -1803,7 +1803,7 @@ async def division(ctx, div):
     else:
         return await ctx.send("Sorry, I don't seem to see that division. Try `!division c` to assign the Division C role, or `!division d` to assign the Division D role.")
 
-async def assignDiv(ctx, div):
+async def assign_div(ctx, div):
     """Assigns a user a div"""
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=div)
@@ -1870,7 +1870,7 @@ async def wiki(ctx, command:str=False, *args):
                 url = await implementCommand("link", arg)
                 if url == False:
                     await ctx.send(f"The `{arg}` page does not exist!")
-                await ctx.send(f"<{wikiUrlFix(url)}>")
+                await ctx.send(f"<{wiki_url_fix(url)}>")
         else:
             stringSum = " ".join([arg for arg in args if arg[:1] != "-"])
             if len(args) > 0 and command.rstrip() != "link":
@@ -1881,9 +1881,9 @@ async def wiki(ctx, command:str=False, *args):
             if url == False:
                 await ctx.send(f"The `{stringSum}` page does not exist!")
             else:
-                await ctx.send(f"<{wikiUrlFix(url)}>")
+                await ctx.send(f"<{wiki_url_fix(url)}>")
 
-def wikiUrlFix(url):
+def wiki_url_fix(url):
     return url.replace("%3A", ":").replace(r"%2F","/")
 
 @bot.command(aliases=["wp"])
@@ -1921,7 +1921,7 @@ async def profile(ctx, name:str=False):
         if name == None:
             name = member.name
     elif name.find("<@") != -1:
-        iden = await harvestID(name)
+        iden = await harvest_id(name)
         member = ctx.message.author.guild.get_member(int(iden))
         name = member.nick
         if name == None:
@@ -1947,29 +1947,29 @@ async def count(ctx):
     await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def exalt(ctx, user):
     """Exalts a user."""
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=ROLE_EM)
-    iden = await harvestID(user)
+    iden = await harvest_id(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.add_roles(role)
     await ctx.send(f"Successfully exalted. Congratulations {user}! :tada: :tada:")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def unexalt(ctx, user):
     """Unexalts a user."""
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=ROLE_EM)
-    iden = await harvestID(user)
+    iden = await harvest_id(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.remove_roles(role)
     await ctx.send(f"Successfully unexalted.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def mute(ctx, user:discord.Member, *args):
     """
     Mutes a user.
@@ -1991,7 +1991,7 @@ async def selfmute(ctx, *args):
     :type *args: str
     """
     user = ctx.message.author
-    if await isStaff(ctx):
+    if await is_staff(ctx):
         return await ctx.send("Staff members can't self mute.")
     time = " ".join(args)
     await _mute(ctx, user, time, self=True)
@@ -2024,18 +2024,18 @@ async def _mute(ctx, user:discord.Member, time: str, self: bool):
     await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} EST`.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def unmute(ctx, user):
     """Unmutes a user."""
     member = ctx.message.author
     role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
-    iden = await harvestID(user)
+    iden = await harvest_id(user)
     userObj = member.guild.get_member(int(iden))
     await userObj.remove_roles(role)
     await ctx.send(f"Successfully unmuted {user}.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def ban(ctx, member:discord.User=None, reason=None, *args):
     """Bans a user."""
     time = " ".join(args)
@@ -2059,7 +2059,7 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
     await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} EST`.")
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def unban(ctx, member:discord.User=None):
     """Unbans a user."""
     if member == None:
@@ -2113,7 +2113,7 @@ async def pronouns(ctx, *args):
             "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
 
 @bot.command()
-@commands.check(isLauncher)
+@commands.check(is_launcher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
     await _confirm(args)
@@ -2151,8 +2151,8 @@ async def _confirm(members):
 async def nuke(ctx, count):
     """Nukes (deletes) a specified amount of messages."""
     global STOPNUKE
-    launcher = await isLauncher(ctx)
-    staff = await isStaff(ctx)
+    launcher = await is_launcher(ctx)
+    staff = await is_staff(ctx)
     if not (staff or (launcher and ctx.message.channel.name == "welcome")):
         return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
     if STOPNUKE:
@@ -2188,8 +2188,8 @@ async def nuke(ctx, count):
 @bot.command()
 async def stopnuke(ctx):
     global STOPNUKE
-    launcher = await isLauncher(ctx)
-    staff = await isStaff(ctx)
+    launcher = await is_launcher(ctx)
+    staff = await is_staff(ctx)
     if not (staff or (launcher and ctx.message.channel.name == CHANNEL_WELCOME)):
         return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
     STOPNUKE = True
@@ -2201,7 +2201,7 @@ async def stopnuke(ctx):
     STOPNUKE = False
 
 @bot.command()
-@commands.check(isStaff)
+@commands.check(is_staff)
 async def clrreact(ctx, msg: discord.Message, *args: discord.Member):
     """
     Clears all reactions from a given message.
@@ -2236,7 +2236,7 @@ async def on_message_edit(before, after):
         print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
         await after.delete()
 
-async def sendToDMLog(message):
+async def send_to_dm_log(message):
     server = bot.get_guild(SERVER_ID)
     dmChannel = discord.utils.get(server.text_channels, name=CHANNEL_DMLOG)
     embed = assembleEmbed(
@@ -2280,7 +2280,7 @@ async def sendToDMLog(message):
 async def on_message(message):
     # Log DMs
     if type(message.channel) == discord.DMChannel:
-        await sendToDMLog(message)
+        await send_to_dm_log(message)
 
     # Print to output
     print('Message from {0.author}: {0.content}'.format(message))
@@ -2337,7 +2337,7 @@ async def on_message(message):
                         name = message.author.nick
                         if name == None:
                             name = message.author.name
-                        await pingPM(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
+                        await ping_pm(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
     # SPAM TESTING
     global RECENT_MESSAGES
     caps = False
@@ -2729,7 +2729,7 @@ async def on_command_error(ctx, error):
         return await ctx.send("Oops, there was a command error. Try again.")
     return
 
-async def lookupRole(name):
+async def lookup_role(name):
     name = name.title()
     if name == "Al" or name == "Alabama": return "Alabama"
     elif name == "All" or name == "All States": return "All States"
@@ -2786,10 +2786,10 @@ async def lookupRole(name):
     elif name == "Wy" or name == "Wyoming": return "Wyoming"
     return False
 
-async def harvestID(user):
+async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
 
-if devMode:
+if dev_mode:
     bot.run(DEV_TOKEN)
 else:
     bot.run(TOKEN)

@@ -9,10 +9,10 @@ load_dotenv()
 from src.forums.markov import getResponses
 from info import version
 
-devMode = os.getenv("DEV_MODE") == "TRUE"
+dev_mode = os.getenv("DEV_MODE") == "TRUE"
 loggedIn = False
 
-if devMode:
+if dev_mode:
     # If in development mode, open the Browser so it can be seen
     browser = Browser('chrome', headless=True)
     threadId = "18240"
@@ -37,7 +37,7 @@ async def login():
 
 async def makeDisclaimerString():
     """Makes the post disclaimer string for Pi-Bot."""
-    if devMode:
+    if dev_mode:
         dMString = "yes"
         nCString = "no"
     else:

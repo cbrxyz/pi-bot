@@ -31,8 +31,8 @@ async def getWorksheet():
 async def buildServiceAccount():
     """Builds the service account used to access the administrative sheet."""
     load_dotenv()
-    devMode = await aios.getenv('DEV_MODE') == "TRUE"
-    if devMode:
+    dev_mode = await aios.getenv('DEV_MODE') == "TRUE"
+    if dev_mode:
         data = {
             "type": "service_account",
             "project_id": os.getenv('GCP_PROJECT_ID'),
