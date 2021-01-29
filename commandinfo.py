@@ -16,7 +16,7 @@ COMMAND_INFO = [
         "inQuickList": False
     },
     {
-        "name": "getuserid",
+        "name": "getuser_id",
         "description": "gets the ID of yourself, or another user",
         "aliases": ["ui"],
         "parameters": [
