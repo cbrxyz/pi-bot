@@ -28,7 +28,7 @@ async def get_worksheet():
     agc = await agcm.authorize()
     return await agc.open(SHEET_NAME)
 
-async def buildServiceAccount():
+async def build_service_account():
     """Builds the service account used to access the administrative sheet."""
     load_dotenv()
     dev_mode = await aios.getenv('DEV_MODE') == "TRUE"
@@ -62,49 +62,49 @@ async def buildServiceAccount():
         json.dump(data, f)
     print("Service account built.")
 
-async def send_variables(dataArr, type):
+async def send_variables(data_arr, type):
     """Sends variable backups to the Administrative Sheet."""
     agc = await agcm.authorize()
     ss = await agc.open(SHEET_NAME)
     if type == "variable":
-        varSheet = await ss.worksheet("Variable Backup")
-        await varSheet.batch_update([{
+        var_sheet = await ss.worksheet("Variable Backup")
+        await var_sheet.batch_update([{
             'range': "C3:C8",
-            'values': dataArr
+            'values': data_arr
         }])
         print("Stored variables in Google Sheet.")
     elif type == "store":
-        storedVarSheet = await ss.worksheet("Stored Variable Backup")
-        await storedVarSheet.append_row([str(datetime.now())] + [v[0] for v in dataArr])
+        stored_var_sheet = await ss.worksheet("Stored Variable Backup")
+        await stored_var_sheet.append_row([str(datetime.now())] + [v[0] for v in data_arr])
         print("Stored variables in the long-term area.")
 
 async def get_variables():
     """Gets the previous variables, so that when Pi-Bot is restarted, the ping information is not lost."""
     agc = await agcm.authorize()
     ss = await agc.open(SHEET_NAME)
-    varSheet = await ss.worksheet("Variable Backup")
-    dataArr = await varSheet.batch_get(["C3:C8"])
-    dataArr = dataArr[0]
-    for row in dataArr:
+    var_sheet = await ss.worksheet("Variable Backup")
+    data_arr = await var_sheet.batch_get(["C3:C8"])
+    data_arr = data_arr[0]
+    for row in data_arr:
         row[0] = json.loads(row[0])
-    return dataArr
+    return data_arr
 
 async def getStarted():
-    await buildServiceAccount()
+    await build_service_account()
     agc = await agcm.authorize()
     ss = await agc.open("Pi-Bot Administrative Sheet")
     print("Initialized gspread.")
 
 async def get_raw_censor():
     ss = await get_worksheet()
-    eventSheet = await ss.worksheet("Censor Management")
-    words = await eventSheet.batch_get(["B3:C1000"])
+    event_sheet = await ss.worksheet("Censor Management")
+    words = await event_sheet.batch_get(["B3:C1000"])
     return words
 
 async def get_tags():
     ss = await get_worksheet()
-    tagSheet = await ss.worksheet("Tags")
-    tags = await tagSheet.batch_get(["B3:E1000"])
+    tag_sheet = await ss.worksheet("Tags")
+    tags = await tag_sheet.batch_get(["B3:E1000"])
     tags = tags[0]
     res = []
     for row in tags:
@@ -118,13 +118,13 @@ async def get_tags():
 
 async def updateWikiPage(title):
     ss = await get_worksheet()
-    varSheet = await ss.worksheet("Variable Backup")
-    await varSheet.update_acell('C30', title)
+    var_sheet = await ss.worksheet("Variable Backup")
+    await var_sheet.update_acell('C30', title)
 
 async def getWikiPage():
     ss = await get_worksheet()
-    varSheet = await ss.worksheet("Variable Backup")
-    res = await varSheet.batch_get(["C30"])
+    var_sheet = await ss.worksheet("Variable Backup")
+    res = await var_sheet.batch_get(["C30"])
     return res[0][0][0]
 
 event_loop = asyncio.get_event_loop()

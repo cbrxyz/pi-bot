@@ -26,7 +26,7 @@ BEAR_MESSAGES = [
 
 async def get_bear_message(user):
     i = random.random()
-    messageIndex = math.floor(i*len(BEAR_MESSAGES))
-    message = BEAR_MESSAGES[messageIndex]
+    message_index = math.floor(i*len(BEAR_MESSAGES))
+    message = BEAR_MESSAGES[message_index]
     message = message.replace(r"{1}", fr"<@{BEAR_ID}>").replace(r"{2}", f"{user}")
     return message

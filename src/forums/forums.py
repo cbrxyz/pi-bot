@@ -10,16 +10,16 @@ from src.forums.markov import get_responses
 from info import version
 
 dev_mode = os.getenv("DEV_MODE") == "TRUE"
-loggedIn = False
+logged_in = False
 
 if dev_mode:
     # If in development mode, open the Browser so it can be seen
     browser = Browser('chrome', headless=True)
-    threadId = "18240"
+    thread_id = "18240"
 else:
     # If not, do not open the Browser in a way where it can be seen
     browser = Browser('chrome', headless=True)
-    threadId = "23"
+    thread_id = "23"
 
 class Post:
     def __init__(self, username, content):
@@ -32,57 +32,57 @@ async def login():
     browser.find_by_id('username').fill(os.getenv("PI_BOT_FORUMS_USERNAME"))
     browser.find_by_id('password').fill(os.getenv("PI_BOT_FORUMS_PASSWORD"))
     browser.find_by_css('dd .button1').first.click()
-    global loggedIn
-    loggedIn = True
+    global logged_in
+    logged_in = True
 
 async def make_disclaimer_string():
     """Makes the post disclaimer string for Pi-Bot."""
     if dev_mode:
-        dMString = "yes"
-        nCString = "no"
+        dm_string = "yes"
+        nc_string = "no"
     else:
-        dMString = "no"
-        nCString = "yes"
-    return "\n[size=70]~~~ This message was posted completely with code (dm: " + dMString + ", ver: " + version + "). If there is an error, please contact pepperonipi in the signature. ~~~[/size]"
+        dm_string = "no"
+        nc_string = "yes"
+    return "\n[size=70]~~~ This message was posted completely with code (dm: " + dm_string + ", ver: " + version + "). If there is an error, please contact pepperonipi in the signature. ~~~[/size]"
 
-async def makePost(allPosts):
+async def make_post(all_posts):
     """Main method responsible for constructing Pi-Bot's new post."""
-    globalUn = ""
-    globalContent = ""
-    postObjects = []
+    global_username = ""
+    global_content = ""
+    post_objects = []
 
-    for i in allPosts:
+    for i in all_posts:
         print(i['id'])
         if len(i.find_by_css(".username")) == 0:
             un = i.find_by_css(".username-coloured")[0].value
         else:
             un = i.find_by_css(".username")[0].value
         content = i.find_by_css(".content")[0].value
-        postObjects.append(Post(un, content))
-        globalUn = un
-        globalContent = content
+        post_objects.append(Post(un, content))
+        global_username = un
+        global_content = content
 
-    randIndex = random.randrange(0, len(allPosts))
-    postObject = postObjects[randIndex]
-    post = allPosts[randIndex]
-    finalUn = postObject.username
-    finalContent = postObject.content
+    random_index = random.randrange(0, len(all_posts))
+    post_object = post_objects[random_index]
+    post = all_posts[random_index]
+    final_username = post_object.username
+    final_content = post_object.content
     post.find_by_text("Quote").find_by_xpath("..").click()
-    messageText = browser.find_by_css("#message").value
-    messageText += await get_responses(1)
+    message_text = browser.find_by_css("#message").value
+    message_text += await get_responses(1)
     disclaimer = await make_disclaimer_string()
-    messageText += disclaimer
-    print(messageText)
-    browser.find_by_css("#message").fill(messageText)
+    message_text += disclaimer
+    print(message_text)
+    browser.find_by_css("#message").fill(message_text)
     await asyncio.sleep(6)
     browser.find_by_css(".default-submit-action").click()
 
 async def open_browser():
     """Opens the browser for Pi-Bot to interact with."""
-    if not loggedIn:
+    if not logged_in:
         await login()
-    browser.visit(f"https://scioly.org/forums/viewtopic.php?f=335&t={threadId}&start=100000")
+    browser.visit(f"https://scioly.org/forums/viewtopic.php?f=335&t={thread_id}&start=100000")
     await asyncio.sleep(1)
-    allPosts = browser.find_by_css('.post')
-    print("Posts on Page: ", len(allPosts))
-    await makePost(allPosts)
+    all_posts = browser.find_by_css('.post')
+    print("Posts on Page: ", len(all_posts))
+    await make_post(all_posts)

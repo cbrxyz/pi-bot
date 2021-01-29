@@ -928,16 +928,16 @@ async def states(ctx, *args):
             for word in words:
                 new_args.remove(word.lower())
     for arg in new_args:
-        roleName = await lookup_role(arg)
-        if roleName == False:
+        role_name = await lookup_role(arg)
+        if role_name == False:
             return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
-        role = discord.utils.get(member.guild.roles, name=roleName)
+        role = discord.utils.get(member.guild.roles, name=role_name)
         if role in member.roles:
             await member.remove_roles(role)
-            removed_roles.append(roleName)
+            removed_roles.append(role_name)
         else:
             await member.add_roles(role)
-            added_roles.append(roleName)
+            added_roles.append(role_name)
     if len(added_roles) > 0 and len(removed_roles) == 0:
         state_res = "Added states " + (' '.join([f'`{arg}`' for arg in added_roles])) + "."
     elif len(removed_roles) > 0 and len(added_roles) == 0:
@@ -1628,7 +1628,7 @@ async def events(ctx, *args):
     for arg in new_args:
         found_event = False
         for event in event_info:
-            aliases = [abbr.lower() for abbr in event['eventAbbreviations']]
+            aliases = [abbr.lower() for abbr in event['event_abbreviations']]
             if arg.lower() in aliases or arg.lower() == event['eventName'].lower():
                 event_names.append(event['eventName'])
                 found_event = True
