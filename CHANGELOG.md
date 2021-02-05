@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.10 - 2021-02-05
+### Fixed
+* Fixed various errors on logging deleted and edited messages (closes [#298](https://github.com/cbrxyz/pi-bot/issues/298))
+
 ## 4.5.9 - 2021-01-28
 ### Fixed
 * MET table is removed from matplotlib memory when the graph is generated (closes [#340](https://github.com/cbrxyz/pi-bot/issues/340))
