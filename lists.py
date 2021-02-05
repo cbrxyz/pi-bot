@@ -1,6 +1,6 @@
-from src.sheets.events import getEvents
+from src.sheets.events import get_events
 
-async def getStateList():
+async def get_state_list():
     return ["Alabama (AL)", 
     "Alaska (AK)", 
     "Arizona (AZ)", 

@@ -16,7 +16,7 @@ COMMAND_INFO = [
         "inQuickList": False
     },
     {
-        "name": "getuserid",
+        "name": "getuser_id",
         "description": "gets the ID of yourself, or another user",
         "aliases": ["ui"],
         "parameters": [
@@ -71,22 +71,6 @@ COMMAND_INFO = [
             "Member"
         ],
         "inQuickList": True
-    },
-    {
-        "name": "nofish",
-        "description": "takes away all of bear's fish",
-        "aliases": [],
-        "parameters": [],
-        "usage":[
-            {
-                "cmd": "!nofish",
-                "result": "removes all of bear's fish"
-            }
-        ],
-        "access":[
-            "Member"
-        ],
-        "inQuickList": False
     },
     {
         "name": "help",

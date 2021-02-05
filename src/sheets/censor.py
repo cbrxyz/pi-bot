@@ -1,8 +1,8 @@
-from src.sheets.sheets import getRawCensor
+from src.sheets.sheets import get_raw_censor
 
-async def getCensor():
+async def get_censor():
     """Creates Pi-Bot's censor."""
-    words = await getRawCensor()
+    words = await get_raw_censor()
     words = words[0]
     CENSORED_WORDS = []
     CENSORED_EMOJIS = []

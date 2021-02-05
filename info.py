@@ -1,8 +1,8 @@
-version = "4.5.4"
+version = "4.5.9"
 developers = "Created and developed mainly by <@715048392408956950>. All contributors can be found here: <https://github.com/cbrxyz/pi-bot/graphs/contributors>"
 repo = "https://github.com/cbrxyz/pi-bot"
-wikiLink = "https://scioly.org/wiki/index.php/User:Pi-Bot"
-forumsLink = "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
+wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
+forums_link = "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
 
-def getAbout():
-    return "Pi-Bot v" + version + "\n" + developers + "\nRepo: <" + repo + ">\nWiki: <" + wikiLink + ">\nForums: <" + forumsLink + ">"
+def get_about():
+    return "Pi-Bot v" + version + "\n" + developers + "\nRepo: <" + repo + ">\nWiki: <" + wiki_link + ">\nForums: <" + forums_link + ">"

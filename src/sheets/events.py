@@ -1,21 +1,21 @@
-from src.sheets.sheets import getWorksheet
+from src.sheets.sheets import get_worksheet
 
-async def getEvents():
+async def get_events():
     """Creates Pi-Bot's event list."""
-    discordSheet = await getWorksheet()
-    eventSheet = await discordSheet.worksheet("Event Info")
-    info = await eventSheet.batch_get(["B2:C100"])
+    discord_sheet = await get_worksheet()
+    event_sheet = await discord_sheet.worksheet("Event Info")
+    info = await event_sheet.batch_get(["B2:C100"])
     info = info[0]
     del info[0]
-    eventNames = []
-    eventAbbreviations = []
+    event_names = []
+    event_abbreviations = []
     for row in info:
-        eventNames.append(row[0])
+        event_names.append(row[0])
         if len(row) > 1:
-            eventAbbreviations.append(row[1].split(","))
+            event_abbreviations.append(row[1].split(","))
         else:
-            eventAbbreviations.append('')
+            event_abbreviations.append('')
     res = []
-    for i, v in enumerate(eventNames):
-        res.append({'eventName': v,'eventAbbreviations': eventAbbreviations[i]})
+    for i, v in enumerate(event_names):
+        res.append({'eventName': v,'event_abbreviations': event_abbreviations[i]})
     return res

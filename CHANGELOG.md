@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.9 - 2021-01-28
+### Fixed
+* MET table is removed from matplotlib memory when the graph is generated (closes [#340](https://github.com/cbrxyz/pi-bot/issues/340))
+
+## 4.5.8 - 2021-01-15
+### Changed
+* `!coach` now gives the user a link to the public Coach role application.
+
+## 4.5.7 - 2021-01-15
+### Added
+* Live member count channel for staff to monitor server (closes [#320](https://github.com/cbrxyz/pi-bot/issues/320))
+
+## 4.5.6 - 2021-01-14
+### Added
+* Support for the "Self Muted" role
+* Option for users who self-muted to unmute through a reaction on a special message (closes [#325](https://github.com/cbrxyz/pi-bot/issues/325))
+
+## 4.5.5 - 2021-01-13
+### Fixed
+* Tournament list breaks if number of available tournaments decreases by a large margin (closes [#316](https://github.com/cbrxyz/pi-bot/issues/316))
+* `!fish` breaks if fish count gets too large (closes [#324](https://github.com/cbrxyz/pi-bot/issues/324))
+
 ## 4.5.4 - 2020-12-17
 ### Changed
 * `!beareats` now deletes original command message (closes [#304](https://github.com/cbrxyz/pi-bot/issues/304))
