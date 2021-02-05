@@ -2479,8 +2479,8 @@ async def on_raw_message_edit(payload):
         return
     try:
         message = payload.cached_message
-        msgNow = await channel.fetch_message(message.id)
-        channelName = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
+        message_now = await channel.fetch_message(message.id)
+        channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
         embed = assembleEmbed(
             title=":pencil: Edited Message",
             fields=[
@@ -2491,7 +2491,7 @@ async def on_raw_message_edit(payload):
                 },
                 {
                     "name": "Channel",
-                    "value": channelName,
+                    "value": channel_name,
                     "inline": "True"
                 },
                 {
