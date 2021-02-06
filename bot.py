@@ -726,8 +726,8 @@ async def getroleid(ctx, name):
     role = discord.utils.get(ctx.message.author.guild.roles, name=name)
     return await ctx.send(f"`{role.mention}`")
 
-@bot.command(aliases=["ui"])
-async def getuser_id(ctx, user=None):
+@bot.command(aliases=["gui", "ui", "userid"])
+async def getuserid(ctx, user=None):
     """Gets the user ID of the caller or another user."""
     if user == None:
         await ctx.send(f"Your user ID is `{ctx.message.author.id}`.")
@@ -2596,7 +2596,7 @@ async def on_raw_message_delete(payload):
     deleted_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DELETEDM)
     try:
         message = payload.cached_message
-        channelName = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
+        channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
         embed = assembleEmbed(
             title=":fire: Deleted Message",
             fields=[
@@ -2607,7 +2607,7 @@ async def on_raw_message_delete(payload):
                 },
                 {
                     "name": "Channel",
-                    "value": channelName,
+                    "value": channel_name,
                     "inline": "True"
                 },
                 {
