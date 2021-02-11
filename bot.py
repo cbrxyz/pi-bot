@@ -1,5 +1,6 @@
 import discord
 import os
+import traceback
 import asyncio
 import requests
 import re
@@ -2664,7 +2665,7 @@ async def on_raw_message_delete(payload):
 
 @bot.event
 async def on_command_error(ctx, error):
-    print("ERROR:")
+    print("Command Error:")
     print(error)
     # Argument parsing errors
     if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(error, discord.ext.commands.InvalidEndOfQuotedStringError):
@@ -2732,6 +2733,11 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.CommandError):
         return await ctx.send("Oops, there was a command error. Try again.")
     return
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    print("Code Error:")
+    print(traceback.format_exc())
 
 async def lookup_role(name):
     name = name.title()
