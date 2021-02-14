@@ -168,6 +168,7 @@ async def is_launcher_no_ctx(member):
     vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
     lhRole = discord.utils.get(server.roles, name=ROLE_LH)
     roles = [wmRole, gm_role, aRole, vipRole, lhRole]
+    member = server.get_member(member)
     for role in roles:
         if role in member.roles: return True
     return False
@@ -2284,11 +2285,11 @@ async def on_message(message):
     # Log DMs
     if type(message.channel) == discord.DMChannel:
         await send_to_dm_log(message)
-
-    # Print to output
-    if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
-        # avoid sending logs for messages in log channels
-        print(f'Message from {message.author} in #{message.channel}: {message.content}')
+    else:
+        # Print to output
+        if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
+            # avoid sending logs for messages in log channels
+            print(f'Message from {message.author} in #{message.channel}: {message.content}')
 
     # Prevent command usage in channels outside of #bot-spam
     author = message.author
