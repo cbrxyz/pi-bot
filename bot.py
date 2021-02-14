@@ -319,7 +319,6 @@ async def manage_welcome():
 async def cron():
     print("Executed cron.")
     global CRON_LIST
-    print(CRON_LIST)
     for c in CRON_LIST:
         date = c['date']
         if datetime.datetime.now() > date:
@@ -2224,6 +2223,9 @@ async def clrreact(ctx, msg: discord.Message, *args: discord.Member):
 
 @bot.event
 async def on_message_edit(before, after):
+    if (datetime.datetime.now() - after.created_at).total_seconds() < 2: 
+        # no need to log edit events for messages just created
+        return
     print('Message from {0.author} edited to: {0.content}, from: {1.content}'.format(after, before))
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", after.content, re.I)):
@@ -2284,7 +2286,9 @@ async def on_message(message):
         await send_to_dm_log(message)
 
     # Print to output
-    print('Message from {0.author}: {0.content}'.format(message))
+    if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
+        # avoid sending logs for messages in log channels
+        print(f'Message from {message.author} in #{message.channel}: {message.content}')
 
     # Prevent command usage in channels outside of #bot-spam
     author = message.author
@@ -2480,9 +2484,12 @@ async def on_raw_message_edit(payload):
         return
     try:
         message = payload.cached_message
+        if (datetime.datetime.now() - message.created_at).total_seconds() < 2:
+            # no need to log events because message was created
+            return
         message_now = await channel.fetch_message(message.id)
         channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title=":pencil: Edited Message",
             fields=[
                 {
@@ -2598,7 +2605,7 @@ async def on_raw_message_delete(payload):
     try:
         message = payload.cached_message
         channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
-        embed = assembleEmbed(
+        embed = assemble_embed(
             title=":fire: Deleted Message",
             fields=[
                 {

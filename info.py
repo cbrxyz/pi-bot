@@ -1,4 +1,4 @@
-version = "4.5.12"
+version = "4.5.13"
 developers = "Created and developed mainly by <@715048392408956950>. All contributors can be found here: <https://github.com/cbrxyz/pi-bot/graphs/contributors>"
 repo = "https://github.com/cbrxyz/pi-bot"
 wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
