@@ -810,7 +810,7 @@ async def magic8ball(ctx):
         "Definitely no."
     ]
     response = sayings[math.floor(random.random()*len(sayings))]
-    await ctx.send(f"**{response}**")
+    await ctx.message.reply(f"**{response}**")
 
 @bot.command()
 @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
@@ -1681,20 +1681,26 @@ async def fish(ctx):
     r = random.random()
     if len(str(fish_now)) > 1500:
         fish_now = round(pow(fish_now, 0.5))
+        if fish_now == 69: fish_now = 70
         return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
     if r > 0.9:
         fish_now += 10
+        if fish_now == 69: fish_now = 70
         return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
     if r > 0.1:
         fish_now += 1
-        return await ctx.send(f"You feed bear one fish. Bear now has {fish_now} fish!")
+        if fish_now == 69: 
+            fish_now = 70
+            return await ctx.send(f"You feed bear two fish. Bear now has {fish_now} fish!")
+        else:
+            return await ctx.send(f"You feed bear one fish. Bear now has {fish_now} fish!")
     if r > 0.02:
         fish_now += 0
         return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
     else:
         fish_now = round(pow(fish_now, 0.5))
+        if fish_now == 69: fish_now = 70
         return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
-
 
 @bot.command(aliases=["badbear"])
 @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
