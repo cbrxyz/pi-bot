@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.15 - 2020-03-22
+### Added
+* Added `!archive` command (closes [#263](https://github.com/cbrxyz/pi-bot/issues/263))
+
+### Fixed
+* `!dogbomb` with no arguments referred to shiba bomb (closes [#323](https://github.com/cbrxyz/pi-bot/issues/323))
+
 ## 4.5.14 - 2020-02-16
 ### Changed
 * `!magic8ball` response now replies to the original message (closes [#356](https://github.com/cbrxyz/pi-bot/issues/356))

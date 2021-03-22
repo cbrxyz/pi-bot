@@ -1408,7 +1408,7 @@ async def ping_pm(user_id, pinger, ping_exp, channel, content, jump_url):
 async def dogbomb(ctx, member:str=False):
     """Dog bombs someone!"""
     if member == False:
-        return await ctx.send("Tell me who you want to shiba bomb!! :dog:")
+        return await ctx.send("Tell me who you want to dog bomb!! :dog:")
     doggo = await get_doggo()
     await ctx.send(doggo)
     await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
@@ -2074,6 +2074,31 @@ async def unban(ctx, member:discord.User=None):
         return
     await ctx.guild.unban(member)
     await ctx.channel.send(f"Inverse ban hammer applied, user unbanned. Please remember that I cannot force them to re-join the server, they must join themselves.")
+
+@bot.command()
+@commands.check(is_staff)
+async def archive(ctx):
+    tournament = [t for t in TOURNAMENT_INFO if t[1] == ctx.channel.name]
+    bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
+    archive_cat = discord.utils.get(ctx.guild.categories, name = CATEGORY_ARCHIVE)
+    tournament_name, tournament_formal = None, None
+    if len(tournament) > 0:
+        tournament_name = tournament[0][1]
+        tournament_formal = tournament[0][0]
+    tournament_role = discord.utils.get(ctx.guild.roles, name = tournament_formal)
+    all_tourney_role = discord.utils.get(ctx.guild.roles, name = ROLE_AT)
+    embed = assemble_embed(
+        title = 'This channel is now archived.',
+        desc = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' + 
+        f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {ctx.channel.mention}. This channel is now read-only.\n\n' +
+        f'If you would like to no longer view this channel, you are welcome to type `!tournament {tournament_name}` into {bot_spam}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
+        webcolor='red'
+    )
+    await ctx.channel.set_permissions(tournament_role, send_messages = False)
+    await ctx.channel.set_permissions(all_tourney_role, send_messages = False)
+    await ctx.channel.edit(category = archive_cat, position = 1000)
+    await ctx.channel.send(embed = embed)
+    await ctx.message.delete()
 
 @bot.command()
 async def pronouns(ctx, *args):
