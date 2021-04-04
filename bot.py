@@ -255,9 +255,24 @@ aiowikip = aioify(obj=wikip)
 async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
-    await pull_prev_info()
-    await update_tournament_list()
-    refresh_sheet.start()
+    try:
+        await pull_prev_info()
+    except Exception as e:
+        print("Error in starting function with pulling previous information:")
+        print(e)
+
+    try:
+        await update_tournament_list()
+    except Exception as e:
+        print("Error in starting function with updating tournament list:")
+        print(e)
+
+    try:
+        refresh_sheet.start()
+    except Exception as e:
+        print("Error in starting function with updating tournament list:")
+        print(e)
+
     post_something.start()
     cron.start()
     go_stylist.start()
@@ -283,8 +298,18 @@ async def update_member_count():
 @tasks.loop(seconds=30.0)
 async def refresh_sheet():
     """Refreshes the censor list and stores variable backups."""
-    await refresh_algorithm()
-    await prepare_for_sending()
+    try:
+        await refresh_algorithm()
+    except Exception as e:
+        print("Error when completing the refresh algorithm when refreshing the sheet:")
+        print(e)
+
+    try:
+        await prepare_for_sending()
+    except Exception as e:
+        print("Error when sending variables to log sheet:")
+        print(e)
+
     print("Attempted to refresh/store data from/to sheet.")
 
 @tasks.loop(hours=10)
@@ -405,15 +430,30 @@ async def post_something():
 
 async def refresh_algorithm():
     """Pulls data from the administrative sheet."""
-    global CENSORED_WORDS
-    global CENSORED_EMOJIS
-    global EVENT_INFO
-    global TAGS
-    censor = await get_censor()
-    CENSORED_WORDS = censor[0]
-    CENSORED_EMOJIS = censor[1]
-    EVENT_INFO = await get_events()
-    TAGS = await get_tags()
+    try:
+        global CENSORED_WORDS
+        global CENSORED_EMOJIS
+        censor = await get_censor()
+        CENSORED_WORDS = censor[0]
+        CENSORED_EMOJIS = censor[1]
+    except Exception as e:
+        print("Could not refresh censor in refresh_algorithm:")
+        print(e)
+
+    try:
+        global EVENT_INFO
+        EVENT_INFO = await get_events()
+    except Exception as e:
+        print("Could not refresh event list in refresh_algorithm:")
+        print(e)
+
+    try:
+        global TAGS
+        TAGS = await get_tags()
+    except Exception as e:
+        print("Could not refresh tags in refresh_algorithm:")
+        print(e)
+    
     print("Refreshed data from sheet.")
     return True
 
@@ -587,7 +627,7 @@ async def update_tournament_list():
         elif (day_diff > before_days):
             open_soon_list += (t[2] + " **" + t[0] + f"** - Opens in `{day_diff - before_days}` days.\n")
     REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
-    spacing_needed = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS])
+    spacing_needed = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS]) if len(REQUESTED_TOURNAMENTS) > 0 else 0
     for t in REQUESTED_TOURNAMENTS:
         spaces = " " * (spacing_needed - len(t['iden']))
         channels_requested_list += f"`!tournament {t['iden']}{spaces}` · **{t['count']} votes**\n"
