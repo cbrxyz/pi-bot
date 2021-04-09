@@ -70,6 +70,8 @@ ROLE_PRONOUN_HE = "He / Him / His"
 ROLE_PRONOUN_SHE = "She / Her / Hers"
 ROLE_PRONOUN_THEY = "They / Them / Theirs"
 ROLE_SELFMUTE = "Self Muted"
+ROLE_QUARANTINE = "Quarantine"
+ROLE_ALL_STATES = "All States"
 
 # Channels
 CHANNEL_TOURNAMENTS = "tournaments"
@@ -698,6 +700,51 @@ async def vc(ctx):
         else:
             # Voice channel needs to be closed
             await test_vc.delete()
+            return await ctx.send("Closed the voice channel.")
+    elif ctx.message.channel.category.name == CATEGORY_STATES:
+        test_vc = discord.utils.get(server.voice_channels, name=ctx.message.channel.name)
+        if test_vc == None:
+            # Voice channel does not currently exist
+            if len(ctx.message.channel.category.channels) == 50:
+                # Too many voice channels in the state category
+                # Let's move one state to the next category
+                new_cat = filter(lambda x: x.name == "states", server.categories)
+                new_cat = list(new_cat)
+                if len(new_cat) < 2: 
+                    return await ctx.send("Could not find alternate states channel to move overflowed channels to.")
+                else:
+                    # Success, we found the other category
+                    current_cat = ctx.message.channel.category
+                    await current_cat.channels[-1].edit(category = new_cat[1], position = 0)
+            new_vc = await server.create_voice_channel(ctx.message.channel.name, category=ctx.message.channel.category)
+            await new_vc.edit(sync_permissions=True)
+            await new_vc.set_permissions(server.default_role, view_channel=False)
+            muted_role = discord.utils.get(server.roles, name=ROLE_MUTED)
+            all_states_role = discord.utils.get(server.roles, name=ROLE_ALL_STATES)
+            self_muted_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+            quarantine_role = discord.utils.get(server.roles, name=ROLE_QUARANTINE)
+            state_role_name = await lookup_role(ctx.message.channel.name.replace("-", " "))
+            state_role = discord.utils.get(server.roles, name = state_role_name)
+            await new_vc.set_permissions(muted_role, connect=False)
+            await new_vc.set_permissions(self_muted_role, connect=False)
+            await new_vc.set_permissions(quarantine_role, connect=False)
+            await new_vc.set_permissions(state_role, view_channel = True, connect=True)
+            await new_vc.set_permissions(all_states_role, view_channel = True, connect=True)
+            current_pos = ctx.message.channel.position
+            return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+        else:
+            await test_vc.delete()
+            if len(ctx.message.channel.category.channels) == 49:
+                # If we had to move a channel out of category to make room, move it back
+                # Let's move one state to the next category
+                new_cat = filter(lambda x: x.name == "states", server.categories)
+                new_cat = list(new_cat)
+                if len(new_cat) < 2: 
+                    return await ctx.send("Could not find alternate states channel to move overflowed channels to.")
+                else:
+                    # Success, we found the other category
+                    current_cat = ctx.message.channel.category
+                    await new_cat[1].channels[0].edit(category = current_cat, position = 1000)
             return await ctx.send("Closed the voice channel.")
     elif ctx.message.channel.name == "games":
         # Support for opening a voice channel for #games
@@ -2825,11 +2872,11 @@ async def lookup_role(name):
     elif name == "Ak" or name == "Alaska": return "Alaska"
     elif name == "Ar" or name == "Arkansas": return "Arkansas"
     elif name == "Az" or name == "Arizona": return "Arizona"
-    elif name == "Cas" or name == "Ca-S" or name == "California (South)" or name == "Socal" or name == "California South": return "California (South)"
-    elif name == "Can" or name == "Ca-N" or name == "California (North)" or name == "Nocal" or name == "California North": return "California (North)"
+    elif name == "Cas" or name == "Ca-S" or name == "California (South)" or name == "Socal" or name == "California South" or name == "california-north": return "California (South)"
+    elif name == "Can" or name == "Ca-N" or name == "California (North)" or name == "Nocal" or name == "California North" or name == "california-south": return "California (North)"
     if name == "Co" or name == "Colorado": return "Colorado"
     elif name == "Ct" or name == "Connecticut": return "Connecticut"
-    elif name == "Dc" or name == "District Of Columbia": return "District of Columbia"
+    elif name == "Dc" or name == "District Of Columbia" or name == "district-of-columbia": return "District of Columbia"
     elif name == "De" or name == "Delaware": return "Delaware"
     elif name == "Fl" or name == "Florida": return "Florida"
     elif name == "Ga" or name == "Georgia": return "Georgia"
