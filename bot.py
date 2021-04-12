@@ -2181,8 +2181,8 @@ async def archive(ctx):
         f'If you would like to no longer view this channel, you are welcome to type `!tournament {tournament_name}` into {bot_spam}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
         webcolor='red'
     )
-    await ctx.channel.set_permissions(tournament_role, send_messages = False)
-    await ctx.channel.set_permissions(all_tourney_role, send_messages = False)
+    await ctx.channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
+    await ctx.channel.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
     await ctx.channel.edit(category = archive_cat, position = 1000)
     await ctx.channel.send(embed = embed)
     await ctx.message.delete()

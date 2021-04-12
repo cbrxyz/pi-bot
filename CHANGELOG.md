@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.18 - 2020-04-11
+### Fixed
+* `!archive` would make a tournament channel no longer viewable to current competitors (closes [#365](https://github.com/cbrxyz/pi-bot/issues/365))
+
 ## 4.5.17 - 2020-04-09
 ### Added
 * Voice channels can now be opened for state channels (hello socal! :D)
