@@ -10,6 +10,7 @@ import math
 import time
 import datetime
 import dateparser
+import pytz
 import time as time_module
 import wikipedia as wikip
 import matplotlib.pyplot as plt
@@ -120,9 +121,6 @@ RULES = [
     "Do not advertise other servers or paid services with which you have an affiliation.",
     "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
 ]
-
-# Timezone offset (in hours from EST)
-TZ_OFFSET = time.timezone/60/60 - 5
 
 ##############
 # DEV MODE CONFIG
@@ -326,22 +324,23 @@ async def go_stylist():
 async def manage_welcome():
     server = bot.get_guild(SERVER_ID)
     now = datetime.datetime.now()
-    if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
-        print(f"Cleaning #{CHANNEL_WELCOME}.")
-        # if between 12AM EST and 11AM EST do not do the following:
-        channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
-        async for message in channel.history(limit=None):
-            # if message is over 3 hours old
-            author = message.author
-            user_no_delete = await is_launcher_no_ctx(message.author)
-            num_of_roles = len(author.roles)
-            if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 1 and not user_no_delete:
-                await _confirm([author])
-            if (now - message.created_at).seconds // 3600 > 3 and not message.pinned:
-                # delete it
-                await message.delete()
-    else:
-        print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
+    # Channel message deleting is currently disabled
+    # if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
+    #     print(f"Cleaning #{CHANNEL_WELCOME}.")
+    #     # if between 12AM EST and 11AM EST do not do the following:
+    #     channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+    #     async for message in channel.history(limit=None):
+    #         # if message is over 3 hours old
+    #         author = message.author
+    #         user_no_delete = await is_launcher_no_ctx(message.author)
+    #         num_of_roles = len(author.roles)
+    #         if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 1 and not user_no_delete:
+    #             await _confirm([author])
+    #         if (now - message.created_at).seconds // 3600 > 3 and not message.pinned:
+    #             # delete it
+    #             await message.delete()
+    # else:
+    #     print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
 
 @tasks.loop(minutes=1)
 async def cron():
@@ -770,7 +769,7 @@ async def vc(ctx):
 @commands.check(is_staff)
 async def getVariable(ctx, var):
     """Fetches a local variable."""
-    if ctx.message.channel.id != 724125340733145140:
+    if ctx.message.channel.name != "staff":
         await ctx.send("You can only fetch variables from the staff channel.")
     else:
         await ctx.send("Attempting to find variable.")
@@ -2110,12 +2109,13 @@ async def _mute(ctx, user:discord.Member, time: str, self: bool):
         role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
     parsed = "indef"
     if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
+        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
         if parsed == None:
             return await ctx.send("Sorry, but I don't understand that length of time.")
         CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
     await user.add_roles(role)
-    await ctx.send(f"Successfully muted {user.mention} until `{str(parsed)} EST`.")
+    eastern = pytz.timezone("US/Eastern")
+    await ctx.send(f"Successfully muted {user.mention} until `{str(eastern.localize(parsed))} EST`.")
 
 @bot.command()
 @commands.check(is_staff)
@@ -2144,13 +2144,14 @@ async def ban(ctx, member:discord.User=None, reason=None, *args):
     message = f"You have been banned from the Scioly.org Discord server for {reason}."
     parsed = "indef"
     if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future", "TIMEZONE": "US/Eastern"})
+        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
         if parsed == None:
             return await ctx.send(f"Sorry, but I don't understand the length of time: `{time}`.")
         CRON_LIST.append({"date": parsed, "do": f"unban {member.id}"})
     await member.send(message)
     await ctx.guild.ban(member, reason=reason)
-    await ctx.channel.send(f"**{member}** is banned until `{str(parsed)} EST`.")
+    eastern = pytz.timezone("US/Eastern")
+    await ctx.channel.send(f"**{member}** is banned until `{str(eastern.localize(parsed))} EST`.")
 
 @bot.command()
 @commands.check(is_staff)
