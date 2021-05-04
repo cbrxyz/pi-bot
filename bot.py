@@ -39,6 +39,7 @@ from commands import get_list, get_quick_list, get_help
 from lists import get_state_list
 import xkcd as xkcd_module # not to interfere with xkcd method
 from commanderrors import CommandNotAllowedInChannel
+from commanderrors import NoDMsAllowed
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -200,6 +201,20 @@ def is_whitelisted_channel(whitelist):
             if channel == discord.utils.get(server.text_channels, name=c):
                 return True
         raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
+    
+    return commands.check(predicate)
+
+def checkDM():
+    """Checks if the user has DM permissions. If the send responds 403, then they have DMs disabled."""
+    async def predicate(ctx):
+        user = ctx.message.author
+        try:
+            await user.send("")
+        except discord.Forbidden:
+            raise NoDMsAllowed(user, f"{user} has DMs set to off.")
+        except discord.HTTPException:
+            pass
+        return True
     
     return commands.check(predicate)
 
@@ -1353,6 +1368,7 @@ async def resultstemplate(ctx, url):
     await ctx.send(file=file)
 
 @bot.command()
+@checkDM()
 async def ping(ctx, command=None, *args):
     """Controls Pi-Bot's ping interface."""
     if command is None:
@@ -2811,6 +2827,8 @@ async def on_command_error(ctx, error):
         return await ctx.send("Sorry, I'm having trouble reading one of the arguments you just used. Try again!")
 
     # Check failure errors
+    if isinstance(error, NoDMsAllowed):
+        return await ctx.send("Pings require direct messages to be sent to you. You need to turn on \"Allow direct messages from server members.\"")
     if isinstance(error, discord.ext.commands.CheckAnyFailure):
         return await ctx.send("It looks like you aren't able to run this command, sorry.")
     if isinstance(error, discord.ext.commands.PrivateMessageOnly):
