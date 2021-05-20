@@ -779,14 +779,6 @@ async def getVariable(ctx, var):
         except:
             await ctx.send(f"Can't find that variable!")
 
-@bot.command(aliases=["eats", "beareats"])
-@commands.check(is_bear)
-async def eat(ctx, user):
-    """Allows bear to eat users >:D"""
-    message = await get_bear_message(user)
-    await ctx.message.delete()
-    await ctx.send(message)
-
 @bot.command()
 @commands.check(is_staff)
 async def refresh(ctx):
@@ -2925,6 +2917,8 @@ async def lookup_role(name):
 
 async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
+
+bot.load_extension("src.discord.fun")
 
 if dev_mode:
     bot.run(DEV_TOKEN)
