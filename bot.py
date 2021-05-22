@@ -49,78 +49,80 @@ dev_mode = os.getenv('DEV_MODE') == "TRUE"
 # SERVER VARIABLES
 ##############
 
+
+from globals import *
 # Roles
-ROLE_WM = "Wiki/Gallery Moderator"
-ROLE_GM = "Global Moderator"
-ROLE_AD = "Administrator"
-ROLE_VIP = "VIP"
-ROLE_STAFF = "Staff"
-ROLE_BT = "Bots"
-ROLE_LH = "Launch Helper"
-ROLE_AT = "All Tournaments"
-ROLE_GAMES = "Games"
-ROLE_MR = "Member"
-ROLE_UC = "Unconfirmed"
-ROLE_DIV_A = "Division A"
-ROLE_DIV_B = "Division B"
-ROLE_DIV_C = "Division C"
-ROLE_EM = "Exalted Member"
-ROLE_ALUMNI = "Alumni"
-ROLE_MUTED = "Muted"
-ROLE_PRONOUN_HE = "He / Him / His"
-ROLE_PRONOUN_SHE = "She / Her / Hers"
-ROLE_PRONOUN_THEY = "They / Them / Theirs"
-ROLE_SELFMUTE = "Self Muted"
-ROLE_QUARANTINE = "Quarantine"
-ROLE_ALL_STATES = "All States"
-
-# Channels
-CHANNEL_TOURNAMENTS = "tournaments"
-CHANNEL_BOTSPAM = "bot-spam"
-CHANNEL_SUPPORT = "site-support"
-CHANNEL_GAMES = "games"
-CHANNEL_DMLOG = "dm-log"
-CHANNEL_WELCOME = "welcome"
-CHANNEL_LOUNGE = "lounge"
-CHANNEL_LEAVE = "member-leave"
-CHANNEL_DELETEDM = "deleted-messages"
-CHANNEL_EDITEDM = "edited-messages"
-CHANNEL_REPORTS = "reports"
-CHANNEL_JOIN = "join-logs"
-CHANNEL_UNSELFMUTE = "un-self-mute"
-
-# Categories
-CATEGORY_TOURNAMENTS = "tournaments"
-CATEGORY_SO = "Science Olympiad"
-CATEGORY_STATES = "states"
-CATEGORY_GENERAL = "general"
-CATEGORY_ARCHIVE = "archives"
-CATEGORY_STAFF = "staff"
-
-# Emoji reference
-EMOJI_FAST_REVERSE = "\U000023EA"
-EMOJI_LEFT_ARROW = "\U00002B05"
-EMOJI_RIGHT_ARROW = "\U000027A1"
-EMOJI_FAST_FORWARD = "\U000023E9"
-EMOJI_UNSELFMUTE = "click_to_unmute"
-EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
-
-# Rules
-RULES = [
-    "Treat *all* users with respect.",
-    "No profanity or inappropriate language, content, or links.",
-    "Treat delicate subjects delicately. When discussing religion, politics, instruments, or other similar topics, please remain objective and avoid voicing strong opinions.",
-    "Do not spam or flood (an excessive number of messages sent within a short timespan).",
-    "Avoid intentional repeating pinging of other users (saying another user’s name).",
-    "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
-    "Never name-drop (using a real name without permission) or dox another user.",
-    "No witch-hunting (requests of kicks or bans for other users).",
-    "While you are not required to use your Scioly.org username as your nickname for this Server, please avoid assuming the username of or otherwise impersonating another active user.",
-    "Do not use multiple accounts within this Server, unless specifically permitted. A separate tournament account may be operated alongside a personal account.",
-    "Do not violate Science Olympiad Inc. copyrights. In accordance with the Scioly.org Resource Policy, all sharing of tests on Scioly.org must occur in the designated Test Exchanges. Do not solicit test trades on this Server.",
-    "Do not advertise other servers or paid services with which you have an affiliation.",
-    "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
-]
+# ROLE_WM = "Wiki/Gallery Moderator"
+# ROLE_GM = "Global Moderator"
+# ROLE_AD = "Administrator"
+# ROLE_VIP = "VIP"
+# ROLE_STAFF = "Staff"
+# ROLE_BT = "Bots"
+# ROLE_LH = "Launch Helper"
+# ROLE_AT = "All Tournaments"
+# ROLE_GAMES = "Games"
+# ROLE_MR = "Member"
+# ROLE_UC = "Unconfirmed"
+# ROLE_DIV_A = "Division A"
+# ROLE_DIV_B = "Division B"
+# ROLE_DIV_C = "Division C"
+# ROLE_EM = "Exalted Member"
+# ROLE_ALUMNI = "Alumni"
+# ROLE_MUTED = "Muted"
+# ROLE_PRONOUN_HE = "He / Him / His"
+# ROLE_PRONOUN_SHE = "She / Her / Hers"
+# ROLE_PRONOUN_THEY = "They / Them / Theirs"
+# ROLE_SELFMUTE = "Self Muted"
+# ROLE_QUARANTINE = "Quarantine"
+# ROLE_ALL_STATES = "All States"
+# 
+# # Channels
+# CHANNEL_TOURNAMENTS = "tournaments"
+# CHANNEL_BOTSPAM = "bot-spam"
+# CHANNEL_SUPPORT = "site-support"
+# CHANNEL_GAMES = "games"
+# CHANNEL_DMLOG = "dm-log"
+# CHANNEL_WELCOME = "welcome"
+# CHANNEL_LOUNGE = "lounge"
+# CHANNEL_LEAVE = "member-leave"
+# CHANNEL_DELETEDM = "deleted-messages"
+# CHANNEL_EDITEDM = "edited-messages"
+# CHANNEL_REPORTS = "reports"
+# CHANNEL_JOIN = "join-logs"
+# CHANNEL_UNSELFMUTE = "un-self-mute"
+# 
+# # Categories
+# CATEGORY_TOURNAMENTS = "tournaments"
+# CATEGORY_SO = "Science Olympiad"
+# CATEGORY_STATES = "states"
+# CATEGORY_GENERAL = "general"
+# CATEGORY_ARCHIVE = "archives"
+# CATEGORY_STAFF = "staff"
+# 
+# # Emoji reference
+# EMOJI_FAST_REVERSE = "\U000023EA"
+# EMOJI_LEFT_ARROW = "\U00002B05"
+# EMOJI_RIGHT_ARROW = "\U000027A1"
+# EMOJI_FAST_FORWARD = "\U000023E9"
+# EMOJI_UNSELFMUTE = "click_to_unmute"
+# EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
+# 
+# # Rules
+# RULES = [
+#     "Treat *all* users with respect.",
+#     "No profanity or inappropriate language, content, or links.",
+#     "Treat delicate subjects delicately. When discussing religion, politics, instruments, or other similar topics, please remain objective and avoid voicing strong opinions.",
+#     "Do not spam or flood (an excessive number of messages sent within a short timespan).",
+#     "Avoid intentional repeating pinging of other users (saying another user’s name).",
+#     "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
+#     "Never name-drop (using a real name without permission) or dox another user.",
+#     "No witch-hunting (requests of kicks or bans for other users).",
+#     "While you are not required to use your Scioly.org username as your nickname for this Server, please avoid assuming the username of or otherwise impersonating another active user.",
+#     "Do not use multiple accounts within this Server, unless specifically permitted. A separate tournament account may be operated alongside a personal account.",
+#     "Do not violate Science Olympiad Inc. copyrights. In accordance with the Scioly.org Resource Policy, all sharing of tests on Scioly.org must occur in the designated Test Exchanges. Do not solicit test trades on this Server.",
+#     "Do not advertise other servers or paid services with which you have an affiliation.",
+#     "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
+# ]
 
 ##############
 # DEV MODE CONFIG
@@ -142,100 +144,107 @@ bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=i
 # CHECKS
 ##############
 
-async def is_bear(ctx):
-    """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""
-    return ctx.message.author.id == 353730886577160203 or ctx.message.author.id == 715048392408956950
-
-async def is_staff(ctx):
-    """Checks to see if the user is a staff member."""
-    member = ctx.message.author
-    vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
-    staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
-    return vipRole in member.roles or staffRole in member.roles
-
-async def is_launcher(ctx):
-    """Checks to see if the user is a launch helper."""
-    member = ctx.message.author
-    staff = await is_staff(ctx)
-    lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
-    if staff or lhRole in member.roles: return True
-
-async def is_launcher_no_ctx(member):
-    server = bot.get_guild(SERVER_ID)
-    wmRole = discord.utils.get(server.roles, name=ROLE_WM)
-    gm_role = discord.utils.get(server.roles, name=ROLE_GM)
-    aRole = discord.utils.get(server.roles, name=ROLE_AD)
-    vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
-    lhRole = discord.utils.get(server.roles, name=ROLE_LH)
-    roles = [wmRole, gm_role, aRole, vipRole, lhRole]
-    member = server.get_member(member)
-    for role in roles:
-        if role in member.roles: return True
-    return False
-
-async def is_admin(ctx):
-    """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
-    member = ctx.message.author
-    aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
-    if aRole in member.roles or member.id == 715048392408956950: return True
-
-def not_blacklisted_channel(blacklist):
-    """Given a string array blacklist, check if command was not invoked in specified blacklist channels."""
-    async def predicate(ctx):
-        channel = ctx.message.channel
-        server = bot.get_guild(SERVER_ID)
-        for c in blacklist:
-            if channel == discord.utils.get(server.text_channels, name=c):
-                raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
-        return True
-    
-    return commands.check(predicate)
-    
-def is_whitelisted_channel(whitelist):
-    """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
-    async def predicate(ctx):
-        channel = ctx.message.channel
-        server = bot.get_guild(SERVER_ID)
-        for c in whitelist:
-            if channel == discord.utils.get(server.text_channels, name=c):
-                return True
-        raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
-    
-    return commands.check(predicate)
+from command_checks import *
+# async def is_bear(ctx):
+#     """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""
+#     return ctx.message.author.id == 353730886577160203 or ctx.message.author.id == 715048392408956950
+# 
+# async def is_staff(ctx):
+#     """Checks to see if the user is a staff member."""
+#     return is_staff(ctx.message.author)
+#     # vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
+#     # staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
+#     # return vipRole in member.roles or staffRole in member.roles
+# 
+# async def is_staff(author: int):
+#     """Checks to see if the user is a staff member."""
+#     vipRole = discord.utils.get(author.guild.roles, name=ROLE_VIP)
+#     staffRole = discord.utils.get(author.guild.roles, name=ROLE_STAFF)
+#     return vipRole in author.roles or staffRole in author.roles
+# 
+# async def is_launcher(ctx):
+#     """Checks to see if the user is a launch helper."""
+#     member = ctx.message.author
+#     staff = await is_staff(ctx)
+#     lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
+#     if staff or lhRole in member.roles: return True
+# 
+# async def is_launcher_no_ctx(member):
+#     server = bot.get_guild(SERVER_ID)
+#     wmRole = discord.utils.get(server.roles, name=ROLE_WM)
+#     gm_role = discord.utils.get(server.roles, name=ROLE_GM)
+#     aRole = discord.utils.get(server.roles, name=ROLE_AD)
+#     vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
+#     lhRole = discord.utils.get(server.roles, name=ROLE_LH)
+#     roles = [wmRole, gm_role, aRole, vipRole, lhRole]
+#     member = server.get_member(member)
+#     for role in roles:
+#         if role in member.roles: return True
+#     return False
+# 
+# async def is_admin(ctx):
+#     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""
+#     member = ctx.message.author
+#     aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
+#     if aRole in member.roles or member.id == 715048392408956950: return True
+# 
+# def not_blacklisted_channel(blacklist):
+#     """Given a string array blacklist, check if command was not invoked in specified blacklist channels."""
+#     async def predicate(ctx):
+#         channel = ctx.message.channel
+#         server = bot.get_guild(SERVER_ID)
+#         for c in blacklist:
+#             if channel == discord.utils.get(server.text_channels, name=c):
+#                 raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
+#         return True
+# 
+#     return commands.check(predicate)
+# 
+# def is_whitelisted_channel(whitelist):
+#     """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
+#     async def predicate(ctx):
+#         channel = ctx.message.channel
+#         server = bot.get_guild(SERVER_ID)
+#         for c in whitelist:
+#             if channel == discord.utils.get(server.text_channels, name=c):
+#                 return True
+#         raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
+# 
+#     return commands.check(predicate)
 
 ##############
 # CONSTANTS
 ##############
-PI_BOT_IDS = [
-    723767075427844106,
-    743254543952904197,
-    637519324072116247
-]
+# PI_BOT_IDS = [
+#     723767075427844106,
+#     743254543952904197,
+#     637519324072116247
+# ]
 RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
-DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK"]
+# DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK"]
 
 ##############
 # VARIABLES
 ##############
-fish_now = 0
-can_post = False
-do_hourly_sync = False
-CENSORED_WORDS = []
-CENSORED_EMOJIS = []
-EVENT_INFO = 0
-REPORT_IDS = []
-PING_INFO = []
-TOURNEY_REPORT_IDS = []
-COACH_REPORT_IDS = []
-SHELLS_OPEN = []
-CRON_LIST = []
-RECENT_MESSAGES = []
-STEALFISH_BAN = []
-TOURNAMENT_INFO = []
-REQUESTED_TOURNAMENTS = []
-TAGS = []
-STOPNUKE = False
+# fish_now = 0
+# can_post = False
+# do_hourly_sync = False
+# CENSORED_WORDS = []
+# CENSORED_EMOJIS = []
+# EVENT_INFO = 0
+# REPORT_IDS = []
+# PING_INFO = []
+# TOURNEY_REPORT_IDS = []
+# COACH_REPORT_IDS = []
+# SHELLS_OPEN = []
+# CRON_LIST = []
+# RECENT_MESSAGES = []
+# STEALFISH_BAN = []
+# TOURNAMENT_INFO = []
+# REQUESTED_TOURNAMENTS = []
+# TAGS = []
+# STOPNUKE = False
 
 ##############
 # FUNCTIONS TO BE REMOVED
@@ -251,6 +260,27 @@ aiowikip = aioify(obj=wikip)
 # FUNCTIONS
 ##############
 
+@bot.before_invoke
+async def censor_msg(ctx):
+    print("running censor check for commands")
+    channel = ctx.message.channel
+    ava = ctx.message.author.avatar_url
+    
+    content = ctx.message.content
+    for word in CENSORED_WORDS:
+        content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
+    for word in CENSORED_EMOJIS:
+        content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
+    author = ctx.message.author.nick
+    if author == None:
+        author = ctx.message.author.name
+    # Make sure pinging through @everyone, @here, or any role can not happen
+    mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
+    
+    if not await is_staff(ctx.message.author):
+        ctx.message.content = content
+    print(f"after censor check: \"{ctx.message.content}\"")
+    
 @bot.event
 async def on_ready():
     """Called when the bot is enabled and ready to be run."""
@@ -551,6 +581,17 @@ async def tournament(ctx, *args):
                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
             await update_tournament_list()
+
+@bot.command()
+async def enable_mem(ctx):
+    bot.add_cog(MemberCommands(bot))
+    
+@bot.command()
+async def disable_mem(ctx):
+    print("removing cog")
+    bot.remove_cog('MemberCommands')
+    print("removed")
+    print(bot.cogs)
 
 @bot.command()
 @commands.check(is_staff)
@@ -1352,103 +1393,103 @@ async def resultstemplate(ctx, url):
     file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
     await ctx.send(file=file)
 
-@bot.command()
-async def ping(ctx, command=None, *args):
-    """Controls Pi-Bot's ping interface."""
-    if command is None:
-        return await ctx.send("Uh, I need a command you want to run.")
-    member = ctx.message.author.id
-    if len(args) > 8:
-        return await ctx.send("You are giving me too many pings at once! Please separate your requests over multiple commands.")
-    if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp", "delete", "remove", "test", "try"] and len(args) < 1:
-        return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
-    if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp"]:
-        # Check to see if author in ping info already
-        ignored_list = []
-        if any([True for u in PING_INFO if u['id'] == member]):
-            #yes
-            user = next((u for u in PING_INFO if u['id'] == member), None)
-            pings = user['pings']
-            for arg in args:
-                try:
-                    re.findall(arg, "test phrase")
-                except:
-                    await ctx.send(f"Ignoring adding the `{arg}` ping because it uses illegal characters.")
-                    ignored_list.append(arg)
-                    continue
-                if f"({arg})" in pings or f"\\b({arg})\\b" in pings or arg in pings:
-                    await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
-                    ignored_list.append(arg)
-                else:
-                    if command.lower() in ["add", "new"]:
-                        print(f"adding word: {re.escape(arg)}")
-                        pings.append(fr"\b({re.escape(arg)})\b")
-                    else:
-                        print(f"adding regexp: {arg}")
-                        pings.append(fr"({arg})")
-        else:
-            # nope
-            if command.lower() in ["add", "new"]:
-                PING_INFO.append({
-                    "id": member,
-                    "pings": [fr"\b({re.escape(arg)})\b" for arg in args]
-                })
-            else:
-                PING_INFO.append({
-                    "id": member,
-                    "pings": [fr"({arg})" for arg in args]
-                })
-        return await ctx.send(f"Alrighty... I've got you all set up for the following pings: " + (" ".join([f"`{arg}`" for arg in args if arg not in ignored_list])))
-    elif command.lower() in ["delete", "remove"]:
-        user = next((u for u in PING_INFO if u['id'] == member), None)
-        if user == None or len(user['pings']) == 0:
-            return await ctx.send("You have no registered pings.")
-        for arg in args:
-            if arg == "all":
-                user['pings'] = []
-                return await ctx.send("I removed all of your pings.")
-            if arg in user['pings']:
-                user['pings'].remove(arg)
-                await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
-            elif f"\\b({arg})\\b" in user['pings']:
-                user['pings'].remove(f"\\b({arg})\\b")
-                await ctx.send(f"I removed the `{arg}` word ping you were referencing.")
-            elif f"({arg})" in user['pings']:
-                user['pings'].remove(f"({arg})")
-                await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
-            else:
-                return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
-        return await ctx.send("I removed all pings you requested.")
-    elif command.lower() in ["list", "all"]:
-        user = next((u for u in PING_INFO if u['id'] == member), None)
-        if user == None or len(user['pings']) == 0:
-            return await ctx.send("You have no registered pings.")
-        else:
-            pings = user['pings']
-            regex_pings = []
-            word_pings = []
-            for ping in pings:
-                if ping[:2] == "\\b":
-                    word_pings.append(ping)
-                else:
-                    regex_pings.append(ping)
-            if len(regex_pings) > 0:
-                await ctx.send("Your RegEx pings are: " + ", ".join([f"`{regex}`" for regex in regex_pings]))
-            if len(word_pings) > 0:
-                await ctx.send("Your word pings are: " + ", ".join([f"`{word[3:-3]}`" for word in word_pings]))
-    elif command.lower() in ["test", "try"]:
-        user = next((u for u in PING_INFO if u['id'] == member), None)
-        user_pings = user['pings']
-        matched = False
-        for arg in args:
-            for ping in user_pings:
-                if len(re.findall(ping, arg, re.I)) > 0:
-                    await ctx.send(f"Your ping `{ping}` matches `{arg}`.")
-                    matched = True
-        if not matched:
-            await ctx.send("Your test matched no pings of yours.")
-    else:
-        return await ctx.send("Sorry, I can't find that command.")
+# @bot.command()
+# async def ping(ctx, command=None, *args):
+#     """Controls Pi-Bot's ping interface."""
+#     if command is None:
+#         return await ctx.send("Uh, I need a command you want to run.")
+#     member = ctx.message.author.id
+#     if len(args) > 8:
+#         return await ctx.send("You are giving me too many pings at once! Please separate your requests over multiple commands.")
+#     if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp", "delete", "remove", "test", "try"] and len(args) < 1:
+#         return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
+#     if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp"]:
+#         # Check to see if author in ping info already
+#         ignored_list = []
+#         if any([True for u in PING_INFO if u['id'] == member]):
+#             #yes
+#             user = next((u for u in PING_INFO if u['id'] == member), None)
+#             pings = user['pings']
+#             for arg in args:
+#                 try:
+#                     re.findall(arg, "test phrase")
+#                 except:
+#                     await ctx.send(f"Ignoring adding the `{arg}` ping because it uses illegal characters.")
+#                     ignored_list.append(arg)
+#                     continue
+#                 if f"({arg})" in pings or f"\\b({arg})\\b" in pings or arg in pings:
+#                     await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
+#                     ignored_list.append(arg)
+#                 else:
+#                     if command.lower() in ["add", "new"]:
+#                         print(f"adding word: {re.escape(arg)}")
+#                         pings.append(fr"\b({re.escape(arg)})\b")
+#                     else:
+#                         print(f"adding regexp: {arg}")
+#                         pings.append(fr"({arg})")
+#         else:
+#             # nope
+#             if command.lower() in ["add", "new"]:
+#                 PING_INFO.append({
+#                     "id": member,
+#                     "pings": [fr"\b({re.escape(arg)})\b" for arg in args]
+#                 })
+#             else:
+#                 PING_INFO.append({
+#                     "id": member,
+#                     "pings": [fr"({arg})" for arg in args]
+#                 })
+#         return await ctx.send(f"Alrighty... I've got you all set up for the following pings: " + (" ".join([f"`{arg}`" for arg in args if arg not in ignored_list])))
+#     elif command.lower() in ["delete", "remove"]:
+#         user = next((u for u in PING_INFO if u['id'] == member), None)
+#         if user == None or len(user['pings']) == 0:
+#             return await ctx.send("You have no registered pings.")
+#         for arg in args:
+#             if arg == "all":
+#                 user['pings'] = []
+#                 return await ctx.send("I removed all of your pings.")
+#             if arg in user['pings']:
+#                 user['pings'].remove(arg)
+#                 await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
+#             elif f"\\b({arg})\\b" in user['pings']:
+#                 user['pings'].remove(f"\\b({arg})\\b")
+#                 await ctx.send(f"I removed the `{arg}` word ping you were referencing.")
+#             elif f"({arg})" in user['pings']:
+#                 user['pings'].remove(f"({arg})")
+#                 await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
+#             else:
+#                 return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
+#         return await ctx.send("I removed all pings you requested.")
+#     elif command.lower() in ["list", "all"]:
+#         user = next((u for u in PING_INFO if u['id'] == member), None)
+#         if user == None or len(user['pings']) == 0:
+#             return await ctx.send("You have no registered pings.")
+#         else:
+#             pings = user['pings']
+#             regex_pings = []
+#             word_pings = []
+#             for ping in pings:
+#                 if ping[:2] == "\\b":
+#                     word_pings.append(ping)
+#                 else:
+#                     regex_pings.append(ping)
+#             if len(regex_pings) > 0:
+#                 await ctx.send("Your RegEx pings are: " + ", ".join([f"`{regex}`" for regex in regex_pings]))
+#             if len(word_pings) > 0:
+#                 await ctx.send("Your word pings are: " + ", ".join([f"`{word[3:-3]}`" for word in word_pings]))
+#     elif command.lower() in ["test", "try"]:
+#         user = next((u for u in PING_INFO if u['id'] == member), None)
+#         user_pings = user['pings']
+#         matched = False
+#         for arg in args:
+#             for ping in user_pings:
+#                 if len(re.findall(ping, arg, re.I)) > 0:
+#                     await ctx.send(f"Your ping `{ping}` matches `{arg}`.")
+#                     matched = True
+#         if not matched:
+#             await ctx.send("Your test matched no pings of yours.")
+#     else:
+#         return await ctx.send("Sorry, I can't find that command.")
 
 @bot.command(aliases=["donotdisturb"])
 async def dnd(ctx):
@@ -1467,27 +1508,27 @@ async def dnd(ctx):
     else:
         return await ctx.send("You can't enter DND mode without any pings!")
 
-async def ping_pm(user_id, pinger, ping_exp, channel, content, jump_url):
-    """Allows Pi-Bot to PM a user about a ping."""
-    user_to_send = bot.get_user(user_id)
-    try:
-        content = re.sub(rf'{ping_exp}', r'**\1**', content, flags=re.I)
-    except Exception as e:
-        print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
-    ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
-    warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {ping_exp}`"
-    embed = assemble_embed(
-        title=":bellhop: Ping Alert!",
-        desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
-        fields=[
-            {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
-            {"name": "Jump To Message", "value": f"[Click here!]({jump_url})", "inline": "True"},
-            {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
-            {"name": "Content", "value": content, "inline": "False"}
-        ],
-        hexcolor="#2E66B6"
-    )
-    await user_to_send.send(embed=embed)
+# async def ping_pm(user_id, pinger, ping_exp, channel, content, jump_url):
+#     """Allows Pi-Bot to PM a user about a ping."""
+#     user_to_send = bot.get_user(user_id)
+#     try:
+#         content = re.sub(rf'{ping_exp}', r'**\1**', content, flags=re.I)
+#     except Exception as e:
+#         print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
+#     ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
+#     warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {ping_exp}`"
+#     embed = assemble_embed(
+#         title=":bellhop: Ping Alert!",
+#         desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
+#         fields=[
+#             {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
+#             {"name": "Jump To Message", "value": f"[Click here!]({jump_url})", "inline": "True"},
+#             {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
+#             {"name": "Content", "value": content, "inline": "False"}
+#         ],
+#         hexcolor="#2E66B6"
+#     )
+#     await user_to_send.send(embed=embed)
 
 @bot.command(aliases=["doggobomb"])
 @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
@@ -1562,23 +1603,23 @@ async def school(ctx, title, state):
     )
     await ctx.send(embed=embed)
 
-async def censor(message):
-    """Constructs Pi-Bot's censor."""
-    channel = message.channel
-    ava = message.author.avatar_url
-    wh = await channel.create_webhook(name="Censor (Automated)")
-    content = message.content
-    for word in CENSORED_WORDS:
-        content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
-    for word in CENSORED_EMOJIS:
-        content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
-    author = message.author.nick
-    if author == None:
-        author = message.author.name
-    # Make sure pinging through @everyone, @here, or any role can not happen
-    mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
-    await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava, allowed_mentions=mention_perms)
-    await wh.delete()
+# async def censor(message):
+#     """Constructs Pi-Bot's censor."""
+#     channel = message.channel
+#     ava = message.author.avatar_url
+#     wh = await channel.create_webhook(name="Censor (Automated)")
+#     content = message.content
+#     for word in CENSORED_WORDS:
+#         content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
+#     for word in CENSORED_EMOJIS:
+#         content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
+#     author = message.author.nick
+#     if author == None:
+#         author = message.author.name
+#     # Make sure pinging through @everyone, @here, or any role can not happen
+#     mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
+#     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava, allowed_mentions=mention_perms)
+#     await wh.delete()
 
 @bot.command()
 @commands.check(is_staff)
@@ -2188,49 +2229,49 @@ async def archive(ctx):
     await ctx.channel.send(embed = embed)
     await ctx.message.delete()
 
-@bot.command()
-async def pronouns(ctx, *args):
-    """Assigns or removes pronoun roles from a user."""
-    member = ctx.message.author
-    if len(args) < 1:
-        await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
-    he_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_HE)
-    she_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_SHE)
-    they_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_THEY)
-    for arg in args:
-        if arg.lower() in ["he", "him", "his", "he / him / his"]:
-            if he_role in member.roles:
-                await ctx.send("Oh, looks like you already have the He / Him / His role. Removing it.")
-                await member.remove_roles(he_role)
-            else:
-                await member.add_roles(he_role)
-                await ctx.send("Added the He / Him / His role.")
-        elif arg.lower() in ["she", "her", "hers", "she / her / hers"]:
-            if she_role in member.roles:
-                await ctx.send("Oh, looks like you already have the She / Her / Hers role. Removing it.")
-                await member.remove_roles(she_role)
-            else:
-                await member.add_roles(she_role)
-                await ctx.send("Added the She / Her / Hers role.")
-        elif arg.lower() in ["they", "them", "their", "they / them / their"]:
-            if they_role in member.roles:
-                await ctx.send("Oh, looks like you already have the They / Them / Theirs role. Removing it.")
-                await member.remove_roles(they_role)
-            else:
-                await member.add_roles(they_role)
-                await ctx.send("Added the They / Them / Theirs role.")
-        elif arg.lower() in ["remove", "clear", "delete", "nuke"]:
-            await member.remove_roles(he_role, she_role, they_role)
-            return await ctx.send("Alrighty, your pronouns have been removed.")
-        elif arg.lower() in ["help", "what"]:
-            return await ctx.send("For help with pronouns, please use `!help pronouns`.")
-        else:
-            return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
-            "> `!pronouns he  ` (which gives you *He / Him / His*)\n" +
-            "> `!pronouns she ` (which gives you *She / Her / Hers*)\n" +
-            "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
-            "To remove pronouns, use `!pronouns remove`.\n" +
-            "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
+# @bot.command()
+# async def pronouns(ctx, *args):
+#     """Assigns or removes pronoun roles from a user."""
+#     member = ctx.message.author
+#     if len(args) < 1:
+#         await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
+#     he_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_HE)
+#     she_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_SHE)
+#     they_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_THEY)
+#     for arg in args:
+#         if arg.lower() in ["he", "him", "his", "he / him / his"]:
+#             if he_role in member.roles:
+#                 await ctx.send("Oh, looks like you already have the He / Him / His role. Removing it.")
+#                 await member.remove_roles(he_role)
+#             else:
+#                 await member.add_roles(he_role)
+#                 await ctx.send("Added the He / Him / His role.")
+#         elif arg.lower() in ["she", "her", "hers", "she / her / hers"]:
+#             if she_role in member.roles:
+#                 await ctx.send("Oh, looks like you already have the She / Her / Hers role. Removing it.")
+#                 await member.remove_roles(she_role)
+#             else:
+#                 await member.add_roles(she_role)
+#                 await ctx.send("Added the She / Her / Hers role.")
+#         elif arg.lower() in ["they", "them", "their", "they / them / their"]:
+#             if they_role in member.roles:
+#                 await ctx.send("Oh, looks like you already have the They / Them / Theirs role. Removing it.")
+#                 await member.remove_roles(they_role)
+#             else:
+#                 await member.add_roles(they_role)
+#                 await ctx.send("Added the They / Them / Theirs role.")
+#         elif arg.lower() in ["remove", "clear", "delete", "nuke"]:
+#             await member.remove_roles(he_role, she_role, they_role)
+#             return await ctx.send("Alrighty, your pronouns have been removed.")
+#         elif arg.lower() in ["help", "what"]:
+#             return await ctx.send("For help with pronouns, please use `!help pronouns`.")
+#         else:
+#             return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
+#             "> `!pronouns he  ` (which gives you *He / Him / His*)\n" +
+#             "> `!pronouns she ` (which gives you *She / Her / Hers*)\n" +
+#             "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
+#             "To remove pronouns, use `!pronouns remove`.\n" +
+#             "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
 
 @bot.command()
 @commands.check(is_launcher)
@@ -2401,7 +2442,9 @@ async def send_to_dm_log(message):
 
 @bot.event
 async def on_message(message):
-    # Log DMs
+    if message.author.id in PI_BOT_IDS: return
+    
+    # Log DMs (might put this into cog idk this just needs to run b4 the censor)
     if type(message.channel) == discord.DMChannel:
         await send_to_dm_log(message)
     else:
@@ -2409,61 +2452,13 @@ async def on_message(message):
         if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
             # avoid sending logs for messages in log channels
             print(f'Message from {message.author} in #{message.channel}: {message.content}')
-
-    # Prevent command usage in channels outside of #bot-spam
-    author = message.author
-    if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
-        if message.channel.name != CHANNEL_BOTSPAM:
-            allowedCommands = ["about", "dogbomb", "exchange", "gallery", "invite", "me", "magic8ball", "latex", "obb", "profile", "r", "report", "rule", "shibabomb", "tag", "wiki", "wikipedia", "wp"]
-            allowed = False
-            for c in allowedCommands:
-                if message.content.find(BOT_PREFIX + c) != -1: allowed = True
-            if not allowed:
-                botspam_channel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
-                clarify_message = await message.channel.send(f"{author.mention}, please use bot commands only in {botspam_channel.mention}. If you have more questions, you can ping a global moderator.")
-                await asyncio.sleep(10)
-                await clarify_message.delete()
-                return await message.delete()
-
-    if message.author.id in PI_BOT_IDS: return
-    content = message.content
-    for word in CENSORED_WORDS:
-        if len(re.findall(fr"\b({word})\b", content, re.I)):
-            print(f"Censoring message by {message.author} because of the word: `{word}`")
-            await message.delete()
-            await censor(message)
-    for word in CENSORED_EMOJIS:
-        if len(re.findall(fr"{word}", content)):
-            print(f"Censoring message by {message.author} because of the emoji: `{word}`")
-            await message.delete()
-            await censor(message)
-    if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
-        print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
-        await message.delete()
-        ssChannel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
-        await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {ssChannel.mention}.*")
-    pingable = True
-    if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
-        pingable = False
-    if message.channel.id == 724125653212987454:
-        # If the message is coming from #bot-spam
-        pingable = False
-    if pingable:
-        for user in PING_INFO:
-            if user['id'] == message.author.id:
-                continue
-            pings = user['pings']
-            for ping in pings:
-                if len(re.findall(ping, content, re.I)) > 0 and message.author.discriminator != "0000":
-                    # Do not send a ping if the user is mentioned
-                    user_is_mentioned = user['id'] in [m.id for m in message.mentions]
-                    if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
-                        # Check that the user can actually see the message
-                        name = message.author.nick
-                        if name == None:
-                            name = message.author.name
-                        await ping_pm(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
-    # SPAM TESTING
+    
+    censor = bot.get_cog("Censor")
+    if censor != None: # only case where this occurs if the cog is disabled
+        await censor.on_message(message)
+        
+    # SPAM TESTING (should prob put in its own cog cuz its not essential for censor or commands)
+    #  if spamming commands, we should just issue a command cooldown (2-5s makes sense)
     global RECENT_MESSAGES
     caps = False
     u = sum(1 for c in message.content if c.isupper())
@@ -2490,10 +2485,102 @@ async def on_message(message):
         await auto_report("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-
-    # Do not treat messages with only exclamations as command
+    
     if message.content.count(BOT_PREFIX) != len(message.content):
         await bot.process_commands(message)
+#     # Log DMs
+#     if type(message.channel) == discord.DMChannel:
+#         await send_to_dm_log(message)
+#     else:
+#         # Print to output
+#         if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
+#             # avoid sending logs for messages in log channels
+#             print(f'Message from {message.author} in #{message.channel}: {message.content}')
+# 
+#     # Prevent command usage in channels outside of #bot-spam
+#     author = message.author
+#     if type(message.channel) != discord.DMChannel and message.content.startswith(BOT_PREFIX) and author.roles[-1] == discord.utils.get(author.guild.roles, name=ROLE_MR):
+#         if message.channel.name != CHANNEL_BOTSPAM:
+#             allowedCommands = ["about", "dogbomb", "exchange", "gallery", "invite", "me", "magic8ball", "latex", "obb", "profile", "r", "report", "rule", "shibabomb", "tag", "wiki", "wikipedia", "wp"]
+#             allowed = False
+#             for c in allowedCommands:
+#                 if message.content.find(BOT_PREFIX + c) != -1: allowed = True
+#             if not allowed:
+#                 botspam_channel = discord.utils.get(message.guild.text_channels, name=CHANNEL_BOTSPAM)
+#                 clarify_message = await message.channel.send(f"{author.mention}, please use bot commands only in {botspam_channel.mention}. If you have more questions, you can ping a global moderator.")
+#                 await asyncio.sleep(10)
+#                 await clarify_message.delete()
+#                 return await message.delete()
+# 
+#     if message.author.id in PI_BOT_IDS: return
+#     content = message.content
+#     for word in CENSORED_WORDS:
+#         if len(re.findall(fr"\b({word})\b", content, re.I)):
+#             print(f"Censoring message by {message.author} because of the word: `{word}`")
+#             await message.delete()
+#             await censor(message)
+#     for word in CENSORED_EMOJIS:
+#         if len(re.findall(fr"{word}", content)):
+#             print(f"Censoring message by {message.author} because of the emoji: `{word}`")
+#             await message.delete()
+#             await censor(message)
+#     if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
+#         print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
+#         await message.delete()
+#         ssChannel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
+#         await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {ssChannel.mention}.*")
+#     pingable = True
+#     if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
+#         pingable = False
+#     if message.channel.id == 724125653212987454:
+#         # If the message is coming from #bot-spam
+#         pingable = False
+#     if pingable:
+#         for user in PING_INFO:
+#             if user['id'] == message.author.id:
+#                 continue
+#             pings = user['pings']
+#             for ping in pings:
+#                 if len(re.findall(ping, content, re.I)) > 0 and message.author.discriminator != "0000":
+#                     # Do not send a ping if the user is mentioned
+#                     user_is_mentioned = user['id'] in [m.id for m in message.mentions]
+#                     if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
+#                         # Check that the user can actually see the message
+#                         name = message.author.nick
+#                         if name == None:
+#                             name = message.author.name
+#                         await ping_pm(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
+#     # SPAM TESTING
+#     global RECENT_MESSAGES
+#     caps = False
+#     u = sum(1 for c in message.content if c.isupper())
+#     l = sum(1 for c in message.content if c.islower())
+#     if u > (l + 3): caps = True
+#     RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
+#     # Spam checker
+#     if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
+#         muted_role = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
+#         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
+#         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
+#         await message.author.add_roles(muted_role)
+#         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+#         await auto_report("User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
+#     elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
+#         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
+#     # Caps checker
+#     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 8 and caps:
+#         muted_role = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
+#         parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
+#         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
+#         await message.author.add_roles(muted_role)
+#         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+#         await auto_report("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
+#     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
+#         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
+# 
+#     # Do not treat messages with only exclamations as command
+#     if message.content.count(BOT_PREFIX) != len(message.content):
+#         await bot.process_commands(message)
 
 @bot.event
 async def on_raw_reaction_add(payload):
@@ -2925,6 +3012,18 @@ async def lookup_role(name):
 
 async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
+
+from member_commands import MemberCommands
+from fun_commands import FunCommands
+from censor import Censor
+from ping import PingManager
+
+# The cogs here will be executed in set order everytime
+# Therefore on_message events can be rearraged to produce different outputs
+bot.add_cog(Censor(bot))
+bot.add_cog(PingManager(bot))
+bot.add_cog(MemberCommands(bot))
+bot.add_cog(FunCommands(bot))
 
 if dev_mode:
     bot.run(DEV_TOKEN)
