@@ -7,10 +7,10 @@ from src.wiki.scilympiad import make_results_template
 from src.wiki.schools import get_school_listing
 from commands import get_list, get_quick_list, get_help
 from lists import get_state_list
-from utils import lookup_role
+from src.discord.utils import lookup_role
 # from tournaments import update_tournament_list
 
-class MemberCommands(commands.Cog):
+class MemberCommands(commands.Cog, name='Member'):
     def __init__(self, bot):
         self.bot = bot
         print("Member commands loaded")

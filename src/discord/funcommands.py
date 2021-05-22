@@ -2,7 +2,7 @@ import random
 
 from discord.ext import commands
 
-class Fun(commands.Cog):
+class FunCommands(commands.Cog, name='Fun'):
     def __init__(self, bot):
         self.bot = bot
 
@@ -47,4 +47,4 @@ class Fun(commands.Cog):
             await ctx.message.reply("rawr! only bear can eat users!")
 
 def setup(bot):
-    bot.add_cog(Fun(bot))
+    bot.add_cog(FunCommands(bot))

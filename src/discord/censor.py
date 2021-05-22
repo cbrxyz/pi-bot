@@ -6,7 +6,7 @@ from src.discord.globals import DISCORD_INVITE_ENDINGS
 from src.discord.globals import CHANNEL_SUPPORT
 from src.discord.globals import PI_BOT_IDS
 import re
-from command_checks import is_staff
+from commandchecks import is_staff
     
 class Censor(commands.Cog):
     def __init__(self, bot):

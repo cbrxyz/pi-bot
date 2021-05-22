@@ -71,7 +71,7 @@ bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=i
 # CHECKS
 ##############
 
-from command_checks import *
+from commandchecks import *
 
 ##############
 # FUNCTIONS TO BE REMOVED
@@ -2322,8 +2322,8 @@ async def on_error(event, *args, **kwargs):
 # Therefore on_message events can be rearraged to produce different outputs
 bot.load_extension("src.discord.censor")
 bot.load_extension("src.discord.ping")
-bot.load_extension("src.discord.member_commands")
-bot.load_extension("src.discord.fun")
+bot.load_extension("src.discord.membercommands")
+bot.load_extension("src.discord.funcommands")
 
 if dev_mode:
     bot.run(DEV_TOKEN)
