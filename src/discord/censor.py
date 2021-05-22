@@ -64,3 +64,5 @@ class Censor(commands.Cog):
         if not await is_staff(message.author):
             message.content = content # apply to message to not propogate censored words to other things like commands
         
+def setup(bot):
+    bot.add_cog(Censor(bot))

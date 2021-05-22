@@ -119,3 +119,6 @@ class MemberCommands(commands.Cog):
         #                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
         #             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
         #             await update_tournament_list(self.bot)
+        
+def setup(bot):
+    bot.add_cog(MemberCommands(bot))

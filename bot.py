@@ -3005,16 +3005,11 @@ async def lookup_role(name):
 async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
 
-from member_commands import MemberCommands
-from fun_commands import FunCommands
-from censor import Censor
-from ping import PingManager
-
 # The cogs here will be executed in set order everytime
 # Therefore on_message events can be rearraged to produce different outputs
-bot.add_cog(Censor(bot))
-bot.add_cog(PingManager(bot))
-bot.add_cog(MemberCommands(bot))
+bot.load_extension("src.discord.censor")
+bot.load_extension("src.discord.ping")
+bot.load_extension("src.discord.member_commands")
 bot.load_extension("src.discord.fun")
 
 if dev_mode:

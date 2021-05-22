@@ -162,3 +162,6 @@ class PingManager(commands.Cog):
                 await ctx.send("Your test matched no pings of yours.")
         else:
             return await ctx.send("Sorry, I can't find that command.")
+
+def setup(bot):
+    bot.add_cog(PingManager(bot))
