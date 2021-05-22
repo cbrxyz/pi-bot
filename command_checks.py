@@ -1,13 +1,7 @@
 import discord
 from discord.ext import commands
 from commanderrors import CommandNotAllowedInChannel
-from globals import ROLE_VIP
-from globals import ROLE_STAFF
-from globals import ROLE_WM
-from globals import ROLE_GM
-from globals import ROLE_AD
-from globals import ROLE_LH
-from globals import SERVER_ID
+from src.discord.globals import ROLE_VIP, ROLE_STAFF, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_LH, SERVER_ID
 
 async def is_bear(ctx):
     """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""

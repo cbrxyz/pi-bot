@@ -1,17 +1,17 @@
 import discord
 from discord.ext import commands
-from globals import CENSORED_WORDS
-from globals import CENSORED_EMOJIS
-from globals import DISCORD_INVITE_ENDINGS
-from globals import CHANNEL_SUPPORT
-from globals import PI_BOT_IDS
+from src.discord.globals import CENSORED_WORDS
+from src.discord.globals import CENSORED_EMOJIS
+from src.discord.globals import DISCORD_INVITE_ENDINGS
+from src.discord.globals import CHANNEL_SUPPORT
+from src.discord.globals import PI_BOT_IDS
 import re
 from command_checks import is_staff
     
 class Censor(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        print("Censor commands loaded")
+        print("Censor cog loaded")
     
     # @commands.Cog.listener()
     # gets called by main on_message in bot.py. A bit scuffed, butthe censor

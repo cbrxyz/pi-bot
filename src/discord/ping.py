@@ -1,9 +1,7 @@
 import discord
 from discord.ext import commands
 import re
-from globals import PING_INFO
-from globals import PI_BOT_IDS
-from globals import CHANNEL_BOTSPAM
+from src.discord.globals import PING_INFO, PI_BOT_IDS, CHANNEL_BOTSPAM
 from embed import assemble_embed
 
 import time
@@ -64,10 +62,6 @@ class PingManager(commands.Cog):
     @commands.command()
     async def ping(self, ctx, command=None, *args):
         """Controls Pi-Bot's ping interface."""
-        print("PING!")
-        print(ctx.message.content)
-        print(command)
-        print(args)
         if command is None:
             return await ctx.send("Uh, I need a command you want to run.")
         member = ctx.message.author.id

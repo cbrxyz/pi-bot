@@ -50,7 +50,7 @@ dev_mode = os.getenv('DEV_MODE') == "TRUE"
 ##############
 
 
-from globals import *
+from src.discord.globals import *
 # Roles
 # ROLE_WM = "Wiki/Gallery Moderator"
 # ROLE_GM = "Global Moderator"
@@ -1385,104 +1385,6 @@ async def resultstemplate(ctx, url):
     file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
     await ctx.send(file=file)
 
-# @bot.command()
-# async def ping(ctx, command=None, *args):
-#     """Controls Pi-Bot's ping interface."""
-#     if command is None:
-#         return await ctx.send("Uh, I need a command you want to run.")
-#     member = ctx.message.author.id
-#     if len(args) > 8:
-#         return await ctx.send("You are giving me too many pings at once! Please separate your requests over multiple commands.")
-#     if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp", "delete", "remove", "test", "try"] and len(args) < 1:
-#         return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
-#     if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp"]:
-#         # Check to see if author in ping info already
-#         ignored_list = []
-#         if any([True for u in PING_INFO if u['id'] == member]):
-#             #yes
-#             user = next((u for u in PING_INFO if u['id'] == member), None)
-#             pings = user['pings']
-#             for arg in args:
-#                 try:
-#                     re.findall(arg, "test phrase")
-#                 except:
-#                     await ctx.send(f"Ignoring adding the `{arg}` ping because it uses illegal characters.")
-#                     ignored_list.append(arg)
-#                     continue
-#                 if f"({arg})" in pings or f"\\b({arg})\\b" in pings or arg in pings:
-#                     await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
-#                     ignored_list.append(arg)
-#                 else:
-#                     if command.lower() in ["add", "new"]:
-#                         print(f"adding word: {re.escape(arg)}")
-#                         pings.append(fr"\b({re.escape(arg)})\b")
-#                     else:
-#                         print(f"adding regexp: {arg}")
-#                         pings.append(fr"({arg})")
-#         else:
-#             # nope
-#             if command.lower() in ["add", "new"]:
-#                 PING_INFO.append({
-#                     "id": member,
-#                     "pings": [fr"\b({re.escape(arg)})\b" for arg in args]
-#                 })
-#             else:
-#                 PING_INFO.append({
-#                     "id": member,
-#                     "pings": [fr"({arg})" for arg in args]
-#                 })
-#         return await ctx.send(f"Alrighty... I've got you all set up for the following pings: " + (" ".join([f"`{arg}`" for arg in args if arg not in ignored_list])))
-#     elif command.lower() in ["delete", "remove"]:
-#         user = next((u for u in PING_INFO if u['id'] == member), None)
-#         if user == None or len(user['pings']) == 0:
-#             return await ctx.send("You have no registered pings.")
-#         for arg in args:
-#             if arg == "all":
-#                 user['pings'] = []
-#                 return await ctx.send("I removed all of your pings.")
-#             if arg in user['pings']:
-#                 user['pings'].remove(arg)
-#                 await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
-#             elif f"\\b({arg})\\b" in user['pings']:
-#                 user['pings'].remove(f"\\b({arg})\\b")
-#                 await ctx.send(f"I removed the `{arg}` word ping you were referencing.")
-#             elif f"({arg})" in user['pings']:
-#                 user['pings'].remove(f"({arg})")
-#                 await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
-#             else:
-#                 return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
-#         return await ctx.send("I removed all pings you requested.")
-#     elif command.lower() in ["list", "all"]:
-#         user = next((u for u in PING_INFO if u['id'] == member), None)
-#         if user == None or len(user['pings']) == 0:
-#             return await ctx.send("You have no registered pings.")
-#         else:
-#             pings = user['pings']
-#             regex_pings = []
-#             word_pings = []
-#             for ping in pings:
-#                 if ping[:2] == "\\b":
-#                     word_pings.append(ping)
-#                 else:
-#                     regex_pings.append(ping)
-#             if len(regex_pings) > 0:
-#                 await ctx.send("Your RegEx pings are: " + ", ".join([f"`{regex}`" for regex in regex_pings]))
-#             if len(word_pings) > 0:
-#                 await ctx.send("Your word pings are: " + ", ".join([f"`{word[3:-3]}`" for word in word_pings]))
-#     elif command.lower() in ["test", "try"]:
-#         user = next((u for u in PING_INFO if u['id'] == member), None)
-#         user_pings = user['pings']
-#         matched = False
-#         for arg in args:
-#             for ping in user_pings:
-#                 if len(re.findall(ping, arg, re.I)) > 0:
-#                     await ctx.send(f"Your ping `{ping}` matches `{arg}`.")
-#                     matched = True
-#         if not matched:
-#             await ctx.send("Your test matched no pings of yours.")
-#     else:
-#         return await ctx.send("Sorry, I can't find that command.")
-
 @bot.command(aliases=["donotdisturb"])
 async def dnd(ctx):
     member = ctx.message.author.id
@@ -1499,28 +1401,6 @@ async def dnd(ctx):
             return await ctx.send("Enabled DND mode for pings.")
     else:
         return await ctx.send("You can't enter DND mode without any pings!")
-
-# async def ping_pm(user_id, pinger, ping_exp, channel, content, jump_url):
-#     """Allows Pi-Bot to PM a user about a ping."""
-#     user_to_send = bot.get_user(user_id)
-#     try:
-#         content = re.sub(rf'{ping_exp}', r'**\1**', content, flags=re.I)
-#     except Exception as e:
-#         print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
-#     ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
-#     warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {ping_exp}`"
-#     embed = assemble_embed(
-#         title=":bellhop: Ping Alert!",
-#         desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
-#         fields=[
-#             {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
-#             {"name": "Jump To Message", "value": f"[Click here!]({jump_url})", "inline": "True"},
-#             {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
-#             {"name": "Content", "value": content, "inline": "False"}
-#         ],
-#         hexcolor="#2E66B6"
-#     )
-#     await user_to_send.send(embed=embed)
 
 @bot.command(aliases=["doggobomb"])
 @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
@@ -1594,24 +1474,6 @@ async def school(ctx, title, state):
         hexcolor="#2E66B6"
     )
     await ctx.send(embed=embed)
-
-# async def censor(message):
-#     """Constructs Pi-Bot's censor."""
-#     channel = message.channel
-#     ava = message.author.avatar_url
-#     wh = await channel.create_webhook(name="Censor (Automated)")
-#     content = message.content
-#     for word in CENSORED_WORDS:
-#         content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
-#     for word in CENSORED_EMOJIS:
-#         content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
-#     author = message.author.nick
-#     if author == None:
-#         author = message.author.name
-#     # Make sure pinging through @everyone, @here, or any role can not happen
-#     mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
-#     await wh.send(content, username=(author + " (auto-censor)"), avatar_url=ava, allowed_mentions=mention_perms)
-#     await wh.delete()
 
 @bot.command()
 @commands.check(is_staff)

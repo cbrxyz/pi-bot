@@ -1,11 +1,6 @@
 import discord
 from discord.ext import commands
-from globals import TOURNAMENT_INFO
-from globals import REQUESTED_TOURNAMENTS
-from globals import ROLE_PRONOUN_HE
-from globals import ROLE_PRONOUN_SHE
-from globals import ROLE_PRONOUN_THEY
-from globals import PI_BOT_IDS
+from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS
 # from tournaments import update_tournament_list
 
 class MemberCommands(commands.Cog):
@@ -15,9 +10,10 @@ class MemberCommands(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.id in PI_BOT_IDS: return
-        print("running member cog")
-        print(message.content)
+        pass
+        # if message.author.id in PI_BOT_IDS: return
+        # print("running member cog")
+        # print(message.content)
     
     @commands.command()
     async def pronouns(self, ctx, *args):
@@ -63,62 +59,62 @@ class MemberCommands(commands.Cog):
                 "To remove pronouns, use `!pronouns remove`.\n" +
                 "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
         
-        # @commands.command(aliases=["tc", "tourney", "tournaments"])
-        # async def tournament(self, ctx, *args):
-        #     member = ctx.message.author
-        #     new_args = list(args)
-        #     ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
-        #     for term in ignore_terms:
-        #         if term in new_args:
-        #             new_args.remove(term)
-        #             await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
-        #     if len(args) == 0:
-        #         return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
-        #     for arg in new_args:
-        #         # Stop users from possibly adding the channel hash in front of arg
-        #         arg = arg.replace("#", "")
-        #         arg = arg.lower()
-        #         found = False
-        #         if arg == "all":
-        #             role = discord.utils.get(member.guild.roles, name=ROLE_AT)
-        #             if role in member.roles:
-        #                 await ctx.send(f"Removed your `All Tournaments` role.")
-        #                 await member.remove_roles(role)
-        #             else:
-        #                 await ctx.send(f"Added your `All Tournaments` role.")
-        #                 await member.add_roles(role)
-        #             continue
-        #         for t in TOURNAMENT_INFO:
-        #             if arg == t[1]:
-        #                 found = True
-        #                 role = discord.utils.get(member.guild.roles, name=t[0])
-        #                 if role == None:
-        #                     return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
-        #                 if role in member.roles:
-        #                     await ctx.send(f"Removed you from the `{t[0]}` channel.")
-        #                     await member.remove_roles(role)
-        #                 else:
-        #                     await ctx.send(f"Added you to the `{t[0]}` channel.")
-        #                     await member.add_roles(role)
-        #                 break
-        #         if not found:
-        #             uid = member.id
-        #             found2 = False
-        #             votes = 1
-        #             for t in REQUESTED_TOURNAMENTS:
-        #                 if arg == t['iden']:
-        #                     found2 = True
-        #                     if uid in t['users']:
-        #                         return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
-        #                     t['count'] += 1
-        #                     t['users'].append(uid)
-        #                     votes = t['count']
-        #                     break
-        #             if not found2:
-        #                 await auto_report("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
-        #                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
-        #             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
-        #             await update_tournament_list(self.bot)
+    # @commands.command(aliases=["tc", "tourney", "tournaments"])
+    # async def tournament(self, ctx, *args):
+    #     member = ctx.message.author
+    #     new_args = list(args)
+    #     ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
+    #     for term in ignore_terms:
+    #         if term in new_args:
+    #             new_args.remove(term)
+    #             await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
+    #     if len(args) == 0:
+    #         return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
+    #     for arg in new_args:
+    #         # Stop users from possibly adding the channel hash in front of arg
+    #         arg = arg.replace("#", "")
+    #         arg = arg.lower()
+    #         found = False
+    #         if arg == "all":
+    #             role = discord.utils.get(member.guild.roles, name=ROLE_AT)
+    #             if role in member.roles:
+    #                 await ctx.send(f"Removed your `All Tournaments` role.")
+    #                 await member.remove_roles(role)
+    #             else:
+    #                 await ctx.send(f"Added your `All Tournaments` role.")
+    #                 await member.add_roles(role)
+    #             continue
+    #         for t in TOURNAMENT_INFO:
+    #             if arg == t[1]:
+    #                 found = True
+    #                 role = discord.utils.get(member.guild.roles, name=t[0])
+    #                 if role == None:
+    #                     return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
+    #                 if role in member.roles:
+    #                     await ctx.send(f"Removed you from the `{t[0]}` channel.")
+    #                     await member.remove_roles(role)
+    #                 else:
+    #                     await ctx.send(f"Added you to the `{t[0]}` channel.")
+    #                     await member.add_roles(role)
+    #                 break
+    #         if not found:
+    #             uid = member.id
+    #             found2 = False
+    #             votes = 1
+    #             for t in REQUESTED_TOURNAMENTS:
+    #                 if arg == t['iden']:
+    #                     found2 = True
+    #                     if uid in t['users']:
+    #                         return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
+    #                     t['count'] += 1
+    #                     t['users'].append(uid)
+    #                     votes = t['count']
+    #                     break
+    #             if not found2:
+    #                 await auto_report("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
+    #                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
+    #             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
+    #             await update_tournament_list(self.bot)
         
 def setup(bot):
     bot.add_cog(MemberCommands(bot))
