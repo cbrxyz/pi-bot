@@ -26,15 +26,15 @@ from src.sheets.censor import get_censor
 from src.sheets.sheets import send_variables, get_variables, get_tags
 from src.forums.forums import open_browser
 from src.wiki.stylist import prettify_templates
-from src.wiki.tournaments import get_tournament_list
+# from src.wiki.tournaments import get_tournament_list
 from src.wiki.wiki import implement_command, get_page_tables
 from src.wiki.scilympiad import get_points
-from src.wiki.mosteditstable import run_table
+# from src.wiki.mosteditstable import run_table
 from info import get_about
 from doggo import get_doggo, get_shiba
-from bear import get_bear_message
+# from bear import get_bear_message
 from embed import assemble_embed
-from commands import get_list, get_quick_list, get_help
+from commands import get_list, get_help # get_quick_list,
 import xkcd as xkcd_module # not to interfere with xkcd method
 from commanderrors import CommandNotAllowedInChannel
 

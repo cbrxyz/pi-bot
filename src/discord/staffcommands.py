@@ -11,6 +11,7 @@ from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE. ROLE_GAMES, ROLE_MR
 
 from src.discord.utils import harvest_id
+from src.wiki.mosteditstable import run_table
 
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
