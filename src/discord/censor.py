@@ -25,7 +25,7 @@ class Censor(commands.Cog):
         :type message: discord.Message
         """
         content = message.content
-        print(f"content before censor: \"{content}\"")
+        # print(f"content before censor: \"{content}\"")
         for word in CENSORED_WORDS:
             if len(re.findall(fr"\b({word})\b", content, re.I)):
                 print(f"Censoring message by {message.author} because of the word: `{word}`")
