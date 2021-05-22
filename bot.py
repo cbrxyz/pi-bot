@@ -86,27 +86,6 @@ aiowikip = aioify(obj=wikip)
 ##############
 # FUNCTIONS
 ##############
-
-@bot.before_invoke
-async def censor_msg(ctx):
-    print("running censor check for commands")
-    channel = ctx.message.channel
-    ava = ctx.message.author.avatar_url
-    
-    content = ctx.message.content
-    for word in CENSORED_WORDS:
-        content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
-    for word in CENSORED_EMOJIS:
-        content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
-    author = ctx.message.author.nick
-    if author == None:
-        author = ctx.message.author.name
-    # Make sure pinging through @everyone, @here, or any role can not happen
-    mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
-    
-    if not await is_staff(ctx.message.author):
-        ctx.message.content = content
-    print(f"after censor check: \"{ctx.message.content}\"")
     
 @bot.event
 async def on_ready():

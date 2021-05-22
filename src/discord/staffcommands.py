@@ -18,7 +18,6 @@ class StaffCommands(commands.Cog):
     
     # overriding check function
     async def cog_check(self, ctx):
-        print("running check")
         return await is_staff(ctx.message.author)
 
 class StaffEssential(StaffCommands, name="StaffEsntl"):
