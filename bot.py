@@ -820,14 +820,6 @@ async def getVariable(ctx, var):
         except:
             await ctx.send(f"Can't find that variable!")
 
-@bot.command(aliases=["eats", "beareats"])
-@commands.check(is_bear)
-async def eat(ctx, user):
-    """Allows bear to eat users >:D"""
-    message = await get_bear_message(user)
-    await ctx.message.delete()
-    await ctx.send(message)
-
 @bot.command()
 @commands.check(is_staff)
 async def refresh(ctx):
@@ -3023,7 +3015,7 @@ from ping import PingManager
 bot.add_cog(Censor(bot))
 bot.add_cog(PingManager(bot))
 bot.add_cog(MemberCommands(bot))
-bot.add_cog(FunCommands(bot))
+bot.load_extension("src.discord.fun")
 
 if dev_mode:
     bot.run(DEV_TOKEN)
