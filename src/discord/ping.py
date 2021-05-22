@@ -58,7 +58,24 @@ class PingManager(commands.Cog):
             hexcolor="#2E66B6"
         )
         await user_to_send.send(embed=embed)
-        
+    
+    @commands.command(aliases=["donotdisturb"])
+    async def dnd(self, ctx):
+        member = ctx.message.author.id
+        if any([True for u in PING_INFO if u['id'] == member]):
+            user = next((u for u in PING_INFO if u['id'] == member), None)
+            if 'dnd' not in user:
+                user['dnd'] = True
+                return await ctx.send("Enabled DND mode for pings.")
+            elif user['dnd'] == True:
+                user['dnd'] = False
+                return await ctx.send("Disabled DND mode for pings.")
+            else:
+                user['dnd'] = True
+                return await ctx.send("Enabled DND mode for pings.")
+        else:
+            return await ctx.send("You can't enter DND mode without any pings!")
+    
     @commands.command()
     async def ping(self, ctx, command=None, *args):
         """Controls Pi-Bot's ping interface."""

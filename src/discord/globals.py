@@ -1,10 +1,15 @@
 SERVER_ID = 0
 
+##############
+# CONSTANTS
+##############
 PI_BOT_IDS = [
     723767075427844106,
     743254543952904197,
     637519324072116247
 ]
+RULES_CHANNEL_ID = 737087680269123606
+WELCOME_CHANNEL_ID = 743253216921387088
 DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK"]
 
 # Roles
@@ -80,6 +85,9 @@ RULES = [
     "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
 ]
 
+##############
+# VARIABLES
+##############
 fish_now = 0
 can_post = False
 do_hourly_sync = False
