@@ -13,6 +13,7 @@ class PingManager(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.channel.type == discord.ChannelType.private: return
         if message.author.id in PI_BOT_IDS: return
         pingable = True
         if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":

@@ -16,7 +16,7 @@ import wikipedia as wikip
 import matplotlib.pyplot as plt
 import numpy as np
 from aioify import aioify
-from dotenv import load_dotenv
+
 from discord import channel
 from discord.ext import commands, tasks
 
@@ -35,13 +35,12 @@ from doggo import get_doggo, get_shiba
 # from bear import get_bear_message
 from embed import assemble_embed
 from commands import get_list, get_help # get_quick_list,
-import xkcd as xkcd_module # not to interfere with xkcd method
 from commanderrors import CommandNotAllowedInChannel
 
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
-dev_mode = os.getenv('DEV_MODE') == "TRUE"
+# load_dotenv()
+# TOKEN = os.getenv('DISCORD_TOKEN')
+# DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
+# dev_mode = os.getenv('DEV_MODE') == "TRUE"
 
 ##############
 # SERVER VARIABLES
@@ -58,12 +57,12 @@ from src.discord.globals import *
 intents = discord.Intents.default()
 intents.members = True
 
-if dev_mode:
-    BOT_PREFIX = "?"
-    SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
-else:
-    BOT_PREFIX = "!"
-    SERVER_ID = 698306997287780363
+# if dev_mode:
+#     BOT_PREFIX = "?"
+#     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
+# else:
+#     BOT_PREFIX = "!"
+#     SERVER_ID = 698306997287780363
 
 bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=intents)
 
@@ -597,49 +596,6 @@ async def rand(ctx, a=1, b=10):
     await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
 
 @bot.command()
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def magic8ball(ctx):
-    msg = await ctx.send("Swishing the magic 8 ball...")
-    await ctx.channel.trigger_typing()
-    await asyncio.sleep(3)
-    await msg.delete()
-    sayings = [
-        "Yes.",
-        "Ask again later.",
-        "Not looking good.",
-        "Cannot predict now.",
-        "It is certain.",
-        "Try again.",
-        "Without a doubt.",
-        "Don't rely on it.",
-        "Outlook good.",
-        "My reply is no.",
-        "Don't count on it.",
-        "Yes - definitely.",
-        "Signs point to yes.",
-        "I believe so.",
-        "Nope.",
-        "Concentrate and ask later.",
-        "Try asking again.",
-        "For sure not.",
-        "Definitely no."
-    ]
-    response = sayings[math.floor(random.random()*len(sayings))]
-    await ctx.message.reply(f"**{response}**")
-
-@bot.command()
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def xkcd(ctx, num = None):
-    max_num = await xkcd_module.get_max()
-    if num == None:
-        rand = random.randrange(1, int(max_num))
-        return await xkcd(ctx, str(rand))
-    if num.isdigit() and 1 <= int(num) <= int(max_num):
-        return await ctx.send(f"https://xkcd.com/{num}")
-    else:
-        return await ctx.send("Invalid attempted number for xkcd.")
-
-@bot.command()
 async def rule(ctx, num):
     """Gets a specified rule."""
     if not num.isdigit() or int(num) < 1 or int(num) > 13:
@@ -933,26 +889,6 @@ async def _graph(points, graph_title, title):
     plt.close()
     await asyncio.sleep(2)
 
-@bot.command(aliases=["doggobomb"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def dogbomb(ctx, member:str=False):
-    """Dog bombs someone!"""
-    if member == False:
-        return await ctx.send("Tell me who you want to dog bomb!! :dog:")
-    doggo = await get_doggo()
-    await ctx.send(doggo)
-    await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
-
-@bot.command()
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def shibabomb(ctx, member:str=False):
-    """Shiba bombs a user!"""
-    if member == False:
-        return await ctx.send("Tell me who you want to shiba bomb!! :dog:")
-    doggo = await get_shiba()
-    await ctx.send(doggo)
-    await ctx.send(f"{member}, <@{ctx.message.author.id}> shiba bombed you!!")
-
 @bot.command(aliases=["event"])
 async def events(ctx, *args):
     """Adds or removes event roles from a user."""
@@ -1043,120 +979,6 @@ async def help(ctx, command:str=None):
         return await ctx.send(embed=embed)
     hlp = await get_help(ctx, command)
     await ctx.send(embed=hlp)
-
-@bot.command(aliases=["feedbear"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def fish(ctx):
-    """Gives a fish to bear."""
-    global fish_now
-    r = random.random()
-    if len(str(fish_now)) > 1500:
-        fish_now = round(pow(fish_now, 0.5))
-        if fish_now == 69: fish_now = 70
-        return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
-    if r > 0.9:
-        fish_now += 10
-        if fish_now == 69: fish_now = 70
-        return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
-    if r > 0.1:
-        fish_now += 1
-        if fish_now == 69: 
-            fish_now = 70
-            return await ctx.send(f"You feed bear two fish. Bear now has {fish_now} fish!")
-        else:
-            return await ctx.send(f"You feed bear one fish. Bear now has {fish_now} fish!")
-    if r > 0.02:
-        fish_now += 0
-        return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
-    else:
-        fish_now = round(pow(fish_now, 0.5))
-        if fish_now == 69: fish_now = 70
-        return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
-
-@bot.command(aliases=["badbear"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def stealfish(ctx):
-    global fish_now
-    member = ctx.message.author
-    r = random.random()
-    if member.id in STEALFISH_BAN:
-        return await ctx.send("Hey! You've been banned from stealing fish for now.")
-    if r >= 0.75:
-        ratio = r - 0.5
-        fish_now = round(fish_now * (1 - ratio))
-        per = round(ratio * 100)
-        return await ctx.send(f"You stole {per}% of bear's fish!")
-    if r >= 0.416:
-        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-        STEALFISH_BAN.append(member.id)
-        CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 hour!")
-    if r >= 0.25:
-        parsed = dateparser.parse("1 day", settings={"PREFER_DATES_FROM": "future"})
-        STEALFISH_BAN.append(member.id)
-        CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-        return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 day!")
-    if r >= 0.01:
-        return await ctx.send("Hmm, nothing happened. *crickets*")
-    else:
-        STEALFISH_BAN.append(member.id)
-        return await ctx.send("You are banned from using `!stealfish` until the next version of Pi-Bot is released.")
-
-@bot.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def trout(ctx, member:str=False):
-    if await sanitize_mention(member) == False:
-        return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. Not so fast!")
-    if member == False:
-        await ctx.send(f"{ctx.message.author.mention} trout slaps themselves!")
-    else:
-        await ctx.send(f"{ctx.message.author.mention} slaps {member} with a giant trout!")
-    await ctx.send("http://gph.is/1URFXN9")
-
-@bot.command(aliases=["givecookie"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def cookie(ctx, member:str=False):
-    if await sanitize_mention(member) == False:
-        return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-    if member == False:
-        await ctx.send(f"{ctx.message.author.mention} gives themselves a cookie.")
-    else:
-        await ctx.send(f"{ctx.message.author.mention} gives {member} a cookie!")
-    await ctx.send("http://gph.is/1UOaITh")
-
-@bot.command()
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def treat(ctx):
-    await ctx.send("You give bernard one treat!")
-    await ctx.send("http://gph.is/11nJAH5")
-
-@bot.command(aliases=["givehershey", "hershey"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def hersheybar(ctx, member:str=False):
-    if await sanitize_mention(member) == False:
-        return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-    if member == False:
-        await ctx.send(f"{ctx.message.author.mention} gives themselves a Hershey bar.")
-    else:
-        await ctx.send(f"{ctx.message.author.mention} gives {member} a Hershey bar!")
-    await ctx.send("http://gph.is/2rt64CX")
-
-@bot.command(aliases=["giveicecream"])
-@not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-async def icecream(ctx, member:str=False):
-    if await sanitize_mention(member) == False:
-        return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-    if member == False:
-        await ctx.send(f"{ctx.message.author.mention} gives themselves some ice cream.")
-    else:
-        await ctx.send(f"{ctx.message.author.mention} gives {member} ice cream!")
-    await ctx.send("http://gph.is/YZLMMs")
-
-async def sanitize_mention(member):
-    if member == False: return True
-    if member == "@everyone" or member == "@here": return False
-    if member[:3] == "<@&": return False
-    return True
 
 @bot.command()
 async def wiki(ctx, command:str=False, *args):

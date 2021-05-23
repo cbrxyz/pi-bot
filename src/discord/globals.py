@@ -1,4 +1,18 @@
-SERVER_ID = 0
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
+DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
+dev_mode = os.getenv('DEV_MODE') == "TRUE"
+
+SERVER_ID = 698306997287780363
+
+if dev_mode:
+    BOT_PREFIX = "?"
+    SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
+else:
+    BOT_PREFIX = "!"
 
 ##############
 # CONSTANTS

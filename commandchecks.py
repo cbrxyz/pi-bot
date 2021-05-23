@@ -50,7 +50,7 @@ def not_blacklisted_channel(blacklist):
     """Given a string array blacklist, check if command was not invoked in specified blacklist channels."""
     async def predicate(ctx):
         channel = ctx.message.channel
-        server = bot.get_guild(SERVER_ID)
+        server = ctx.bot.get_guild(SERVER_ID)
         for c in blacklist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
@@ -62,7 +62,7 @@ def is_whitelisted_channel(whitelist):
     """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
     async def predicate(ctx):
         channel = ctx.message.channel
-        server = bot.get_guild(SERVER_ID)
+        server = ctx.bot.get_guild(SERVER_ID)
         for c in whitelist:
             if channel == discord.utils.get(server.text_channels, name=c):
                 return True

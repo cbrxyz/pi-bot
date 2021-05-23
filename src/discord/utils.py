@@ -1,4 +1,9 @@
 
+async def sanitize_mention(member):
+    if member == False: return True
+    if member == "@everyone" or member == "@here": return False
+    if member[:3] == "<@&": return False
+    return True
 
 async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
