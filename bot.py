@@ -1254,7 +1254,7 @@ async def on_message(message):
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
     
-    if message.content.count(BOT_PREFIX) != len(message.content): # TODO: fix to exclude not only !! but !? and alike
+    if re.match(r'\s*[!"#$%&\'()*+,\-./:;<=>?@[\]^_`{|}~]', message.content.lstrip()[1:]) == None: # A bit messy, but gets it done
         await bot.process_commands(message)
 #     # Log DMs
 #     if type(message.channel) == discord.DMChannel:
