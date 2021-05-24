@@ -331,7 +331,7 @@ class MemberCommands(commands.Cog, name='Member'):
         async def predicate(ctx):
             if not await is_staff(ctx):
                 return True
-            raise exception(ctx.message, message)
+            raise exception(message)
         return commands.check(predicate)
     
     @commands.command()

@@ -35,7 +35,7 @@ from doggo import get_doggo, get_shiba
 # from bear import get_bear_message
 from embed import assemble_embed
 from commands import get_list, get_help # get_quick_list,
-from commanderrors import CommandNotAllowedInChannel
+from commanderrors import CommandNotAllowedInChannel, SelfMuteCommandStaffInvoke
 
 # load_dotenv()
 # TOKEN = os.getenv('DISCORD_TOKEN')
@@ -1254,7 +1254,7 @@ async def on_message(message):
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
     
-    if message.content.count(BOT_PREFIX) != len(message.content):
+    if message.content.count(BOT_PREFIX) != len(message.content): # TODO: fix to exclude not only !! but !? and alike
         await bot.process_commands(message)
 #     # Log DMs
 #     if type(message.channel) == discord.DMChannel:
@@ -1647,16 +1647,24 @@ async def on_raw_message_delete(payload):
 
 @bot.event
 async def on_command_error(ctx, error):
+    print("Command Error:")
+    print(error)
     if hasattr(ctx.command, 'on_error'):
         return
     
-    cog = ctx.cog
-    if cog:
-        if cog._get_overridden_method(cog.cog_command_error) is not None:
-            return
+    # cog = ctx.cog
+    # if cog:
+    #     if cog._get_overridden_method(cog.cog_command_error) is not None:
+    #         return
+    # This causes errors when commands in an overridden error handler raise a common exception.
     
-    print("Command Error:")
-    print(error)
+    # this is such a garbage way of doing it
+    ignored = (SelfMuteCommandStaffInvoke,)
+    if isinstance(error, ignored):
+        return
+    
+    # print("Command Error:")
+    # print(error)
     # Argument parsing errors
     if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(error, discord.ext.commands.InvalidEndOfQuotedStringError):
         return await ctx.send("Sorry, it appears that your quotation marks are misaligned, and I can't read your query.")
