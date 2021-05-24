@@ -15,13 +15,15 @@ from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELF
 from src.discord.utils import harvest_id
 from src.wiki.mosteditstable import run_table
 
+from src.discord.mute import _mute
+
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
     # overriding check function
     async def cog_check(self, ctx):
-        return await is_staff(ctx.message.author)
+        return await is_staff(ctx)
 
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
@@ -121,6 +123,19 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
                 for r in msg.reactions:
                     await r.remove(u)
             await ctx.send(f"Cleared reactions on message from {len(users)} user(s).")
+            
+    @commands.command()
+    async def mute(self, ctx, user:discord.Member, *args):
+        """
+        Mutes a user.
+    
+        :param user: User to be muted.
+        :type user: discord.Member
+        :param *args: The time to mute the user for.
+        :type *args: str
+        """
+        time = " ".join(args)
+        await _mute(ctx, user, time, self=False)
 
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):

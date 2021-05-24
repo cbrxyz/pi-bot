@@ -6,7 +6,7 @@ from src.discord.globals import DISCORD_INVITE_ENDINGS
 from src.discord.globals import CHANNEL_SUPPORT
 from src.discord.globals import PI_BOT_IDS
 import re
-from commandchecks import is_staff
+from commandchecks import is_author_staff
     
 class Censor(commands.Cog):
     def __init__(self, bot):
@@ -61,7 +61,7 @@ class Censor(commands.Cog):
         await wh.delete()
         
         # unless author is staff, replace content for other cogs (allows for staff to then add swears and censored words to pings)
-        if not await is_staff(message.author):
+        if not await is_author_staff(message.author):
             message.content = content # apply to message to not propogate censored words to other things like commands
         
 def setup(bot):

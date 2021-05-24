@@ -8,6 +8,11 @@ from src.wiki.schools import get_school_listing
 from commands import get_list, get_quick_list, get_help
 from lists import get_state_list
 from src.discord.utils import lookup_role
+from src.discord.mute import _mute
+from commandchecks import is_staff
+from commanderrors import SelfMuteCommandStaffInvoke
+
+from typing import Type
 # from tournaments import update_tournament_list
 
 class MemberCommands(commands.Cog, name='Member'):
@@ -322,6 +327,32 @@ class MemberCommands(commands.Cog, name='Member'):
             state_res = "Added states " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", and removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
         await ctx.send(state_res)
     
+    def is_not_staff(exception: Type[commands.CommandError], message: str):
+        async def predicate(ctx):
+            if not await is_staff(ctx):
+                return True
+            raise exception(ctx.message, message)
+        return commands.check(predicate)
+    
+    @commands.command()
+    @is_not_staff(SelfMuteCommandStaffInvoke, "A staff member attempted to invoke selfmute.")
+    async def selfmute(self, ctx, *args):
+        """
+        Self mutes the user that invokes the command.
+    
+        :param *args: The time to mute the user for.
+        :type *args: str
+        """
+        user = ctx.message.author
+        
+        time = " ".join(args)
+        await _mute(ctx, user, time, self=True)
+        
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, SelfMuteCommandStaffInvoke):
+            return await ctx.send("Staff members can't self mute.")
+        
+        
     # @commands.command(aliases=["tc", "tourney", "tournaments"])
     # async def tournament(self, ctx, *args):
     #     member = ctx.message.author

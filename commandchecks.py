@@ -7,14 +7,14 @@ async def is_bear(ctx):
     """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""
     return ctx.message.author.id == 353730886577160203 or ctx.message.author.id == 715048392408956950
 
-# async def is_staff(ctx):
+async def is_staff(ctx):
 #     """Checks to see if the user is a staff member."""
-#     return is_staff(ctx.message.author)
+    return await is_author_staff(ctx.message.author)
     # vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
     # staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
     # return vipRole in member.roles or staffRole in member.roles
     
-async def is_staff(author: int):
+async def is_author_staff(author: discord.abc.User):
     """Checks to see if the user is a staff member."""
     vipRole = discord.utils.get(author.guild.roles, name=ROLE_VIP)
     staffRole = discord.utils.get(author.guild.roles, name=ROLE_STAFF)

@@ -1063,62 +1063,6 @@ async def wikipedia(ctx, request:str=False, *args):
             return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
 
 @bot.command()
-@commands.check(is_staff)
-async def mute(ctx, user:discord.Member, *args):
-    """
-    Mutes a user.
-
-    :param user: User to be muted.
-    :type user: discord.Member
-    :param *args: The time to mute the user for.
-    :type *args: str
-    """
-    time = " ".join(args)
-    await _mute(ctx, user, time, self=False)
-
-@bot.command()
-async def selfmute(ctx, *args):
-    """
-    Self mutes the user that invokes the command.
-
-    :param *args: The time to mute the user for.
-    :type *args: str
-    """
-    user = ctx.message.author
-    if await is_staff(ctx):
-        return await ctx.send("Staff members can't self mute.")
-    time = " ".join(args)
-    await _mute(ctx, user, time, self=True)
-
-async def _mute(ctx, user:discord.Member, time: str, self: bool):
-    """
-    Helper function for muting commands.
-
-    :param user: User to be muted.
-    :type user: discord.Member
-    :param time: The time to mute the user for.
-    :type time: str
-    """
-    if user.id in PI_BOT_IDS:
-        return await ctx.send("Hey! You can't mute me!!")
-    if time == None:
-        return await ctx.send("You need to specify a length that this used will be muted. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-    role = None
-    if self:
-        role = discord.utils.get(user.guild.roles, name=ROLE_SELFMUTE)
-    else:
-        role = discord.utils.get(user.guild.roles, name=ROLE_MUTED)
-    parsed = "indef"
-    if time != "indef":
-        parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
-        if parsed == None:
-            return await ctx.send("Sorry, but I don't understand that length of time.")
-        CRON_LIST.append({"date": parsed, "do": f"unmute {user.id}"})
-    await user.add_roles(role)
-    eastern = pytz.timezone("US/Eastern")
-    await ctx.send(f"Successfully muted {user.mention} until `{str(eastern.localize(parsed))} EST`.")
-
-@bot.command()
 @commands.check(is_launcher)
 async def confirm(ctx, *args: discord.Member):
     """Allows a staff member to confirm a user."""
@@ -1703,6 +1647,14 @@ async def on_raw_message_delete(payload):
 
 @bot.event
 async def on_command_error(ctx, error):
+    if hasattr(ctx.command, 'on_error'):
+        return
+    
+    cog = ctx.cog
+    if cog:
+        if cog._get_overridden_method(cog.cog_command_error) is not None:
+            return
+    
     print("Command Error:")
     print(error)
     # Argument parsing errors
