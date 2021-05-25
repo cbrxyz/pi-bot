@@ -2,40 +2,42 @@ import discord
 import os
 import traceback
 import asyncio
-import requests
+# import requests
 import re
 import json
 import random
-import math
+# import math
 import time
 import datetime
 import dateparser
 import pytz
 import time as time_module
-import wikipedia as wikip
+# import wikipedia as wikip
 import matplotlib.pyplot as plt
 import numpy as np
-from aioify import aioify
+# from aioify import aioify
 
 from discord import channel
 from discord.ext import commands, tasks
 
 from src.sheets.events import get_events
-from src.sheets.tournaments import get_tournament_channels
+# from src.sheets.tournaments import get_tournament_channels
 from src.sheets.censor import get_censor
 from src.sheets.sheets import send_variables, get_variables, get_tags
 from src.forums.forums import open_browser
 from src.wiki.stylist import prettify_templates
 # from src.wiki.tournaments import get_tournament_list
-from src.wiki.wiki import implement_command, get_page_tables
+from src.wiki.wiki import get_page_tables # implement_command,
 from src.wiki.scilympiad import get_points
 # from src.wiki.mosteditstable import run_table
-from info import get_about
-from doggo import get_doggo, get_shiba
+# from info import get_about
+# from doggo import get_doggo, get_shiba
 # from bear import get_bear_message
 from embed import assemble_embed
 from commands import get_list, get_help # get_quick_list,
 from commanderrors import CommandNotAllowedInChannel, SelfMuteCommandStaffInvoke
+
+from tournaments import update_tournament_list
 
 # load_dotenv()
 # TOKEN = os.getenv('DISCORD_TOKEN')
@@ -80,7 +82,7 @@ bot.remove_command("help")
 ##############
 # ASYNC WRAPPERS
 ##############
-aiowikip = aioify(obj=wikip)
+# aiowikip = aioify(obj=wikip)
 
 ##############
 # FUNCTIONS
@@ -97,7 +99,7 @@ async def on_ready():
         print(e)
 
     try:
-        await update_tournament_list()
+        await update_tournament_list(bot)
     except Exception as e:
         print("Error in starting function with updating tournament list:")
         print(e)
@@ -210,9 +212,9 @@ async def handle_cron(string):
             print(f"Un-stealfished user ID: {iden}")
         else:
             print("ERROR:")
-            await auto_report("Error with a cron task", "red", f"Error: `{string}`")
+            await auto_report(bot, "Error with a cron task", "red", f"Error: `{string}`")
     except Exception as e:
-        await auto_report("Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
+        await auto_report(bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
 @tasks.loop(hours=1)
 async def change_bot_status():
@@ -245,7 +247,7 @@ async def change_bot_status():
         {"type": "playing", "message": "with wiki templates"},
         {"type": "watching", "message": "Jmol tutorials"},
     ]
-    botStatus = statuses[math.floor(random.random() * len(statuses))]
+    botStatus = random.choice(statuses)
     if botStatus["type"] == "playing":
         await bot.change_presence(activity=discord.Game(name=botStatus["message"]))
     elif botStatus["type"] == "listening":
@@ -330,62 +332,62 @@ async def pull_prev_info():
     REQUESTED_TOURNAMENTS = data[5][0]
     print("Fetched previous variables.")
 
-@bot.command(aliases=["tc", "tourney", "tournaments"])
-async def tournament(ctx, *args):
-    member = ctx.message.author
-    new_args = list(args)
-    ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
-    for term in ignore_terms:
-        if term in new_args:
-            new_args.remove(term)
-            await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
-    if len(args) == 0:
-        return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
-    for arg in new_args:
-        # Stop users from possibly adding the channel hash in front of arg
-        arg = arg.replace("#", "")
-        arg = arg.lower()
-        found = False
-        if arg == "all":
-            role = discord.utils.get(member.guild.roles, name=ROLE_AT)
-            if role in member.roles:
-                await ctx.send(f"Removed your `All Tournaments` role.")
-                await member.remove_roles(role)
-            else:
-                await ctx.send(f"Added your `All Tournaments` role.")
-                await member.add_roles(role)
-            continue
-        for t in TOURNAMENT_INFO:
-            if arg == t[1]:
-                found = True
-                role = discord.utils.get(member.guild.roles, name=t[0])
-                if role == None:
-                    return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
-                if role in member.roles:
-                    await ctx.send(f"Removed you from the `{t[0]}` channel.")
-                    await member.remove_roles(role)
-                else:
-                    await ctx.send(f"Added you to the `{t[0]}` channel.")
-                    await member.add_roles(role)
-                break
-        if not found:
-            uid = member.id
-            found2 = False
-            votes = 1
-            for t in REQUESTED_TOURNAMENTS:
-                if arg == t['iden']:
-                    found2 = True
-                    if uid in t['users']:
-                        return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
-                    t['count'] += 1
-                    t['users'].append(uid)
-                    votes = t['count']
-                    break
-            if not found2:
-                await auto_report("New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
-                return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
-            await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
-            await update_tournament_list()
+# @bot.command(aliases=["tc", "tourney", "tournaments"])
+# async def tournament(ctx, *args):
+#     member = ctx.message.author
+#     new_args = list(args)
+#     ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
+#     for term in ignore_terms:
+#         if term in new_args:
+#             new_args.remove(term)
+#             await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
+#     if len(args) == 0:
+#         return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
+#     for arg in new_args:
+#         # Stop users from possibly adding the channel hash in front of arg
+#         arg = arg.replace("#", "")
+#         arg = arg.lower()
+#         found = False
+#         if arg == "all":
+#             role = discord.utils.get(member.guild.roles, name=ROLE_AT)
+#             if role in member.roles:
+#                 await ctx.send(f"Removed your `All Tournaments` role.")
+#                 await member.remove_roles(role)
+#             else:
+#                 await ctx.send(f"Added your `All Tournaments` role.")
+#                 await member.add_roles(role)
+#             continue
+#         for t in TOURNAMENT_INFO:
+#             if arg == t[1]:
+#                 found = True
+#                 role = discord.utils.get(member.guild.roles, name=t[0])
+#                 if role == None:
+#                     return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
+#                 if role in member.roles:
+#                     await ctx.send(f"Removed you from the `{t[0]}` channel.")
+#                     await member.remove_roles(role)
+#                 else:
+#                     await ctx.send(f"Added you to the `{t[0]}` channel.")
+#                     await member.add_roles(role)
+#                 break
+#         if not found:
+#             uid = member.id
+#             found2 = False
+#             votes = 1
+#             for t in REQUESTED_TOURNAMENTS:
+#                 if arg == t['iden']:
+#                     found2 = True
+#                     if uid in t['users']:
+#                         return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
+#                     t['count'] += 1
+#                     t['users'].append(uid)
+#                     votes = t['count']
+#                     break
+#             if not found2:
+#                 await auto_report(bot, "New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
+#                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
+#             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
+#             await update_tournament_list()
 
 @bot.command()
 async def enable_mem(ctx):
@@ -398,6 +400,7 @@ async def disable_mem(ctx):
     print("removed")
     print(bot.cogs)
 
+# cant fully test this command due to lack of access
 @bot.command()
 @commands.check(is_staff)
 async def tla(ctx, iden, uid):
@@ -406,9 +409,9 @@ async def tla(ctx, iden, uid):
         if t['iden'] == iden:
             t['count'] += 1
             await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
-            return await update_tournament_list()
+            return await update_tournament_list(ctx.bot)
     REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
-    await update_tournament_list()
+    await update_tournament_list(ctx.bot)
     return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
 
 @bot.command()
@@ -418,213 +421,19 @@ async def tlr(ctx, iden):
     for t in REQUESTED_TOURNAMENTS:
         if t['iden'] == iden:
             REQUESTED_TOURNAMENTS.remove(t)
-    await update_tournament_list()
+    await update_tournament_list(ctx.bot)
     return await ctx.send(f"Removed `#{iden}` from the tournament list.")
-
-async def update_tournament_list():
-    tl = await get_tournament_channels()
-    tl.sort(key=lambda x: x[0])
-    global TOURNAMENT_INFO
-    global REQUESTED_TOURNAMENTS
-    TOURNAMENT_INFO = tl
-    server = bot.get_guild(SERVER_ID)
-    tourney_channel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
-    tournament_category = discord.utils.get(server.categories, name=CATEGORY_TOURNAMENTS)
-    bot_spam_channel = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
-    server_support_channel = discord.utils.get(server.text_channels, name=CHANNEL_SUPPORT)
-    gm = discord.utils.get(server.roles, name=ROLE_GM)
-    a = discord.utils.get(server.roles, name=ROLE_AD)
-    all_tournaments_role = discord.utils.get(server.roles, name=ROLE_AT)
-    string_lists = []
-    string_lists.append("")
-    open_soon_list = ""
-    channels_requested_list = ""
-    now = datetime.datetime.now()
-    for t in tl: # For each tournament in the sheet
-        # Check if the channel needs to be made / deleted
-        ch = discord.utils.get(server.text_channels, name=t[1])
-        r = discord.utils.get(server.roles, name=t[0])
-        tourney_date = t[4]
-        before_days = int(t[5])
-        after_days = int(t[6])
-        tourney_date_datetime = datetime.datetime.strptime(tourney_date, "%Y-%m-%d")
-        day_diff = (tourney_date_datetime - now).days
-        print(f"Tournament List: Handling {t[0]} (Day diff: {day_diff} days)")
-        if (day_diff < (-1 * after_days)) and ch != None:
-            # If past tournament date, now out of range
-            if ch.category.name != CATEGORY_ARCHIVE:
-                await auto_report("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
-        elif (day_diff <= before_days) and ch == None:
-            # If before tournament and in range
-            new_role = await server.create_role(name=t[0])
-            new_channel = await server.create_text_channel(t[1], category=tournament_category)
-            await new_channel.edit(topic=f"{t[2]} - Discussion around the {t[0]} occurring on {t[4]}.", sync_permissions=True)
-            await new_channel.set_permissions(new_role, read_messages=True)
-            await new_channel.set_permissions(all_tournaments_role, read_messages=True)
-            await new_channel.set_permissions(server.default_role, read_messages=False)
-            string_to_add = (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
-            while len(string_lists[-1] + string_to_add) > 2048:
-                string_lists.append("")
-            string_lists[-1] += string_to_add
-        elif ch != None:
-            string_to_add = (t[2] + " **" + t[0] + "** - `!tournament " + t[1] + "`\n")
-            while len(string_lists[-1] + string_to_add) > 2048:
-                string_lists.append("")
-            string_lists[-1] += string_to_add
-        elif (day_diff > before_days):
-            open_soon_list += (t[2] + " **" + t[0] + f"** - Opens in `{day_diff - before_days}` days.\n")
-    REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
-    spacing_needed = max([len(t['iden']) for t in REQUESTED_TOURNAMENTS]) if len(REQUESTED_TOURNAMENTS) > 0 else 0
-    for t in REQUESTED_TOURNAMENTS:
-        spaces = " " * (spacing_needed - len(t['iden']))
-        channels_requested_list += f"`!tournament {t['iden']}{spaces}` · **{t['count']} votes**\n"
-    embeds = []
-    embeds.append(assemble_embed(
-        title=":medal: Tournament Channels Listing",
-        desc=(
-            "Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received 10 votes to be considered for a channel." +
-            f"\n\n* To join an available tournament channel, head to {bot_spam_channel.mention} and type `!tournament [name]`." +
-            f"\n\n* To make a new request for a tournament channel, head to {bot_spam_channel.mention} and type `!tournament [name]`, where `[name]` is the name of the tournament channel you would like to have created." +
-            f"\n\n* Need help? Ping a {gm.mention} or {a.mention}, or ask in {server_support_channel.mention}"
-        )
-    ))
-    for i, s in enumerate(string_lists):
-        embeds.append(assemble_embed(
-            title=f"Currently Available Channels (Page {i + 1}/{len(string_lists)})",
-            desc=s if len(s) > 0 else "No channels are available currently."
-        ))
-    embeds.append(assemble_embed(
-        title="Channels Opening Soon",
-        desc=open_soon_list if len(open_soon_list) > 0 else "No channels are opening soon currently.",
-    ))
-    embeds.append(assemble_embed(
-        title="Channels Requested",
-        desc=("Vote with the command associated with the tournament channel.\n\n" + channels_requested_list) if len(channels_requested_list) > 0 else f"No channels have been requested currently. To make a request for a tournament channel, head to {bot_spam_channel.mention} and type `!tournament [name]`, with the name of the tournament."
-    ))
-    hist = await tourney_channel.history(oldest_first=True).flatten()
-    if len(hist) != 0:
-        # When the tourney channel already has embeds
-        if len(embeds) < len(hist):
-            messages = await tourney_channel.history(oldest_first=True).flatten()
-            for m in messages[len(embeds):]:
-                await m.delete()
-        count = 0
-        async for m in tourney_channel.history(oldest_first=True):
-            await m.edit(embed=embeds[count])
-            count += 1
-        if len(embeds) > len(hist):
-            for e in embeds[len(hist):]:
-                await tourney_channel.send(embed=e)
-    else:
-        # If the tournament channel is being initialized for the first time
-        past_messages = await tourney_channel.history(limit=100).flatten()
-        await tourney_channel.delete_messages(past_messages)
-        for e in embeds:
-            await tourney_channel.send(embed=e)
 
 @bot.command()
 @commands.check(is_staff)
 async def refresh(ctx):
     """Refreshes data from the sheet."""
-    await update_tournament_list()
+    await update_tournament_list(ctx.bot)
     res = await refresh_algorithm()
     if res == True:
         await ctx.send("Successfully refreshed data from sheet.")
     else:
         await ctx.send(":warning: Unsuccessfully refreshed data from sheet.")
-
-@bot.command(aliases=["gci", "cid", "channelid"])
-async def getchannelid(ctx):
-    """Gets the channel ID of the current channel."""
-    await ctx.send("Hey <@" + str(ctx.message.author.id) + ">! The channel ID is `" + str(ctx.message.channel.id) + "`. :)")
-
-@bot.command(aliases=["gei", "eid"])
-async def getemojiid(ctx, emoji: discord.Emoji):
-    """Gets the ID of the given emoji."""
-    return await ctx.send(f"{emoji} - `{emoji}`")
-
-@bot.command(aliases=["rid"])
-async def getroleid(ctx, name):
-    role = discord.utils.get(ctx.message.author.guild.roles, name=name)
-    return await ctx.send(f"`{role.mention}`")
-
-@bot.command(aliases=["gui", "ui", "userid"])
-async def getuserid(ctx, user=None):
-    """Gets the user ID of the caller or another user."""
-    if user == None:
-        await ctx.send(f"Your user ID is `{ctx.message.author.id}`.")
-    elif user[:3] != "<@!":
-        member = ctx.message.guild.get_member_named(user)
-        await ctx.send(f"The user ID of {user} is: `{member.id}`")
-    else:
-        user = user.replace("<@!", "").replace(">", "")
-        await ctx.send(f"The user ID of <@{user}> is `{user}`.")
-
-@bot.command(aliases=["hi"])
-async def hello(ctx):
-    """Simply says hello. Used for testing the bot."""
-    await ctx.send("Well, hello there.")
-
-@bot.command(aliases=["what"])
-async def about(ctx):
-    """Prints information about the bot."""
-    await ctx.send(get_about())
-
-@bot.command(aliases=["server", "link", "invitelink"])
-async def invite(ctx):
-    await ctx.send("https://discord.gg/C9PGV6h")
-
-@bot.command()
-async def forums(ctx):
-    await ctx.send("<https://scioly.org/forums>")
-
-@bot.command()
-async def obb(ctx):
-    await ctx.send("<https://scioly.org/obb>")
-
-@bot.command(aliases=["tests", "testexchange"])
-async def exchange(ctx):
-    await ctx.send("<https://scioly.org/tests>")
-
-@bot.command()
-async def gallery(ctx):
-    await ctx.send("<https://scioly.org/gallery>")
-
-@bot.command(aliases=["random"])
-async def rand(ctx, a=1, b=10):
-    r = random.randrange(a, b + 1)
-    await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
-
-@bot.command()
-async def rule(ctx, num):
-    """Gets a specified rule."""
-    if not num.isdigit() or int(num) < 1 or int(num) > 13:
-        # If the rule number is not actually a number
-        return await ctx.send("Please use a valid rule number, from 1 through 13. (Ex: `!rule 7`)")
-    rule = RULES[int(num) - 1]
-    return await ctx.send(f"**Rule {num}:**\n> {rule}")
-
-@bot.command()
-async def coach(ctx):
-    """Gives an account the coach role."""
-    await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
-
-@bot.command(aliases=["slow", "sm"])
-@commands.check(is_staff)
-async def slowmode(ctx, arg:int=None):
-    if arg == None:
-        if ctx.channel.slowmode_delay == 0:
-            await ctx.channel.edit(slowmode_delay=10)
-            await ctx.send("Enabled a 10 second slowmode.")
-        else:
-            await ctx.channel.edit(slowmode_delay=0)
-            await ctx.send("Removed slowmode.")
-    else:
-        await ctx.channel.edit(slowmode_delay=arg)
-        if arg != 0:
-            await ctx.send(f"Enabled a {arg} second slowmode.")
-        else:
-            await ctx.send(f"Removed slowmode.")
 
 @bot.command(aliases=["tags", "t"])
 async def tag(ctx, name):
@@ -643,195 +452,24 @@ async def tag(ctx, name):
                 return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
     return await ctx.send("Tag not found.")
 
-@bot.command()
-@commands.check(is_staff)
-async def lock(ctx):
-    """Locks a channel to Member access."""
-    member = ctx.message.author
-    channel = ctx.message.channel
-
-    if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-        return await ctx.send("This command is not suitable for this channel because of its category.")
-
-    member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
-    if (channel.category.name == CATEGORY_STATES):
-        await ctx.channel.set_permissions(member_role, add_reactions=False, send_messages=False)
-    else:
-        await ctx.channel.set_permissions(member_role, add_reactions=False, send_messages=False, read_messages=True)
-
-    wiki_role = discord.utils.get(member.guild.roles, name=ROLE_WM)
-    gm_role = discord.utils.get(member.guild.roles, name=ROLE_GM)
-    admin_role = discord.utils.get(member.guild.roles, name=ROLE_AD)
-    bot_role = discord.utils.get(member.guild.roles, name=ROLE_BT)
-    await ctx.channel.set_permissions(wiki_role, add_reactions=True, send_messages=True, read_messages=True)
-    await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
-    await ctx.channel.set_permissions(admin_role, add_reactions=True, send_messages=True, read_messages=True)
-    await ctx.channel.set_permissions(bot_role, add_reactions=True, send_messages=True, read_messages=True)
-    await ctx.send("Locked the channel to Member access.")
-
-@bot.command()
-async def info(ctx):
-    """Gets information about the Discord server."""
-    server = ctx.message.guild
-    name = server.name
-    owner = server.owner
-    creation_date = server.created_at
-    emoji_count = len(server.emojis)
-    icon = server.icon_url_as(format=None, static_format='jpeg')
-    animated_icon = server.is_icon_animated()
-    iden = server.id
-    banner = server.banner_url
-    desc = server.description
-    mfa_level = server.mfa_level
-    verification_level = server.verification_level
-    content_filter = server.explicit_content_filter
-    default_notifs = server.default_notifications
-    features = server.features
-    splash = server.splash_url
-    premium_level = server.premium_tier
-    boosts = server.premium_subscription_count
-    channel_count = len(server.channels)
-    text_channel_count = len(server.text_channels)
-    voice_channel_count = len(server.voice_channels)
-    category_count = len(server.categories)
-    system_channel = server.system_channel
-    if type(system_channel) == discord.TextChannel: system_channel = system_channel.mention
-    rules_channel = server.rules_channel
-    if type(rules_channel) == discord.TextChannel: rules_channel = rules_channel.mention
-    public_updates_channel = server.public_updates_channel
-    if type(public_updates_channel) == discord.TextChannel: public_updates_channel = public_updates_channel.mention
-    emoji_limit = server.emoji_limit
-    bitrate_limit = server.bitrate_limit
-    filesize_limit = round(server.filesize_limit/1000000, 3)
-    boosters = server.premium_subscribers
-    for i, b in enumerate(boosters):
-        # convert user objects to mentions
-        boosters[i] = b.mention
-    boosters = ", ".join(boosters)
-    print(boosters)
-    role_count = len(server.roles)
-    member_count = len(server.members)
-    max_members = server.max_members
-    discovery_splash_url = server.discovery_splash_url
-    member_percentage = round(member_count/max_members * 100, 3)
-    emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
-    channel_percentage = round(channel_count/500 * 100, 3)
-    role_percenatege = round(role_count/250 * 100, 3)
-
-    staff_member = await is_staff(ctx)
-    fields = [
-            {
-                "name": "Basic Information",
-                "value": (
-                    f"**Creation Date:** {creation_date}\n" +
-                    f"**ID:** {iden}\n" +
-                    f"**Animated Icon:** {animated_icon}\n" +
-                    f"**Banner URL:** {banner}\n" +
-                    f"**Splash URL:** {splash}\n" +
-                    f"**Discovery Splash URL:** {discovery_splash_url}"
-                ),
-                "inline": False
-            },
-            {
-                "name": "Nitro Information",
-                "value": (
-                    f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n" +
-                    f"**Boosters:** {boosters}"
-                ),
-                "inline": False
-            }
-        ]
-    if staff_member and ctx.channel.category.name == CATEGORY_STAFF:
-        fields.extend(
-            [{
-                "name": "Staff Information",
-                "value": (
-                    f"**Owner:** {owner}\n" +
-                    f"**MFA Level:** {mfa_level}\n" +
-                    f"**Verification Level:** {verification_level}\n" +
-                    f"**Content Filter:** {content_filter}\n" +
-                    f"**Default Notifications:** {default_notifs}\n" +
-                    f"**Features:** {features}\n" +
-                    f"**Bitrate Limit:** {bitrate_limit}\n" +
-                    f"**Filesize Limit:** {filesize_limit} MB"
-                ),
-                "inline": False
-            },
-            {
-                "name": "Channels",
-                "value": (
-                    f"**Public Updates Channel:** {public_updates_channel}\n" +
-                    f"**System Channel:** {system_channel}\n" +
-                    f"**Rules Channel:** {rules_channel}\n" +
-                    f"**Text Channel Count:** {text_channel_count}\n" +
-                    f"**Voice Channel Count:** {voice_channel_count}\n" +
-                    f"**Category Count:** {category_count}\n"
-                ),
-                "inline": False
-            },
-            {
-                "name": "Limits",
-                "value": (
-                    f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n" +
-                    f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n" +
-                    f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n" +
-                    f"**Roles:** *{role_percenatege}%* ({role_count}/250 roles)"
-                ),
-                "inline": False
-            }
-        ])
-    embed = assemble_embed(
-        title=f"Information for `{name}`",
-        desc=f"**Description:** {desc}",
-        thumbnailUrl=icon,
-        fields=fields
-    )
-    await ctx.send(embed=embed)
-
-@bot.command(aliases=["r"])
-async def report(ctx, *args):
-    """Creates a report that is sent to staff members."""
-    server = bot.get_guild(SERVER_ID)
-    reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-    message = args[0]
-    if len(args) > 1:
-        message = ' '.join(args)
-    poster = str(ctx.message.author)
-    embed = assemble_embed(
-        title=f"Report Received (using `!report`)",
-        webcolor="red",
-        authorName = poster,
-        authorIcon = ctx.message.author.avatar_url_as(format="jpg"),
-        fields = [{
-            "name": "Message",
-            "value": message,
-            "inline": False
-        }]
-    )
-    message = await reports_channel.send(embed=embed)
-    REPORT_IDS.append(message.id)
-    await message.add_reaction("\U00002705")
-    await message.add_reaction("\U0000274C")
-    await ctx.send("Thanks, report created.")
-
-# Meant for Pi-Bot only
-async def auto_report(reason, color, message):
-    """Allows Pi-Bot to generate a report by himself."""
-    server = bot.get_guild(SERVER_ID)
-    reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-    embed = assemble_embed(
-        title=f"{reason} (message from Pi-Bot)",
-        webcolor=color,
-        fields = [{
-            "name": "Message",
-            "value": message,
-            "inline": False
-        }]
-    )
-    message = await reports_channel.send(embed=embed)
-    REPORT_IDS.append(message.id)
-    await message.add_reaction("\U00002705")
-    await message.add_reaction("\U0000274C")
+# # Meant for Pi-Bot only
+# async def auto_report(reason, color, message):
+#     """Allows Pi-Bot to generate a report by himself."""
+#     server = bot.get_guild(SERVER_ID)
+#     reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
+#     embed = assemble_embed(
+#         title=f"{reason} (message from Pi-Bot)",
+#         webcolor=color,
+#         fields = [{
+#             "name": "Message",
+#             "value": message,
+#             "inline": False
+#         }]
+#     )
+#     message = await reports_channel.send(embed=embed)
+#     REPORT_IDS.append(message.id)
+#     await message.add_reaction("\U00002705")
+#     await message.add_reaction("\U0000274C")
 
 @bot.command()
 async def graphpage(ctx, title, temp_format, table_index, div, place_col=0):
@@ -979,88 +617,6 @@ async def help(ctx, command:str=None):
         return await ctx.send(embed=embed)
     hlp = await get_help(ctx, command)
     await ctx.send(embed=hlp)
-
-@bot.command()
-async def wiki(ctx, command:str=False, *args):
-    # Check to make sure not too much at once
-    if not command:
-        return await ctx.send("<https://scioly.org/wiki>")
-    if len(args) > 7:
-        return await ctx.send("Slow down there buster. Please keep the command to 12 or less arguments at once.")
-    multiple = False
-    for arg in args:
-        if arg[:1] == "-":
-            multiple = arg.lower() == "-multiple"
-    if command in ["summary"]:
-        if multiple:
-            for arg in [arg for arg in args if arg[:1] != "-"]:
-                text = await implement_command("summary", arg)
-                if text == False:
-                    await ctx.send(f"The `{arg}` page does not exist!")
-                else:
-                    await ctx.send(" ".join(text))
-        else:
-            string_sum = " ".join([arg for arg in args if arg[:1] != "-"])
-            text = await implement_command("summary", string_sum)
-            if text == False:
-                await ctx.send(f"The `{arg}` page does not exist!")
-            else:
-                await ctx.send(" ".join(text))
-    elif command in ["search"]:
-        if multiple:
-            return await ctx.send("Ope! No multiple searches at once yet!")
-        searches = await implement_command("search", " ".join([arg for arg in args]))
-        await ctx.send("\n".join([f"`{s}`" for s in searches]))
-    else:
-        # Assume link
-        if multiple:
-            new_args = [command] + list(args)
-            for arg in [arg for arg in new_args if arg[:1] != "-"]:
-                url = await implement_command("link", arg)
-                if url == False:
-                    await ctx.send(f"The `{arg}` page does not exist!")
-                await ctx.send(f"<{wiki_url_fix(url)}>")
-        else:
-            string_sum = " ".join([arg for arg in args if arg[:1] != "-"])
-            if len(args) > 0 and command.rstrip() != "link":
-                string_sum = f"{command} {string_sum}"
-            elif command.rstrip() != "link":
-                string_sum = command
-            url = await implement_command("link", string_sum)
-            if url == False:
-                await ctx.send(f"The `{string_sum}` page does not exist!")
-            else:
-                await ctx.send(f"<{wiki_url_fix(url)}>")
-
-def wiki_url_fix(url):
-    return url.replace("%3A", ":").replace(r"%2F","/")
-
-@bot.command(aliases=["wp"])
-async def wikipedia(ctx, request:str=False, *args):
-    term = " ".join(args)
-    if request == False:
-        return await ctx.send("You must specifiy a command and keyword, such as `!wikipedia search \"Science Olympiad\"`")
-    if request == "search":
-        return await ctx.send("\n".join([f"`{result}`" for result in aiowikip.search(term, results=5)]))
-    elif request == "summary":
-        try:
-            term = term.title()
-            page = await aiowikip.page(term)
-            return await ctx.send(aiowikip.summary(term, sentences=3) + f"\n\nRead more on Wikipedia here: <{page.url}>!")
-        except wikip.exceptions.DisambiguationError as e:
-            return await ctx.send(f"Sorry, the `{term}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
-        except wikip.exceptions.PageError as e:
-            return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-    else:
-        try:
-            term = f"{request} {term}".strip()
-            term = term.title()
-            page = await aiowikip.page(term)
-            return await ctx.send(f"Sure, here's the link: <{page.url}>")
-        except wikip.exceptions.PageError as e:
-            return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-        except wikip.exceptions.DisambiguationError as e:
-            return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
 
 @bot.command()
 @commands.check(is_launcher)
@@ -1240,7 +796,7 @@ async def on_message(message):
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(muted_role)
         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await auto_report("User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
+        await auto_report(bot, "User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
     elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
     # Caps checker
@@ -1250,7 +806,7 @@ async def on_message(message):
         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
         await message.author.add_roles(muted_role)
         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await auto_report("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
+        await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
     
@@ -1332,7 +888,7 @@ async def on_message(message):
 #         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
 #         await message.author.add_roles(muted_role)
 #         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-#         await auto_report("User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
+#         await auto_report(bot, "User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
 #     elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
 #         await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
 #     # Caps checker
@@ -1342,7 +898,7 @@ async def on_message(message):
 #         CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
 #         await message.author.add_roles(muted_role)
 #         await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-#         await auto_report("User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
+#         await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
 #     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
 #         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
 # 
@@ -1406,7 +962,7 @@ async def on_member_join(member):
     name = member.name
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
-            await auto_report("Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
+            await auto_report(bot, "Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
     await join_channel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " +
     "You can add roles here, using the commands shown at the top of this channel. " +
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." +
@@ -1442,13 +998,13 @@ async def on_member_update(before, after):
     if after.nick == None: return
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", after.nick, re.I)):
-            await auto_report("Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
+            await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
 
 @bot.event
 async def on_user_update(before, after):
     for word in CENSORED_WORDS:
         if len(re.findall(fr"\b({word})\b", after.name, re.I)):
-            await auto_report("Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
+            await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
 
 @bot.event
 async def on_raw_message_edit(payload):
@@ -1743,6 +1299,7 @@ bot.load_extension("src.discord.censor")
 bot.load_extension("src.discord.ping")
 bot.load_extension("src.discord.staffcommands")
 bot.load_extension("src.discord.membercommands")
+bot.load_extension("src.discord.devtools")
 bot.load_extension("src.discord.funcommands")
 
 if dev_mode:

@@ -136,6 +136,22 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         """
         time = " ".join(args)
         await _mute(ctx, user, time, self=False)
+        
+    @commands.command(aliases=["slow", "sm"])
+    async def slowmode(self, ctx, arg:int=None):
+        if arg == None:
+            if ctx.channel.slowmode_delay == 0:
+                await ctx.channel.edit(slowmode_delay=10)
+                await ctx.send("Enabled a 10 second slowmode.")
+            else:
+                await ctx.channel.edit(slowmode_delay=0)
+                await ctx.send("Removed slowmode.")
+        else:
+            await ctx.channel.edit(slowmode_delay=arg)
+            if arg != 0:
+                await ctx.send(f"Enabled a {arg} second slowmode.")
+            else:
+                await ctx.send(f"Removed slowmode.")
 
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
@@ -247,6 +263,31 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         """Mentions a user with the given ID."""
         user = bot.get_user(iden)
         await ctx.send(user.mention)
+    
+    @commands.command()
+    async def lock(self, ctx):
+        """Locks a channel to Member access."""
+        member = ctx.message.author
+        channel = ctx.message.channel
+
+        if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
+            return await ctx.send("This command is not suitable for this channel because of its category.")
+
+        member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        if (channel.category.name == CATEGORY_STATES):
+            await ctx.channel.set_permissions(member_role, add_reactions=False, send_messages=False)
+        else:
+            await ctx.channel.set_permissions(member_role, add_reactions=False, send_messages=False, read_messages=True)
+
+        wiki_role = discord.utils.get(member.guild.roles, name=ROLE_WM)
+        gm_role = discord.utils.get(member.guild.roles, name=ROLE_GM)
+        admin_role = discord.utils.get(member.guild.roles, name=ROLE_AD)
+        bot_role = discord.utils.get(member.guild.roles, name=ROLE_BT)
+        await ctx.channel.set_permissions(wiki_role, add_reactions=True, send_messages=True, read_messages=True)
+        await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
+        await ctx.channel.set_permissions(admin_role, add_reactions=True, send_messages=True, read_messages=True)
+        await ctx.channel.set_permissions(bot_role, add_reactions=True, send_messages=True, read_messages=True)
+        await ctx.send("Locked the channel to Member access.")
     
     @commands.command()
     async def unlock(self, ctx):
