@@ -16,6 +16,8 @@ from src.discord.utils import harvest_id
 from src.wiki.mosteditstable import run_table
 
 from src.discord.mute import _mute
+import matplotlib.pyplot as plt
+from embed import assemble_embed
 
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
