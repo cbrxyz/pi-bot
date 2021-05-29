@@ -91,9 +91,23 @@ class LauncherCommands(commands.Cog):
             raise discord.ext.commands.CommandOnCooldown(None, time_delta.total_seconds())
         return True
     
+    async def _nuke_countdown(self, ctx, count = -1):
+        import datetime
+        global STOPNUKE
+        await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
+        await ctx.send("PREPARE FOR IMPACT.")
+        for i in range(10, 0, -1):
+            if count < 0:
+                await ctx.send(f"NUKING MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
+            else:
+                await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
+            await asyncio.sleep(1)
+            if STOPNUKE > datetime.datetime.utcnow():
+                return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.") # magic number MonkaS
+    
     # Problems with this !nuke:
-    #  Can only nuke one channel at once.
-    #  No real integrated cooldown on !stopnuke
+    #  Can only nuke one channel at a time (ideally should be on a per channel basis).
+    #  No real integrated cooldown using `commands.cooldown` with !stopnuke (unfortunately i believe it's simply a library limitation :( )
     @commands.command()
     @commands.check(is_nuke_allowed)
     async def nuke(self, ctx, count):
@@ -124,20 +138,33 @@ class LauncherCommands(commands.Cog):
             #     count = message_count + int(count) - 1
             # if count <= 0:
             #     return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
-        await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
-        await ctx.send("PREPARE FOR IMPACT.")
-        for i in range(10, 0, -1):
-            await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
-            await asyncio.sleep(1)
-            if STOPNUKE > datetime.datetime.utcnow():
-                return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.") # magic number MonkaS
+        await self._nuke_countdown(ctx, count)
         if STOPNUKE <= datetime.datetime.utcnow():
             await channel.purge(limit=int(count) + 13, check=lambda m: not m.pinned)
             
             msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
             await msg.delete(delay=5)
-    
+        
+    @commands.command()
+    @commands.check(is_nuke_allowed)
+    async def nukeuntil(self, ctx, msgid): # prob can use converters to convert the msgid to a Message object
+        # TODO: should prob use reply feature to show the message the id is referencing
+        # remember, the message is excluded in the nuke
+        import datetime
+        global STOPNUKE
+        channel = ctx.message.channel
+        message = await ctx.fetch_message(msgid)
+        if channel == message.channel:
+            await self._nuke_countdown(ctx)
+            if STOPNUKE <= datetime.datetime.utcnow():
+                await channel.purge(limit=1000, after=message)
+                msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+                await msg.delete(delay=5)
+        else:
+            return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
+            
     @nuke.error
+    @nukeuntil.error
     async def nuke_error(self, ctx, error):
         ctx.__slots__ = True
         from src.discord.globals import BOT_PREFIX
