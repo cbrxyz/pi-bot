@@ -10,8 +10,8 @@ import random
 import time
 import datetime
 import dateparser
-import pytz
-import time as time_module
+# import pytz
+# import time as time_module
 # import wikipedia as wikip
 import matplotlib.pyplot as plt
 import numpy as np
@@ -332,63 +332,6 @@ async def pull_prev_info():
     REQUESTED_TOURNAMENTS = data[5][0]
     print("Fetched previous variables.")
 
-# @bot.command(aliases=["tc", "tourney", "tournaments"])
-# async def tournament(ctx, *args):
-#     member = ctx.message.author
-#     new_args = list(args)
-#     ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
-#     for term in ignore_terms:
-#         if term in new_args:
-#             new_args.remove(term)
-#             await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
-#     if len(args) == 0:
-#         return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
-#     for arg in new_args:
-#         # Stop users from possibly adding the channel hash in front of arg
-#         arg = arg.replace("#", "")
-#         arg = arg.lower()
-#         found = False
-#         if arg == "all":
-#             role = discord.utils.get(member.guild.roles, name=ROLE_AT)
-#             if role in member.roles:
-#                 await ctx.send(f"Removed your `All Tournaments` role.")
-#                 await member.remove_roles(role)
-#             else:
-#                 await ctx.send(f"Added your `All Tournaments` role.")
-#                 await member.add_roles(role)
-#             continue
-#         for t in TOURNAMENT_INFO:
-#             if arg == t[1]:
-#                 found = True
-#                 role = discord.utils.get(member.guild.roles, name=t[0])
-#                 if role == None:
-#                     return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
-#                 if role in member.roles:
-#                     await ctx.send(f"Removed you from the `{t[0]}` channel.")
-#                     await member.remove_roles(role)
-#                 else:
-#                     await ctx.send(f"Added you to the `{t[0]}` channel.")
-#                     await member.add_roles(role)
-#                 break
-#         if not found:
-#             uid = member.id
-#             found2 = False
-#             votes = 1
-#             for t in REQUESTED_TOURNAMENTS:
-#                 if arg == t['iden']:
-#                     found2 = True
-#                     if uid in t['users']:
-#                         return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
-#                     t['count'] += 1
-#                     t['users'].append(uid)
-#                     votes = t['count']
-#                     break
-#             if not found2:
-#                 await auto_report(bot, "New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
-#                 return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
-#             await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
-#             await update_tournament_list()
-
 @bot.command()
 async def enable_mem(ctx):
     bot.add_cog(MemberCommands(bot))
@@ -402,7 +345,7 @@ async def disable_mem(ctx):
 
 # cant fully test this command due to lack of access
 @bot.command()
-@commands.check(is_staff)
+@is_staff()
 async def tla(ctx, iden, uid):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
@@ -415,7 +358,7 @@ async def tla(ctx, iden, uid):
     return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
 
 @bot.command()
-@commands.check(is_staff)
+@is_staff()
 async def tlr(ctx, iden):
     global REQUESTED_TOURNAMENTS
     for t in REQUESTED_TOURNAMENTS:
@@ -425,7 +368,7 @@ async def tlr(ctx, iden):
     return await ctx.send(f"Removed `#{iden}` from the tournament list.")
 
 @bot.command()
-@commands.check(is_staff)
+@is_staff()
 async def refresh(ctx):
     """Refreshes data from the sheet."""
     await update_tournament_list(ctx.bot)
@@ -434,42 +377,6 @@ async def refresh(ctx):
         await ctx.send("Successfully refreshed data from sheet.")
     else:
         await ctx.send(":warning: Unsuccessfully refreshed data from sheet.")
-
-@bot.command(aliases=["tags", "t"])
-async def tag(ctx, name):
-    member = ctx.message.author
-    if len(TAGS) == 0:
-        return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
-    staff = await is_staff(ctx)
-    lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
-    member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
-    for t in TAGS:
-        if t['name'] == name:
-            if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
-                await ctx.message.delete()
-                return await ctx.send(t['text'])
-            else:
-                return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
-    return await ctx.send("Tag not found.")
-
-# # Meant for Pi-Bot only
-# async def auto_report(reason, color, message):
-#     """Allows Pi-Bot to generate a report by himself."""
-#     server = bot.get_guild(SERVER_ID)
-#     reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-#     embed = assemble_embed(
-#         title=f"{reason} (message from Pi-Bot)",
-#         webcolor=color,
-#         fields = [{
-#             "name": "Message",
-#             "value": message,
-#             "inline": False
-#         }]
-#     )
-#     message = await reports_channel.send(embed=embed)
-#     REPORT_IDS.append(message.id)
-#     await message.add_reaction("\U00002705")
-#     await message.add_reaction("\U0000274C")
 
 @bot.command()
 async def graphpage(ctx, title, temp_format, table_index, div, place_col=0):
@@ -527,76 +434,6 @@ async def _graph(points, graph_title, title):
     plt.close()
     await asyncio.sleep(2)
 
-@bot.command(aliases=["event"])
-async def events(ctx, *args):
-    """Adds or removes event roles from a user."""
-    if len(args) < 1:
-        return await ctx.send("You need to specify at least one event to add/remove!")
-    elif len(args) > 10:
-        return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
-    member = ctx.message.author
-    new_args = [str(arg).lower() for arg in args]
-
-    # Fix commas as possible separator
-    if len(new_args) == 1:
-        new_args = new_args[0].split(",")
-    new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-
-    event_info = EVENT_INFO
-    event_names = []
-    removed_roles = []
-    added_roles = []
-    could_not_handle = []
-    multi_word_events = []
-
-    if type(EVENT_INFO) == int:
-        # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
-        return await ctx.send("Apologies... refreshing data currently. Try again in a few seconds.")
-
-    for i in range(7, 1, -1):
-        # Supports adding 7-word to 2-word long events
-        multi_word_events += [e['eventName'] for e in event_info if len(e['eventName'].split(" ")) == i]
-        for event in multi_word_events:
-            words = event.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == i:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=event)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(event)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(event)
-                for word in words:
-                    new_args.remove(word.lower())
-    for arg in new_args:
-        found_event = False
-        for event in event_info:
-            aliases = [abbr.lower() for abbr in event['event_abbreviations']]
-            if arg.lower() in aliases or arg.lower() == event['eventName'].lower():
-                event_names.append(event['eventName'])
-                found_event = True
-                break
-        if not found_event:
-            could_not_handle.append(arg)
-    for event in event_names:
-        role = discord.utils.get(member.guild.roles, name=event)
-        if role in member.roles:
-            await member.remove_roles(role)
-            removed_roles.append(event)
-        else:
-            await member.add_roles(role)
-            added_roles.append(event)
-    if len(added_roles) > 0 and len(removed_roles) == 0:
-        event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
-    elif len(removed_roles) > 0 and len(added_roles) == 0:
-        event_res = "Removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
-    else:
-        event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
-    await ctx.send(event_res)
-
 async def get_words():
     """Gets the censor list"""
     global CENSORED_WORDS
@@ -617,94 +454,6 @@ async def help(ctx, command:str=None):
         return await ctx.send(embed=embed)
     hlp = await get_help(ctx, command)
     await ctx.send(embed=hlp)
-
-@bot.command()
-@commands.check(is_launcher)
-async def confirm(ctx, *args: discord.Member):
-    """Allows a staff member to confirm a user."""
-    await _confirm(args)
-
-async def _confirm(members):
-    server = bot.get_guild(SERVER_ID)
-    channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
-    for member in members:
-        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        message = await channel.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-        await asyncio.sleep(3)
-        await message.delete()
-        before_message = None
-        f = 0
-        async for message in channel.history(oldest_first=True):
-            # Delete any messages sent by Pi-Bot where message before is by member
-            if f > 0:
-                if message.author.id in PI_BOT_IDS and before_message.author == member and len(message.embeds) == 0:
-                    await message.delete()
-
-                # Delete any messages by user
-                if message.author == member and len(message.embeds) == 0:
-                    await message.delete()
-
-                if member in message.mentions:
-                    await message.delete()
-
-            before_message = message
-            f += 1
-
-@bot.command()
-async def nuke(ctx, count):
-    """Nukes (deletes) a specified amount of messages."""
-    global STOPNUKE
-    launcher = await is_launcher(ctx)
-    staff = await is_staff(ctx)
-    if not (staff or (launcher and ctx.message.channel.name == "welcome")):
-        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
-    if STOPNUKE:
-        return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
-    if int(count) > 100:
-        return await ctx.send("Chill. No more than deleting 100 messages at a time.")
-    channel = ctx.message.channel
-    if int(count) < 0:
-        history = await channel.history(limit=105).flatten()
-        message_count = len(history)
-        print(message_count)
-        if message_count > 100:
-            count = 100
-        else:
-            count = message_count + int(count) - 1
-        if count <= 0:
-            return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
-    await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
-    await ctx.send("PREPARE FOR IMPACT.")
-    for i in range(10, 0, -1):
-        await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
-        await asyncio.sleep(1)
-        if STOPNUKE:
-            return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.")
-    if not STOPNUKE:
-        async for m in channel.history(limit=(int(count) + 13)):
-            if not m.pinned and not STOPNUKE:
-                await m.delete()
-        msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-        await asyncio.sleep(5)
-        await msg.delete()
-
-@bot.command()
-async def stopnuke(ctx):
-    global STOPNUKE
-    launcher = await is_launcher(ctx)
-    staff = await is_staff(ctx)
-    if not (staff or (launcher and ctx.message.channel.name == CHANNEL_WELCOME)):
-        return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
-    STOPNUKE = True
-    await ctx.send("TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES.")
-    await asyncio.sleep(15)
-    for i in range(5, 0, -1):
-        await ctx.send(f"NUKING WILL BE ALLOWED IN {i}. BE WARNED COMMANDER.")
-        await asyncio.sleep(1)
-    STOPNUKE = False
 
 @bot.event
 async def on_message_edit(before, after):
@@ -1112,8 +861,18 @@ async def on_raw_message_delete(payload):
 async def on_command_error(ctx, error):
     print("Command Error:")
     print(error)
-    if hasattr(ctx.command, 'on_error'):
-        return
+    # error_types_handled = (discord.ext.commands.UnexpectedQuoteError, discord.ext.commands.InvalidEndOfQuotedStringError, \
+    #                         discord.ext.commands.ExpectedClosingQuoteError, discord.ext.commands.MissingRequiredArgument, \
+    #                         discord.ext.commands.ArgumentParsingError, discord.ext.commands.TooManyArguments, discord.ext.commands.BadArgument, \
+    #                         discord.ext.commands.BadUnionArgument, discord.ext.commands.CheckAnyFailure, discord.ext.commands.PrivateMessageOnly, \
+    #                         discord.ext.commands.NoPrivateMessage, discord.ext.commands.NotOwner, discord.ext.commands.MissingPermissions, \
+    #                         discord.ext.commands.BotMissingPermissions, discord.ext.commands.MissingRole, discord.ext.commands.BotMissingRole, \
+    #                         discord.ext.commands.MissingAnyRole, discord.ext.commands.BotMissingAnyRole, discord.ext.commands.NSFWChannelRequired, \
+    #                         CommandNotAllowedInChannel, discord.ext.commands.ConversionError, discord.ext.commands.UserInputError, \
+    #                         discord.ext.commands.CommandNotFound, discord.ext.commands.CheckFailure, discord.ext.commands.DisabledCommand, \
+    #                         discord.ext.commands.CommandInvokeError, discord.ext.commands.CommandOnCooldown, )
+    # if hasattr(ctx.command, 'on_error') or ctx.command.has_error_handler(): # this can pot block commands that raise common execptions handled in this method
+    #     return
     
     # cog = ctx.cog
     # if cog:
@@ -1122,8 +881,20 @@ async def on_command_error(ctx, error):
     # This causes errors when commands in an overridden error handler raise a common exception.
     
     # this is such a garbage way of doing it
-    ignored = (SelfMuteCommandStaffInvoke,)
-    if isinstance(error, ignored):
+    # ignored = (SelfMuteCommandStaffInvoke,)
+    # if isinstance(error, ignored):
+    #     return
+    
+    # Okay, a bit sketch, but it works.
+    # The idea is this: we want this global error handler to handle all errors
+    #  that come in here. The outputs here are refered to as the default response.
+    # Now, specific commands might have their own error handling which might
+    #  handle certain errors differently. In such cases, we don't want this global
+    #  handler to run.
+    # We use `__slots__` in ctx to achieve this. There we can store a bit/bool flag
+    #  to signal whether we handled the error in a local or cog level handler.
+    
+    if (ctx.command.has_error_handler() or ctx.cog.has_error_handler()) and ctx.__slots__ == True:
         return
     
     # print("Command Error:")

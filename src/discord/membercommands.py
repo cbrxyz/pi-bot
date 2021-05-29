@@ -2,7 +2,7 @@ import discord
 import random
 import wikipedia as wikip
 from discord.ext import commands
-from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORT_IDS
+from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, EVENT_INFO, ROLE_LH, ROLE_MR
 from embed import assemble_embed
 from src.discord.utils import harvest_id
 from src.wiki.scilympiad import make_results_template
@@ -336,7 +336,7 @@ class MemberCommands(commands.Cog, name='Member'):
     
     def is_not_staff(exception: Type[commands.CommandError], message: str):
         async def predicate(ctx):
-            if not await is_staff(ctx):
+            if not is_staff():
                 return True
             raise exception(message)
         return commands.check(predicate)
@@ -509,7 +509,7 @@ class MemberCommands(commands.Cog, name='Member'):
         channel_percentage = round(channel_count/500 * 100, 3)
         role_percenatege = round(role_count/250 * 100, 3)
 
-        staff_member = await is_staff(ctx)
+        staff_member = await is_staff()
         fields = [
                 {
                     "name": "Basic Information",
@@ -687,6 +687,93 @@ class MemberCommands(commands.Cog, name='Member'):
                 return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
             except wikip.exceptions.DisambiguationError as e:
                 return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
+                
+    @commands.command(aliases=["event"])
+    async def events(self, ctx, *args):
+        """Adds or removes event roles from a user."""
+        if len(args) < 1:
+            return await ctx.send("You need to specify at least one event to add/remove!")
+        elif len(args) > 10:
+            return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
+        member = ctx.message.author
+        new_args = [str(arg).lower() for arg in args]
+
+        # Fix commas as possible separator
+        if len(new_args) == 1:
+            new_args = new_args[0].split(",")
+        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
+
+        event_info = EVENT_INFO
+        event_names = []
+        removed_roles = []
+        added_roles = []
+        could_not_handle = []
+        multi_word_events = []
+
+        if type(EVENT_INFO) == int:
+            # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
+            return await ctx.send("Apologies... refreshing data currently. Try again in a few seconds.")
+
+        for i in range(7, 1, -1):
+            # Supports adding 7-word to 2-word long events
+            multi_word_events += [e['eventName'] for e in event_info if len(e['eventName'].split(" ")) == i]
+            for event in multi_word_events:
+                words = event.split(" ")
+                all_here = 0
+                all_here = sum(1 for word in words if word.lower() in new_args)
+                if all_here == i:
+                    # Word is in args
+                    role = discord.utils.get(member.guild.roles, name=event)
+                    if role in member.roles:
+                        await member.remove_roles(role)
+                        removed_roles.append(event)
+                    else:
+                        await member.add_roles(role)
+                        added_roles.append(event)
+                    for word in words:
+                        new_args.remove(word.lower())
+        for arg in new_args:
+            found_event = False
+            for event in event_info:
+                aliases = [abbr.lower() for abbr in event['event_abbreviations']]
+                if arg.lower() in aliases or arg.lower() == event['eventName'].lower():
+                    event_names.append(event['eventName'])
+                    found_event = True
+                    break
+            if not found_event:
+                could_not_handle.append(arg)
+        for event in event_names:
+            role = discord.utils.get(member.guild.roles, name=event)
+            if role in member.roles:
+                await member.remove_roles(role)
+                removed_roles.append(event)
+            else:
+                await member.add_roles(role)
+                added_roles.append(event)
+        if len(added_roles) > 0 and len(removed_roles) == 0:
+            event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
+        elif len(removed_roles) > 0 and len(added_roles) == 0:
+            event_res = "Removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
+        else:
+            event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
+        await ctx.send(event_res)
+        
+    @commands.command(aliases=["tags", "t"])
+    async def tag(self, ctx, name):
+        member = ctx.message.author
+        if len(TAGS) == 0:
+            return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
+        staff = is_staff()
+        lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
+        member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        for t in TAGS:
+            if t['name'] == name:
+                if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
+                    await ctx.message.delete()
+                    return await ctx.send(t['text'])
+                else:
+                    return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
+        return await ctx.send("Tag not found.")
     
 def setup(bot):
     bot.add_cog(MemberCommands(bot))

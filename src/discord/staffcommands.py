@@ -2,7 +2,7 @@ import discord
 import asyncio
 
 from discord.ext import commands
-from commandchecks import is_staff
+from commandchecks import is_staff, is_launcher
 
 import dateparser
 import pytz
@@ -11,6 +11,7 @@ from src.discord.globals import TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHI
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
+from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH
 
 from src.discord.utils import harvest_id
 from src.wiki.mosteditstable import run_table
@@ -19,13 +20,169 @@ from src.discord.mute import _mute
 import matplotlib.pyplot as plt
 from embed import assemble_embed
 
+from typing import Type
+
+class LauncherCommands(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        
+    def if_launcher_in_welcome(self, ctx):
+        # This is a method that will accompany the global cog check.
+        # Therefore, this check is representing the proposition `(has launcher role) -> (message in #welcome)`
+        from src.discord.globals import ROLE_STAFF, ROLE_VIP
+        member = ctx.message.author
+        lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
+        if lhRole in member.roles and ctx.message.channel.name != CHANNEL_WELCOME:
+            staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
+            vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
+            raise discord.ext.commands.MissingAnyRole([staffRole, vipRole])
+        return True
+    
+    async def cog_check(self, ctx):
+        return await is_launcher(ctx) and self.if_launcher_in_welcome(ctx)
+        
+    @commands.command()
+    async def confirm(self, ctx, *args: discord.Member):
+        """Allows a staff member to confirm a user."""
+        await self._confirm(args)
+        
+    # @confirm.error
+    # async def confirm_error(self, ctx, error):
+    #     from src.discord.globals import BOT_PREFIX
+    #     print(f"{BOT_PREFIX}confirm error handler: {error}")
+    #     # if isinstance(error, NukeMissingPermssions):
+    #     #     return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
+
+    async def _confirm(self, members):
+        server = self.bot.get_guild(SERVER_ID)
+        channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
+        for member in members:
+            role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+            role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+            await member.remove_roles(role1)
+            await member.add_roles(role2)
+            message = await channel.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
+            await message.delete(delay=3)
+            # before_message = None
+            # f = 0
+            
+            await channel.purge(check=lambda m: m != message and ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
+            # async for message in channel.history(oldest_first=True):
+            #     # Delete any messages sent by Pi-Bot where message before is by member
+            #     if f > 0:
+            #         if message.author.id in PI_BOT_IDS and before_message.author == member and len(message.embeds) == 0:
+            #             await message.delete()
+            # 
+            #         # Delete any messages by user
+            #         if message.author == member and len(message.embeds) == 0:
+            #             await message.delete()
+            # 
+            #         if member in message.mentions:
+            #             await message.delete()
+            # 
+            #     before_message = message
+            #     f += 1
+    
+    def is_nuke_allowed(ctx):
+        import datetime
+        global STOPNUKE
+        time_delta = STOPNUKE - datetime.datetime.utcnow()
+        if time_delta > datetime.timedelta():
+            raise discord.ext.commands.CommandOnCooldown(None, time_delta.total_seconds())
+        return True
+    
+    # Problems with this !nuke:
+    #  Can only nuke one channel at once.
+    #  No real integrated cooldown on !stopnuke
+    @commands.command()
+    @commands.check(is_nuke_allowed)
+    async def nuke(self, ctx, count):
+        """Nukes (deletes) a specified amount of messages."""
+        import datetime
+        global STOPNUKE
+        # launcher = await is_launcher(ctx)
+        # staff = await is_staff(ctx)
+        # if not (staff or (launcher and ctx.message.channel.name == "welcome")):
+        #     return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
+        # if STOPNUKE:
+        #     return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
+        MAX_DELETE = 100
+        if int(count) > MAX_DELETE:
+            return await ctx.send("Chill. No more than deleting 100 messages at a time.")
+        channel = ctx.message.channel
+        if int(count) < 0: count = MAX_DELETE
+            # Since we are just trying to see the history and purge doesn't care
+            #  if we have a limit over the total num of actual messages, we will
+            #  just set the count to MAX_DELETE
+            
+            # history = await channel.history(limit=105).flatten()
+            # message_count = len(history)
+            # print(message_count)
+            # if message_count > 100:
+            #     count = 100
+            # else:
+            #     count = message_count + int(count) - 1
+            # if count <= 0:
+            #     return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
+        await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
+        await ctx.send("PREPARE FOR IMPACT.")
+        for i in range(10, 0, -1):
+            await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
+            await asyncio.sleep(1)
+            if STOPNUKE > datetime.datetime.utcnow():
+                return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.") # magic number MonkaS
+        if STOPNUKE <= datetime.datetime.utcnow():
+            await channel.purge(limit=int(count) + 13, check=lambda m: not m.pinned)
+            
+            msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+            await msg.delete(delay=5)
+    
+    @nuke.error
+    async def nuke_error(self, ctx, error):
+        ctx.__slots__ = True
+        from src.discord.globals import BOT_PREFIX
+        print(f"{BOT_PREFIX}nuke error handler: {error}")
+        if isinstance(error, discord.ext.commands.MissingAnyRole):
+            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
+        if isinstance(error, discord.ext.commands.CommandOnCooldown):
+            return await ctx.send(f"TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED FOR ANOTHER {'%.3f' % error.retry_after} SECONDS. TRY AGAIN LATER.")
+        
+        ctx.__slots__ = False
+    
+    @commands.command()
+    async def stopnuke(self, ctx):
+        import datetime
+        global STOPNUKE
+        # launcher = await is_launcher(ctx)
+        # staff = is_staff()
+        # if not (staff or (launcher and ctx.message.channel.name == CHANNEL_WELCOME)):
+        #     return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
+        NUKE_COOLDOWN = 20
+        STOPNUKE = datetime.datetime.utcnow() + datetime.timedelta(seconds=NUKE_COOLDOWN) # True
+        await ctx.send(f"TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES FOR {NUKE_COOLDOWN} SECONDS.")
+        
+        # await asyncio.sleep(15)
+        # for i in range(5, 0, -1):
+        #     await ctx.send(f"NUKING WILL BE ALLOWED IN {i}. BE WARNED COMMANDER.") # seems a bit much, u think?
+        #     await asyncio.sleep(1)
+        # STOPNUKE = False
+    
+    @stopnuke.error
+    async def stopnuke_error(self, ctx, error):
+        ctx.__slots__ = True
+        from src.discord.globals import BOT_PREFIX
+        print(f"{BOT_PREFIX}nuke error handler: {error}")
+        if isinstance(error, discord.ext.commands.MissingAnyRole):
+            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
+        ctx.__slots__ = False
+
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
     # overriding check function
     async def cog_check(self, ctx):
-        return await is_staff(ctx)
+        return is_staff()
 
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
@@ -423,3 +580,4 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
     bot.add_cog(StaffNonessential(bot))
+    bot.add_cog(LauncherCommands(bot))

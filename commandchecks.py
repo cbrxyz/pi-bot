@@ -7,9 +7,21 @@ async def is_bear(ctx):
     """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""
     return ctx.message.author.id == 353730886577160203 or ctx.message.author.id == 715048392408956950
 
-async def is_staff(ctx):
+# async def is_staff(ctx):
+#     """Checks to see if the author of ctx message is a staff member."""
+#     return await is_author_staff(ctx.message.author)
+    
+def is_staff():
     """Checks to see if the author of ctx message is a staff member."""
-    return await is_author_staff(ctx.message.author)
+    def predicate(ctx):
+        guild = ctx.bot.get_guild(SERVER_ID)
+        member = guild.get_member(ctx.message.author.id)
+        staffRole = discord.utils.get(guild.roles, name=ROLE_STAFF)
+        vipRole = discord.utils.get(guild.roles, name=ROLE_VIP)
+        if any(r in [staffRole, vipRole] for r in member.roles): return True
+        raise discord.ext.commands.MissingAnyRole([staffRole, vipRole])
+    # print("yep checking if launcher")
+    return commands.check(predicate)
     
 async def is_author_staff(author: discord.abc.User):
     """Checks to see if the author is a staff member."""
@@ -19,23 +31,31 @@ async def is_author_staff(author: discord.abc.User):
 
 async def is_launcher(ctx):
     """Checks to see if the user is a launch helper."""
-    member = ctx.message.author
-    staff = await is_staff(ctx)
-    lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
-    if staff or lhRole in member.roles: return True
+    guild = ctx.bot.get_guild(SERVER_ID)
+    member = guild.get_member(ctx.message.author.id)
+    staffRole = discord.utils.get(guild.roles, name=ROLE_STAFF)
+    vipRole = discord.utils.get(guild.roles, name=ROLE_VIP)
+    lhRole = discord.utils.get(guild.roles, name=ROLE_LH)
+    print(any(r in [staffRole, vipRole, lhRole] for r in member.roles))
+    if any(r in [staffRole, vipRole, lhRole] for r in member.roles): return True
+    raise discord.ext.commands.MissingAnyRole([staffRole, vipRole, lhRole])
+    
+def check_is_launcher():
+    # print("yep checking if launcher")
+    return commands.check(is_launcher)
 
-async def is_launcher_no_ctx(member):
-    server = bot.get_guild(SERVER_ID)
-    wmRole = discord.utils.get(server.roles, name=ROLE_WM)
-    gm_role = discord.utils.get(server.roles, name=ROLE_GM)
-    aRole = discord.utils.get(server.roles, name=ROLE_AD)
-    vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
-    lhRole = discord.utils.get(server.roles, name=ROLE_LH)
-    roles = [wmRole, gm_role, aRole, vipRole, lhRole]
-    member = server.get_member(member)
-    for role in roles:
-        if role in member.roles: return True
-    return False
+# async def is_launcher_no_ctx(member):
+#     server = bot.get_guild(SERVER_ID)
+#     wmRole = discord.utils.get(server.roles, name=ROLE_WM)
+#     gm_role = discord.utils.get(server.roles, name=ROLE_GM)
+#     aRole = discord.utils.get(server.roles, name=ROLE_AD)
+#     vipRole = discord.utils.get(server.roles, name=ROLE_VIP)
+#     lhRole = discord.utils.get(server.roles, name=ROLE_LH)
+#     roles = [wmRole, gm_role, aRole, vipRole, lhRole]
+#     member = server.get_member(member)
+#     for role in roles:
+#         if role in member.roles: return True
+#     return False
 
 async def is_admin(ctx):
     """Checks to see if the user is an administrator, or pepperonipi (for debugging purposes)."""

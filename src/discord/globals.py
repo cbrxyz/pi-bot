@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -119,4 +120,4 @@ STEALFISH_BAN = []
 TOURNAMENT_INFO = []
 REQUESTED_TOURNAMENTS = []
 TAGS = []
-STOPNUKE = False
+STOPNUKE = datetime.datetime.utcnow()  # Was a bool, not is a datetime
