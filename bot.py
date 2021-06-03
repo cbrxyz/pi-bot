@@ -213,7 +213,7 @@ PI_BOT_IDS = [
 ]
 RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
-DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK"]
+DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK", "scioly"]
 
 ##############
 # VARIABLES
@@ -844,7 +844,7 @@ async def about(ctx):
 
 @bot.command(aliases=["server", "link", "invitelink"])
 async def invite(ctx):
-    await ctx.send("https://discord.gg/C9PGV6h")
+    await ctx.send("https://discord.gg/scioly")
 
 @bot.command()
 async def forums(ctx):
@@ -1877,13 +1877,13 @@ async def sanitize_mention(member):
 async def division(ctx, div):
     if div.lower() == "a":
         res = await assign_div(ctx, "Division A")
-        await ctx.send("Assigned you the Division A role, and removed all other divison/alumni roles.")
+        await ctx.send("Assigned you the Division A role, and removed all other division/alumni roles.")
     elif div.lower() == "b":
         res = await assign_div(ctx, "Division B")
-        await ctx.send("Assigned you the Division B role, and removed all other divison/alumni roles.")
+        await ctx.send("Assigned you the Division B role, and removed all other division/alumni roles.")
     elif div.lower() == "c":
         res = await assign_div(ctx, "Division C")
-        await ctx.send("Assigned you the Division C role, and removed all other divison/alumni roles.")
+        await ctx.send("Assigned you the Division C role, and removed all other division/alumni roles.")
     elif div.lower() == "d":
         await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
     elif div.lower() in ["remove", "clear", "none", "x"]:

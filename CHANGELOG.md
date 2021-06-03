@@ -5,36 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 4.5.19 - 2020-04-15
+## 4.5.20 - 2021-06-03
+### Changed
+* `!invite` now links to partner invite link
+* `discord.gg/scioly` is now an allowed external Discord link
+
+### Fixed
+* Fixed incorrect dates in CHANGELOG
+* Fixed misspelling in `!division` command
+
+## 4.5.19 - 2021-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))
 
-## 4.5.18 - 2020-04-11
+## 4.5.18 - 2021-04-11
 ### Fixed
 * `!archive` would make a tournament channel no longer viewable to current competitors (closes [#365](https://github.com/cbrxyz/pi-bot/issues/365))
 
-## 4.5.17 - 2020-04-09
+## 4.5.17 - 2021-04-09
 ### Added
 * Voice channels can now be opened for state channels (hello socal! :D)
 
-## 4.5.16 - 2020-04-04
+## 4.5.16 - 2021-04-04
 ### Fixed
 * An empty requested tournaments list would break the tournament-updating sequence
 * Added more `try/except` blocks to refresh algorithms to stop the entire algorithm from stopping in case one part breaks
 
-## 4.5.15 - 2020-03-22
+## 4.5.15 - 2021-03-22
 ### Added
 * Added `!archive` command (closes [#263](https://github.com/cbrxyz/pi-bot/issues/263))
 
 ### Fixed
 * `!dogbomb` with no arguments referred to shiba bomb (closes [#323](https://github.com/cbrxyz/pi-bot/issues/323))
 
-## 4.5.14 - 2020-02-16
+## 4.5.14 - 2021-02-16
 ### Changed
 * `!magic8ball` response now replies to the original message (closes [#356](https://github.com/cbrxyz/pi-bot/issues/356))
 * `!fish` can no longer give bear 69 fish at any time (closes [#355](https://github.com/cbrxyz/pi-bot/issues/355))
 * Updated `discord.py` pip package to `1.6.0`
 
-## 4.5.13 - 2020-02-13
+## 4.5.13 - 2021-02-13
 ### Changed
 * Slightly cleaned up logs
 
