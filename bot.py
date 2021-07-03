@@ -13,7 +13,7 @@ import dateparser
 # import pytz
 # import time as time_module
 # import wikipedia as wikip
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 # from aioify import aioify
 
@@ -27,14 +27,14 @@ from src.sheets.sheets import send_variables, get_variables, get_tags
 from src.forums.forums import open_browser
 from src.wiki.stylist import prettify_templates
 # from src.wiki.tournaments import get_tournament_list
-from src.wiki.wiki import get_page_tables # implement_command,
-from src.wiki.scilympiad import get_points
+# from src.wiki.wiki import implement_command, get_page_tables
+# from src.wiki.scilympiad import get_points
 # from src.wiki.mosteditstable import run_table
 # from info import get_about
 # from doggo import get_doggo, get_shiba
 # from bear import get_bear_message
 from embed import assemble_embed
-from commands import get_list, get_help # get_quick_list,
+from commands import get_list #, get_help  get_quick_list,
 from commanderrors import CommandNotAllowedInChannel, SelfMuteCommandStaffInvoke
 
 from tournaments import update_tournament_list
@@ -332,128 +332,10 @@ async def pull_prev_info():
     REQUESTED_TOURNAMENTS = data[5][0]
     print("Fetched previous variables.")
 
-@bot.command()
-async def enable_mem(ctx):
-    bot.add_cog(MemberCommands(bot))
-    
-@bot.command()
-async def disable_mem(ctx):
-    print("removing cog")
-    bot.remove_cog('MemberCommands')
-    print("removed")
-    print(bot.cogs)
-
-# cant fully test this command due to lack of access
-@bot.command()
-@is_staff()
-async def tla(ctx, iden, uid):
-    global REQUESTED_TOURNAMENTS
-    for t in REQUESTED_TOURNAMENTS:
-        if t['iden'] == iden:
-            t['count'] += 1
-            await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
-            return await update_tournament_list(ctx.bot)
-    REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
-    await update_tournament_list(ctx.bot)
-    return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
-
-@bot.command()
-@is_staff()
-async def tlr(ctx, iden):
-    global REQUESTED_TOURNAMENTS
-    for t in REQUESTED_TOURNAMENTS:
-        if t['iden'] == iden:
-            REQUESTED_TOURNAMENTS.remove(t)
-    await update_tournament_list(ctx.bot)
-    return await ctx.send(f"Removed `#{iden}` from the tournament list.")
-
-@bot.command()
-@is_staff()
-async def refresh(ctx):
-    """Refreshes data from the sheet."""
-    await update_tournament_list(ctx.bot)
-    res = await refresh_algorithm()
-    if res == True:
-        await ctx.send("Successfully refreshed data from sheet.")
-    else:
-        await ctx.send(":warning: Unsuccessfully refreshed data from sheet.")
-
-@bot.command()
-async def graphpage(ctx, title, temp_format, table_index, div, place_col=0):
-    temp = temp_format.lower() in ["y", "yes", "true"]
-    await ctx.send(
-        "*Inputs read:*\n" +
-        f"Page title: `{title}`\n" +
-        f"Template: `{temp}`\n" +
-        f"Table index (staring at 0): `{table_index}`\n" +
-        f"Division: `{div}`\n" +
-        (f"Column with point values: `{place_col}`" if not temp else "")
-    )
-    points = []
-    table_index = int(table_index)
-    place_col = int(place_col)
-    if temp:
-        template = await get_page_tables(title, True)
-        template = [t for t in template if t.normal_name() == "State results box"]
-        template = template[table_index]
-        ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]) # Thanks https://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712
-        for i in range(100):
-            if template.has_arg(ordinal(i) + "_points"):
-                points.append(template.get_arg(ordinal(i) + "_points").value.replace("\n", ""))
-    else:
-        tables = await get_page_tables(title, False)
-        tables = tables[table_index]
-        data = tables.data()
-        points = [r[place_col] for r in data]
-        del points[0]
-    points = [int(p) for p in points]
-    await _graph(points, title + " - Division " + div, title + "Div" + div + ".svg")
-    with open(title + "Div" + div + ".svg") as f:
-        pic = discord.File(f)
-        await ctx.send(file=pic)
-    return await ctx.send("Attempted to graph.")
-
-@bot.command()
-async def graphscilympiad(ctx, url, title):
-    points = await get_points(url)
-    await _graph(points, title, "graph1.svg")
-    with open("graph1.svg") as f:
-        pic = discord.File(f)
-        await ctx.send(file=pic)
-    return await ctx.send("Attempted to graph.")
-
-async def _graph(points, graph_title, title):
-    plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
-    z = np.polyfit(range(1, len(points) + 1), points, 1)
-    p = np.poly1d(z)
-    plt.plot(range(1, len(points) + 1), p(range(1, len(points) + 1)), "--", color='#CCCCCC')
-    plt.xlabel("Place")
-    plt.ylabel("Points")
-    plt.title(graph_title)
-    plt.savefig(title)
-    plt.close()
-    await asyncio.sleep(2)
-
 async def get_words():
     """Gets the censor list"""
     global CENSORED_WORDS
     CENSORED_WORDS = get_censor()
-
-@bot.command(aliases=["man"])
-async def help(ctx, command:str=None):
-    """Allows a user to request help for a command."""
-    if command == None:
-        embed = assemble_embed(
-            title="Looking for help?",
-            desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
-            "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
-            "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" +
-            "If you want to see some commands that you can use on me, just type `!list`! " +
-            "If you need more help, please feel free to reach out to a staff member!")
-        )
-        return await ctx.send(embed=embed)
-    hlp = await get_help(ctx, command)
-    await ctx.send(embed=hlp)
 
 @bot.event
 async def on_message_edit(before, after):

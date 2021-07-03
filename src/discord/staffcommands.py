@@ -22,6 +22,9 @@ from embed import assemble_embed
 
 from typing import Type
 
+from bot import refresh_algorithm
+from tournaments import update_tournament_list
+
 class LauncherCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -602,8 +605,42 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.edit(category = archive_cat, position = 1000)
         await ctx.channel.send(embed = embed)
         await ctx.message.delete()
+    
+    # cant fully test this command due to lack of access
+    @commands.command()
+    async def refresh(self, ctx):
+        """Refreshes data from the sheet."""
+        await update_tournament_list(ctx.bot)
+        res = await refresh_algorithm()
+        if res == True:
+            await ctx.send("Successfully refreshed data from sheet.")
+        else:
+            await ctx.send(":warning: Unsuccessfully refreshed data from sheet.")
+    
+    # cant fully test this command due to lack of access
+    @commands.command()
+    async def tla(self, ctx, iden, uid):
+        global REQUESTED_TOURNAMENTS
+        for t in REQUESTED_TOURNAMENTS:
+            if t['iden'] == iden:
+                t['count'] += 1
+                await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
+                return await update_tournament_list(ctx.bot)
+        REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
+        await update_tournament_list(ctx.bot)
+        return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
         
-        
+    # cant fully test this command due to lack of access
+    @commands.command()
+    async def tlr(self, ctx, iden):
+        global REQUESTED_TOURNAMENTS
+        for t in REQUESTED_TOURNAMENTS:
+            if t['iden'] == iden:
+                REQUESTED_TOURNAMENTS.remove(t)
+        await update_tournament_list(ctx.bot)
+        return await ctx.send(f"Removed `#{iden}` from the tournament list.")
+            
+    
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
     bot.add_cog(StaffNonessential(bot))

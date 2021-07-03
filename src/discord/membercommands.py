@@ -5,7 +5,8 @@ from discord.ext import commands
 from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, EVENT_INFO, ROLE_LH, ROLE_MR
 from embed import assemble_embed
 from src.discord.utils import harvest_id
-from src.wiki.scilympiad import make_results_template
+from src.wiki.wiki import get_page_tables
+from src.wiki.scilympiad import make_results_template, get_points
 from src.wiki.schools import get_school_listing
 from commands import get_list, get_quick_list, get_help
 from lists import get_state_list
@@ -33,6 +34,22 @@ class MemberCommands(commands.Cog, name='Member'):
         # if message.author.id in PI_BOT_IDS: return
         # print("running member cog")
         # print(message.content)
+    
+    @commands.command(aliases=["man"])
+    async def help(self, ctx, command:str=None):
+        """Allows a user to request help for a command."""
+        if command == None:
+            embed = assemble_embed(
+                title="Looking for help?",
+                desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
+                "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
+                "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" +
+                "If you want to see some commands that you can use on me, just type `!list`! " +
+                "If you need more help, please feel free to reach out to a staff member!")
+            )
+            return await ctx.send(embed=embed)
+        hlp = await get_help(ctx, command)
+        await ctx.send(embed=hlp)
     
     @commands.command()
     async def pronouns(self, ctx, *args):
@@ -359,6 +376,7 @@ class MemberCommands(commands.Cog, name='Member'):
         if isinstance(error, SelfMuteCommandStaffInvoke):
             return await ctx.send("Staff members can't self mute.")
     
+    # Cant test due to lack of access to db
     @commands.command(aliases=["tc", "tourney", "tournaments"])
     async def tournament(self, ctx, *args):
         member = ctx.message.author
@@ -774,6 +792,62 @@ class MemberCommands(commands.Cog, name='Member'):
                 else:
                     return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
         return await ctx.send("Tag not found.")
+        
+    @commands.command()
+    async def graphpage(self, ctx, title, temp_format, table_index, div, place_col=0):
+        temp = temp_format.lower() in ["y", "yes", "true"]
+        await ctx.send(
+            "*Inputs read:*\n" +
+            f"Page title: `{title}`\n" +
+            f"Template: `{temp}`\n" +
+            f"Table index (staring at 0): `{table_index}`\n" +
+            f"Division: `{div}`\n" +
+            (f"Column with point values: `{place_col}`" if not temp else "")
+        )
+        points = []
+        table_index = int(table_index)
+        place_col = int(place_col)
+        if temp:
+            template = await get_page_tables(title, True)
+            template = [t for t in template if t.normal_name() == "State results box"]
+            template = template[table_index]
+            ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]) # Thanks https://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712
+            for i in range(100):
+                if template.has_arg(ordinal(i) + "_points"):
+                    points.append(template.get_arg(ordinal(i) + "_points").value.replace("\n", ""))
+        else:
+            tables = await get_page_tables(title, False)
+            tables = tables[table_index]
+            data = tables.data()
+            points = [r[place_col] for r in data]
+            del points[0]
+        points = [int(p) for p in points]
+        await _graph(points, title + " - Division " + div, title + "Div" + div + ".svg")
+        with open(title + "Div" + div + ".svg") as f:
+            pic = discord.File(f)
+            await ctx.send(file=pic)
+        return await ctx.send("Attempted to graph.")
+
+    @commands.command()
+    async def graphscilympiad(self, ctx, url, title):
+        points = await get_points(url)
+        await _graph(points, title, "graph1.svg")
+        with open("graph1.svg") as f:
+            pic = discord.File(f)
+            await ctx.send(file=pic)
+        return await ctx.send("Attempted to graph.")
+    
+async def _graph(points, graph_title, title):
+    plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
+    z = np.polyfit(range(1, len(points) + 1), points, 1)
+    p = np.poly1d(z)
+    plt.plot(range(1, len(points) + 1), p(range(1, len(points) + 1)), "--", color='#CCCCCC')
+    plt.xlabel("Place")
+    plt.ylabel("Points")
+    plt.title(graph_title)
+    plt.savefig(title)
+    plt.close()
+    await asyncio.sleep(2)
     
 def setup(bot):
     bot.add_cog(MemberCommands(bot))
