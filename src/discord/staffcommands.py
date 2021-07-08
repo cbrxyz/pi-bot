@@ -13,7 +13,7 @@ from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
 from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH
 
-from src.discord.utils import harvest_id
+from src.discord.utils import harvest_id, refresh_algorithm
 from src.wiki.mosteditstable import run_table
 
 from src.discord.mute import _mute
@@ -22,7 +22,6 @@ from embed import assemble_embed
 
 from typing import Type
 
-from bot import refresh_algorithm
 from tournaments import update_tournament_list
 
 class LauncherCommands(commands.Cog):
