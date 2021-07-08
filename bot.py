@@ -1,49 +1,20 @@
 import discord
 import os
 import traceback
-import asyncio
-# import requests
 import re
-import json
-import random
-# import math
 import time
 import datetime
 import dateparser
-# import pytz
-# import time as time_module
-# import wikipedia as wikip
-# import matplotlib.pyplot as plt
 import numpy as np
-# from aioify import aioify
 
 from discord import channel
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 from src.discord.utils import auto_report
-# from src.sheets.events import get_events
-# from src.sheets.tournaments import get_tournament_channels
 from src.sheets.censor import get_censor
-# from src.sheets.sheets import get_tags
-# from src.forums.forums import open_browser
-# from src.wiki.stylist import prettify_templates
-# from src.wiki.tournaments import get_tournament_list
-# from src.wiki.wiki import implement_command, get_page_tables
-# from src.wiki.scilympiad import get_points
-# from src.wiki.mosteditstable import run_table
-# from info import get_about
-# from doggo import get_doggo, get_shiba
-# from bear import get_bear_message
 from embed import assemble_embed
-from commands import get_list #, get_help  get_quick_list,
-from commanderrors import CommandNotAllowedInChannel, SelfMuteCommandStaffInvoke
-
-from tournaments import update_tournament_list
-
-# load_dotenv()
-# TOKEN = os.getenv('DISCORD_TOKEN')
-# DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
-# dev_mode = os.getenv('DEV_MODE') == "TRUE"
+from commands import get_list
+from commanderrors import CommandNotAllowedInChannel
 
 ##############
 # SERVER VARIABLES
@@ -57,13 +28,6 @@ from src.discord.globals import *
 
 intents = discord.Intents.default()
 intents.members = True
-
-# if dev_mode:
-#     BOT_PREFIX = "?"
-#     SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
-# else:
-#     BOT_PREFIX = "!"
-#     SERVER_ID = 698306997287780363
 
 bot = commands.Bot(command_prefix=(BOT_PREFIX), case_insensitive=True, intents=intents)
 
@@ -503,29 +467,6 @@ async def on_raw_message_delete(payload):
 async def on_command_error(ctx, error):
     print("Command Error:")
     print(error)
-    # error_types_handled = (discord.ext.commands.UnexpectedQuoteError, discord.ext.commands.InvalidEndOfQuotedStringError, \
-    #                         discord.ext.commands.ExpectedClosingQuoteError, discord.ext.commands.MissingRequiredArgument, \
-    #                         discord.ext.commands.ArgumentParsingError, discord.ext.commands.TooManyArguments, discord.ext.commands.BadArgument, \
-    #                         discord.ext.commands.BadUnionArgument, discord.ext.commands.CheckAnyFailure, discord.ext.commands.PrivateMessageOnly, \
-    #                         discord.ext.commands.NoPrivateMessage, discord.ext.commands.NotOwner, discord.ext.commands.MissingPermissions, \
-    #                         discord.ext.commands.BotMissingPermissions, discord.ext.commands.MissingRole, discord.ext.commands.BotMissingRole, \
-    #                         discord.ext.commands.MissingAnyRole, discord.ext.commands.BotMissingAnyRole, discord.ext.commands.NSFWChannelRequired, \
-    #                         CommandNotAllowedInChannel, discord.ext.commands.ConversionError, discord.ext.commands.UserInputError, \
-    #                         discord.ext.commands.CommandNotFound, discord.ext.commands.CheckFailure, discord.ext.commands.DisabledCommand, \
-    #                         discord.ext.commands.CommandInvokeError, discord.ext.commands.CommandOnCooldown, )
-    # if hasattr(ctx.command, 'on_error') or ctx.command.has_error_handler(): # this can pot block commands that raise common execptions handled in this method
-    #     return
-    
-    # cog = ctx.cog
-    # if cog:
-    #     if cog._get_overridden_method(cog.cog_command_error) is not None:
-    #         return
-    # This causes errors when commands in an overridden error handler raise a common exception.
-    
-    # this is such a garbage way of doing it
-    # ignored = (SelfMuteCommandStaffInvoke,)
-    # if isinstance(error, ignored):
-    #     return
     
     # Okay, a bit sketch, but it works.
     # The idea is this: we want this global error handler to handle all errors
