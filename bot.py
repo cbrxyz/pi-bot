@@ -91,15 +91,11 @@ bot.remove_command("help")
 async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
-    
-def datetime_converter(o):
-    if isinstance(o, datetime.datetime):
-        return o.__str__()
 
-async def get_words():
-    """Gets the censor list"""
-    global CENSORED_WORDS
-    CENSORED_WORDS = get_censor()
+# async def get_words():
+#     """Gets the censor list"""
+#     global CENSORED_WORDS
+#     CENSORED_WORDS = get_censor()
 
 @bot.event
 async def on_message_edit(before, after):

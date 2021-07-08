@@ -118,3 +118,7 @@ async def refresh_algorithm():
     
     print("Refreshed data from sheet.")
     return True
+    
+def datetime_converter(o):
+    if isinstance(o, datetime.datetime):
+        return o.__str__()

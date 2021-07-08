@@ -1,20 +1,22 @@
 import discord
 import random
+import json
+import datetime
 from discord.ext import commands, tasks
-from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH_REPORT_IDS, CRON_LIST, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_LEAVE, can_post
+from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH_REPORT_IDS, CRON_LIST, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN
 from src.sheets.sheets import send_variables, get_variables
 
 from tournaments import update_tournament_list
 from src.forums.forums import open_browser
 from src.wiki.stylist import prettify_templates
-from src.discord.utils import auto_report, refresh_algorithm
+from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
 
 class CronTasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-        # This is honestly a cesspool of a mess of async since __init__ has to be sync
-        # So, pull_prev_info and update_tournament_list have been made sync
+    @commands.Cog.listener()
+    async def on_ready(self):
         try:
             await self.pull_prev_info()
         except Exception as e:
