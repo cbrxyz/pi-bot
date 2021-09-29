@@ -480,8 +480,6 @@ async def on_command_error(ctx, error):
     if (ctx.command.has_error_handler() or ctx.cog.has_error_handler()) and ctx.__slots__ == True:
         return
     
-    # print("Command Error:")
-    # print(error)
     # Argument parsing errors
     if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(error, discord.ext.commands.InvalidEndOfQuotedStringError):
         return await ctx.send("Sorry, it appears that your quotation marks are misaligned, and I can't read your query.")

@@ -31,9 +31,6 @@ class MemberCommands(commands.Cog, name='Member'):
     @commands.Cog.listener()
     async def on_message(self, message):
         pass
-        # if message.author.id in PI_BOT_IDS: return
-        # print("running member cog")
-        # print(message.content)
     
     @commands.command(aliases=["man"])
     async def help(self, ctx, command:str=None):
@@ -376,7 +373,6 @@ class MemberCommands(commands.Cog, name='Member'):
         if isinstance(error, SelfMuteCommandStaffInvoke):
             return await ctx.send("Staff members can't self mute.")
     
-    # Cant test due to lack of access to db
     @commands.command(aliases=["tc", "tourney", "tournaments"])
     async def tournament(self, ctx, *args):
         member = ctx.message.author

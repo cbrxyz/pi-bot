@@ -348,7 +348,7 @@ COMMAND_INFO = [
         ],
         "usage":[
             {
-                "cmd": "!nuke 788202931538493460",
+                "cmd": "!nukeuntil 788202931538493460",
                 "result": "If called in #welcome, it nukes all, but not including the first, messages in #welcome"
             }
         ],
