@@ -273,26 +273,6 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         await message.delete()
         if view.value:
             await user.kick(reason = reason)
-
-    @commands.command()
-    async def exalt(self, ctx, user):
-        """Exalts a user."""
-        member = ctx.message.author
-        role = discord.utils.get(member.guild.roles, name=ROLE_EM)
-        iden = await harvest_id(user)
-        user_obj = member.guild.get_member(int(iden))
-        await user_obj.add_roles(role)
-        await ctx.send(f"Successfully exalted. Congratulations {user}! :tada: :tada:")
-    
-    @commands.command()
-    async def unexalt(self, ctx, user):
-        """Unexalts a user."""
-        member = ctx.message.author
-        role = discord.utils.get(member.guild.roles, name=ROLE_EM)
-        iden = await harvest_id(user)
-        user_obj = member.guild.get_member(int(iden))
-        await user_obj.remove_roles(role)
-        await ctx.send(f"Successfully unexalted.")    
     
     # Need to find a way to share _mute() between StaffEssential and MemberCommands
     
