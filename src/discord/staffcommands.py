@@ -27,17 +27,21 @@ from typing import Type
 from tournaments import update_tournament_list
 
 class Confirm(discord.ui.View):
-    def __init__(self, author):
+    def __init__(self, author, confirm_label, cancel_label, confirm_response, cancel_response):
         super().__init__()
         self.value = None
         self.author = author
+        self.confirm_label = confirm_label
+        self.cancel_label = cancel_label
+        self.confirm_response = confirm_response
+        self.cancel_response = cancel_response
 
-    @discord.ui.button(label="Kick", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.red)
     async def confirm(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
         if interaction.user == self.author:
-            await interaction.response.send_message(f"The member has been kicked. {self.author.mention}, please remember that a kicked user can immediately rejoin a server.", ephemeral=True)
+            await interaction.response.send_message(self.confirm_response, ephemeral=True)
             self.value = True
             self.stop()
         else:
@@ -46,7 +50,7 @@ class Confirm(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
     async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user == self.author:
-            await interaction.response.send_message("Cancelling", ephemeral=True)
+            await interaction.response.send_message(self.cancel_response, ephemeral=True)
             self.value = False
             self.stop()
         else:
@@ -275,16 +279,38 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             await user.kick(reason = reason)
     
     # Need to find a way to share _mute() between StaffEssential and MemberCommands
-    
-    @commands.command()
-    async def unmute(self, ctx, user):
+   
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Unmutes a user immediately."
+    )
+    async def unmute(self,
+        ctx, 
+        member: Option(discord.Member, "The user to unmute.")
+    ):
         """Unmutes a user."""
-        member = ctx.message.author
-        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
-        iden = await harvest_id(user)
-        user_obj = member.guild.get_member(int(iden))
-        await user_obj.remove_roles(role)
-        await ctx.send(f"Successfully unmuted {user}.")
+        original_shown_embed = discord.Embed(
+            title = "Unmute Confirmation",
+            color = discord.Color.brand_red(),
+            description = f"""
+            {member.mention} will be unmuted across the entire server. This will enable the user to message again in all channels they can access.
+
+            **Staff Member:** {ctx.author.mention}
+            """
+        )
+
+        view = Confirm(ctx.author, "Confirm", "Cancel",
+              "The user has been unmuted. Please remember that this will enable the user to once again communicate in all channels available to them.",
+              "The user remains muted."
+        )
+        await ctx.respond("Please confirm that you would like to unmute this user.", view = view, embed = original_shown_embed)
+
+        await view.wait()
+        message = await ctx.interaction.original_message()
+        await message.delete()
+        if view.value:
+            role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
+            await member.remove_roles(role)
         
     @commands.command()
     async def ban(self, ctx, member:discord.User=None, reason=None, *args):
