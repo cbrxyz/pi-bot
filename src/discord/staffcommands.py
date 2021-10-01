@@ -1,13 +1,15 @@
+import os
 import discord
 import asyncio
 
 from discord.ext import commands
+from discord.app import Option
 from commandchecks import is_staff, is_launcher
 
 import dateparser
 import pytz
 
-from src.discord.globals import TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST
+from src.discord.globals import SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
@@ -23,6 +25,32 @@ from embed import assemble_embed
 from typing import Type
 
 from tournaments import update_tournament_list
+
+class Confirm(discord.ui.View):
+    def __init__(self, author):
+        super().__init__()
+        self.value = None
+        self.author = author
+
+    @discord.ui.button(label="Kick", style=discord.ButtonStyle.red)
+    async def confirm(
+        self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
+        if interaction.user == self.author:
+            await interaction.response.send_message(f"The member has been kicked. {self.author.mention}, please remember that a kicked user can immediately rejoin a server.", ephemeral=True)
+            self.value = True
+            self.stop()
+        else:
+            await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user == self.author:
+            await interaction.response.send_message("Cancelling", ephemeral=True)
+            self.value = False
+            self.stop()
+        else:
+            await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
 
 class LauncherCommands(commands.Cog):
     def __init__(self, bot):
@@ -217,16 +245,35 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
         super().__init__(bot)
     
-    @commands.command()
-    async def kick(self, ctx, user:discord.Member, reason:str=False):
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Kicks user from the server."
+    )
+    async def kick(self, 
+        ctx, 
+        user: Option(discord.Member, "The user to kick from the server."),
+        reason: Option(str, "The reason to kick the member for.")
+    ):
         """Kicks a user for the specified reason."""
-        if reason == False:
-            return await ctx.send("Please specify a reason why you want to kick this user!")
-        if user.id in PI_BOT_IDS:
-            return await ctx.send("Hey! You can't kick me!!")
-        await user.kick(reason=reason)
-        await ctx.send("The user was kicked.")
-    
+        original_shown_embed = discord.Embed(
+            title = "Kick Confirmation",
+            color = discord.Color.brand_red(),
+            description = f"""
+            The user {user.mention} will be kicked from the server for:
+            `{reason}`
+
+            **Staff Member:** {ctx.author.mention}
+            """
+        )
+
+        view = Confirm(ctx.author)
+        await ctx.respond("Please confirm that you would like to kick this user from the server.", embed = original_shown_embed, view = view)
+        await view.wait()
+        message = await ctx.interaction.original_message()
+        await message.delete()
+        if view.value:
+            await user.kick(reason = reason)
+
     @commands.command()
     async def exalt(self, ctx, user):
         """Exalts a user."""
