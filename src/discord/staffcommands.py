@@ -505,106 +505,96 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
         super().__init__(bot)
     
-    @commands.command()
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Opens a voice channel clone of a channel."
+    )
     async def vc(self, ctx):
-        server = ctx.message.guild
-        if ctx.message.channel.category.name == CATEGORY_TOURNAMENTS:
-            test_vc = discord.utils.get(server.voice_channels, name=ctx.message.channel.name)
+        server = ctx.author.guild
+        if ctx.channel.category.name == CATEGORY_TOURNAMENTS:
+            test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
             if test_vc == None:
                 # Voice channel needs to be opened
-                new_vc = await server.create_voice_channel(ctx.message.channel.name, category=ctx.message.channel.category)
+                new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 # Make the channel invisible to normal members
                 await new_vc.set_permissions(server.default_role, view_channel=False)
                 at = discord.utils.get(server.roles, name=ROLE_AT)
                 for t in TOURNAMENT_INFO:
-                    if ctx.message.channel.name == t[1]:
+                    if ctx.channel.name == t[1]:
                         tourney_role = discord.utils.get(server.roles, name=t[0])
                         await new_vc.set_permissions(tourney_role, view_channel=True)
                         break
                 await new_vc.set_permissions(at, view_channel=True)
-                return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
-                return await ctx.send("Closed the voice channel.")
+                return await ctx.respond("Closed the voice channel.")
         elif ctx.message.channel.category.name == CATEGORY_STATES:
-            test_vc = discord.utils.get(server.voice_channels, name=ctx.message.channel.name)
+            test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
             if test_vc == None:
                 # Voice channel does not currently exist
-                if len(ctx.message.channel.category.channels) == 50:
+                if len(ctx.channel.category.channels) == 50:
                     # Too many voice channels in the state category
                     # Let's move one state to the next category
                     new_cat = filter(lambda x: x.name == "states", server.categories)
                     new_cat = list(new_cat)
                     if len(new_cat) < 2: 
-                        return await ctx.send("Could not find alternate states channel to move overflowed channels to.")
+                        return await ctx.respond("Could not find alternate states channel to move overflowed channels to.")
                     else:
                         # Success, we found the other category
-                        current_cat = ctx.message.channel.category
+                        current_cat = ctx.channel.category
                         await current_cat.channels[-1].edit(category = new_cat[1], position = 0)
-                new_vc = await server.create_voice_channel(ctx.message.channel.name, category=ctx.message.channel.category)
+                new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
                 muted_role = discord.utils.get(server.roles, name=ROLE_MUTED)
                 all_states_role = discord.utils.get(server.roles, name=ROLE_ALL_STATES)
                 self_muted_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
                 quarantine_role = discord.utils.get(server.roles, name=ROLE_QUARANTINE)
-                state_role_name = await lookup_role(ctx.message.channel.name.replace("-", " "))
+                state_role_name = await lookup_role(ctx.channel.name.replace("-", " "))
                 state_role = discord.utils.get(server.roles, name = state_role_name)
                 await new_vc.set_permissions(muted_role, connect=False)
                 await new_vc.set_permissions(self_muted_role, connect=False)
                 await new_vc.set_permissions(quarantine_role, connect=False)
                 await new_vc.set_permissions(state_role, view_channel = True, connect=True)
                 await new_vc.set_permissions(all_states_role, view_channel = True, connect=True)
-                current_pos = ctx.message.channel.position
-                return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+                current_pos = ctx.channel.position
+                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 await test_vc.delete()
-                if len(ctx.message.channel.category.channels) == 49:
+                if len(ctx.channel.category.channels) == 49:
                     # If we had to move a channel out of category to make room, move it back
                     # Let's move one state to the next category
                     new_cat = filter(lambda x: x.name == "states", server.categories)
                     new_cat = list(new_cat)
                     if len(new_cat) < 2: 
-                        return await ctx.send("Could not find alternate states channel to move overflowed channels to.")
+                        return await ctx.respond("Could not find alternate states channel to move overflowed channels to.")
                     else:
                         # Success, we found the other category
-                        current_cat = ctx.message.channel.category
+                        current_cat = ctx.channel.category
                         await new_cat[1].channels[0].edit(category = current_cat, position = 1000)
-                return await ctx.send("Closed the voice channel.")
+                return await ctx.respond("Closed the voice channel.")
         elif ctx.message.channel.name == "games":
             # Support for opening a voice channel for #games
             test_vc = discord.utils.get(server.voice_channels, name="games")
             if test_vc == None:
                 # Voice channel needs to be opened/doesn't exist already
-                new_vc = await server.create_voice_channel("games", category=ctx.message.channel.category)
+                new_vc = await server.create_voice_channel("games", category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
                 games_role = discord.utils.get(server.roles, name=ROLE_GAMES)
                 member_role = discord.utils.get(server.roles, name=ROLE_MR)
                 await new_vc.set_permissions(games_role, view_channel=True)
                 await new_vc.set_permissions(member_role, view_channel=False)
-                return await ctx.send("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
-                return await ctx.send("Closed the voice channel.")
+                return await ctx.respond("Closed the voice channel.")
         else:
-            return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
-    
-    @commands.command()
-    async def getVariable(self, ctx, var):
-        """Fetches a local variable."""
-        if ctx.message.channel.name != "staff":
-            await ctx.send("You can only fetch variables from the staff channel.")
-        else:
-            await ctx.send("Attempting to find variable.")
-            try:
-                variable = globals()[var]
-                await ctx.send(f"Variable value: `{variable}`")
-            except:
-                await ctx.send(f"Can't find that variable!")
+            return await ctx.respond("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
     
     @commands.command(aliases=["ufi"])
     async def userfromid(self, ctx, iden:int):
