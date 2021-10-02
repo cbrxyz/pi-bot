@@ -1,5 +1,6 @@
 import os
 import discord
+import datetime
 import asyncio
 
 from discord.ext import commands
@@ -27,13 +28,10 @@ from typing import Type
 from tournaments import update_tournament_list
 
 class Confirm(discord.ui.View):
-    def __init__(self, author, confirm_label, cancel_label, confirm_response, cancel_response):
+    def __init__(self, author, cancel_response):
         super().__init__()
         self.value = None
         self.author = author
-        self.confirm_label = confirm_label
-        self.cancel_label = cancel_label
-        self.confirm_response = confirm_response
         self.cancel_response = cancel_response
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.red)
@@ -41,8 +39,9 @@ class Confirm(discord.ui.View):
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
         if interaction.user == self.author:
-            await interaction.response.send_message(self.confirm_response, ephemeral=True)
+            await interaction.response.edit_message(content="Attempting to run operation...")
             self.value = True
+            self.interaction = interaction
             self.stop()
         else:
             await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
@@ -255,28 +254,37 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     )
     async def kick(self, 
         ctx, 
-        user: Option(discord.Member, "The user to kick from the server."),
+        member: Option(discord.Member, "The user to kick from the server."),
         reason: Option(str, "The reason to kick the member for.")
     ):
-        """Kicks a user for the specified reason."""
+        """Kicks a member for the specified reason."""
         original_shown_embed = discord.Embed(
             title = "Kick Confirmation",
             color = discord.Color.brand_red(),
             description = f"""
-            The user {user.mention} will be kicked from the server for:
+            The member {member.mention} will be kicked from the server for:
             `{reason}`
 
             **Staff Member:** {ctx.author.mention}
             """
         )
 
-        view = Confirm(ctx.author)
-        await ctx.respond("Please confirm that you would like to kick this user from the server.", embed = original_shown_embed, view = view)
+        view = Confirm(ctx.author, "The kick operation was cancelled. The user remains in the server.")
+        await ctx.respond("Please confirm that you would like to kick this member from the server.", embed = original_shown_embed, view = view, ephemeral = True)
         await view.wait()
-        message = await ctx.interaction.original_message()
-        await message.delete()
         if view.value:
-            await user.kick(reason = reason)
+            try:
+                await member.kick(reason = reason)
+            except:
+                pass
+
+        # Test
+        guild = ctx.author.guild
+        if member not in guild.members: 
+            # User was successfully kicked
+            await ctx.interaction.edit_original_message(content = "The user was successfully kicked.", embed = None, view = None)
+        else:
+            await ctx.interaction.edit_original_message(content = "The user was not successfully kicked because of an error. They remain in the server.", embed = None, view = None)
     
     # Need to find a way to share _mute() between StaffEssential and MemberCommands
    
@@ -299,43 +307,99 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             """
         )
 
-        view = Confirm(ctx.author, "Confirm", "Cancel",
-              "The user has been unmuted. Please remember that this will enable the user to once again communicate in all channels available to them.",
-              "The user remains muted."
-        )
-        await ctx.respond("Please confirm that you would like to unmute this user.", view = view, embed = original_shown_embed)
+        view = Confirm(ctx.author, "The unmute operation was cancelled. The user remains muted.")
+        await ctx.respond("Please confirm that you would like to unmute this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
         await view.wait()
-        message = await ctx.interaction.original_message()
-        await message.delete()
+        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
         if view.value:
-            role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
-            await member.remove_roles(role)
+            try:
+                await member.remove_roles(role)
+            except:
+                pass
+
+        # Test
+        if role not in member.roles:
+            await ctx.interaction.edit_original_message(content = "The user was succesfully unmuted.", embed = None, view = None)
+        else:
+            await ctx.interaction.edit_original_message(content = "The user was not unmuted because of an error. They remain muted. Please contact a bot developer about this issue.", embed = None, view = None)
         
-    @commands.command()
-    async def ban(self, ctx, member:discord.User=None, reason=None, *args):
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Bans a user from the server."
+    )
+    async def ban(self,
+        ctx, 
+        member: Option(discord.Member, "The user to ban."),
+        reason: Option(str, "The reason to ban the user for."),
+        ban_length: Option(str, "How long to ban the user for.", choices = [
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+            "Indefinitely"
+        ])
+    ):
         """Bans a user."""
-        time = " ".join(args)
-        if member == None or member == ctx.message.author:
-            return await ctx.channel.send("You cannot ban yourself! >:(")
-        if reason == None:
-            return await ctx.send("You need to give a reason for you banning this user.")
-        if time == None:
-            return await ctx.send("You need to specify a length that this used will be banned. Examples are: `1 day`, `2 months, 1 day`, or `indef` (aka, forever).")
-        if member.id in PI_BOT_IDS:
-            return await ctx.send("Hey! You can't ban me!!")
+        times = {
+            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
+            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
+            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
+            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
+            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
+            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
+            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
+            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
+            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
+            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
+            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+        }
+        time_statement = None
+        if ban_length == "Indefinitely":
+            time_statement = "The user will never be automatically unbanned."
+        else:
+            time_statement = f"The user will be banned until {discord.utils.format_dt(times[ban_length], 'F')}."
+
+        original_shown_embed = discord.Embed(
+            title = "Ban Confirmation",
+            color = discord.Color.brand_red(),
+            description = f"""
+            {member.mention} will be banned from the entire server. They will not be able to re-enter the server until the ban is lifted or the time expires.
+
+            {time_statement}
+            """
+        )
+
+        view = Confirm(ctx.author, "The ban operation was cancelled. They remain in the server.")
+        await ctx.respond("Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
+
         message = f"You have been banned from the Scioly.org Discord server for {reason}."
-        parsed = "indef"
-        if time != "indef":
-            parsed = dateparser.parse(time, settings={"PREFER_DATES_FROM": "future"})
-            if parsed == None:
-                return await ctx.send(f"Sorry, but I don't understand the length of time: `{time}`.")
-            CRON_LIST.append({"date": parsed, "do": f"unban {member.id}"})
         await member.send(message)
-        await ctx.guild.ban(member, reason=reason)
-        eastern = pytz.timezone("US/Eastern")
-        await ctx.channel.send(f"**{member}** is banned until `{str(eastern.localize(parsed))} EST`.")
+
+        await view.wait()
+        if view.value:
+            try:
+                await ctx.guild.ban(member, reason=reason)
+            except:
+                pass
+
+        if ban_length != "Indefinitely":
+            CRON_LIST.append({"date": times[ban_length], "do": f"unban {member.id}"})
     
+        # Test
+        guild = ctx.author.guild
+        if member not in guild.members: 
+            # User was successfully banned
+            await ctx.interaction.edit_original_message(content = "The user was successfully banned.", embed = None, view = None)
+        else:
+            await ctx.interaction.edit_original_message(content = "The user was not successfully banned because of an error. They remain in the server.", embed = None, view = None)
+
     @commands.command()
     async def unban(self, ctx, member:discord.User=None):
         """Unbans a user."""
