@@ -400,37 +400,28 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully banned because of an error. They remain in the server.", embed = None, view = None)
 
-    @commands.command()
-    async def unban(self, ctx, member:discord.User=None):
-        """Unbans a user."""
-        if member == None:
-            await ctx.channel.send("Please give either a user ID or mention a user.")
-            return
-        await ctx.guild.unban(member)
-        await ctx.channel.send(f"Inverse ban hammer applied, user unbanned. Please remember that I cannot force them to re-join the server, they must join themselves.")
-        
-    @commands.command()
-    async def clrreact(self, ctx, msg: discord.Message, *args: discord.Member):
-        """
-        Clears all reactions from a given message.
-    
-        :param msg: the message containing the reactions
-        :type msg: discord.Message
-        :param *args: list of users to clear reactions of
-        :type *args: List[discord.Member], optional
-        """
-        users = args
-        if (not users):
-            await msg.clear_reactions()
-            await ctx.send("Cleared all reactions on message.")
-        else:
-            for u in users:
-                for r in msg.reactions:
-                    await r.remove(u)
-            await ctx.send(f"Cleared reactions on message from {len(users)} user(s).")
-            
-    @commands.command()
-    async def mute(self, ctx, user:discord.Member, *args):
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Mutes a user."
+    )
+    async def mute(self,
+        ctx, 
+        member: Option(discord.Member, "The user to mute."),
+        reason: Option(str, "The reason to mute the user."),
+        mute_length: Option(str, "How long to mute the user for.", choices = [
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+            "Indefinitely"
+        ])
+    ):
         """
         Mutes a user.
     
@@ -439,8 +430,58 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         :param *args: The time to mute the user for.
         :type *args: str
         """
-        time = " ".join(args)
-        await _mute(ctx, user, time, self=False)
+        times = {
+            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
+            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
+            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
+            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
+            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
+            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
+            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
+            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
+            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
+            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
+            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+        }
+        time_statement = None
+        if mute_length == "Indefinitely":
+            time_statement = "The user will never be automatically unmuted."
+        else:
+            time_statement = f"The user will be muted until {discord.utils.format_dt(times[mute_length], 'F')}."
+
+        original_shown_embed = discord.Embed(
+            title = "Mute Confirmation",
+            color = discord.Color.brand_red(),
+            description = f"""
+            {member.mention} will be muted across the entire server. The user will no longer be able to communicate in any channels they can read.
+
+            {time_statement}
+            """
+        )
+
+        view = Confirm(ctx.author, "The mute operation was cancelled. They remain able to communicate.")
+        await ctx.respond("Please confirm that you would like to mute this user.", view = view, embed = original_shown_embed, ephemeral = True)
+
+        message = f"You have been muted from the Scioly.org Discord server for {reason}."
+        await member.send(message)
+
+        await view.wait()
+        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
+        if view.value:
+            try:
+                await member.add_roles(role)
+            except:
+                pass
+
+        if mute_length != "Indefinitely":
+            CRON_LIST.append({"date": times[mute_length], "do": f"unmute {member.id}"})
+    
+        # Test
+        if role in member.roles: 
+            # User was successfully muted
+            await ctx.interaction.edit_original_message(content = "The user was successfully muted.", embed = None, view = None)
+        else:
+            await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
         
     @commands.command(aliases=["slow", "sm"])
     async def slowmode(self, ctx, arg:int=None):
