@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 5.0.0 - 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
+* bot.py was split into separate files/cogs. (closes [#42](https://github.com/cbrxyz/pi-bot/issues/42))
 * Some dependencies were updated (numpy).
 
 ### Removed

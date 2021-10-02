@@ -483,21 +483,23 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
         
-    @commands.command(aliases=["slow", "sm"])
-    async def slowmode(self, ctx, arg:int=None):
-        if arg == None:
-            if ctx.channel.slowmode_delay == 0:
-                await ctx.channel.edit(slowmode_delay=10)
-                await ctx.send("Enabled a 10 second slowmode.")
-            else:
-                await ctx.channel.edit(slowmode_delay=0)
-                await ctx.send("Removed slowmode.")
-        else:
-            await ctx.channel.edit(slowmode_delay=arg)
-            if arg != 0:
-                await ctx.send(f"Enabled a {arg} second slowmode.")
-            else:
-                await ctx.send(f"Removed slowmode.")
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Enables slowmode in the current channel, or an alternate channel."
+    )
+    async def slowmode(self,
+        ctx, 
+        mode: Option(str, "How to change the slowmode in the channel.", choices = ["set", "remove"]),
+        delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
+        channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
+    ):
+        true_channel = channel or ctx.channel
+        if mode == "remove":
+            await true_channel.edit(slowmode_delay = 0)
+            await ctx.respond("The slowmode was removed.")
+        elif mode == "set":
+            await true_channel.edit(slowmode_delay = delay)
+            await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
 
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
