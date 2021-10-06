@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 * The exalt/unexalt commands were removed.
+* The getVariable command was removed.
+* The nukeuntil command was temporarily removed.
 
 ## 4.5.19 - 2020-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))

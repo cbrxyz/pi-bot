@@ -2,6 +2,7 @@ import os
 import discord
 import datetime
 import asyncio
+from discord.errors import NoEntryPointError
 
 from discord.ext import commands
 from discord.app import Option
@@ -55,10 +56,35 @@ class Confirm(discord.ui.View):
         else:
             await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
 
+class NukeStopButton(discord.ui.Button["Nuke"]):
+
+    def __init__(self, nuke):
+        super().__init__(label = "ABORT", style = discord.ButtonStyle.danger)
+        self.nuke = nuke
+
+    async def callback(self, interaction: discord.Interaction):
+        self.nuke.stopped = True
+        self.style = discord.ButtonStyle.green
+        self.label = "ABORTED"
+        self.disabled = True
+        await interaction.response.send_message(content = "NUKE ABORTED, COMMANDER.")
+        await interaction.edit_original_message(view = self.nuke)
+        self.nuke.stop()
+
+class Nuke(discord.ui.View):
+
+    stopped = False
+
+    def __init__(self):
+        super().__init__()
+        button = NukeStopButton(self)
+        self.add_item(button)
+
 class LauncherCommands(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
-        
+
     def if_launcher_in_welcome(self, ctx):
         # This is a method that will accompany the global cog check.
         # Therefore, this check is representing the proposition `(has launcher role) -> (message in #welcome)`
@@ -70,176 +96,138 @@ class LauncherCommands(commands.Cog):
             vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
             raise discord.ext.commands.MissingAnyRole([staffRole, vipRole])
         return True
-    
+
     async def cog_check(self, ctx):
         return await is_launcher(ctx) and self.if_launcher_in_welcome(ctx)
-        
-    @commands.command()
-    async def confirm(self, ctx, *args: discord.Member):
-        """Allows a staff member to confirm a user."""
-        await self._confirm(args)
-        
-    # @confirm.error
-    # async def confirm_error(self, ctx, error):
-    #     from src.discord.globals import BOT_PREFIX
-    #     print(f"{BOT_PREFIX}confirm error handler: {error}")
-    #     # if isinstance(error, NukeMissingPermssions):
-    #     #     return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
 
-    async def _confirm(self, members):
-        server = self.bot.get_guild(SERVER_ID)
-        channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
-        for member in members:
-            role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-            role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-            await member.remove_roles(role1)
-            await member.add_roles(role2)
-            message = await channel.send(f"Alrighty, confirmed {member.mention}. Welcome to the server! :tada:")
-            await message.delete(delay=3)
-            # before_message = None
-            # f = 0
-            
-            await channel.purge(check=lambda m: m != message and ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
-            # async for message in channel.history(oldest_first=True):
-            #     # Delete any messages sent by Pi-Bot where message before is by member
-            #     if f > 0:
-            #         if message.author.id in PI_BOT_IDS and before_message.author == member and len(message.embeds) == 0:
-            #             await message.delete()
-            # 
-            #         # Delete any messages by user
-            #         if message.author == member and len(message.embeds) == 0:
-            #             await message.delete()
-            # 
-            #         if member in message.mentions:
-            #             await message.delete()
-            # 
-            #     before_message = message
-            #     f += 1
-    
-    def is_nuke_allowed(ctx):
-        import datetime
-        global STOPNUKE
-        time_delta = STOPNUKE - datetime.datetime.utcnow()
-        if time_delta > datetime.timedelta():
-            raise discord.ext.commands.CommandOnCooldown(None, time_delta.total_seconds())
-        return True
-    
-    async def _nuke_countdown(self, ctx, count = -1):
-        import datetime
-        global STOPNUKE
-        await ctx.send("=====\nINCOMING TRANSMISSION.\n=====")
-        await ctx.send("PREPARE FOR IMPACT.")
-        for i in range(10, 0, -1):
-            if count < 0:
-                await ctx.send(f"NUKING MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
-            else:
-                await ctx.send(f"NUKING {count} MESSAGES IN {i}... TYPE `!stopnuke` AT ANY TIME TO STOP ALL TRANSMISSION.")
-            await asyncio.sleep(1)
-            if STOPNUKE > datetime.datetime.utcnow():
-                return await ctx.send("A COMMANDER HAS PAUSED ALL NUKES FOR 20 SECONDS. NUKE CANCELLED.") # magic number MonkaS
-    
-    # Problems with this !nuke:
-    #  Can only nuke one channel at a time (ideally should be on a per channel basis).
-    #  No real integrated cooldown using `commands.cooldown` with !stopnuke (unfortunately i believe it's simply a library limitation :( )
-    @commands.command()
-    @commands.check(is_nuke_allowed)
-    async def nuke(self, ctx, count):
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Confirms a user, giving them access to the server."
+    )
+    async def confirm(self,
+        ctx,
+        member: Option(discord.Member, "The member to confirm.")
+    ):
+        """Allows a staff member to confirm a user."""
+        channel = ctx.channel
+        if channel.name != CHANNEL_WELCOME:
+            return await ctx.respond("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
+
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        await ctx.respond(f"Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:", ephemeral = True)
+
+        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Nukes a certain amount of messages."
+    )
+    async def nuke(self,
+        ctx,
+        count: Option(int, "The amount of messages to nuke.")
+    ):
         """Nukes (deletes) a specified amount of messages."""
-        import datetime
         global STOPNUKE
-        # launcher = await is_launcher(ctx)
-        # staff = await is_staff(ctx)
-        # if not (staff or (launcher and ctx.message.channel.name == "welcome")):
-        #     return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
-        # if STOPNUKE:
-        #     return await ctx.send("TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED. TRY AGAIN LATER.")
         MAX_DELETE = 100
         if int(count) > MAX_DELETE:
-            return await ctx.send("Chill. No more than deleting 100 messages at a time.")
-        channel = ctx.message.channel
-        if int(count) < 0: count = MAX_DELETE
-            # Since we are just trying to see the history and purge doesn't care
-            #  if we have a limit over the total num of actual messages, we will
-            #  just set the count to MAX_DELETE
-            
-            # history = await channel.history(limit=105).flatten()
-            # message_count = len(history)
-            # print(message_count)
-            # if message_count > 100:
-            #     count = 100
-            # else:
-            #     count = message_count + int(count) - 1
-            # if count <= 0:
-            #     return await ctx.send("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
-        await self._nuke_countdown(ctx, count)
-        if STOPNUKE <= datetime.datetime.utcnow():
-            await channel.purge(limit=int(count) + 13, check=lambda m: not m.pinned)
-            
-            msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-            await msg.delete(delay=5)
-        
-    @commands.command()
-    @commands.check(is_nuke_allowed)
-    async def nukeuntil(self, ctx, msgid): # prob can use converters to convert the msgid to a Message object
-        # TODO: should prob use reply feature to show the message the id is referencing
-        # remember, the message is excluded in the nuke
-        import datetime
-        global STOPNUKE
-        channel = ctx.message.channel
-        message = await ctx.fetch_message(msgid)
-        if channel == message.channel:
-            await self._nuke_countdown(ctx)
-            if STOPNUKE <= datetime.datetime.utcnow():
-                await channel.purge(limit=1000, after=message)
-                msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-                await msg.delete(delay=5)
-        else:
-            return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
-            
+            return await ctx.respond("Chill. No more than deleting 100 messages at a time.")
+        channel = ctx.channel
+        if int(count) < 0:
+            history = await channel.history(limit=105).flatten()
+            message_count = len(history)
+            if message_count > 100:
+                count = 100
+            else:
+                count = message_count + int(count) - 1
+            if count <= 0:
+                return await ctx.respond("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
+
+        original_shown_embed = discord.Embed(
+            title = "NUKE COMMAND PANEL",
+            color = discord.Color.brand_red(),
+            description = f"""
+            {count} messages will be deleted from {channel.mention} in 10 seconds...
+
+            To stop this nuke, press the red button below!
+            """
+        )
+        view = Nuke()
+        msg = await ctx.respond(embed = original_shown_embed, view = view)
+        await asyncio.sleep(1)
+
+        for i in range(9, 0, -1):
+            original_shown_embed.description = f"""
+            {count} messages will be deleted from {channel.mention} in {i} seconds...
+
+            To stop this nuke, press the red button below!
+            """
+            await ctx.interaction.edit_original_message(embed = original_shown_embed, view = view)
+            if view.stopped:
+                return
+            await asyncio.sleep(1)
+
+        original_shown_embed.description = f"""
+        Now nuking {count} messages from the channel...
+        """
+        await ctx.interaction.edit_original_message(embed = original_shown_embed, view = None)
+
+        # Nuke has not been stopped, proceed with deleting messages
+        def nuke_check(msg: discord.Message):
+            return not len(msg.components) and not msg.pinned
+
+        msg = await ctx.interaction.original_message()
+        await channel.purge(limit=count + 1, check=nuke_check)
+
+        # Let user know messages have been deleted
+        # Waiting to implement until later
+        # 
+        # confirm_embed = discord.Embed(
+        #     title = "NUKE COMMAND PANEL",
+        #     color = discord.Color.brand_green(),
+        #     description = f"""
+        #     {count} messages were deleted from the channel commander!
+
+        #     Have a good day!
+        #     """
+        # )
+        # confirm_embed.set_image(url = "https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+        # await ctx.interaction.edit_original_message(embed = confirm_embed, view = None)
+        # await asyncio.sleep(5)
+        # await msg.delete()
+
+    # @commands.command()
+    # @commands.check(is_nuke_allowed)
+    # async def nukeuntil(self, ctx, msgid):
+    #     import datetime
+    #     global STOPNUKE
+    #     channel = ctx.message.channel
+    #     message = await ctx.fetch_message(msgid)
+    #     if channel == message.channel:
+    #         await self._nuke_countdown(ctx)
+    #         if STOPNUKE <= datetime.datetime.utcnow():
+    #             await channel.purge(limit=1000, after=message)
+    #             msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
+    #             await msg.delete(delay=5)
+    #     else:
+    #         return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
+
     @nuke.error
-    @nukeuntil.error
     async def nuke_error(self, ctx, error):
         ctx.__slots__ = True
         from src.discord.globals import BOT_PREFIX
         print(f"{BOT_PREFIX}nuke error handler: {error}")
         if isinstance(error, discord.ext.commands.MissingAnyRole):
             return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
-        if isinstance(error, discord.ext.commands.CommandOnCooldown):
-            return await ctx.send(f"TRANSMISSION FAILED. ALL NUKES ARE CURRENTLY PAUSED FOR ANOTHER {'%.3f' % error.retry_after} SECONDS. TRY AGAIN LATER.")
-        
-        ctx.__slots__ = False
-    
-    @commands.command()
-    async def stopnuke(self, ctx):
-        import datetime
-        global STOPNUKE
-        # launcher = await is_launcher(ctx)
-        # staff = is_staff()
-        # if not (staff or (launcher and ctx.message.channel.name == CHANNEL_WELCOME)):
-        #     return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
-        NUKE_COOLDOWN = 20
-        STOPNUKE = datetime.datetime.utcnow() + datetime.timedelta(seconds=NUKE_COOLDOWN) # True
-        await ctx.send(f"TRANSMISSION RECEIVED. STOPPED ALL CURRENT NUKES FOR {NUKE_COOLDOWN} SECONDS.")
-        
-        # await asyncio.sleep(15)
-        # for i in range(5, 0, -1):
-        #     await ctx.send(f"NUKING WILL BE ALLOWED IN {i}. BE WARNED COMMANDER.") # seems a bit much, u think?
-        #     await asyncio.sleep(1)
-        # STOPNUKE = False
-    
-    @stopnuke.error
-    async def stopnuke_error(self, ctx, error):
-        ctx.__slots__ = True
-        from src.discord.globals import BOT_PREFIX
-        print(f"{BOT_PREFIX}nuke error handler: {error}")
-        if isinstance(error, discord.ext.commands.MissingAnyRole):
-            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR STOPPING NUKE.")
+
         ctx.__slots__ = False
 
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    
+
     # overriding check function
     async def cog_check(self, ctx):
         return is_staff()
@@ -247,13 +235,13 @@ class StaffCommands(commands.Cog):
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
         super().__init__(bot)
-    
+
     @discord.app.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Kicks user from the server."
     )
-    async def kick(self, 
-        ctx, 
+    async def kick(self,
+        ctx,
         member: Option(discord.Member, "The user to kick from the server."),
         reason: Option(str, "The reason to kick the member for.")
     ):
@@ -280,20 +268,20 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
         # Test
         guild = ctx.author.guild
-        if member not in guild.members: 
+        if member not in guild.members:
             # User was successfully kicked
             await ctx.interaction.edit_original_message(content = "The user was successfully kicked.", embed = None, view = None)
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully kicked because of an error. They remain in the server.", embed = None, view = None)
-    
+
     # Need to find a way to share _mute() between StaffEssential and MemberCommands
-   
+
     @discord.app.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unmutes a user immediately."
     )
     async def unmute(self,
-        ctx, 
+        ctx,
         member: Option(discord.Member, "The user to unmute.")
     ):
         """Unmutes a user."""
@@ -323,13 +311,13 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             await ctx.interaction.edit_original_message(content = "The user was succesfully unmuted.", embed = None, view = None)
         else:
             await ctx.interaction.edit_original_message(content = "The user was not unmuted because of an error. They remain muted. Please contact a bot developer about this issue.", embed = None, view = None)
-        
+
     @discord.app.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Bans a user from the server."
     )
     async def ban(self,
-        ctx, 
+        ctx,
         member: Option(discord.Member, "The user to ban."),
         reason: Option(str, "The reason to ban the user for."),
         ban_length: Option(str, "How long to ban the user for.", choices = [
@@ -362,9 +350,9 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         }
         time_statement = None
         if ban_length == "Indefinitely":
-            time_statement = "The user will never be automatically unbanned."
+            time_statement = f"{member.mention} will never be automatically unbanned."
         else:
-            time_statement = f"The user will be banned until {discord.utils.format_dt(times[ban_length], 'F')}."
+            time_statement = f"{member.mention} will be banned until {discord.utils.format_dt(times[ban_length], 'F')}."
 
         original_shown_embed = discord.Embed(
             title = "Ban Confirmation",
@@ -391,10 +379,10 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
         if ban_length != "Indefinitely":
             CRON_LIST.append({"date": times[ban_length], "do": f"unban {member.id}"})
-    
+
         # Test
         guild = ctx.author.guild
-        if member not in guild.members: 
+        if member not in guild.members:
             # User was successfully banned
             await ctx.interaction.edit_original_message(content = "The user was successfully banned.", embed = None, view = None)
         else:
@@ -405,7 +393,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         description = "Staff command. Mutes a user."
     )
     async def mute(self,
-        ctx, 
+        ctx,
         member: Option(discord.Member, "The user to mute."),
         reason: Option(str, "The reason to mute the user."),
         mute_length: Option(str, "How long to mute the user for.", choices = [
@@ -424,7 +412,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     ):
         """
         Mutes a user.
-    
+
         :param user: User to be muted.
         :type user: discord.Member
         :param *args: The time to mute the user for.
@@ -475,20 +463,20 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
         if mute_length != "Indefinitely":
             CRON_LIST.append({"date": times[mute_length], "do": f"unmute {member.id}"})
-    
+
         # Test
-        if role in member.roles: 
+        if role in member.roles:
             # User was successfully muted
             await ctx.interaction.edit_original_message(content = "The user was successfully muted.", embed = None, view = None)
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
-        
+
     @discord.app.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Enables slowmode in the current channel, or an alternate channel."
     )
     async def slowmode(self,
-        ctx, 
+        ctx,
         mode: Option(str, "How to change the slowmode in the channel.", choices = ["set", "remove"]),
         delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
         channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
@@ -504,7 +492,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
         super().__init__(bot)
-    
+
     @discord.app.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Opens a voice channel clone of a channel."
@@ -540,7 +528,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                     # Let's move one state to the next category
                     new_cat = filter(lambda x: x.name == "states", server.categories)
                     new_cat = list(new_cat)
-                    if len(new_cat) < 2: 
+                    if len(new_cat) < 2:
                         return await ctx.respond("Could not find alternate states channel to move overflowed channels to.")
                     else:
                         # Success, we found the other category
@@ -569,7 +557,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                     # Let's move one state to the next category
                     new_cat = filter(lambda x: x.name == "states", server.categories)
                     new_cat = list(new_cat)
-                    if len(new_cat) < 2: 
+                    if len(new_cat) < 2:
                         return await ctx.respond("Could not find alternate states channel to move overflowed channels to.")
                     else:
                         # Success, we found the other category
@@ -595,21 +583,30 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 return await ctx.respond("Closed the voice channel.")
         else:
             return await ctx.respond("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
-    
-    @commands.command(aliases=["ufi"])
-    async def userfromid(self, ctx, iden:int):
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Finds a user by their ID."
+    )
+    async def userfromid(self,
+        ctx,
+        iden: Option(str, "The ID to lookup.")
+    ):
         """Mentions a user with the given ID."""
-        user = bot.get_user(iden)
-        await ctx.send(user.mention)
-    
-    @commands.command()
+        user = self.bot.get_user(int(iden))
+        await ctx.respond(user.mention, ephemeral = True)
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Locks a channel, preventing members from sending messages."
+    )
     async def lock(self, ctx):
         """Locks a channel to Member access."""
-        member = ctx.message.author
-        channel = ctx.message.channel
+        member = ctx.author
+        channel = ctx.channel
 
         if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-            return await ctx.send("This command is not suitable for this channel because of its category.")
+            return await ctx.respond("This command is not suitable for this channel because of its category.")
 
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
         if (channel.category.name == CATEGORY_STATES):
@@ -625,27 +622,30 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(admin_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(bot_role, add_reactions=True, send_messages=True, read_messages=True)
-        await ctx.send("Locked the channel to Member access.")
-    
-    @commands.command()
+        await ctx.respond("Locked the channel to Member access.")
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Unlocks a channel, allowing members to speak after the channel was originally locked."
+    )
     async def unlock(self, ctx):
         """Unlocks a channel to Member access."""
-        member = ctx.message.author
-        channel = ctx.message.channel
-    
+        member = ctx.author
+        channel = ctx.channel
+
         if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-            return await ctx.send("This command is not suitable for this channel because of its category.")
-    
+            return await ctx.respond("This command is not suitable for this channel because of its category.")
+
         if (channel.category.name == CATEGORY_SO or channel.category.name == CATEGORY_GENERAL):
-            await ctx.send("Synced permissions with channel category.")
+            await ctx.respond("Synced permissions with channel category.")
             return await channel.edit(sync_permissions=True)
-    
+
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
         if (channel.category.name != CATEGORY_STATES):
             await ctx.channel.set_permissions(member_role, add_reactions=True, send_messages=True, read_messages=True)
         else:
             await ctx.channel.set_permissions(member_role, add_reactions=True, send_messages=True)
-    
+
         wiki_role = discord.utils.get(member.guild.roles, name=ROLE_WM)
         gm_role = discord.utils.get(member.guild.roles, name=ROLE_GM)
         aRole = discord.utils.get(member.guild.roles, name=ROLE_AD)
@@ -654,19 +654,22 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
-        await ctx.send("Unlocked the channel to Member access. Please check if permissions need to be synced.")
-    
-    @commands.command()
+        await ctx.respond("Unlocked the channel to Member access. Please check if permissions need to be synced.")
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Runs Pi-Bot's Most Edits Table wiki functionality."
+    )
     async def met(self, ctx):
         """Runs Pi-Bot's Most Edits Table"""
-        msg1 = await ctx.send("Attemping to run the Most Edits Table.")
+        msg1 = await ctx.respond("Attemping to run the Most Edits Table.")
         res = await run_table()
         print(res)
         names = [v['name'] for v in res]
         data = [v['increase'] for v in res]
         names = names[:10]
         data = data[:10]
-    
+
         fig = plt.figure()
         plt.bar(names, data, color="#2E66B6")
         plt.xlabel("Usernames")
@@ -680,7 +683,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         msg2 = await ctx.send("Generating graph...")
         await asyncio.sleep(3)
         await msg2.delete()
-    
+
         file = discord.File("met.png", filename="met.png")
         embed = assemble_embed(
             title="**Top wiki editors for the past week!**",
@@ -693,7 +696,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             imageUrl="attachment://met.png",
         )
         await ctx.send(file=file, embed=embed)
-    
+
     @commands.command()
     async def prepembed(self, ctx, channel:discord.TextChannel, *, jsonInput):
         """Helps to create an embed to be sent to a channel."""
@@ -730,8 +733,11 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             imageUrl=imageUrl
         )
         await channel.send(embed=embed)
-    
-    @commands.command()
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Archives a tournament channel, preventing members from sending messages."
+    )
     async def archive(self, ctx):
         tournament = [t for t in TOURNAMENT_INFO if t[1] == ctx.channel.name]
         bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
@@ -744,7 +750,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         all_tourney_role = discord.utils.get(ctx.guild.roles, name = ROLE_AT)
         embed = assemble_embed(
             title = 'This channel is now archived.',
-            desc = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' + 
+            desc = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' +
             f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {ctx.channel.mention}. This channel is now read-only.\n\n' +
             f'If you would like to no longer view this channel, you are welcome to type `!tournament {tournament_name}` into {bot_spam}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
             webcolor='red'
@@ -752,21 +758,22 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
         await ctx.channel.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
         await ctx.channel.edit(category = archive_cat, position = 1000)
-        await ctx.channel.send(embed = embed)
+        await ctx.channel.respond(embed = embed)
         await ctx.message.delete()
-    
-    # cant fully test this command due to lack of access
-    @commands.command()
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Refreshes data from the bot's database."
+    )
     async def refresh(self, ctx):
         """Refreshes data from the sheet."""
         await update_tournament_list(ctx.bot)
         res = await refresh_algorithm()
         if res == True:
-            await ctx.send("Successfully refreshed data from sheet.")
+            await ctx.respond("Successfully refreshed data from sheet.")
         else:
-            await ctx.send(":warning: Unsuccessfully refreshed data from sheet.")
-    
-    # cant fully test this command due to lack of access
+            await ctx.respond(":warning: Unsuccessfully refreshed data from sheet.")
+
     @commands.command()
     async def tla(self, ctx, iden, uid):
         global REQUESTED_TOURNAMENTS
@@ -778,8 +785,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
         await update_tournament_list(ctx.bot)
         return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
-        
-    # cant fully test this command due to lack of access
+
     @commands.command()
     async def tlr(self, ctx, iden):
         global REQUESTED_TOURNAMENTS
@@ -788,8 +794,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 REQUESTED_TOURNAMENTS.remove(t)
         await update_tournament_list(ctx.bot)
         return await ctx.send(f"Removed `#{iden}` from the tournament list.")
-            
-    
+
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
     bot.add_cog(StaffNonessential(bot))
