@@ -758,8 +758,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
         await ctx.channel.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
         await ctx.channel.edit(category = archive_cat, position = 1000)
-        await ctx.channel.respond(embed = embed)
-        await ctx.message.delete()
+        await ctx.channel.send(embed = embed)
+        await ctx.channel.respond(content = "The channel is now archived, and members can no longer speak in the channel.", ephemeral = True)
 
     @discord.app.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
