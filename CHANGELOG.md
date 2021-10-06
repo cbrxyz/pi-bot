@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.0 - 
+### Added
+* New Discord UI interfaces for several commands (closes [#370](https://github.com/cbrxyz/pi-bot/issues/370))
+* `/ban` and `/mute` now suggest ban/mute lengths, rather than asking the moderator for their own suggested length
+
+### Changed
+* The main library is now [pycord](https://github.com/Pycord-Development/pycord).
+* bot.py was split into separate files/cogs. (closes [#42](https://github.com/cbrxyz/pi-bot/issues/42))
+* Some dependencies were updated (numpy).
+* The default Python runtime was updated to 3.9.7.
+
+### Removed
+* The exalt/unexalt commands were removed.
+* The getVariable command was removed.
+* The nukeuntil command was temporarily removed.
+
+### Fixed
+* `/archive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
+
 ## 4.5.19 - 2020-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))
 
