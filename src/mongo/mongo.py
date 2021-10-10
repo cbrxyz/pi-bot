@@ -1,7 +1,7 @@
 import os
 import asyncio
 import motor.motor_asyncio # MongoDB AsyncIO driver
-import rich
+from bson.objectid import ObjectId
 
 from dotenv import load_dotenv
 
@@ -28,6 +28,11 @@ async def get_invitationals():
 
 async def get_censor():
     return await get_entire_collection("data", "censor", return_one = True)
+
+async def update(db_name, collection_name, doc_id, update_dict):
+    global client
+    collection = client[db_name][collection_name]
+    await collection.update_one({'_id': doc_id}, update_dict)
 
 event_loop = asyncio.get_event_loop()
 # asyncio.ensure_future(setup(), loop = event_loop)

@@ -1,7 +1,7 @@
 import discord
 from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
 from embed import assemble_embed
-from src.sheets.censor import get_censor
+from src.mongo.mongo import get_censor
 from src.sheets.events import get_events
 from src.sheets.sheets import get_tags
 
