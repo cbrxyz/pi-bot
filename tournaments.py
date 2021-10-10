@@ -1,11 +1,13 @@
 import discord
 from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT
 import datetime
-from src.sheets.tournaments import get_tournament_channels
+from src.mongo.mongo import get_invitationals 
 from src.discord.utils import auto_report
 
 async def update_tournament_list(bot):
-    tl = await get_tournament_channels()
+    tl = await get_invitationals()
+    print(tl)
+    return
     tl.sort(key=lambda x: x[0])
     global TOURNAMENT_INFO
     global REQUESTED_TOURNAMENTS

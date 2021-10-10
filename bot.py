@@ -11,7 +11,7 @@ from discord import channel
 from discord.ext import commands
 
 from src.discord.utils import auto_report
-from src.sheets.censor import get_censor
+from src.mongo.mongo import get_censor
 from embed import assemble_embed
 from commands import get_list
 from commanderrors import CommandNotAllowedInChannel

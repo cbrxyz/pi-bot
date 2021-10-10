@@ -24,7 +24,7 @@ class CronTasks(commands.Cog):
             print(e)
     
         try:
-            await update_tournament_list(bot)
+            await update_tournament_list(self.bot)
         except Exception as e:
             print("Error in starting function with updating tournament list:")
             print(e)
