@@ -19,6 +19,7 @@ from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, R
 
 from src.discord.utils import harvest_id, refresh_algorithm
 from src.wiki.mosteditstable import run_table
+from src.mongo.mongo import get_cron, remove_doc
 
 from src.discord.mute import _mute
 import matplotlib.pyplot as plt
@@ -183,7 +184,7 @@ class LauncherCommands(commands.Cog):
 
         # Let user know messages have been deleted
         # Waiting to implement until later
-        # 
+        #
         # confirm_embed = discord.Embed(
         #     title = "NUKE COMMAND PANEL",
         #     color = discord.Color.brand_green(),
@@ -231,6 +232,62 @@ class StaffCommands(commands.Cog):
     # overriding check function
     async def cog_check(self, ctx):
         return is_staff()
+
+class CronConfirm(discord.ui.View):
+
+    def __init__(self, id):
+        super().__init__()
+        self.id = id
+
+    @discord.ui.button(label = "Remove", style = discord.ButtonStyle.danger)
+    async def remove_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await remove_doc("data", "cron", self.id)
+        await interaction.response.edit_message(content = "Awesome! I successfully removed the action from the CRON list.", view = None)
+
+    @discord.ui.button(label = "Complete Now", style = discord.ButtonStyle.grey)
+    async def complete_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        # TODO Actually implement this
+        await interaction.response.edit_message(content = "Okay. I {insert task here}.")
+
+class CronSelect(discord.ui.Select):
+
+    def __init__(self, docs):
+        options = []
+        for doc in docs:
+            timeframe = (doc['time'] - datetime.datetime.utcnow()).days
+            if abs(timeframe) < 1:
+                timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).total_seconds() // 3600} hours"
+            else:
+                timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).days} days"
+            option = discord.SelectOption(
+                label = f"{doc['type'].title()} {doc['tag']}",
+                description = f"Occurs in {timeframe}."
+            )
+            options.append(option)
+
+        super().__init__(
+            placeholder = "View potential actions to modify...",
+            min_values = 1,
+            max_values = 1,
+            options = options
+        )
+        self.docs = docs
+
+    async def callback(self, interaction: discord.Interaction):
+        relevant_doc = [d for d in self.docs if f"{d['type'].title()} {d['tag']}" == self.values[0]]
+        if len(relevant_doc) == 1:
+            relevant_doc = relevant_doc[0]
+            view = CronConfirm(relevant_doc["_id"])
+            await interaction.response.edit_message(content = f"Okay! What would you like me to do with this CRON item?\n> {self.values[0]}", view = view)
+        else:
+            pass
+
+class CronView(discord.ui.View):
+
+    def __init__(self, docs):
+        super().__init__()
+
+        self.add_item(CronSelect(docs))
 
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
@@ -488,6 +545,50 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         elif mode == "set":
             await true_channel.edit(slowmode_delay = delay)
             await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
+
+    @discord.app.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Allows staff to manipulate the CRON list."
+    )
+    async def cron(self, ctx):
+        """
+        Allows staff to manipulate the CRON list.
+
+        Steps:
+            1. Parse the cron list.
+            2. Create relevant action rows.
+            3. Perform steps as staff request.
+        """
+        cron_list = await get_cron()
+
+        # Parse through list
+        # messages = []
+        # for doc in cron_list:
+        #     print(doc)
+        #     user = doc["user"]
+        #     tag = doc["tag"]
+        #     message = f"<@{user}> ({tag}) will be "
+        #     if doc["type"] == "UNBAN":
+        #         message += "unbanned "
+        #     elif doc["type"] == "UNMUTE":
+        #         message += "unmuted "
+
+        #     time = doc["time"]
+        #     print(time)
+        #     message += f"at {discord.utils.format_dt(time, 'F')}."
+        #     messages.append(message)
+
+        # desc = "\n".join([f"{m}" for m in messages])
+
+        # # TODO Limit the amount of listings that can appear at once
+
+        # cron_embed = discord.Embed(
+        #     title = "Current CRON List",
+        #     color = discord.Color.blurple(),
+        #     description = desc
+        # )
+
+        await ctx.respond("The following items are currently in the CRON list.", view = CronView(cron_list), ephemeral = True)
 
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):

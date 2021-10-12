@@ -26,6 +26,9 @@ async def get_entire_collection(db_name, collection_name, return_one = False):
 async def get_invitationals():
     return await get_entire_collection("data", "invitationals")
 
+async def get_cron():
+    return await get_entire_collection("data", "cron")
+
 async def get_censor():
     return await get_entire_collection("data", "censor", return_one = True)
 
@@ -33,6 +36,11 @@ async def update(db_name, collection_name, doc_id, update_dict):
     global client
     collection = client[db_name][collection_name]
     await collection.update_one({'_id': doc_id}, update_dict)
+
+async def remove_doc(db_name, collection_name, doc_id):
+    global client
+    collection = client[db_name][collection_name]
+    await collection.delete_one({'_id': doc_id})
 
 event_loop = asyncio.get_event_loop()
 # asyncio.ensure_future(setup(), loop = event_loop)
