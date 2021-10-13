@@ -235,23 +235,53 @@ class StaffCommands(commands.Cog):
 
 class CronConfirm(discord.ui.View):
 
-    def __init__(self, id):
+    def __init__(self, doc, bot):
         super().__init__()
-        self.id = id
+        self.doc = doc
+        self.bot = bot
 
     @discord.ui.button(label = "Remove", style = discord.ButtonStyle.danger)
     async def remove_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await remove_doc("data", "cron", self.id)
+        await remove_doc("data", "cron", self.doc["_id"])
         await interaction.response.edit_message(content = "Awesome! I successfully removed the action from the CRON list.", view = None)
 
-    @discord.ui.button(label = "Complete Now", style = discord.ButtonStyle.grey)
+    @discord.ui.button(label = "Complete Now", style = discord.ButtonStyle.green)
     async def complete_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        # TODO Actually implement this
-        await interaction.response.edit_message(content = "Okay. I {insert task here}.")
+        server = self.bot.get_guild(SERVER_ID)
+        if self.doc["type"] == "UNBAN":
+            # User needs to be unbanned
+            try:
+                await server.unban(self.doc["user"])
+            except:
+                pass
+            await interaction.response.edit_message(content = "Attempted to unban the user. Checking to see if operation was succesful...", view = None)
+            bans = await server.bans()
+            for ban in bans:
+                if ban.user.id == self.doc["user"]:
+                    return await interaction.edit_original_message(content = "Uh oh! The operation was not succesful - the user remains banned.")
+            await remove_doc("data", "cron", self.doc["_id"])
+            return await interaction.edit_original_message(content = "The operation was verified - the user can now rejoin the server.")
+        elif self.doc["type"] == "UNMUTE":
+            # User needs to be unmuted.
+            member = server.get_member(self.doc["user"])
+            if member == None:
+                return await interaction.response.edit_message(content = "The user is no longer in the server, so I was not able to unmute them. The task remains in the CRON list in case the user rejoins the server.", view = None)
+            else:
+                role = discord.utils.get(server.roles, name=ROLE_MUTED)
+                try:
+                    await member.remove_roles(role)
+                except:
+                    pass
+                await interaction.response.edit_message(content = "Attempted to unmute the user. Checking to see if the operation was succesful...", view = None)
+                if role not in member.roles:
+                    await remove_doc("data", "cron", self.doc["_id"])
+                    return await interaction.edit_original_message(content = "The operation was verified - the user can now speak in the server again.")
+                else:
+                    return await interaction.edit_original_message(content = "Uh oh! The operation was not successful - the user is still muted.")
 
 class CronSelect(discord.ui.Select):
 
-    def __init__(self, docs):
+    def __init__(self, docs, bot):
         options = []
         for doc in docs:
             timeframe = (doc['time'] - datetime.datetime.utcnow()).days
@@ -272,22 +302,23 @@ class CronSelect(discord.ui.Select):
             options = options
         )
         self.docs = docs
+        self.bot = bot
 
     async def callback(self, interaction: discord.Interaction):
         relevant_doc = [d for d in self.docs if f"{d['type'].title()} {d['tag']}" == self.values[0]]
         if len(relevant_doc) == 1:
             relevant_doc = relevant_doc[0]
-            view = CronConfirm(relevant_doc["_id"])
+            view = CronConfirm(relevant_doc, self.bot)
             await interaction.response.edit_message(content = f"Okay! What would you like me to do with this CRON item?\n> {self.values[0]}", view = view)
         else:
             pass
 
 class CronView(discord.ui.View):
 
-    def __init__(self, docs):
+    def __init__(self, docs, bot):
         super().__init__()
 
-        self.add_item(CronSelect(docs))
+        self.add_item(CronSelect(docs, bot))
 
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
@@ -588,7 +619,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         #     description = desc
         # )
 
-        await ctx.respond("The following items are currently in the CRON list.", view = CronView(cron_list), ephemeral = True)
+        await ctx.respond("The following items are currently in the CRON list.", view = CronView(cron_list, self.bot), ephemeral = True)
 
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
