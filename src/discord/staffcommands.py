@@ -320,6 +320,10 @@ class CronView(discord.ui.View):
 
         self.add_item(CronSelect(docs, bot))
 
+    @discord.ui.button(label = "Add CRON task", style = discord.ButtonStyle.green)
+    async def add(ctx, button: discord.ui.Button, interaction: discord.Interaction):
+        pass
+
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
         super().__init__(bot)
