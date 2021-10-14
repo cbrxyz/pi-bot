@@ -1,4 +1,5 @@
 import os
+import re
 import discord
 import datetime
 import asyncio
@@ -283,16 +284,26 @@ class CronSelect(discord.ui.Select):
 
     def __init__(self, docs, bot):
         options = []
+        docs.sort(key = lambda d: d['time'])
+        print([d['time'] for d in docs])
+        counts = {}
         for doc in docs:
             timeframe = (doc['time'] - datetime.datetime.utcnow()).days
             if abs(timeframe) < 1:
                 timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).total_seconds() // 3600} hours"
             else:
                 timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).days} days"
+            tag_name = f"{doc['type'].title()} {doc['tag']}"
+            if tag_name in counts:
+                counts[tag_name] = counts[tag_name] + 1
+            else:
+                counts[tag_name] = 1
+            if counts[tag_name] > 1:
+                tag_name = f"{tag_name} (#{counts[tag_name]})"
             option = discord.SelectOption(
-                label = f"{doc['type'].title()} {doc['tag']}",
+                label = tag_name,
                 description = f"Occurs in {timeframe}."
-            )
+            ) 
             options.append(option)
 
         super().__init__(
@@ -305,13 +316,20 @@ class CronSelect(discord.ui.Select):
         self.bot = bot
 
     async def callback(self, interaction: discord.Interaction):
-        relevant_doc = [d for d in self.docs if f"{d['type'].title()} {d['tag']}" == self.values[0]]
+        value = self.values[0]
+        num = re.findall(r'\(#(\d*)', value)
+        value = re.sub(r' \(#\d*\)', '', value)
+        relevant_doc = [d for d in self.docs if f"{d['type'].title()} {d['tag']}" == value]
         if len(relevant_doc) == 1:
             relevant_doc = relevant_doc[0]
-            view = CronConfirm(relevant_doc, self.bot)
-            await interaction.response.edit_message(content = f"Okay! What would you like me to do with this CRON item?\n> {self.values[0]}", view = view)
         else:
-            pass
+            if not len(num):
+                relevant_doc = relevant_doc[0]
+            else:
+                num = num[0]
+                relevant_doc = relevant_doc[int(num) - 1]
+        view = CronConfirm(relevant_doc, self.bot)
+        await interaction.response.edit_message(content = f"Okay! What would you like me to do with this CRON item?\n> {self.values[0]}", view = view, embed = None)
 
 class CronView(discord.ui.View):
 
@@ -319,10 +337,6 @@ class CronView(discord.ui.View):
         super().__init__()
 
         self.add_item(CronSelect(docs, bot))
-
-    @discord.ui.button(label = "Add CRON task", style = discord.ButtonStyle.green)
-    async def add(ctx, button: discord.ui.Button, interaction: discord.Interaction):
-        pass
 
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
@@ -617,13 +631,19 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
         # # TODO Limit the amount of listings that can appear at once
 
-        # cron_embed = discord.Embed(
-        #     title = "Current CRON List",
-        #     color = discord.Color.blurple(),
-        #     description = desc
-        # )
+        cron_embed = discord.Embed(
+            title = "Managing the CRON list",
+            color = discord.Color.blurple(),
+            description = f"""
+            Hello! Managing the CRON list gives you the power to change when or how Pi-Bot automatically executes commands.
 
-        await ctx.respond("The following items are currently in the CRON list.", view = CronView(cron_list, self.bot), ephemeral = True)
+            **Completing a task:** Do you want to instantly unmute a user who is scheduled to be unmuted later? Sure, select the CRON entry from the dropdown, and then select *"Complete Now"*!
+
+            **Removing a task:** Want to completely remove a task so Pi-Bot will never execute it? No worries, select the CRON entry from the dropdown and select *"Remove"*!
+            """
+        )
+
+        await ctx.respond("See information below for how to manage the CRON list.", view = CronView(cron_list, self.bot), ephemeral = True, embed = cron_embed)
 
 class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
