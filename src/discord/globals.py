@@ -53,7 +53,7 @@ ROLE_QUARANTINE = "Quarantine"
 ROLE_ALL_STATES = "All States"
 
 # Channels
-CHANNEL_TOURNAMENTS = "tournaments"
+CHANNEL_TOURNAMENTS = "invitationals"
 CHANNEL_BOTSPAM = "bot-spam"
 CHANNEL_SUPPORT = "site-support"
 CHANNEL_GAMES = "games"
@@ -68,7 +68,7 @@ CHANNEL_JOIN = "join-logs"
 CHANNEL_UNSELFMUTE = "un-self-mute"
 
 # Categories
-CATEGORY_TOURNAMENTS = "tournaments"
+CATEGORY_TOURNAMENTS = "invitationals"
 CATEGORY_SO = "Science Olympiad"
 CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"

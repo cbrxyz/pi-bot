@@ -16,7 +16,7 @@ from commandchecks import is_staff
 from commanderrors import SelfMuteCommandStaffInvoke
 
 from typing import Type
-from tournaments import update_tournament_list
+from src.discord.tournaments import update_tournament_list
 from src.discord.utils import auto_report
 from info import get_about
 from src.wiki.wiki import implement_command
@@ -27,11 +27,11 @@ class MemberCommands(commands.Cog, name='Member'):
         self.bot = bot
         self.aiowikip = aioify(obj=wikip)
         print("Member commands loaded")
-    
+
     @commands.Cog.listener()
     async def on_message(self, message):
         pass
-    
+
     @commands.command(aliases=["man"])
     async def help(self, ctx, command:str=None):
         """Allows a user to request help for a command."""
@@ -47,7 +47,7 @@ class MemberCommands(commands.Cog, name='Member'):
             return await ctx.send(embed=embed)
         hlp = await get_help(ctx, command)
         await ctx.send(embed=hlp)
-    
+
     @commands.command()
     async def pronouns(self, ctx, *args):
         """Assigns or removes pronoun roles from a user."""
@@ -91,7 +91,7 @@ class MemberCommands(commands.Cog, name='Member'):
                 "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
                 "To remove pronouns, use `!pronouns remove`.\n" +
                 "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
-        
+
     # Never understood why this exists when there's the built in /me
     @commands.command()
     async def me(self, ctx, *args):
@@ -101,7 +101,7 @@ class MemberCommands(commands.Cog, name='Member'):
             return await ctx.send(f"*{ctx.message.author.mention} " + "is cool!*")
         else:
             await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
-    
+
     @commands.command()
     async def profile(self, ctx, name:str=False):
         if name == False:
@@ -121,7 +121,7 @@ class MemberCommands(commands.Cog, name='Member'):
             hexcolor="#2E66B6"
         )
         await ctx.send(embed=embed)
-    
+
     @commands.command()
     async def latex(self, ctx, *args):
         new_args = " ".join(args)
@@ -134,7 +134,7 @@ class MemberCommands(commands.Cog, name='Member'):
     async def count(self, ctx):
         guild = ctx.message.author.guild
         await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
-    
+
     @commands.command()
     async def resultstemplate(self, ctx, url):
         if url.find("scilympiad.com") == -1:
@@ -145,7 +145,7 @@ class MemberCommands(commands.Cog, name='Member'):
             t.write(res)
         file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
         await ctx.send(file=file)
-        
+
     @commands.command()
     async def school(self, ctx, title, state):
         lists = await get_school_listing(title, state)
@@ -161,7 +161,7 @@ class MemberCommands(commands.Cog, name='Member'):
             hexcolor="#2E66B6"
         )
         await ctx.send(embed=embed)
-    
+
     @commands.command()
     async def alumni(self, ctx):
         """Removes or adds the alumni role from a user."""
@@ -212,7 +212,7 @@ class MemberCommands(commands.Cog, name='Member'):
         await member.remove_roles(div_a_role, div_b_role, div_c_role, alumni_role)
         await member.add_roles(role)
         return True
-        
+
     @commands.command()
     async def list(self, ctx, cmd:str=False):
         """Lists all of the commands a user may access."""
@@ -240,7 +240,7 @@ class MemberCommands(commands.Cog, name='Member'):
                 desc="\n".join([f"`{name}`" for name in events_list])
             )
             await ctx.send(embed=list)
-    
+
     @commands.command()
     async def games(self, ctx):
         """Removes or adds someone to the games channel."""
@@ -255,7 +255,7 @@ class MemberCommands(commands.Cog, name='Member'):
             await member.add_roles(role)
             await ctx.send(f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:")
             await games_channel.send(f"Please welcome {member.mention} to the party!!")
-            
+
     @commands.command(aliases=["state"])
     async def states(self, ctx, *args):
         """Assigns someone with specific states."""
@@ -347,32 +347,32 @@ class MemberCommands(commands.Cog, name='Member'):
         else:
             state_res = "Added states " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", and removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
         await ctx.send(state_res)
-    
+
     def is_not_staff(exception: Type[commands.CommandError], message: str):
         async def predicate(ctx):
             if not is_staff():
                 return True
             raise exception(message)
         return commands.check(predicate)
-    
+
     @commands.command()
     @is_not_staff(SelfMuteCommandStaffInvoke, "A staff member attempted to invoke selfmute.")
     async def selfmute(self, ctx, *args):
         """
         Self mutes the user that invokes the command.
-    
+
         :param *args: The time to mute the user for.
         :type *args: str
         """
         user = ctx.message.author
-        
+
         time = " ".join(args)
         await _mute(ctx, user, time, self=True)
-        
+
     async def cog_command_error(self, ctx, error):
         if isinstance(error, SelfMuteCommandStaffInvoke):
             return await ctx.send("Staff members can't self mute.")
-    
+
     @commands.command(aliases=["tc", "tourney", "tournaments"])
     async def tournament(self, ctx, *args):
         member = ctx.message.author
@@ -429,7 +429,7 @@ class MemberCommands(commands.Cog, name='Member'):
                     return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
                 await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
                 await update_tournament_list(ctx.bot)
-    
+
     @commands.command(aliases=["what"])
     async def about(self, ctx):
         """Prints information about the bot."""
@@ -459,7 +459,7 @@ class MemberCommands(commands.Cog, name='Member'):
     async def rand(self, ctx, a=1, b=10):
         r = random.randrange(a, b + 1)
         await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
-        
+
     @commands.command()
     async def rule(self, ctx, num):
         """Gets a specified rule."""
@@ -473,7 +473,7 @@ class MemberCommands(commands.Cog, name='Member'):
     async def coach(self, ctx):
         """Gives an account the coach role."""
         await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
-        
+
     @commands.command()
     async def info(self, ctx):
         """Gets information about the Discord server."""
@@ -592,7 +592,7 @@ class MemberCommands(commands.Cog, name='Member'):
             fields=fields
         )
         await ctx.send(embed=embed)
-    
+
     @commands.command(aliases=["r"])
     async def report(self, ctx, *args):
         """Creates a report that is sent to staff members."""
@@ -618,7 +618,7 @@ class MemberCommands(commands.Cog, name='Member'):
         await message.add_reaction("\U00002705")
         await message.add_reaction("\U0000274C")
         await ctx.send("Thanks, report created.")
-    
+
     # TODO: NOT TESTED
     @commands.command()
     async def wiki(self, ctx, command:str=False, *args):
@@ -701,7 +701,7 @@ class MemberCommands(commands.Cog, name='Member'):
                 return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
             except wikip.exceptions.DisambiguationError as e:
                 return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
-                
+
     @commands.command(aliases=["event"])
     async def events(self, ctx, *args):
         """Adds or removes event roles from a user."""
@@ -771,7 +771,7 @@ class MemberCommands(commands.Cog, name='Member'):
         else:
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         await ctx.send(event_res)
-        
+
     @commands.command(aliases=["tags", "t"])
     async def tag(self, ctx, name):
         member = ctx.message.author
@@ -788,7 +788,7 @@ class MemberCommands(commands.Cog, name='Member'):
                 else:
                     return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
         return await ctx.send("Tag not found.")
-        
+
     @commands.command()
     async def graphpage(self, ctx, title, temp_format, table_index, div, place_col=0):
         temp = temp_format.lower() in ["y", "yes", "true"]
@@ -832,7 +832,7 @@ class MemberCommands(commands.Cog, name='Member'):
             pic = discord.File(f)
             await ctx.send(file=pic)
         return await ctx.send("Attempted to graph.")
-    
+
 async def _graph(points, graph_title, title):
     plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
     z = np.polyfit(range(1, len(points) + 1), points, 1)
@@ -844,6 +844,6 @@ async def _graph(points, graph_title, title):
     plt.savefig(title)
     plt.close()
     await asyncio.sleep(2)
-    
+
 def setup(bot):
     bot.add_cog(MemberCommands(bot))

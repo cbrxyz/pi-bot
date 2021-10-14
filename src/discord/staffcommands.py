@@ -28,7 +28,7 @@ from embed import assemble_embed
 
 from typing import Type
 
-from tournaments import update_tournament_list
+from src.discord.tournaments import update_tournament_list
 
 class Confirm(discord.ui.View):
     def __init__(self, author, cancel_response):
