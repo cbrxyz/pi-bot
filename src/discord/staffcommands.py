@@ -287,7 +287,7 @@ class CronSelect(discord.ui.Select):
         docs.sort(key = lambda d: d['time'])
         print([d['time'] for d in docs])
         counts = {}
-        for doc in docs:
+        for doc in docs[:20]:
             timeframe = (doc['time'] - datetime.datetime.utcnow()).days
             if abs(timeframe) < 1:
                 timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).total_seconds() // 3600} hours"
@@ -609,27 +609,6 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             3. Perform steps as staff request.
         """
         cron_list = await get_cron()
-
-        # Parse through list
-        # messages = []
-        # for doc in cron_list:
-        #     print(doc)
-        #     user = doc["user"]
-        #     tag = doc["tag"]
-        #     message = f"<@{user}> ({tag}) will be "
-        #     if doc["type"] == "UNBAN":
-        #         message += "unbanned "
-        #     elif doc["type"] == "UNMUTE":
-        #         message += "unmuted "
-
-        #     time = doc["time"]
-        #     print(time)
-        #     message += f"at {discord.utils.format_dt(time, 'F')}."
-        #     messages.append(message)
-
-        # desc = "\n".join([f"{m}" for m in messages])
-
-        # # TODO Limit the amount of listings that can appear at once
 
         cron_embed = discord.Embed(
             title = "Managing the CRON list",
