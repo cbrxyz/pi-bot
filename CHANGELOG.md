@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 5.0.0 - 
 ### Added
 * New Discord UI interfaces for several commands (closes [#370](https://github.com/cbrxyz/pi-bot/issues/370))
+* MongoDB is now where Pi-Bot stores his information (closes [#369](https://github.com/cbrxyz/pi-bot/issues/369))
+* `/cron` allows staff to edit/remove tasks from Pi-Bot's CRON system (closes [#379](https://github.com/cbrxyz/pi-bot/issues/379))
 * `/ban` and `/mute` now suggest ban/mute lengths, rather than asking the moderator for their own suggested length
 
 ### Changed
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The exalt/unexalt commands were removed.
 * The getVariable command was removed.
 * The nukeuntil command was temporarily removed.
+* Google Sheets is no longer used to store data.
 
 ### Fixed
 * `/archive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
