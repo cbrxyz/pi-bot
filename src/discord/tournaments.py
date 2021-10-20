@@ -7,8 +7,8 @@ from src.discord.utils import auto_report
 class Tournament:
 
     def __init__(
-        self,
-        objects
+            self,
+            objects
         ):
         self.official_name = objects.get('official_name')
         self.channel_name = objects.get('channel_name')
@@ -22,7 +22,7 @@ class Tournament:
 
 class TournamentDropdown(discord.ui.Select):
 
-    def __init__(self, month_tournaments):
+    def __init__(self, month_tournaments, bot, voting = False):
 
         final_options = []
         for tourney in month_tournaments:
@@ -41,11 +41,29 @@ class TournamentDropdown(discord.ui.Select):
             placeholder = "Choose a tournament..."
         )
 
+        self.bot = bot
+        self.voting = voting
+
+    async def callback(self, interaction: discord.Interaction):
+        member = interaction.user
+        server = member.guild
+        if not self.voting:
+            # If this dropdown isn't being used for voting
+            for value in self.values:
+                role = discord.utils.get(server.roles, name=value)
+                if role in member.roles:
+                    await member.remove_roles(role)
+                else:
+                    await member.add_roles(role)
+        else:
+            # This dropdown is being used for voting
+            pass
+
 class TournamentDropdownView(discord.ui.View):
 
-    def __init__(self, month_tournaments):
+    def __init__(self, month_tournaments, bot, voting = False):
         super().__init__(timeout = None)
-        self.add_item(TournamentDropdown(month_tournaments))
+        self.add_item(TournamentDropdown(month_tournaments, bot, voting = False))
 
 async def update_tournament_list(bot):
     tournaments = await get_invitationals()
@@ -113,9 +131,16 @@ async def update_tournament_list(bot):
         {'name': 'February', 'number': 2, 'year': 2022}
     ]
     for month in months:
-        month_tournaments = [t for t in tournaments if t.tourney_date.month == month['number'] and t.tourney_date.year == month['year']]
+        month_tournaments = [t for t in tournaments if t.tourney_date.month == month['number'] and t.tourney_date.year == month['year'] and t.status == "open"]
         if len(month_tournaments) > 0:
-            await tourney_channel.send(f"Join a channel for a tournament in **{month['name']} {month['year']}**:", view = TournamentDropdownView(month_tournaments))
+            await tourney_channel.send(f"Join a channel for a tournament in **{month['name']} {month['year']}**:", view = TournamentDropdownView(month_tournaments, bot))
         else:
             # No tournaments in the given month :(
             await tourney_channel.send(f"Sorry, there are no channels opened for tournaments in **{month['name']} {month['year']}**.")
+
+    voting_tournaments = [t for t in tournaments if t.status == "voting"]
+    await tourney_channel.send(
+        f"""Below are tournament channels that are in the **voting phase**. These tournaments have been requested by users but have not received enough support to become official channels.
+
+        If you vote for these tournament channels to become official, you will automatically be added to these channels upon their creation.
+        """, view = TournamentDropdownView(voting_tournaments, bot, voting = True))
