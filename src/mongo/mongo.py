@@ -37,6 +37,18 @@ async def update(db_name, collection_name, doc_id, update_dict):
     collection = client[db_name][collection_name]
     await collection.update_one({'_id': doc_id}, update_dict)
 
+async def update_many(db_name, collection_name, docs, update_dict):
+    global client
+    collection = client[db_name][collection_name]
+    ids = [doc.get("_id") for doc in docs]
+    await collection.update_many(
+        {"_id": {
+            "$in": ids
+            }
+        },
+        update_dict
+    )
+
 async def remove_doc(db_name, collection_name, doc_id):
     global client
     collection = client[db_name][collection_name]

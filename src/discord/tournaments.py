@@ -1,7 +1,7 @@
 import discord
-from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT
+from src.discord.globals import TOURNAMENT_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT
 import datetime
-from src.mongo.mongo import get_invitationals 
+from src.mongo.mongo import get_invitationals, update_many
 from src.discord.utils import auto_report
 
 class Tournament:
@@ -10,6 +10,8 @@ class Tournament:
             self,
             objects
         ):
+        self._properties = objects
+        self.doc_id = objects.get('_id')
         self.official_name = objects.get('official_name')
         self.channel_name = objects.get('channel_name')
         self.emoji = objects.get('emoji')
@@ -43,6 +45,7 @@ class TournamentDropdown(discord.ui.Select):
 
         self.bot = bot
         self.voting = voting
+        self.tournaments = month_tournaments
 
     async def callback(self, interaction: discord.Interaction):
         member = interaction.user
@@ -50,6 +53,7 @@ class TournamentDropdown(discord.ui.Select):
         if not self.voting:
             # If this dropdown isn't being used for voting
             for value in self.values:
+                print(value, 1)
                 role = discord.utils.get(server.roles, name=value)
                 if role in member.roles:
                     await member.remove_roles(role)
@@ -57,20 +61,42 @@ class TournamentDropdown(discord.ui.Select):
                     await member.add_roles(role)
         else:
             # This dropdown is being used for voting
-            pass
+            need_to_update = []
+            already_voted_for = []
+            for value in self.values:
+                print(value)
+                tournament = discord.utils.get(self.tournaments, official_name = value)
+                if member.id in tournament.voters:
+                    # This user has already voted for this tournament.
+                    already_voted_for.append(tournament)
+                else:
+                    # This user has not already voted for this tournament.
+                    tournament.voters.append(member.id)
+                    need_to_update.append(tournament)
+            if len(need_to_update) > 0:
+                # Some docs need to be updated
+                docs_to_update = [t._properties for t in need_to_update]
+                await update_many("data", "invitationals", docs_to_update, {"$push": {"voters": member.id}})
+            result_string = ""
+            for tourney in need_to_update:
+                result_string += f"`{tourney.official_name}` - I added your vote! This tourney now has {len(tourney.voters)} votes!\n"
+            for tourney in already_voted_for:
+                result_string += f"`{tourney.official_name}` - You already voted for this channel! This channel has {len(tourney.voters)} votes!\n"
+            result_string = result_string[:-1] # Delete last newline character
+            await interaction.response.send_message(result_string, ephemeral = True)
 
 class TournamentDropdownView(discord.ui.View):
 
     def __init__(self, month_tournaments, bot, voting = False):
         super().__init__(timeout = None)
-        self.add_item(TournamentDropdown(month_tournaments, bot, voting = False))
+        self.voting = voting
+        self.add_item(TournamentDropdown(month_tournaments, bot, voting = self.voting))
 
 async def update_tournament_list(bot):
     tournaments = await get_invitationals()
     tournaments = [Tournament(t) for t in tournaments]
     tournaments.sort(key=lambda t: t.official_name)
     global TOURNAMENT_INFO
-    global REQUESTED_TOURNAMENTS
     TOURNAMENT_INFO = tournaments
     server = bot.get_guild(SERVER_ID)
     tourney_channel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
@@ -107,10 +133,9 @@ async def update_tournament_list(bot):
             # Tournament is not yet ready to open
             # open_soon_list += (t[2] + " **" + t[0] + f"** - Opens in `{day_diff - before_days}` days.\n")
             pass
-    REQUESTED_TOURNAMENTS.sort(key=lambda x: (-x['count'], x['iden']))
 
     help_embed = discord.Embed(
-        title = ":medal: Join a Tournament Channel!",
+        title = ":first_place: Join a Tournament Channel!",
         color = discord.Color(0x2E66B6),
         description = f"""
         Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received enough support to be considered for a channel.
@@ -139,8 +164,10 @@ async def update_tournament_list(bot):
             await tourney_channel.send(f"Sorry, there are no channels opened for tournaments in **{month['name']} {month['year']}**.")
 
     voting_tournaments = [t for t in tournaments if t.status == "voting"]
-    await tourney_channel.send(
-        f"""Below are tournament channels that are in the **voting phase**. These tournaments have been requested by users but have not received enough support to become official channels.
-
-        If you vote for these tournament channels to become official, you will automatically be added to these channels upon their creation.
-        """, view = TournamentDropdownView(voting_tournaments, bot, voting = True))
+    voting_embed = discord.Embed(
+        title = ":second_place: Vote for a Tournament Channel!",
+        color = discord.Color(0x2E66B6),
+        description = "Below are tournament channels that are in the **voting phase**. These tournaments have been requested by users but have not received enough support to become official channels.\n\nIf you vote for these tournament channels to become official, you will automatically be added to these channels upon their creation."
+    )
+    await tourney_channel.send(embed = voting_embed)
+    await tourney_channel.send("Please choose from the requested tournaments below:", view = TournamentDropdownView(voting_tournaments, bot, voting = True))
