@@ -6,7 +6,7 @@ import asyncio
 from discord.errors import NoEntryPointError
 
 from discord.ext import commands
-from discord.app import Option
+from discord.commands import Option
 from commandchecks import is_staff, is_launcher
 
 import dateparser
@@ -102,7 +102,7 @@ class LauncherCommands(commands.Cog):
     async def cog_check(self, ctx):
         return await is_launcher(ctx) and self.if_launcher_in_welcome(ctx)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Confirms a user, giving them access to the server."
     )
@@ -123,7 +123,7 @@ class LauncherCommands(commands.Cog):
 
         await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Nukes a certain amount of messages."
     )
@@ -342,7 +342,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
         super().__init__(bot)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Kicks user from the server."
     )
@@ -382,7 +382,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
     # Need to find a way to share _mute() between StaffEssential and MemberCommands
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unmutes a user immediately."
     )
@@ -418,7 +418,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not unmuted because of an error. They remain muted. Please contact a bot developer about this issue.", embed = None, view = None)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Bans a user from the server."
     )
@@ -494,7 +494,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully banned because of an error. They remain in the server.", embed = None, view = None)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Mutes a user."
     )
@@ -577,7 +577,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Enables slowmode in the current channel, or an alternate channel."
     )
@@ -595,7 +595,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             await true_channel.edit(slowmode_delay = delay)
             await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Allows staff to manipulate the CRON list."
     )
@@ -628,7 +628,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     def __init__(self, bot):
         super().__init__(bot)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Opens a voice channel clone of a channel."
     )
@@ -719,7 +719,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         else:
             return await ctx.respond("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Finds a user by their ID."
     )
@@ -731,7 +731,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         user = self.bot.get_user(int(iden))
         await ctx.respond(user.mention, ephemeral = True)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Locks a channel, preventing members from sending messages."
     )
@@ -759,7 +759,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(bot_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.respond("Locked the channel to Member access.")
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unlocks a channel, allowing members to speak after the channel was originally locked."
     )
@@ -791,7 +791,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.respond("Unlocked the channel to Member access. Please check if permissions need to be synced.")
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Runs Pi-Bot's Most Edits Table wiki functionality."
     )
@@ -869,7 +869,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
         await channel.send(embed=embed)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Archives a tournament channel, preventing members from sending messages."
     )
@@ -896,7 +896,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.send(embed = embed)
         await ctx.channel.respond(content = "The channel is now archived, and members can no longer speak in the channel.", ephemeral = True)
 
-    @discord.app.slash_command(
+    @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Refreshes data from the bot's database."
     )
@@ -909,8 +909,12 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         else:
             await ctx.respond(":warning: Unsuccessfully refreshed data from sheet.")
 
-    @commands.command()
-    async def tla(self, ctx, iden, uid):
+    @discord.commands.command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        name = "invyadd",
+        description = "Adds a new invitational for voting."
+    )
+    async def invitational_add(self, ctx, iden, uid):
         global REQUESTED_TOURNAMENTS
         for t in REQUESTED_TOURNAMENTS:
             if t['iden'] == iden:
@@ -921,14 +925,34 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await update_tournament_list(ctx.bot)
         return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
 
-    @commands.command()
-    async def tlr(self, ctx, iden):
+    @discord.commands.command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        name = "invyapprove",
+        description = "Approves a invitational to be fully opened."
+    )
+    async def invitational_approve(self, ctx, iden):
         global REQUESTED_TOURNAMENTS
         for t in REQUESTED_TOURNAMENTS:
             if t['iden'] == iden:
                 REQUESTED_TOURNAMENTS.remove(t)
         await update_tournament_list(ctx.bot)
         return await ctx.send(f"Removed `#{iden}` from the tournament list.")
+
+    @discord.commands.command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        name = "invyedit",
+        description = "Edits data about an invitational channel."
+    )
+    async def invitational_edit(self, ctx):
+        pass
+
+    @discord.commands.command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        name = "invyarchive",
+        description = "Archives an invitational channel."
+    )
+    async def invitational_archive(self, ctx):
+        pass
 
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
