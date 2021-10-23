@@ -7,7 +7,6 @@ from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH
 from src.sheets.sheets import send_variables, get_variables
 
 from src.discord.tournaments import update_tournament_list
-from src.forums.forums import open_browser
 from src.wiki.stylist import prettify_templates
 from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
 
@@ -35,7 +34,6 @@ class CronTasks(commands.Cog):
             print("Error in starting function with updating tournament list:")
             print(e)
 
-        self.post_something.start()
         self.cron.start()
         self.go_stylist.start()
         self.manage_welcome.start()
@@ -47,7 +45,6 @@ class CronTasks(commands.Cog):
 
     def cog_unload(self):
         self.refresh_sheet.cancel()
-        self.post_something.cancel()
         self.cron.cancel()
         self.go_stylist.cancel()
         self.manage_welcome.cancel()
@@ -225,16 +222,6 @@ class CronTasks(commands.Cog):
         elif botStatus["type"] == "watching":
             await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
         print("Changed the bot's status.")
-
-    @tasks.loop(hours=28)
-    async def post_something(self):
-        global can_post
-        """Allows Pi-Bot to post markov-generated statements to the forums."""
-        if can_post:
-            print("Attempting to post something.")
-            await open_browser()
-        else:
-            can_post = True
 
 def setup(bot):
     bot.add_cog(CronTasks(bot))

@@ -17,10 +17,11 @@ from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY
 from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
 from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH
+from bot import listen_for_response
 
 from src.discord.utils import harvest_id, refresh_algorithm
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals
 
 from src.discord.mute import _mute
 import matplotlib.pyplot as plt
@@ -912,9 +913,30 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyadd",
-        description = "Adds a new invitational for voting."
+        description = "Staff command. Adds a new invitational for voting."
     )
-    async def invitational_add(self, ctx, iden, uid):
+    async def invitational_add(self, 
+        ctx, 
+        official_name: Option(str, "The official name of the tournament, such as MIT Invitational.", required = True),
+        channel_name: Option(str, "The name of the Discord channel that will be created, such as 'mit'", required = True),
+        tourney_date: Option(str, "The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.", required = True),
+        status: Option(str, "Determines if the new tournament channel will be sent to voting or added immediately.", choices = ["voting", "add_immediately"], required = True)
+    ):
+        new_tourney_doc = {
+            'official_name': official_name,
+            'channel_name': channel_name,
+            'tourney_date': datetime.datetime.strptime(tourney_date, '%Y-%m-%d'),
+            'aliases': [],
+            'open_days': 10,
+            'closed_days': 30,
+            'voters': [],
+            'status': "open" if status == "add_immediately" else "voting"
+        }
+        await ctx.interaction.response.defer()
+        emoji_message = await listen_for_response(
+            follow_id = ctx.user.id,
+            timeout = 120,
+        )
         global REQUESTED_TOURNAMENTS
         for t in REQUESTED_TOURNAMENTS:
             if t['iden'] == iden:
@@ -928,7 +950,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyapprove",
-        description = "Approves a invitational to be fully opened."
+        description = "Staff command. Approves a invitational to be fully opened."
     )
     async def invitational_approve(self, ctx, iden):
         global REQUESTED_TOURNAMENTS
@@ -941,7 +963,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyedit",
-        description = "Edits data about an invitational channel."
+        description = "Staff command. Edits data about an invitational channel."
     )
     async def invitational_edit(self, ctx):
         pass
@@ -949,7 +971,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyarchive",
-        description = "Archives an invitational channel."
+        description = "Staff command. Archives an invitational channel."
     )
     async def invitational_archive(self, ctx):
         pass
