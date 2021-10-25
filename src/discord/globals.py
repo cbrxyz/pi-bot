@@ -26,6 +26,7 @@ RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
 DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK", "scioly"]
 SLASH_COMMAND_GUILDS = int(os.getenv('SLASH_COMMAND_GUILDS'))
+EMOJI_GUILDS = [int(iden) for iden in [os.getenv('EMOJI_GUILDS')]]
 
 # Roles
 ROLE_WM = "Wiki/Gallery Moderator"

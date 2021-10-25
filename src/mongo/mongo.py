@@ -32,6 +32,11 @@ async def get_cron():
 async def get_censor():
     return await get_entire_collection("data", "censor", return_one = True)
 
+async def insert(db_name, collection_name, insert_dict):
+    global client
+    collection = client[db_name][collection_name]
+    return await collection.insert_one(insert_dict)
+
 async def update(db_name, collection_name, doc_id, update_dict):
     global client
     collection = client[db_name][collection_name]

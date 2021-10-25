@@ -12,7 +12,7 @@ from commandchecks import is_staff, is_launcher
 import dateparser
 import pytz
 
-from src.discord.globals import SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST
+from src.discord.globals import SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST, EMOJI_GUILDS
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
@@ -21,7 +21,7 @@ from bot import listen_for_response
 
 from src.discord.utils import harvest_id, refresh_algorithm
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc, get_invitationals
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert
 
 from src.discord.mute import _mute
 import matplotlib.pyplot as plt
@@ -58,6 +58,21 @@ class Confirm(discord.ui.View):
             self.stop()
         else:
             await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
+
+class YesNo(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.value = None
+
+    @discord.ui.button(label = "Yes", style = discord.ButtonStyle.green)
+    async def yes(self, button: discord.Button, interaction: discord.Interaction):
+        self.value = True
+        self.stop()
+
+    @discord.ui.button(label = "No", style = discord.ButtonStyle.red)
+    async def no(self, button: discord.Button, interaction: discord.Interaction):
+        self.value = False
+        self.stop()
 
 class NukeStopButton(discord.ui.Button["Nuke"]):
 
@@ -304,7 +319,7 @@ class CronSelect(discord.ui.Select):
             option = discord.SelectOption(
                 label = tag_name,
                 description = f"Occurs in {timeframe}."
-            ) 
+            )
             options.append(option)
 
         super().__init__(
@@ -915,8 +930,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyadd",
         description = "Staff command. Adds a new invitational for voting."
     )
-    async def invitational_add(self, 
-        ctx, 
+    async def invitational_add(self,
+        ctx,
         official_name: Option(str, "The official name of the tournament, such as MIT Invitational.", required = True),
         channel_name: Option(str, "The name of the Discord channel that will be created, such as 'mit'", required = True),
         tourney_date: Option(str, "The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.", required = True),
@@ -933,19 +948,70 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             'status': "open" if status == "add_immediately" else "voting"
         }
         await ctx.interaction.response.defer()
-        emoji_message = await listen_for_response(
-            follow_id = ctx.user.id,
-            timeout = 120,
+        emoji = None
+        while emoji == None:
+            emoji_message = await listen_for_response(
+                follow_id = ctx.user.id,
+                timeout = 120,
+            )
+            # If emoji message has file, use this as emoji, otherwise, use default emoji provided
+            if emoji_message == None:
+                await ctx.interaction.response.send_message(content = "No emoji was provided, so the operation was cancelled.")
+                return
+
+            if len(emoji_message.attachments) > 0:
+                # If no attachments provided
+                emoji_attachment = emoji_message.attachments[0]
+                await emoji_message.delete()
+                if emoji_attachment.size > 256000:
+                    await ctx.send("Please use an emoji that is less than 256KB.")
+                    continue
+                if emoji_attachment.content_type not in ['image/gif', 'image/jpeg', 'image/png']:
+                    await ctx.send("Please use a file that is a GIF, JPEG, or PNG.")
+                    continue
+                created_emoji = False
+                for guild_id in EMOJI_GUILDS:
+                    guild = self.bot.get_guild(guild_id)
+                    print(guild)
+                    if len(guild.emojis) < guild.emoji_limit:
+                        # The guild can fit more custom emojis
+                        emoji = await guild.create_custom_emoji(name = f"tournament_{channel_name}", image = await emoji_attachment.read(), reason = f"Created by {ctx.interaction.user}.")
+                        created_emoji = True
+                if not created_emoji:
+                    await ctx.interaction.response.send_message(conten = f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds.")
+                    return
+
+            if len(emoji_message.content) > 0:
+                emoji = emoji_message.content
+
+        description = f"""
+            **Official Name:** {official_name}
+            **Channel Name:** `#{channel_name}`
+            **Tournament Date:** {discord.utils.format_dt(new_tourney_doc['tourney_date'], 'D')}
+            **Closes After:** {new_tourney_doc['closed_days']} days (the tournamnet channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days = new_tourney_doc['closed_days']), 'D')})
+            **Tournament Emoji:** {emoji}
+            """
+
+        if status == "add_immediately":
+            description += "\n**This tournament channel will be opened immediately.** This means that it will require no votes by users to open. This option should generally only be used for tournaments that have a very strong attendance or desire to be added to the server."
+        else:
+            description += "\n**This tournament channel will require a certain number of votes to be opened.** This means that the tournament channel will not immediately be created - rather, users will need to vote on the channel being created before the action is done."
+
+        confirm_embed = discord.Embed(
+            title = f"Add New Invitational",
+            color = discord.Color(0x2E66B6),
+            description = description
         )
-        global REQUESTED_TOURNAMENTS
-        for t in REQUESTED_TOURNAMENTS:
-            if t['iden'] == iden:
-                t['count'] += 1
-                await ctx.send(f"Added a vote for {iden} from {uid}. Now has `{t['count']}` votes.")
-                return await update_tournament_list(ctx.bot)
-        REQUESTED_TOURNAMENTS.append({'iden': iden, 'count': 1, 'users': [uid]})
-        await update_tournament_list(ctx.bot)
-        return await ctx.send(f"Added a vote for {iden} from {uid}. Now has `1` vote.")
+        view = YesNo()
+        await ctx.interaction.edit_original_message(content = f"Please confirm that you would like to add the following tournament:", embed = confirm_embed, view = view)
+        await view.wait()
+        if view.value:
+            # Staff member responded with "Yes"
+            new_tourney_doc['emoji'] = str(emoji)
+            await insert("data", "invitationals", new_tourney_doc)
+            await ctx.interaction.edit_original_message(content = "The invitational was added successfully.", embed = None, view = None)
+        else:
+            await ctx.interaction.edit_original_message(content = "The operation was cancelled.", embed = None, view = None)
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],

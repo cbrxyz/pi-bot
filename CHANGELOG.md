@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/cron` allows staff to edit/remove tasks from Pi-Bot's CRON system (closes [#379](https://github.com/cbrxyz/pi-bot/issues/379))
 * `/ban` and `/mute` now suggest ban/mute lengths, rather than asking the moderator for their own suggested length
 * The bot can now listen for individual user responses. Helpful for users attempting to interact with application commands in complex ways.
+* `/invyadd` allows staff to add new invitationals to Pi-Bot's database
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
