@@ -21,7 +21,7 @@ from bot import listen_for_response
 
 from src.discord.utils import harvest_id, refresh_algorithm
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update
 
 from src.discord.mute import _mute
 import matplotlib.pyplot as plt
@@ -1018,13 +1018,19 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyapprove",
         description = "Staff command. Approves a invitational to be fully opened."
     )
-    async def invitational_approve(self, ctx, iden):
-        global REQUESTED_TOURNAMENTS
-        for t in REQUESTED_TOURNAMENTS:
-            if t['iden'] == iden:
-                REQUESTED_TOURNAMENTS.remove(t)
-        await update_tournament_list(ctx.bot)
-        return await ctx.send(f"Removed `#{iden}` from the tournament list.")
+    async def invitational_approve(self,
+        ctx,
+        short_name: Option(str, "The short name of the invitational, such as 'mit'.", required = True)
+        ):
+        invitationals = await get_invitationals()
+        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
+        if len(found_invitationals) < 1:
+            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with the short name of `{short_name}`.")
+        elif len(found_invitationals) == 1:
+            if found_invitationals[0]["status"] == "open":
+                await ctx.interaction.response.send_message(content = f"The `{short_name}` invitational is already open.")
+            await update("data", "invitationals", found_invitationals[0]["_id"], {"$set": {"status": "open"}})
+            await ctx.interaction.response.send_message(content = f"The status of the `{short_name}` invitational was updated.")
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
