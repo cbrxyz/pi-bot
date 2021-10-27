@@ -1,5 +1,5 @@
 import discord
-from src.discord.globals import TOURNAMENT_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT
+from src.discord.globals import TOURNAMENT_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT, CHANNEL_COMPETITIONS
 import datetime
 from src.mongo.mongo import get_invitationals, update_many
 from src.discord.utils import auto_report
@@ -129,7 +129,29 @@ async def update_tournament_list(bot, rename_dict = {}):
         after_days = int(t.closed_days)
         day_diff = (t.tourney_date - now).days
         print(f"Tournament List: Handling {t.official_name} (Day diff: {day_diff} days)")
-        if ch != None and t.status != "voting":
+        if ch != None and t.status == "archived":
+            # Tournament channel should be archived
+            if ch.category.name != CATEGORY_ARCHIVE:
+                # If channel is not in category archive, then archive it
+                archive_cat = discord.utils.get(server.categories, name = CATEGORY_ARCHIVE)
+                competitions_channel = discord.utils.get(server.text_channels, name = CHANNEL_COMPETITIONS)
+                tournament_role = discord.utils.get(server.roles, name = t.official_name)
+                all_tourney_role = discord.utils.get(server.roles, name = ROLE_AT)
+
+                embed = discord.Embed(
+                    title = 'This channel is now archived.',
+                    description = (f'Thank you all for your discussion around the **{t.official_name}**. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' + 
+                    f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {competitions_channel.mention}. This channel is now read-only.\n\n' +
+                    f'If you would like to no longer view this channel, you are welcome to remove the role using the dropdowns in {tourney_channel.mention}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
+                    color = discord.Color.brand_red()
+                )
+
+                await ch.set_permissions(tournament_role, send_messages = False, view_channel = True)
+                await ch.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
+                await ch.edit(category = archive_cat, position = 1000)
+                await ch.send(embed = embed)
+
+        if ch != None and t.status == "open":
             if (day_diff < (-1 * after_days)):
                 # If past tournament date, now out of range
                 if ch.category.name != CATEGORY_ARCHIVE:
@@ -138,13 +160,22 @@ async def update_tournament_list(bot, rename_dict = {}):
             to_change = {}
             if ch.topic != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.":
                 to_change['topic'] = f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}."
-            if t.status == "archived" and t.category.name != CATEGORY_ARCHIVE:
-                to_change['category'] = discord.utils.get(server.categories, name = CATEGORY_ARCHIVE)
+
+            if ch.category.name == CATEGORY_ARCHIVE:
+                to_change['category'] = discord.utils.get(server.categories, name = CATEGORY_TOURNAMENTS)
 
             if len(to_change):
                 await ch.edit(**to_change)
 
-        elif ch == None:
+            # Check permissions in case the channel was previously archived
+            tourney_role_perms = ch.permissions_for(r)
+            if not tourney_role_perms.read_messages or not tourney_role_perms.send_messages:
+                await ch.set_permissions(r, send_messages = True, read_messages = True)
+            all_tourney_role_perms = ch.permissions_for(all_tournaments_role)
+            if not all_tourney_role_perms.read_messages or not all_tourney_role_perms.send_messages:
+                await ch.set_permissions(all_tournaments_role, send_messages = True, read_messages = True)
+
+        elif ch == None and t.status == "open":
             # If tournament needs to be created
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(t.channel_name, category=tournament_category)

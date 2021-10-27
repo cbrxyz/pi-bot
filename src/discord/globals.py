@@ -67,6 +67,7 @@ CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
 CHANNEL_JOIN = "join-logs"
 CHANNEL_UNSELFMUTE = "un-self-mute"
+CHANNEL_COMPETITIONS = "competitions"
 
 # Categories
 CATEGORY_TOURNAMENTS = "invitationals"

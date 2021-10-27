@@ -3,6 +3,7 @@ import re
 import discord
 import datetime
 import asyncio
+from discord.commands.commands import slash_command
 from discord.errors import NoEntryPointError
 
 from discord.ext import commands
@@ -21,7 +22,7 @@ from bot import listen_for_response
 
 from src.discord.utils import harvest_id, refresh_algorithm
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete
 
 from src.discord.mute import _mute
 import matplotlib.pyplot as plt
@@ -989,7 +990,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             **Official Name:** {official_name}
             **Channel Name:** `#{channel_name}`
             **Tournament Date:** {discord.utils.format_dt(new_tourney_doc['tourney_date'], 'D')}
-            **Closes After:** {new_tourney_doc['closed_days']} days (the tournamnet channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days = new_tourney_doc['closed_days']), 'D')})
+            **Closes After:** {new_tourney_doc['closed_days']} days (the tournament channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days = new_tourney_doc['closed_days']), 'D')})
             **Tournament Emoji:** {emoji}
             """
 
@@ -1011,6 +1012,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             new_tourney_doc['emoji'] = str(emoji)
             await insert("data", "invitationals", new_tourney_doc)
             await ctx.interaction.edit_original_message(content = "The invitational was added successfully.", embed = None, view = None)
+            await update_tournament_list(self.bot, {})
         else:
             await ctx.interaction.edit_original_message(content = "The operation was cancelled.", embed = None, view = None)
 
@@ -1137,8 +1139,53 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyarchive",
         description = "Staff command. Archives an invitational channel."
     )
-    async def invitational_archive(self, ctx):
-        pass
+    async def invitational_archive(self, 
+        ctx,
+        short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
+        ): 
+        invitationals = await get_invitationals()
+        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
+        if not len(found_invitationals):
+            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with a short name of {short_name}.")
+        else:
+            invitational = found_invitationals[0]
+            await update("data", "invitationals", invitational["_id"], {"$set": {"status": "archived"}})
+            await ctx.interaction.response.send_message(content = f"The **`{invitational['official_name']}`** is now being archived.")
+            await update_tournament_list(self.bot, {})
+
+    @discord.commands.command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        name = "invydelete",
+        description = "Staff command. Deletes an invitational channel from the server."
+    )
+    async def invitational_delete(
+        self,
+        ctx,
+        short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
+    ):
+        invitationals = await get_invitationals()
+        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
+        if not len(found_invitationals):
+            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with a short name of {short_name}.")
+        else:
+            invitational = found_invitationals[0]
+            server = self.bot.get_guild(SERVER_ID)
+            ch = discord.utils.get(server.text_channels, name = invitational['channel_name'])
+            r = discord.utils.get(server.roles, name = invitational['official_name'])
+            if ch != None and ch.category.name in [CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS]:
+                await ch.delete()
+            if r != None:
+                await r.delete()
+
+            search = re.findall(r'<:.*:\d+>', invitational['emoji'])
+            if len(search):
+                emoji = self.bot.get_emoji(search[0])
+                if emoji != None:
+                    await emoji.delete()
+
+            await delete("data", "invitationals", invitational["_id"])
+            await ctx.interaction.response.send_message(f"Deleted the **`{invitational['official_name']}`**.")
+            await update_tournament_list(self.bot, {})
 
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
