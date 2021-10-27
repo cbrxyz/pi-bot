@@ -950,6 +950,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.interaction.response.defer()
         emoji = None
         while emoji == None:
+            info_message = await ctx.send("Please send the emoji to use for the tournament. If you would like to use a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf you would like to use a standard emoji, please send a message with only the standard emoji.")
             emoji_message = await listen_for_response(
                 follow_id = ctx.user.id,
                 timeout = 120,
@@ -963,6 +964,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 # If no attachments provided
                 emoji_attachment = emoji_message.attachments[0]
                 await emoji_message.delete()
+                await info_message.delete()
                 if emoji_attachment.size > 256000:
                     await ctx.send("Please use an emoji that is less than 256KB.")
                     continue
@@ -972,7 +974,6 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 created_emoji = False
                 for guild_id in EMOJI_GUILDS:
                     guild = self.bot.get_guild(guild_id)
-                    print(guild)
                     if len(guild.emojis) < guild.emoji_limit:
                         # The guild can fit more custom emojis
                         emoji = await guild.create_custom_emoji(name = f"tournament_{channel_name}", image = await emoji_attachment.read(), reason = f"Created by {ctx.interaction.user}.")
@@ -1031,14 +1032,94 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 await ctx.interaction.response.send_message(content = f"The `{short_name}` invitational is already open.")
             await update("data", "invitationals", found_invitationals[0]["_id"], {"$set": {"status": "open"}})
             await ctx.interaction.response.send_message(content = f"The status of the `{short_name}` invitational was updated.")
+            await update_tournament_list()
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyedit",
         description = "Staff command. Edits data about an invitational channel."
     )
-    async def invitational_edit(self, ctx):
-        pass
+    async def invitational_edit(self, 
+        ctx,
+        short_name: Option(str, "The short name of the invitational you would like to edit, such as 'mit'.", required = True),
+        feature_to_edit: Option(str, "The feature you would like to edit about the invitational.", choices = [
+            "official name",
+            "short name",
+            "emoji",
+            "tournament date"
+        ])
+        ):
+        invitationals = await get_invitationals()
+        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
+        if len(found_invitationals) < 1:
+            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with the short name of `{short_name}`.")
+        elif len(found_invitationals) == 1:
+            invitational = found_invitationals[0]
+            relevant_words = {
+                'official name': "official name",
+                'short name': "short name",
+                'emoji': "emoji",
+                'tournament date': "tournament date"
+            }
+            info_message_text = f"Please send the new {relevant_words[feature_to_edit]} relevant to the tournament."
+            if feature_to_edit == "emoji":
+                info_message_text += "\n\nTo use a custom image as the new emoji for the invitational, please send a file that is no larger than 256KB. If you would like to use a new standard emoji for the invitational, please send only the new standard emoji."
+            elif feature_to_edit == "tournament date":
+                info_message_text += "\n\nTo update the tournament date, please send the date formatted as YYYY-mm-dd, such as `2022-01-12`."
+
+            await ctx.interaction.response.defer()
+            info_message = await ctx.send(info_message_text)
+            content_message = await listen_for_response(
+                follow_id = ctx.user.id,
+                timeout = 120,
+            )
+
+            if content_message != None:
+                await content_message.delete()
+                await info_message.delete()
+                if feature_to_edit == "official name":
+                    await update("data", "invitationals", invitational["_id"], {"$set": {"official_name": content_message.content}})
+                    await ctx.interaction.edit_original_message(content = f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**.")
+                elif feature_to_edit == "short name":
+                    await update("data", "invitationals", invitational["_id"], {"$set": {"channel_name": content_message.content}})
+                    await ctx.interaction.edit_original_message(content = f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**.")
+                elif feature_to_edit == "emoji":
+                    emoji = None
+                    if len(content_message.attachments):
+                        # User provided custom emoji
+                        emoji_attachment = content_message.attachments[0]
+                        if emoji_attachment.size > 256000:
+                            await ctx.interaction.response.send_message("Please use an emoji that is less than 256KB. Operation cancelled.")
+                        if emoji_attachment.content_type not in ['image/gif', 'image/jpeg', 'image/png']:
+                            await ctx.interaction.response.send_message("Please use a file that is a GIF, JPEG, or PNG. Operation cancelled.")
+                        created_emoji = False
+                        for guild_id in EMOJI_GUILDS:
+                            guild = self.bot.get_guild(guild_id)
+                            for emoji in guild.emojis:
+                                if emoji.name == f"tournament_{invitational['channel_name']}":
+                                    await emoji.delete(reason = f"Replaced with alternate emoji by {ctx.interaction.user}.")
+                            if len(guild.emojis) < guild.emoji_limit:
+                                # The guild can fit more custom emojis
+                                emoji = await guild.create_custom_emoji(name = f"tournament_{invitational['channel_name']}", image = await emoji_attachment.read(), reason = f"Created by {ctx.interaction.user}.")
+                                created_emoji = True
+                        if not created_emoji:
+                            await ctx.interaction.edit_original_message(content = f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds.")
+                            return
+
+                    else:
+                        # User provided standard emoji
+                        emoji = content_message.content
+
+                    await update("data", "invitationals", invitational["_id"], {"$set": {"emoji": emoji}})
+                    await ctx.interaction.edit_original_message(content = f"The emoji for `{invitational['official_name']}` was updated to: {emoji}.")
+                elif feature_to_edit == "tournament date":
+                    date_str = content_message.content
+                    date_dt = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+                    await update("data", "invitationals", invitational["_id"], {"$set": {"tourney_date": date_dt}})
+                    await ctx.interaction.edit_original_message(content = f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}.")
+                await update_tournament_list(self.bot)
+            else:
+                await ctx.interaction.edit_original_message(content = f"No message was provided. Operation timed out after 120 seconds.")
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
