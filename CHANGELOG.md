@@ -11,21 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * MongoDB is now where Pi-Bot stores his information (closes [#369](https://github.com/cbrxyz/pi-bot/issues/369))
 * `/cron` allows staff to edit/remove tasks from Pi-Bot's CRON system (closes [#379](https://github.com/cbrxyz/pi-bot/issues/379))
 * `/ban` and `/mute` now suggest ban/mute lengths, rather than asking the moderator for their own suggested length
+* The bot can now listen for individual user responses. Helpful for users attempting to interact with application commands in complex ways.
+* `/invyadd`, `/invyapprove`, `/invyedit`, and `/invyarchive` allow staff to manage invitational data
+* Invitational tournaments can now be archived from any channel
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
 * bot.py was split into separate files/cogs. (closes [#42](https://github.com/cbrxyz/pi-bot/issues/42))
 * Some dependencies were updated (numpy).
 * The default Python runtime was updated to 3.9.7.
+* New tournament channels will not be created if an appropriate tournament channel already exists, just in the archived category
 
 ### Removed
 * The exalt/unexalt commands were removed.
 * The getVariable command was removed.
 * The nukeuntil command was temporarily removed.
 * Google Sheets is no longer used to store data.
+* The forums-interacting aspect of the bot was removed.
+* The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.
 
 ### Fixed
-* `/archive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
+* `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
 
 ## 4.5.19 - 2020-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))

@@ -26,6 +26,7 @@ RULES_CHANNEL_ID = 737087680269123606
 WELCOME_CHANNEL_ID = 743253216921387088
 DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK", "scioly"]
 SLASH_COMMAND_GUILDS = int(os.getenv('SLASH_COMMAND_GUILDS'))
+EMOJI_GUILDS = [int(iden) for iden in [os.getenv('EMOJI_GUILDS')]]
 
 # Roles
 ROLE_WM = "Wiki/Gallery Moderator"
@@ -53,7 +54,7 @@ ROLE_QUARANTINE = "Quarantine"
 ROLE_ALL_STATES = "All States"
 
 # Channels
-CHANNEL_TOURNAMENTS = "tournaments"
+CHANNEL_TOURNAMENTS = "invitationals"
 CHANNEL_BOTSPAM = "bot-spam"
 CHANNEL_SUPPORT = "site-support"
 CHANNEL_GAMES = "games"
@@ -66,9 +67,10 @@ CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
 CHANNEL_JOIN = "join-logs"
 CHANNEL_UNSELFMUTE = "un-self-mute"
+CHANNEL_COMPETITIONS = "competitions"
 
 # Categories
-CATEGORY_TOURNAMENTS = "tournaments"
+CATEGORY_TOURNAMENTS = "invitationals"
 CATEGORY_SO = "Science Olympiad"
 CATEGORY_STATES = "states"
 CATEGORY_GENERAL = "general"

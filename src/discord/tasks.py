@@ -6,15 +6,14 @@ from discord.ext import commands, tasks
 from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH_REPORT_IDS, CRON_LIST, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN
 from src.sheets.sheets import send_variables, get_variables
 
-from tournaments import update_tournament_list
-from src.forums.forums import open_browser
+from src.discord.tournaments import update_tournament_list
 from src.wiki.stylist import prettify_templates
 from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
 
 class CronTasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        
+
     @commands.Cog.listener()
     async def on_ready(self):
         try:
@@ -22,39 +21,37 @@ class CronTasks(commands.Cog):
         except Exception as e:
             print("Error in starting function with pulling previous information:")
             print(e)
-    
+
         try:
-            await update_tournament_list(self.bot)
+            await update_tournament_list(self.bot, {})
         except Exception as e:
             print("Error in starting function with updating tournament list:")
             print(e)
-    
+
         try:
             self.refresh_sheet.start()
         except Exception as e:
             print("Error in starting function with updating tournament list:")
             print(e)
-    
-        self.post_something.start()
+
         self.cron.start()
         self.go_stylist.start()
         self.manage_welcome.start()
         self.store_variables.start()
         self.change_bot_status.start()
         self.update_member_count.start()
-        
+
         print("Tasks cog loaded")
-    
+
     def cog_unload(self):
         self.refresh_sheet.cancel()
-        self.post_something.cancel()
         self.cron.cancel()
         self.go_stylist.cancel()
         self.manage_welcome.cancel()
         self.store_variables.cancel()
         self.change_bot_status.cancel()
         self.update_member_count.cancel()
-    
+
     async def pull_prev_info(self):
         data = await get_variables()
         global PING_INFO
@@ -76,7 +73,7 @@ class CronTasks(commands.Cog):
         CRON_LIST = cron
         REQUESTED_TOURNAMENTS = data[5][0]
         print("Fetched previous variables.")
-    
+
     async def prepare_for_sending(self, type="variable"):
         """Sends local variables to the administrative sheet as a backup."""
         r1 = json.dumps(REPORT_IDS)
@@ -87,7 +84,7 @@ class CronTasks(commands.Cog):
         r6 = json.dumps(REQUESTED_TOURNAMENTS)
         await send_variables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
         print("Stored variables in sheet.")
-        
+
     async def handle_cron(self, string):
         try:
             if string.find("unban") != -1:
@@ -113,7 +110,7 @@ class CronTasks(commands.Cog):
                 await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{string}`")
         except Exception as e:
             await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
-        
+
     @tasks.loop(minutes=5)
     async def update_member_count(self):
         """Updates the member count shown on hidden VC"""
@@ -127,7 +124,7 @@ class CronTasks(commands.Cog):
         left_today = len([m for m in left_messages if m.created_at.date() == datetime.datetime.today().date()])
         await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
         print("Refreshed member count.")
-        
+
     @tasks.loop(seconds=30.0)
     async def refresh_sheet(self):
         """Refreshes the censor list and stores variable backups."""
@@ -136,23 +133,23 @@ class CronTasks(commands.Cog):
         except Exception as e:
             print("Error when completing the refresh algorithm when refreshing the sheet:")
             print(e)
-    
+
         try:
             await self.prepare_for_sending()
         except Exception as e:
             print("Error when sending variables to log sheet:")
             print(e)
-    
+
         print("Attempted to refresh/store data from/to sheet.")
-    
+
     @tasks.loop(hours=10)
     async def store_variables(self):
         await self.prepare_for_sending("store")
-    
+
     @tasks.loop(hours=24)
     async def go_stylist(self):
         await prettify_templates()
-        
+
     @tasks.loop(minutes=10)
     async def manage_welcome(self):
         server = self.bot.get_guild(SERVER_ID)
@@ -174,7 +171,7 @@ class CronTasks(commands.Cog):
         #             await message.delete()
         # else:
         #     print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
-    
+
     @tasks.loop(minutes=1)
     async def cron(self):
         print("Executed cron.")
@@ -185,7 +182,7 @@ class CronTasks(commands.Cog):
                 # The date has passed, now do
                 CRON_LIST.remove(c)
                 await self.handle_cron(c['do'])
-    
+
     @tasks.loop(hours=1)
     async def change_bot_status(self):
         statuses = [
@@ -225,16 +222,6 @@ class CronTasks(commands.Cog):
         elif botStatus["type"] == "watching":
             await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
         print("Changed the bot's status.")
-    
-    @tasks.loop(hours=28)
-    async def post_something(self):
-        global can_post
-        """Allows Pi-Bot to post markov-generated statements to the forums."""
-        if can_post:
-            print("Attempting to post something.")
-            await open_browser()
-        else:
-            can_post = True
-            
+
 def setup(bot):
     bot.add_cog(CronTasks(bot))

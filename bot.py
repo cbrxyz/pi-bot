@@ -3,6 +3,8 @@ import os
 import traceback
 import re
 import time
+import asyncio
+import uuid
 import datetime
 import dateparser
 import numpy as np
@@ -119,9 +121,40 @@ async def send_to_dm_log(message):
     )
     await dmChannel.send(embed=embed)
 
+listeners = {}
+async def listen_for_response(
+    follow_id: int,
+    timeout: int
+):
+    """
+    Creates a global listener for a message from a user.
+
+    :param follow_id: the user ID to create the listener for
+    :param timeout: the amount of time to wait before returning None, assuming the user abandoned the operation
+
+    :return: the found message or None
+    """
+    my_id = str(uuid.uuid4())
+    listeners[my_id] = {
+        'follow_id': follow_id,
+        'timeout': timeout,
+        'message': None
+    }
+    count = timeout
+    while (count > 0):
+        await asyncio.sleep(1)
+        count -= 1
+        if listeners[my_id]['message'] != None:
+            return listeners[my_id]['message']
+    return None
+
 @bot.event
 async def on_message(message):
     if message.author.id in PI_BOT_IDS: return
+
+    for listener in listeners.items():
+        if message.author.id == listener[1]['follow_id']:
+            listeners[listener[0]]['message'] = message
     
     # Log DMs (might put this into cog idk this just needs to run b4 the censor)
     if type(message.channel) == discord.DMChannel:
