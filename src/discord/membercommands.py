@@ -428,7 +428,7 @@ class MemberCommands(commands.Cog, name='Member'):
                     await auto_report(ctx.bot, "New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
                     return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
                 await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
-                await update_tournament_list(ctx.bot)
+                await update_tournament_list(ctx.bot, {})
 
     @commands.command(aliases=["what"])
     async def about(self, ctx):

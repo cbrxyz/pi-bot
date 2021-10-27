@@ -92,7 +92,7 @@ class TournamentDropdownView(discord.ui.View):
         self.voting = voting
         self.add_item(TournamentDropdown(month_tournaments, bot, voting = self.voting))
 
-async def update_tournament_list(bot):
+async def update_tournament_list(bot, rename_dict = {}):
     tournaments = await get_invitationals()
     tournaments = [Tournament(t) for t in tournaments]
     tournaments.sort(key=lambda t: t.official_name)
@@ -108,6 +108,18 @@ async def update_tournament_list(bot):
     all_tournaments_role = discord.utils.get(server.roles, name=ROLE_AT)
     open_soon_list = ""
     now = datetime.datetime.now()
+    if 'channels' in rename_dict:
+        for item in rename_dict['channels'].items():
+            ch = discord.utils.get(server.text_channels, name = item[0])
+            if ch != None:
+                # If old-named channel exists, then rename
+                await ch.edit(name = item[1])
+    if 'roles' in rename_dict:
+        for item in rename_dict['roles'].items():
+            r = discord.utils.get(server.roles, name = item[0])
+            if r != None:
+                # If old-named role exists, then rename
+                await r.edit(name = item[1])
     for t in tournaments: # For each tournament in the sheet
         # Check if the channel needs to be made / deleted
         ch = discord.utils.get(server.text_channels, name=t.channel_name)
@@ -117,22 +129,29 @@ async def update_tournament_list(bot):
         after_days = int(t.closed_days)
         day_diff = (t.tourney_date - now).days
         print(f"Tournament List: Handling {t.official_name} (Day diff: {day_diff} days)")
-        if (day_diff < (-1 * after_days)) and ch != None:
-            # If past tournament date, now out of range
-            if ch.category.name != CATEGORY_ARCHIVE:
-                await auto_report("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
-        elif (day_diff <= before_days) and ch == None:
-            # If before tournament and in range
+        if ch != None and t.status != "voting":
+            if (day_diff < (-1 * after_days)):
+                # If past tournament date, now out of range
+                if ch.category.name != CATEGORY_ARCHIVE:
+                    await auto_report("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
+
+            to_change = {}
+            if ch.topic != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.":
+                to_change['topic'] = f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}."
+            if t.status == "archived" and t.category.name != CATEGORY_ARCHIVE:
+                to_change['category'] = discord.utils.get(server.categories, name = CATEGORY_ARCHIVE)
+
+            if len(to_change):
+                await ch.edit(**to_change)
+
+        elif ch == None:
+            # If tournament needs to be created
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(t.channel_name, category=tournament_category)
             await new_channel.edit(topic=f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.", sync_permissions=True)
             await new_channel.set_permissions(new_role, read_messages=True)
             await new_channel.set_permissions(all_tournaments_role, read_messages=True)
             await new_channel.set_permissions(server.default_role, read_messages=False)
-        elif (day_diff > before_days):
-            # Tournament is not yet ready to open
-            # open_soon_list += (t[2] + " **" + t[0] + f"** - Opens in `{day_diff - before_days}` days.\n")
-            pass
 
     help_embed = discord.Embed(
         title = ":first_place: Join a Tournament Channel!",
@@ -170,4 +189,7 @@ async def update_tournament_list(bot):
         description = "Below are tournament channels that are in the **voting phase**. These tournaments have been requested by users but have not received enough support to become official channels.\n\nIf you vote for these tournament channels to become official, you will automatically be added to these channels upon their creation."
     )
     await tourney_channel.send(embed = voting_embed)
-    await tourney_channel.send("Please choose from the requested tournaments below:", view = TournamentDropdownView(voting_tournaments, bot, voting = True))
+    if len(voting_tournaments):
+        await tourney_channel.send("Please choose from the requested tournaments below:", view = TournamentDropdownView(voting_tournaments, bot, voting = True))
+    else:
+        await tourney_channel.send("Sorry, there no invitationals are currently being voted on.")

@@ -1032,14 +1032,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 await ctx.interaction.response.send_message(content = f"The `{short_name}` invitational is already open.")
             await update("data", "invitationals", found_invitationals[0]["_id"], {"$set": {"status": "open"}})
             await ctx.interaction.response.send_message(content = f"The status of the `{short_name}` invitational was updated.")
-            await update_tournament_list()
+            await update_tournament_list(self.bot, {})
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyedit",
         description = "Staff command. Edits data about an invitational channel."
     )
-    async def invitational_edit(self, 
+    async def invitational_edit(self,
         ctx,
         short_name: Option(str, "The short name of the invitational you would like to edit, such as 'mit'.", required = True),
         feature_to_edit: Option(str, "The feature you would like to edit about the invitational.", choices = [
@@ -1075,12 +1075,23 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             )
 
             if content_message != None:
+                rename_dict = {}
                 await content_message.delete()
                 await info_message.delete()
                 if feature_to_edit == "official name":
+                    rename_dict = {
+                        'roles': {
+                            invitational['official_name']: content_message.content
+                        }
+                    }
                     await update("data", "invitationals", invitational["_id"], {"$set": {"official_name": content_message.content}})
                     await ctx.interaction.edit_original_message(content = f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**.")
                 elif feature_to_edit == "short name":
+                    rename_dict = {
+                        'channels': {
+                            invitational['channel_name']: content_message.content
+                         }
+                    }
                     await update("data", "invitationals", invitational["_id"], {"$set": {"channel_name": content_message.content}})
                     await ctx.interaction.edit_original_message(content = f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**.")
                 elif feature_to_edit == "emoji":
@@ -1117,7 +1128,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                     date_dt = datetime.datetime.strptime(date_str, '%Y-%m-%d')
                     await update("data", "invitationals", invitational["_id"], {"$set": {"tourney_date": date_dt}})
                     await ctx.interaction.edit_original_message(content = f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}.")
-                await update_tournament_list(self.bot)
+                await update_tournament_list(self.bot, rename_dict)
             else:
                 await ctx.interaction.edit_original_message(content = f"No message was provided. Operation timed out after 120 seconds.")
 
