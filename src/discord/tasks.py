@@ -7,6 +7,7 @@ from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH
 from src.sheets.sheets import send_variables, get_variables
 
 from src.discord.tournaments import update_tournament_list
+from src.mongo.mongo import get_cron, delete
 from src.wiki.stylist import prettify_templates
 from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
 
@@ -175,13 +176,32 @@ class CronTasks(commands.Cog):
     @tasks.loop(minutes=1)
     async def cron(self):
         print("Executed cron.")
-        global CRON_LIST
-        for c in CRON_LIST:
-            date = c['date']
-            if datetime.datetime.now() > date:
+        cron_list = await get_cron()
+        for task in cron_list:
+            if datetime.datetime.utcnow() > task['time']:
                 # The date has passed, now do
-                CRON_LIST.remove(c)
-                await self.handle_cron(c['do'])
+                try:
+                    if task['type'] == "UNBAN":
+                        server = self.bot.get_guild(SERVER_ID)
+                        member = await self.bot.fetch_user(task['user'])
+                        await server.unban(member)
+                        print(f"Unbanned user ID: {iden}")
+                    elif task['type'] == "UNMUTE":
+                        server = self.bot.get_guild(SERVER_ID)
+                        member = server.get_member(task['user'])
+                        role = discord.utils.get(server.roles, name=ROLE_MUTED)
+                        self_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+                        await member.remove_roles(role, self_role)
+                        print(f"Unmuted user ID: {iden}")
+                    elif task['type'] == "UNSTEALFISHBAN":
+                        STEALFISH_BAN.remove(task['user'])
+                        print(f"Un-stealfished user ID: {iden}")
+                    else:
+                        print("ERROR:")
+                        await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{string}`")
+                    await delete("data", "cron", task["_id"])
+                except Exception as e:
+                    await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):
