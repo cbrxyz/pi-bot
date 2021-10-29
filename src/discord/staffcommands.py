@@ -928,6 +928,38 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
+        name = "status",
+        description = "Staff command. Update Pi-Bot's Discord status."
+    )
+    async def change_status(self,
+        ctx,
+        activity: Option(str, "The activity the bot will be doing.", choices = ["playing", "listening", "watching"], required = True),
+        message: Option(str, "The message to display after the activity type in the bot's status, shown as bold text.", required = True),
+        length: Option(str, "How long the status should remain before being auto-updated to a recurring status.", choices = [
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+            ])
+        ):
+        if activity == "playing":
+            await self.bot.change_presence(activity = discord.Game(name = message))
+            await ctx.interaction.response.send_message(content = f"The status was updated to: `Playing {message}`.")
+        elif activity == "listening":
+            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.listening, name = message))
+            await ctx.interaction.response.send_message(content = f"The status was updated to: `Listening to {message}`.")
+        elif activity == "watching":
+            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = message))
+            await ctx.interaction.response.send_message(content = f"The status was updated to: `Watching {message}`.")
+
+    @discord.commands.command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyadd",
         description = "Staff command. Adds a new invitational for voting."
     )
