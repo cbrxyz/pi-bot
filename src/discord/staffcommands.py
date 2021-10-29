@@ -958,6 +958,26 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = message))
             await ctx.interaction.response.send_message(content = f"The status was updated to: `Watching {message}`.")
 
+        # CRON functionality
+        times = {
+            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
+            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
+            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
+            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
+            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
+            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
+            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
+            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
+            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
+            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
+            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+        }
+
+        await insert("data", "cron", {
+            "type": "REMOVE_STATUS",
+            "time": times[length]
+        })
+
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         name = "invyadd",
@@ -1171,10 +1191,10 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyarchive",
         description = "Staff command. Archives an invitational channel."
     )
-    async def invitational_archive(self, 
+    async def invitational_archive(self,
         ctx,
         short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
-        ): 
+        ):
         invitationals = await get_invitationals()
         found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
         if not len(found_invitationals):
