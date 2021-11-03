@@ -32,7 +32,7 @@ async def sanitize_mention(member):
 
 async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
-    
+
 async def lookup_role(name):
     name = name.title()
     if name == "Al" or name == "Alabama": return "Alabama"
@@ -89,7 +89,7 @@ async def lookup_role(name):
     elif name == "Wi" or name == "Wisconsin": return "Wisconsin"
     elif name == "Wy" or name == "Wyoming": return "Wyoming"
     return False
-    
+
 async def refresh_algorithm():
     """Pulls data from the administrative sheet."""
     try:
@@ -115,10 +115,6 @@ async def refresh_algorithm():
     except Exception as e:
         print("Could not refresh tags in refresh_algorithm:")
         print(e)
-    
+
     print("Refreshed data from sheet.")
     return True
-    
-def datetime_converter(o):
-    if isinstance(o, datetime.datetime):
-        return o.__str__()

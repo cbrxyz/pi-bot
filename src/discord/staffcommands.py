@@ -501,7 +501,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
                 pass
 
         if ban_length != "Indefinitely":
-            CRON_LIST.append({"date": times[ban_length], "do": f"unban {member.id}"})
+            await insert("data", "cron", {"date": times[ban_length], "do": f"unban {member.id}"})
 
         # Test
         guild = ctx.author.guild
@@ -585,7 +585,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
                 pass
 
         if mute_length != "Indefinitely":
-            CRON_LIST.append({"date": times[mute_length], "do": f"unmute {member.id}"})
+            await insert("data", "cron", {"date": times[mute_length], "do": f"unmute {member.id}"})
 
         # Test
         if role in member.roles:

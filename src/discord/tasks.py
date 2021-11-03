@@ -7,7 +7,7 @@ from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH
 from src.sheets.sheets import send_variables, get_variables
 
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import get_cron, delete
+from src.mongo.mongo import get_cron, get_pings, delete
 from src.wiki.stylist import prettify_templates
 from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
 
@@ -36,7 +36,6 @@ class CronTasks(commands.Cog):
             print(e)
 
         self.cron.start()
-        self.go_stylist.start()
         self.manage_welcome.start()
         self.store_variables.start()
         self.change_bot_status.start()
@@ -47,31 +46,19 @@ class CronTasks(commands.Cog):
     def cog_unload(self):
         self.refresh_sheet.cancel()
         self.cron.cancel()
-        self.go_stylist.cancel()
         self.manage_welcome.cancel()
         self.store_variables.cancel()
         self.change_bot_status.cancel()
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
-        data = await get_variables()
         global PING_INFO
         global REPORT_IDS
-        global TOURNEY_REPORT_IDS
         global COACH_REPORT_IDS
-        global CRON_LIST
         global REQUESTED_TOURNAMENTS
         REPORT_IDS = data[0][0]
-        PING_INFO = data[1][0]
-        TOURNEY_REPORT_IDS = data[2][0]
+        PING_INFO = await get_pings()
         COACH_REPORT_IDS = data[3][0]
-        cron = data[4][0]
-        for c in cron:
-            try:
-                c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S.%f")
-            except Exception as e:
-                print("ERROR WITH CRON TASK: ", e)
-        CRON_LIST = cron
         REQUESTED_TOURNAMENTS = data[5][0]
         print("Fetched previous variables.")
 
@@ -79,11 +66,9 @@ class CronTasks(commands.Cog):
         """Sends local variables to the administrative sheet as a backup."""
         r1 = json.dumps(REPORT_IDS)
         r2 = json.dumps(PING_INFO)
-        r3 = json.dumps(TOURNEY_REPORT_IDS)
         r4 = json.dumps(COACH_REPORT_IDS)
-        r5 = json.dumps(CRON_LIST, default = datetime_converter)
         r6 = json.dumps(REQUESTED_TOURNAMENTS)
-        await send_variables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
+        await send_variables([[r1], [r2], [r4], [r5], [r6]], type)
         print("Stored variables in sheet.")
 
     async def handle_cron(self, string):
@@ -146,10 +131,6 @@ class CronTasks(commands.Cog):
     @tasks.loop(hours=10)
     async def store_variables(self):
         await self.prepare_for_sending("store")
-
-    @tasks.loop(hours=24)
-    async def go_stylist(self):
-        await prettify_templates()
 
     @tasks.loop(minutes=10)
     async def manage_welcome(self):
