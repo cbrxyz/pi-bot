@@ -7,9 +7,9 @@ from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH
 from src.sheets.sheets import send_variables, get_variables
 
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import get_cron, get_pings, delete
+from src.mongo.mongo import get_cron, get_pings, get_reports, delete
 from src.wiki.stylist import prettify_templates
-from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
+from src.discord.utils import auto_report, refresh_algorithm
 
 class CronTasks(commands.Cog):
     def __init__(self, bot):
@@ -36,8 +36,6 @@ class CronTasks(commands.Cog):
             print(e)
 
         self.cron.start()
-        self.manage_welcome.start()
-        self.store_variables.start()
         self.change_bot_status.start()
         self.update_member_count.start()
 
@@ -46,30 +44,15 @@ class CronTasks(commands.Cog):
     def cog_unload(self):
         self.refresh_sheet.cancel()
         self.cron.cancel()
-        self.manage_welcome.cancel()
-        self.store_variables.cancel()
         self.change_bot_status.cancel()
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
         global PING_INFO
-        global REPORT_IDS
-        global COACH_REPORT_IDS
-        global REQUESTED_TOURNAMENTS
-        REPORT_IDS = data[0][0]
+        global REPORTS
+        REPORTS = await get_reports()
         PING_INFO = await get_pings()
-        COACH_REPORT_IDS = data[3][0]
-        REQUESTED_TOURNAMENTS = data[5][0]
         print("Fetched previous variables.")
-
-    async def prepare_for_sending(self, type="variable"):
-        """Sends local variables to the administrative sheet as a backup."""
-        r1 = json.dumps(REPORT_IDS)
-        r2 = json.dumps(PING_INFO)
-        r4 = json.dumps(COACH_REPORT_IDS)
-        r6 = json.dumps(REQUESTED_TOURNAMENTS)
-        await send_variables([[r1], [r2], [r4], [r5], [r6]], type)
-        print("Stored variables in sheet.")
 
     async def handle_cron(self, string):
         try:
@@ -120,39 +103,7 @@ class CronTasks(commands.Cog):
             print("Error when completing the refresh algorithm when refreshing the sheet:")
             print(e)
 
-        try:
-            await self.prepare_for_sending()
-        except Exception as e:
-            print("Error when sending variables to log sheet:")
-            print(e)
-
         print("Attempted to refresh/store data from/to sheet.")
-
-    @tasks.loop(hours=10)
-    async def store_variables(self):
-        await self.prepare_for_sending("store")
-
-    @tasks.loop(minutes=10)
-    async def manage_welcome(self):
-        server = self.bot.get_guild(SERVER_ID)
-        now = datetime.datetime.now()
-        # Channel message deleting is currently disabled
-        # if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
-        #     print(f"Cleaning #{CHANNEL_WELCOME}.")
-        #     # if between 12AM EST and 11AM EST do not do the following:
-        #     channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
-        #     async for message in channel.history(limit=None):
-        #         # if message is over 3 hours old
-        #         author = message.author
-        #         user_no_delete = await is_launcher_no_ctx(message.author)
-        #         num_of_roles = len(author.roles)
-        #         if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 1 and not user_no_delete:
-        #             await _confirm([author])
-        #         if (now - message.created_at).seconds // 3600 > 3 and not message.pinned:
-        #             # delete it
-        #             await message.delete()
-        # else:
-        #     print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
 
     @tasks.loop(minutes=1)
     async def cron(self):
