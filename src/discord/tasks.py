@@ -3,13 +3,12 @@ import random
 import json
 import datetime
 from discord.ext import commands, tasks
-from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH_REPORT_IDS, CRON_LIST, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN
-from src.sheets.sheets import send_variables, get_variables
+from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSORED_EMOJIS, CENSORED_WORDS, EVENT_INFO, TAGS
 
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import get_cron, get_pings, get_reports, delete
+from src.mongo.mongo import get_cron, get_pings, get_censor, get_reports, get_tags, get_events, delete
 from src.wiki.stylist import prettify_templates
-from src.discord.utils import auto_report, refresh_algorithm
+from src.discord.utils import auto_report
 
 class CronTasks(commands.Cog):
     def __init__(self, bot):
@@ -29,12 +28,6 @@ class CronTasks(commands.Cog):
             print("Error in starting function with updating tournament list:")
             print(e)
 
-        try:
-            self.refresh_sheet.start()
-        except Exception as e:
-            print("Error in starting function with updating tournament list:")
-            print(e)
-
         self.cron.start()
         self.change_bot_status.start()
         self.update_member_count.start()
@@ -42,7 +35,6 @@ class CronTasks(commands.Cog):
         print("Tasks cog loaded")
 
     def cog_unload(self):
-        self.refresh_sheet.cancel()
         self.cron.cancel()
         self.change_bot_status.cancel()
         self.update_member_count.cancel()
@@ -50,8 +42,19 @@ class CronTasks(commands.Cog):
     async def pull_prev_info(self):
         global PING_INFO
         global REPORTS
+        global CENSORED_WORDS
+        global CENSORED_EMOJIS
+        global TAGS
+        global EVENT_INFO
+
         REPORTS = await get_reports()
         PING_INFO = await get_pings()
+        TAGS = await get_tags()
+        EVENT_INFO = await get_events()
+
+        censor = await get_censor()
+        CENSORED_WORDS = censor[0]
+        CENSORED_EMOJIS = censor[1]
         print("Fetched previous variables.")
 
     async def handle_cron(self, string):
@@ -93,17 +96,6 @@ class CronTasks(commands.Cog):
         left_today = len([m for m in left_messages if m.created_at.date() == datetime.datetime.today().date()])
         await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
         print("Refreshed member count.")
-
-    @tasks.loop(seconds=30.0)
-    async def refresh_sheet(self):
-        """Refreshes the censor list and stores variable backups."""
-        try:
-            await refresh_algorithm()
-        except Exception as e:
-            print("Error when completing the refresh algorithm when refreshing the sheet:")
-            print(e)
-
-        print("Attempted to refresh/store data from/to sheet.")
 
     @tasks.loop(minutes=1)
     async def cron(self):

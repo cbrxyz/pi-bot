@@ -2,8 +2,6 @@ import discord
 from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
 from embed import assemble_embed
 from src.mongo.mongo import get_censor
-from src.sheets.events import get_events
-from src.sheets.sheets import get_tags
 
 # Meant for Pi-Bot only
 async def auto_report(bot, reason, color, message):
@@ -89,32 +87,3 @@ async def lookup_role(name):
     elif name == "Wi" or name == "Wisconsin": return "Wisconsin"
     elif name == "Wy" or name == "Wyoming": return "Wyoming"
     return False
-
-async def refresh_algorithm():
-    """Pulls data from the administrative sheet."""
-    try:
-        global CENSORED_WORDS
-        global CENSORED_EMOJIS
-        censor = await get_censor()
-        CENSORED_WORDS = censor[0]
-        CENSORED_EMOJIS = censor[1]
-    except Exception as e:
-        print("Could not refresh censor in refresh_algorithm:")
-        print(e)
-
-    try:
-        global EVENT_INFO
-        EVENT_INFO = await get_events()
-    except Exception as e:
-        print("Could not refresh event list in refresh_algorithm:")
-        print(e)
-
-    try:
-        global TAGS
-        TAGS = await get_tags()
-    except Exception as e:
-        print("Could not refresh tags in refresh_algorithm:")
-        print(e)
-
-    print("Refreshed data from sheet.")
-    return True

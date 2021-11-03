@@ -120,3 +120,4 @@ TOURNAMENT_INFO = []
 TAGS = []
 STOPNUKE = datetime.datetime.utcnow()  # Was a bool, not is a datetime
 CRON_LIST = []
+CURRENT_WIKI_PAGE = None
