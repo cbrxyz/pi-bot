@@ -3,7 +3,7 @@ import random
 import json
 import datetime
 from discord.ext import commands, tasks
-from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSORED_EMOJIS, CENSORED_WORDS, EVENT_INFO, TAGS, SETTINGS
+from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSOR, EVENT_INFO, TAGS, SETTINGS
 
 from src.discord.tournaments import update_tournament_list
 from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, delete
@@ -42,8 +42,7 @@ class CronTasks(commands.Cog):
     async def pull_prev_info(self):
         global PING_INFO
         global REPORTS
-        global CENSORED_WORDS
-        global CENSORED_EMOJIS
+        global CENSOR
         global TAGS
         global EVENT_INFO
         global SETTINGS
@@ -55,8 +54,7 @@ class CronTasks(commands.Cog):
         SETTINGS = await get_settings()
 
         censor = await get_censor()
-        CENSORED_WORDS = censor[0]
-        CENSORED_EMOJIS = censor[1]
+        CENSOR = censor
         print("Fetched previous variables.")
 
     async def handle_cron(self, string):

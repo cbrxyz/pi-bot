@@ -58,22 +58,17 @@ async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
 
-# async def get_words():
-#     """Gets the censor list"""
-#     global CENSORED_WORDS
-#     CENSORED_WORDS = get_censor()
-
 @bot.event
 async def on_message_edit(before, after):
     if (datetime.datetime.now() - after.created_at).total_seconds() < 2:
         # no need to log edit events for messages just created
         return
     print('Message from {0.author} edited to: {0.content}, from: {1.content}'.format(after, before))
-    for word in CENSORED_WORDS:
+    for word in CENSOR['words']:
         if len(re.findall(fr"\b({word})\b", after.content, re.I)):
             print(f"Censoring message by {after.author} because of the word: `{word}`")
             await after.delete()
-    for word in CENSORED_EMOJIS:
+    for word in CENSOR['emojis']:
         if len(re.findall(fr"{word}", after.content)):
             print(f"Censoring message by {after.author} because of the emoji: `{word}`")
             await after.delete()
@@ -255,7 +250,7 @@ async def on_member_join(member):
     join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
     await member.add_roles(role)
     name = member.name
-    for word in CENSORED_WORDS:
+    for word in CENSOR['words']:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
             await auto_report(bot, "Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
     await join_channel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " +
@@ -291,13 +286,13 @@ async def on_member_remove(member):
 @bot.event
 async def on_member_update(before, after):
     if after.nick == None: return
-    for word in CENSORED_WORDS:
+    for word in CENSOR['words']:
         if len(re.findall(fr"\b({word})\b", after.nick, re.I)):
             await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
 
 @bot.event
 async def on_user_update(before, after):
-    for word in CENSORED_WORDS:
+    for word in CENSOR['words']:
         if len(re.findall(fr"\b({word})\b", after.name, re.I)):
             await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
 

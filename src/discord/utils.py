@@ -1,5 +1,5 @@
 import discord
-from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
+from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, TAGS
 from embed import assemble_embed
 from src.mongo.mongo import get_censor
 
