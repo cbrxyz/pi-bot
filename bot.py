@@ -52,7 +52,7 @@ bot.remove_command("help")
 ##############
 # FUNCTIONS
 ##############
-    
+
 @bot.event
 async def on_ready():
     """Called when the bot is enabled and ready to be run."""
@@ -65,7 +65,7 @@ async def on_ready():
 
 @bot.event
 async def on_message_edit(before, after):
-    if (datetime.datetime.now() - after.created_at).total_seconds() < 2: 
+    if (datetime.datetime.now() - after.created_at).total_seconds() < 2:
         # no need to log edit events for messages just created
         return
     print('Message from {0.author} edited to: {0.content}, from: {1.content}'.format(after, before))
@@ -155,7 +155,7 @@ async def on_message(message):
     for listener in listeners.items():
         if message.author.id == listener[1]['follow_id']:
             listeners[listener[0]]['message'] = message
-    
+
     # Log DMs (might put this into cog idk this just needs to run b4 the censor)
     if type(message.channel) == discord.DMChannel:
         await send_to_dm_log(message)
@@ -164,11 +164,11 @@ async def on_message(message):
         if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
             # avoid sending logs for messages in log channels
             print(f'Message from {message.author} in #{message.channel}: {message.content}')
-    
+
     censor = bot.get_cog("Censor")
     if censor != None: # only case where this occurs if the cog is disabled
         await censor.on_message(message)
-        
+
     # SPAM TESTING (should prob put in its own cog cuz its not essential for censor or commands)
     #  if spamming commands, we should just issue a command cooldown (2-5s makes sense)
     global RECENT_MESSAGES
@@ -197,7 +197,7 @@ async def on_message(message):
         await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-    
+
     if re.match(r'\s*[!"#$%&\'()*+,\-./:;<=>?@[\]^_`{|}~]', message.content.lstrip()[1:]) == None: # A bit messy, but gets it done
         await bot.process_commands(message)
 
@@ -219,7 +219,7 @@ async def on_raw_reaction_add(payload):
             for obj in CRON_LIST[:]:
                 if obj['do'] == f'unmute {payload.user_id}':
                     CRON_LIST.remove(obj)
-        if payload.message_id in REPORT_IDS:
+        if payload.message_id in REPORTS:
             messageObj = await reports_channel.fetch_message(payload.message_id)
             if payload.emoji.name == "\U0000274C": # :x:
                 print("Report cleared with no action.")
@@ -500,7 +500,7 @@ async def on_raw_message_delete(payload):
 async def on_command_error(ctx, error):
     print("Command Error:")
     print(error)
-    
+
     # Okay, a bit sketch, but it works.
     # The idea is this: we want this global error handler to handle all errors
     #  that come in here. The outputs here are refered to as the default response.
@@ -509,10 +509,10 @@ async def on_command_error(ctx, error):
     #  handler to run.
     # We use `__slots__` in ctx to achieve this. There we can store a bit/bool flag
     #  to signal whether we handled the error in a local or cog level handler.
-    
+
     if (ctx.command.has_error_handler() or ctx.cog.has_error_handler()) and ctx.__slots__ == True:
         return
-    
+
     # Argument parsing errors
     if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(error, discord.ext.commands.InvalidEndOfQuotedStringError):
         return await ctx.send("Sorry, it appears that your quotation marks are misaligned, and I can't read your query.")

@@ -1,9 +1,7 @@
 import discord
-from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
+from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
 from embed import assemble_embed
 from src.mongo.mongo import get_censor
-from src.sheets.events import get_events
-from src.sheets.sheets import get_tags
 
 # Meant for Pi-Bot only
 async def auto_report(bot, reason, color, message):
@@ -20,7 +18,7 @@ async def auto_report(bot, reason, color, message):
         }]
     )
     message = await reports_channel.send(embed=embed)
-    REPORT_IDS.append(message.id)
+    REPORTS.append(message.id)
     await message.add_reaction("\U00002705")
     await message.add_reaction("\U0000274C")
 
@@ -32,7 +30,7 @@ async def sanitize_mention(member):
 
 async def harvest_id(user):
     return user.replace("<@!", "").replace(">", "")
-    
+
 async def lookup_role(name):
     name = name.title()
     if name == "Al" or name == "Alabama": return "Alabama"
@@ -89,36 +87,3 @@ async def lookup_role(name):
     elif name == "Wi" or name == "Wisconsin": return "Wisconsin"
     elif name == "Wy" or name == "Wyoming": return "Wyoming"
     return False
-    
-async def refresh_algorithm():
-    """Pulls data from the administrative sheet."""
-    try:
-        global CENSORED_WORDS
-        global CENSORED_EMOJIS
-        censor = await get_censor()
-        CENSORED_WORDS = censor[0]
-        CENSORED_EMOJIS = censor[1]
-    except Exception as e:
-        print("Could not refresh censor in refresh_algorithm:")
-        print(e)
-
-    try:
-        global EVENT_INFO
-        EVENT_INFO = await get_events()
-    except Exception as e:
-        print("Could not refresh event list in refresh_algorithm:")
-        print(e)
-
-    try:
-        global TAGS
-        TAGS = await get_tags()
-    except Exception as e:
-        print("Could not refresh tags in refresh_algorithm:")
-        print(e)
-    
-    print("Refreshed data from sheet.")
-    return True
-    
-def datetime_converter(o):
-    if isinstance(o, datetime.datetime):
-        return o.__str__()

@@ -2,7 +2,7 @@ import discord
 import random
 import wikipedia as wikip
 from discord.ext import commands
-from src.discord.globals import TOURNAMENT_INFO, REQUESTED_TOURNAMENTS, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, EVENT_INFO, ROLE_LH, ROLE_MR
+from src.discord.globals import TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR
 from embed import assemble_embed
 from src.discord.utils import harvest_id
 from src.wiki.wiki import get_page_tables
@@ -415,7 +415,8 @@ class MemberCommands(commands.Cog, name='Member'):
                 uid = member.id
                 found2 = False
                 votes = 1
-                for t in REQUESTED_TOURNAMENTS:
+                # for t in REQUESTED_TOURNAMENTS: TODO Fix this for v5
+                for t in range(0, 1):
                     if arg == t['iden']:
                         found2 = True
                         if uid in t['users']:
@@ -614,7 +615,7 @@ class MemberCommands(commands.Cog, name='Member'):
             }]
         )
         message = await reports_channel.send(embed=embed)
-        REPORT_IDS.append(message.id)
+        REPORTS.append(message.id)
         await message.add_reaction("\U00002705")
         await message.add_reaction("\U0000274C")
         await ctx.send("Thanks, report created.")

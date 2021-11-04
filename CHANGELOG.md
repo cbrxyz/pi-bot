@@ -21,14 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Some dependencies were updated (numpy).
 * The default Python runtime was updated to 3.9.7.
 * New tournament channels will not be created if an appropriate tournament channel already exists, just in the archived category
+* Automated data updates are no longer made on a constant basis; rather, data is updated only when changes are needed because of a process
 
 ### Removed
 * The exalt/unexalt commands were removed.
 * The getVariable command was removed.
 * The nukeuntil command was temporarily removed.
-* Google Sheets is no longer used to store data.
+* Google Sheets is no longer used to store data, and all systems related to storing data in Google Sheets were removed.
 * The forums-interacting aspect of the bot was removed.
 * The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.
+* The wiki stylist was temporarily disabled.
 
 ### Fixed
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))

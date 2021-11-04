@@ -3,12 +3,12 @@ import random
 import json
 import datetime
 from discord.ext import commands, tasks
-from src.discord.globals import PING_INFO, REPORT_IDS, TOURNEY_REPORT_IDS, COACH_REPORT_IDS, CRON_LIST, REQUESTED_TOURNAMENTS, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN
-from src.sheets.sheets import send_variables, get_variables
+from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSORED_EMOJIS, CENSORED_WORDS, EVENT_INFO, TAGS, SETTINGS
 
 from src.discord.tournaments import update_tournament_list
+from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, delete
 from src.wiki.stylist import prettify_templates
-from src.discord.utils import auto_report, refresh_algorithm, datetime_converter
+from src.discord.utils import auto_report
 
 class CronTasks(commands.Cog):
     def __init__(self, bot):
@@ -28,62 +28,36 @@ class CronTasks(commands.Cog):
             print("Error in starting function with updating tournament list:")
             print(e)
 
-        try:
-            self.refresh_sheet.start()
-        except Exception as e:
-            print("Error in starting function with updating tournament list:")
-            print(e)
-
         self.cron.start()
-        self.go_stylist.start()
-        self.manage_welcome.start()
-        self.store_variables.start()
         self.change_bot_status.start()
         self.update_member_count.start()
 
         print("Tasks cog loaded")
 
     def cog_unload(self):
-        self.refresh_sheet.cancel()
         self.cron.cancel()
-        self.go_stylist.cancel()
-        self.manage_welcome.cancel()
-        self.store_variables.cancel()
         self.change_bot_status.cancel()
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
-        data = await get_variables()
         global PING_INFO
-        global REPORT_IDS
-        global TOURNEY_REPORT_IDS
-        global COACH_REPORT_IDS
-        global CRON_LIST
-        global REQUESTED_TOURNAMENTS
-        REPORT_IDS = data[0][0]
-        PING_INFO = data[1][0]
-        TOURNEY_REPORT_IDS = data[2][0]
-        COACH_REPORT_IDS = data[3][0]
-        cron = data[4][0]
-        for c in cron:
-            try:
-                c['date'] = datetime.datetime.strptime(c['date'], "%Y-%m-%d %H:%M:%S.%f")
-            except Exception as e:
-                print("ERROR WITH CRON TASK: ", e)
-        CRON_LIST = cron
-        REQUESTED_TOURNAMENTS = data[5][0]
-        print("Fetched previous variables.")
+        global REPORTS
+        global CENSORED_WORDS
+        global CENSORED_EMOJIS
+        global TAGS
+        global EVENT_INFO
+        global SETTINGS
 
-    async def prepare_for_sending(self, type="variable"):
-        """Sends local variables to the administrative sheet as a backup."""
-        r1 = json.dumps(REPORT_IDS)
-        r2 = json.dumps(PING_INFO)
-        r3 = json.dumps(TOURNEY_REPORT_IDS)
-        r4 = json.dumps(COACH_REPORT_IDS)
-        r5 = json.dumps(CRON_LIST, default = datetime_converter)
-        r6 = json.dumps(REQUESTED_TOURNAMENTS)
-        await send_variables([[r1], [r2], [r3], [r4], [r5], [r6]], type)
-        print("Stored variables in sheet.")
+        REPORTS = await get_reports()
+        PING_INFO = await get_pings()
+        TAGS = await get_tags()
+        EVENT_INFO = await get_events()
+        SETTINGS = await get_settings()
+
+        censor = await get_censor()
+        CENSORED_WORDS = censor[0]
+        CENSORED_EMOJIS = censor[1]
+        print("Fetched previous variables.")
 
     async def handle_cron(self, string):
         try:
@@ -125,63 +99,35 @@ class CronTasks(commands.Cog):
         await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
         print("Refreshed member count.")
 
-    @tasks.loop(seconds=30.0)
-    async def refresh_sheet(self):
-        """Refreshes the censor list and stores variable backups."""
-        try:
-            await refresh_algorithm()
-        except Exception as e:
-            print("Error when completing the refresh algorithm when refreshing the sheet:")
-            print(e)
-
-        try:
-            await self.prepare_for_sending()
-        except Exception as e:
-            print("Error when sending variables to log sheet:")
-            print(e)
-
-        print("Attempted to refresh/store data from/to sheet.")
-
-    @tasks.loop(hours=10)
-    async def store_variables(self):
-        await self.prepare_for_sending("store")
-
-    @tasks.loop(hours=24)
-    async def go_stylist(self):
-        await prettify_templates()
-
-    @tasks.loop(minutes=10)
-    async def manage_welcome(self):
-        server = self.bot.get_guild(SERVER_ID)
-        now = datetime.datetime.now()
-        # Channel message deleting is currently disabled
-        # if now.hour < ((0 - TZ_OFFSET) % 24) or now.hour > ((11 - TZ_OFFSET) % 24):
-        #     print(f"Cleaning #{CHANNEL_WELCOME}.")
-        #     # if between 12AM EST and 11AM EST do not do the following:
-        #     channel = discord.utils.get(server.text_channels, name=CHANNEL_WELCOME)
-        #     async for message in channel.history(limit=None):
-        #         # if message is over 3 hours old
-        #         author = message.author
-        #         user_no_delete = await is_launcher_no_ctx(message.author)
-        #         num_of_roles = len(author.roles)
-        #         if num_of_roles > 4 and (now - author.joined_at).seconds // 60 > 1 and not user_no_delete:
-        #             await _confirm([author])
-        #         if (now - message.created_at).seconds // 3600 > 3 and not message.pinned:
-        #             # delete it
-        #             await message.delete()
-        # else:
-        #     print(f"Skipping #{CHANNEL_WELCOME} clean because it is outside suitable time ranges.")
-
     @tasks.loop(minutes=1)
     async def cron(self):
         print("Executed cron.")
-        global CRON_LIST
-        for c in CRON_LIST:
-            date = c['date']
-            if datetime.datetime.now() > date:
+        cron_list = await get_cron()
+        for task in cron_list:
+            if datetime.datetime.utcnow() > task['time']:
                 # The date has passed, now do
-                CRON_LIST.remove(c)
-                await self.handle_cron(c['do'])
+                try:
+                    if task['type'] == "UNBAN":
+                        server = self.bot.get_guild(SERVER_ID)
+                        member = await self.bot.fetch_user(task['user'])
+                        await server.unban(member)
+                        print(f"Unbanned user ID: {iden}")
+                    elif task['type'] == "UNMUTE":
+                        server = self.bot.get_guild(SERVER_ID)
+                        member = server.get_member(task['user'])
+                        role = discord.utils.get(server.roles, name=ROLE_MUTED)
+                        self_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+                        await member.remove_roles(role, self_role)
+                        print(f"Unmuted user ID: {iden}")
+                    elif task['type'] == "UNSTEALFISHBAN":
+                        STEALFISH_BAN.remove(task['user'])
+                        print(f"Un-stealfished user ID: {iden}")
+                    else:
+                        print("ERROR:")
+                        await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{string}`")
+                    await delete("data", "cron", task["_id"])
+                except Exception as e:
+                    await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):
@@ -214,14 +160,16 @@ class CronTasks(commands.Cog):
             {"type": "playing", "message": "with wiki templates"},
             {"type": "watching", "message": "Jmol tutorials"},
         ]
-        botStatus = random.choice(statuses)
-        if botStatus["type"] == "playing":
-            await self.bot.change_presence(activity=discord.Game(name=botStatus["message"]))
-        elif botStatus["type"] == "listening":
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
-        elif botStatus["type"] == "watching":
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
-        print("Changed the bot's status.")
+        global SETTINGS
+        if SETTINGS['custom_bot_status_type'] == None:
+            botStatus = random.choice(statuses)
+            if botStatus["type"] == "playing":
+                await self.bot.change_presence(activity=discord.Game(name=botStatus["message"]))
+            elif botStatus["type"] == "listening":
+                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
+            elif botStatus["type"] == "watching":
+                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
+            print("Changed the bot's status.")
 
 def setup(bot):
     bot.add_cog(CronTasks(bot))

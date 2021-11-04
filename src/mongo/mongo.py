@@ -37,6 +37,21 @@ async def get_cron():
 async def get_censor():
     return await get_entire_collection("data", "censor", return_one = True)
 
+async def get_pings():
+    return await get_entire_collection("data", "pings")
+
+async def get_tags():
+    return await get_entire_collection("data", "tags")
+
+async def get_reports():
+    return await get_entire_collection("data", "reports")
+
+async def get_events():
+    return await get_entire_collection("data", "events")
+
+async def get_settings():
+    return await get_entire_collection("data", "settings", return_one = True)
+
 async def insert(db_name, collection_name, insert_dict):
     global client
     collection = client[db_name][collection_name]
