@@ -3,10 +3,10 @@ import random
 import json
 import datetime
 from discord.ext import commands, tasks
-from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSORED_EMOJIS, CENSORED_WORDS, EVENT_INFO, TAGS
+from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSORED_EMOJIS, CENSORED_WORDS, EVENT_INFO, TAGS, SETTINGS
 
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import get_cron, get_pings, get_censor, get_reports, get_tags, get_events, delete
+from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, delete
 from src.wiki.stylist import prettify_templates
 from src.discord.utils import auto_report
 
@@ -46,11 +46,13 @@ class CronTasks(commands.Cog):
         global CENSORED_EMOJIS
         global TAGS
         global EVENT_INFO
+        global SETTINGS
 
         REPORTS = await get_reports()
         PING_INFO = await get_pings()
         TAGS = await get_tags()
         EVENT_INFO = await get_events()
+        SETTINGS = await get_settings()
 
         censor = await get_censor()
         CENSORED_WORDS = censor[0]
@@ -158,14 +160,16 @@ class CronTasks(commands.Cog):
             {"type": "playing", "message": "with wiki templates"},
             {"type": "watching", "message": "Jmol tutorials"},
         ]
-        botStatus = random.choice(statuses)
-        if botStatus["type"] == "playing":
-            await self.bot.change_presence(activity=discord.Game(name=botStatus["message"]))
-        elif botStatus["type"] == "listening":
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
-        elif botStatus["type"] == "watching":
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
-        print("Changed the bot's status.")
+        global SETTINGS
+        if SETTINGS['custom_bot_status_type'] == None:
+            botStatus = random.choice(statuses)
+            if botStatus["type"] == "playing":
+                await self.bot.change_presence(activity=discord.Game(name=botStatus["message"]))
+            elif botStatus["type"] == "listening":
+                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
+            elif botStatus["type"] == "watching":
+                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
+            print("Changed the bot's status.")
 
 def setup(bot):
     bot.add_cog(CronTasks(bot))

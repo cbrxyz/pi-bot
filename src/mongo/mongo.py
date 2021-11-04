@@ -49,6 +49,9 @@ async def get_reports():
 async def get_events():
     return await get_entire_collection("data", "events")
 
+async def get_settings():
+    return await get_entire_collection("data", "settings", return_one = True)
+
 async def insert(db_name, collection_name, insert_dict):
     global client
     collection = client[db_name][collection_name]

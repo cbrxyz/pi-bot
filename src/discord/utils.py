@@ -1,5 +1,5 @@
 import discord
-from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORT_IDS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
+from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
 from embed import assemble_embed
 from src.mongo.mongo import get_censor
 
@@ -18,7 +18,7 @@ async def auto_report(bot, reason, color, message):
         }]
     )
     message = await reports_channel.send(embed=embed)
-    REPORT_IDS.append(message.id)
+    REPORTS.append(message.id)
     await message.add_reaction("\U00002705")
     await message.add_reaction("\U0000274C")
 

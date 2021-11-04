@@ -10,7 +10,7 @@ class PingManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         print("Ping manager enabled")
-    
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.channel.type == discord.ChannelType.private: return
@@ -59,7 +59,7 @@ class PingManager(commands.Cog):
             hexcolor="#2E66B6"
         )
         await user_to_send.send(embed=embed)
-    
+
     @commands.command(aliases=["donotdisturb"])
     async def dnd(self, ctx):
         member = ctx.message.author.id
@@ -76,7 +76,7 @@ class PingManager(commands.Cog):
                 return await ctx.send("Enabled DND mode for pings.")
         else:
             return await ctx.send("You can't enter DND mode without any pings!")
-    
+
     @commands.command()
     async def ping(self, ctx, command=None, *args):
         """Controls Pi-Bot's ping interface."""

@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 import datetime
 
+from src.mongo.mongo import update
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
@@ -113,7 +115,6 @@ CENSORED_EMOJIS = []
 EVENT_INFO = 0
 REPORTS = []
 PING_INFO = []
-SHELLS_OPEN = []
 RECENT_MESSAGES = []
 STEALFISH_BAN = []
 TOURNAMENT_INFO = []
@@ -121,3 +122,14 @@ TAGS = []
 STOPNUKE = datetime.datetime.utcnow()  # Was a bool, not is a datetime
 CRON_LIST = []
 CURRENT_WIKI_PAGE = None
+
+SETTINGS = {
+    '_id': None,
+    'custom_bot_status_type': None,
+    'custom_bot_status_text': None
+}
+
+async def update_setting(values):
+    for k, v in values.items():
+        SETTINGS[k] = v
+        await update("data", "settings", SETTINGS["_id"], {"$set": values})
