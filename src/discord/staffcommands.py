@@ -13,7 +13,7 @@ from commandchecks import is_staff, is_launcher
 import dateparser
 import pytz
 
-from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST, EMOJI_GUILDS
+from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST, EMOJI_GUILDS, TAGS, EVENT_INFO
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
@@ -1210,8 +1210,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invydelete",
         description = "Staff command. Deletes an invitational channel from the server."
     )
-    async def invitational_delete(
-        self,
+    async def invitational_delete(self,
         ctx,
         short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
     ):
@@ -1240,43 +1239,45 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await update_tournament_list(self.bot, {})
 
     @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
         name = 'censoradd',
         description = 'Staff commands. Adds a word or emoji to the censor list.'
     )
     async def censor_add(self,
         ctx,
-        type: Option(str, "Whether to add a new word or emoji to the list.", choices = ["word", "emoji"], required = True),
-        phrase: Option(str, "The new word or emoji to add. For a new word, type the word. For a new emoji, send the actual emoji.", required = True)
+        censor_type: Option(str, "Whether to add a new word or emoji to the list.", choices = ["word", "emoji"], required = True),
+        phrase: Option(str, "The new word or emoji to add. For a new word, type the word. For a new emoji, send the emoji.", required = True)
         ):
-        if type == "word":
+        if censor_type == "word":
             if phrase in CENSOR['words']:
                 await ctx.interaction.response.send_message(content = f"`{phrase}` is already in the censored words list. Operation cancelled.")
             else:
                 CENSOR['words'].append(phrase)
-                await update("data", "censor", censor['_id'], {"$push": {"words": phrase}})
-        elif type == "emoji":
+                await update("data", "censor", CENSOR['_id'], {"$push": {"words": phrase}})
+        elif censor_type == "emoji":
             if phrase in CENSOR['emojis']:
                 await ctx.interaction.response.send_message(content = f"{phrase} is already in the censored emoijs list. Operation cancelled.")
             else:
                 CENSOR['emojis'].append(phrase)
-                await update("data", "censor", censor['_id'], {"$push": {"emojis": phrase}})
+                await update("data", "censor", CENSOR['_id'], {"$push": {"emojis": phrase}})
 
     @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
         name = 'censorremove',
         description = 'Staff command. Removes a word/emoji from the censor list.'
     )
     async def censor_remove(self,
         ctx,
-        type: Option(str, "Whether to remove a word or emoji.", choices = ["word", "emoji"], required = True),
-        phrase: Option(str, "The word or emoji to remove from the censor list. If you would like to view what's on the censor list, please contact an administrator.", required = True)
+        censor_type: Option(str, "Whether to remove a word or emoji.", choices = ["word", "emoji"], required = True),
+        phrase: Option(str, "The word or emoji to remove from the censor list.", required = True)
         ):
-        if type == "word":
+        if censor_type == "word":
             if phrase not in CENSOR["words"]:
                 await ctx.interaction.response.send_message(content = f"`{phrase}` is not in the list of censored words.")
             else:
                 del CENSOR["words"][phrase]
                 await update("data", "censor", CENSOR['_id'], {"$pull": {"words": phrase}})
-        elif type == "emoji":
+        elif censor_type == "emoji":
             if phrase not in CENSOR["emojis"]:
                 await ctx.interaction.response.send_message(content = f"`{phrase}` is not in the list of censored emojis.")
             else:
@@ -1284,39 +1285,83 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 await update("data", "censor", CENSOR["_id"], {"$pull": {"emojis": phrase}})
 
     @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
         name = "tagadd",
         description = "Staff command. Adds a new tag."
     )
-    async def tag_add(self):
-        pass
+    async def tag_add(self,
+        ctx,
+        tag_name: Option(str, "The name of the tag to add.", required = True),
+        launch_helpers: Option(str, "Whether launch helpers can use. Defaults to yes.", choices = ["yes", "no"], default = "yes"),
+        members: Option(str, "Whether all members can use this tag. Defaults to yes.", choices = ["yes", "no"], default = "yes")
+        ):
+        if tag_name in [t['name'] for t in TAGS]:
+            await ctx.interaction.response.send_message(content = f"The `{tag_name}` tag has already been added. To edit this tag, please use `/tagedit` instead.")
+        else:
+            await ctx.interaction.response.defer()
 
-    @discord.commands.slash_command(
-        name = "tagedit",
-        description = "Staff command. Edits an existing tag."
-    )
-    async def tag_edit(self):
-        pass
+            succesful = False
+            while not succesful:
+                info_message = await ctx.send("Please send the new text for the tag enclosed in a preformatted block. The block should begin and end with three backticks, with no content on the line of the backticks. If no response is found in 2 minutes, the operation will be cancelled.")
+                content_message = await listen_for_response(
+                    follow_id = ctx.user.id,
+                    timeout = 120,
+                )
 
-    @discord.commands.slash_command(
-        name = "tagremove",
-        description = "Staff command. Removes a tag completely."
-    )
-    async def tag_remove(self):
-        pass
+                if content_message == None:
+                    await ctx.interaction.edit_original_message(content = "No message was found within 2 minutes. Operation cancelled.")
+                    return
 
-    @discord.commands.slash_command(
-        name = "eventadd",
-        description = "Staff command. Adds a new event."
-    )
-    async def event_add(self):
-        pass
+                text = content_message.content
+                await content_message.delete()
+                await info_message.delete()
+                matches = re.findall(r"(?<=```\n)(.*)(?=\n```)", text, flags = re.MULTILINE | re.DOTALL)
+                if len(matches) < 0:
+                    await ctx.interaction.edit_original_message(content = "No matching preformatted block was found. Operation cancelled.")
+                    return
+                else:
+                    new_dict = {
+                        'name': tag_name,
+                        'output': matches[0],
+                        'permissions': {
+                            'staff': True,
+                            'launch_helpers': True if launch_helpers == "yes" else False,
+                            'members': True if members == "yes" else False
+                        }
+                    }
 
-    @discord.commands.slash_command(
-        name = 'eventremove',
-        description = "Removes an event's availability and optionally, its role from all users."
-    )
-    async def event_remove(self):
-        pass
+                    TAGS.append(new_dict)
+                    await insert("data", "tags", new_dict)
+                    succesful = True
+                    await ctx.interaction.edit_original_message(content = f"The `{tag_name}` tag was added!")
+
+    # @discord.commands.slash_command(
+    #     name = "tagedit",
+    #     description = "Staff command. Edits an existing tag."
+    # )
+    # async def tag_edit(self, ctx):
+    #     pass
+
+    # @discord.commands.slash_command(
+    #     name = "tagremove",
+    #     description = "Staff command. Removes a tag completely."
+    # )
+    # async def tag_remove(self, ctx):
+    #     pass
+
+    # @discord.commands.slash_command(
+    #     name = "eventadd",
+    #     description = "Staff command. Adds a new event."
+    # )
+    # async def event_add(self, ctx):
+    #     pass
+
+    # @discord.commands.slash_command(
+    #     name = 'eventremove',
+    #     description = "Removes an event's availability and optionally, its role from all users."
+    # )
+    # async def event_remove(self, ctx):
+    #     pass
 
 def setup(bot):
     bot.add_cog(StaffEssential(bot))

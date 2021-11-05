@@ -3,7 +3,7 @@ import random
 import json
 import datetime
 from discord.ext import commands, tasks
-from src.discord.globals import PING_INFO, REPORTS, CRON_LIST, SERVER_ID, CHANNEL_LEAVE, can_post, ROLE_MUTED, ROLE_SELFMUTE, STEALFISH_BAN, CENSOR, EVENT_INFO, TAGS, SETTINGS
+import src.discord.globals
 
 from src.discord.tournaments import update_tournament_list
 from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, delete
@@ -40,42 +40,34 @@ class CronTasks(commands.Cog):
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
-        global PING_INFO
-        global REPORTS
-        global CENSOR
-        global TAGS
-        global EVENT_INFO
-        global SETTINGS
+        src.discord.globals.REPORTS = await get_reports()
+        src.discord.globals.PING_INFO = await get_pings()
+        src.discord.globals.TAGS = await get_tags()
+        src.discord.globals.EVENT_INFO = await get_events()
+        src.discord.globals.SETTINGS = await get_settings()
 
-        REPORTS = await get_reports()
-        PING_INFO = await get_pings()
-        TAGS = await get_tags()
-        EVENT_INFO = await get_events()
-        SETTINGS = await get_settings()
-
-        censor = await get_censor()
-        CENSOR = censor
+        src.discord.globals.CENSOR = await get_censor()
         print("Fetched previous variables.")
 
     async def handle_cron(self, string):
         try:
             if string.find("unban") != -1:
                 iden = int(string.split(" ")[1])
-                server = self.bot.get_guild(SERVER_ID)
+                server = self.bot.get_guild(src.discord.globals.SERVER_ID)
                 member = await self.bot.fetch_user(int(iden))
                 await server.unban(member)
                 print(f"Unbanned user ID: {iden}")
             elif string.find("unmute") != -1:
                 iden = int(string.split(" ")[1])
-                server = self.bot.get_guild(SERVER_ID)
+                server = self.bot.get_guild(src.discord.globals.SERVER_ID)
                 member = server.get_member(int(iden))
-                role = discord.utils.get(server.roles, name=ROLE_MUTED)
-                self_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+                role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_MUTED)
+                self_role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_SELFMUTE)
                 await member.remove_roles(role, self_role)
                 print(f"Unmuted user ID: {iden}")
             elif string.find("unstealfishban") != -1:
                 iden = int(string.split(" ")[1])
-                STEALFISH_BAN.remove(iden)
+                src.discord.globals.STEALFISH_BAN.remove(iden)
                 print(f"Un-stealfished user ID: {iden}")
             else:
                 print("ERROR:")
@@ -86,12 +78,12 @@ class CronTasks(commands.Cog):
     @tasks.loop(minutes=5)
     async def update_member_count(self):
         """Updates the member count shown on hidden VC"""
-        guild = self.bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         channel_prefix = "Members"
         vc = discord.utils.find(lambda c: channel_prefix in c.name, guild.voice_channels)
         mem_count = guild.member_count
         joined_today = len([m for m in guild.members if m.joined_at.date() == datetime.datetime.today().date()])
-        left_channel = discord.utils.get(guild.text_channels, name=CHANNEL_LEAVE)
+        left_channel = discord.utils.get(guild.text_channels, name=src.discord.globals.CHANNEL_LEAVE)
         left_messages = await left_channel.history(limit=200).flatten()
         left_today = len([m for m in left_messages if m.created_at.date() == datetime.datetime.today().date()])
         await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
@@ -106,19 +98,19 @@ class CronTasks(commands.Cog):
                 # The date has passed, now do
                 try:
                     if task['type'] == "UNBAN":
-                        server = self.bot.get_guild(SERVER_ID)
+                        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
                         member = await self.bot.fetch_user(task['user'])
                         await server.unban(member)
                         print(f"Unbanned user ID: {iden}")
                     elif task['type'] == "UNMUTE":
-                        server = self.bot.get_guild(SERVER_ID)
+                        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
                         member = server.get_member(task['user'])
-                        role = discord.utils.get(server.roles, name=ROLE_MUTED)
-                        self_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
+                        role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_MUTED)
+                        self_role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_SELFMUTE)
                         await member.remove_roles(role, self_role)
                         print(f"Unmuted user ID: {iden}")
                     elif task['type'] == "UNSTEALFISHBAN":
-                        STEALFISH_BAN.remove(task['user'])
+                        src.discord.globals.STEALFISH_BAN.remove(task['user'])
                         print(f"Un-stealfished user ID: {iden}")
                     else:
                         print("ERROR:")
@@ -158,8 +150,7 @@ class CronTasks(commands.Cog):
             {"type": "playing", "message": "with wiki templates"},
             {"type": "watching", "message": "Jmol tutorials"},
         ]
-        global SETTINGS
-        if SETTINGS['custom_bot_status_type'] == None:
+        if src.discord.globals.SETTINGS['custom_bot_status_type'] == None:
             botStatus = random.choice(statuses)
             if botStatus["type"] == "playing":
                 await self.bot.change_presence(activity=discord.Game(name=botStatus["message"]))

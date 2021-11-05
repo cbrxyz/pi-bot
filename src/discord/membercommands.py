@@ -1,8 +1,9 @@
 import discord
+from discord.commands import Option
 import random
 import wikipedia as wikip
 from discord.ext import commands
-from src.discord.globals import TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR
+from src.discord.globals import TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
 from embed import assemble_embed
 from src.discord.utils import harvest_id
 from src.wiki.wiki import get_page_tables
@@ -773,22 +774,29 @@ class MemberCommands(commands.Cog, name='Member'):
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         await ctx.send(event_res)
 
-    @commands.command(aliases=["tags", "t"])
-    async def tag(self, ctx, name):
-        member = ctx.message.author
-        if len(TAGS) == 0:
-            return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Allows staff to manipulate the CRON list."
+    )
+    async def tag(self,
+        ctx,
+        tag_name: Option(str, "The name of the tag to get.", required = True)
+        ):
+        member = ctx.author
+        print(TAGS)
+        if not len(TAGS):
+            return await ctx.interaction.response.send_message("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
         staff = is_staff()
         lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
         for t in TAGS:
-            if t['name'] == name:
+            if t['name'] == tag_name:
                 if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
                     await ctx.message.delete()
-                    return await ctx.send(t['text'])
+                    return await ctx.interaction.response.send_message(content = t['output'])
                 else:
-                    return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
-        return await ctx.send("Tag not found.")
+                    return await ctx.interaction.response.send_message(content = "Unfortunately, you do not have the permissions for this tag.")
+        return await ctx.interaction.response.send_message("Tag not found.")
 
     @commands.command()
     async def graphpage(self, ctx, title, temp_format, table_index, div, place_col=0):
