@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import src.discord.globals
 from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS
 import re
 from commandchecks import is_author_staff
@@ -21,12 +22,12 @@ class Censor(commands.Cog):
         """
         content = message.content
         # print(f"content before censor: \"{content}\"")
-        for word in CENSOR['words']:
+        for word in src.discord.globals.CENSOR['words']:
             if len(re.findall(fr"\b({word})\b", content, re.I)):
                 print(f"Censoring message by {message.author} because of the word: `{word}`")
                 await message.delete()
                 await self.__censor(message)
-        for word in CENSOR['emojis']:
+        for word in src.discord.globals.CENSOR['emojis']:
             if len(re.findall(fr"{word}", content)):
                 print(f"Censoring message by {message.author} because of the emoji: `{word}`")
                 await message.delete()
@@ -43,9 +44,9 @@ class Censor(commands.Cog):
         ava = message.author.avatar_url
         wh = await channel.create_webhook(name="Censor (Automated)")
         content = message.content
-        for word in CENSOR['words']:
+        for word in src.discord.globals.CENSOR['words']:
             content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
-        for word in CENSOR['emojis']:
+        for word in src.discord.globals.CENSOR['emojis']:
             content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
         author = message.author.nick
         if author == None:
