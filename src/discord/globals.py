@@ -70,6 +70,7 @@ CHANNEL_REPORTS = "reports"
 CHANNEL_JOIN = "join-logs"
 CHANNEL_UNSELFMUTE = "un-self-mute"
 CHANNEL_COMPETITIONS = "competitions"
+CHANNEL_ROLES = "roles"
 
 # Categories
 CATEGORY_TOURNAMENTS = "invitationals"

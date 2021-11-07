@@ -4,7 +4,7 @@ import random
 import wikipedia as wikip
 from discord.ext import commands
 import src.discord.globals
-from src.discord.globals import TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
+from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
 from embed import assemble_embed
 from src.discord.utils import harvest_id
 from src.wiki.wiki import get_page_tables
@@ -34,21 +34,31 @@ class MemberCommands(commands.Cog, name='Member'):
     async def on_message(self, message):
         pass
 
-    @commands.command(aliases=["man"])
-    async def help(self, ctx, command:str=None):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Looking for help? Try this!"
+    )
+    async def help(self,
+        ctx
+        ):
         """Allows a user to request help for a command."""
-        if command == None:
-            embed = assemble_embed(
-                title="Looking for help?",
-                desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
-                "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
-                "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" +
-                "If you want to see some commands that you can use on me, just type `!list`! " +
-                "If you need more help, please feel free to reach out to a staff member!")
-            )
-            return await ctx.send(embed=embed)
-        hlp = await get_help(ctx, command)
-        await ctx.send(embed=hlp)
+        server = self.bot.get_guild(SERVER_ID)
+        invitationals_channel = discord.utils.get(server.text_channels, name = CHANNEL_TOURNAMENTS)
+        roles_channel = discord.utils.get(server.text_channels, name = CHANNEL_ROLES)
+
+        help_embed = discord.Embed(
+            title = "Looking for help?",
+            color = discord.Color(0x2E66B6),
+            description = f"""
+            Hey there, I'm Scioly.org's resident bot, and I'm here to assist with all of your needs.
+
+            To interact with me, use _slash commands_ by typing `/` and the name of the command into the text bar below. You can also use the dropdowns in the {invitationals_channel.mention} and {roles_channel.mention} channels to assign yourself roles!
+
+            If you're looking for more help, feel free to ask other members (including our helpful staff members) for more information.
+            """
+        )
+
+        return await ctx.interaction.response.send_message(embed = help_embed)
 
     @commands.command()
     async def pronouns(self, ctx, *args):
