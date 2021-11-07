@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The bot can now listen for individual user responses. Helpful for users attempting to interact with application commands in complex ways.
 * `/invyadd`, `/invyapprove`, `/invyedit`, and `/invyarchive` allow staff to manage invitational data
 * Invitational tournaments can now be archived from any channel
+* `/eventadd` and `/eventremove` allow staff to modify events from the server
+* `/tagadd`, `/tagedit`, and `/tagremove` allow staff to modify tags from the server
+* `/censoradd` and `/censorremove` allow staff to modify censor entries from the server
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
@@ -22,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The default Python runtime was updated to 3.9.7.
 * New tournament channels will not be created if an appropriate tournament channel already exists, just in the archived category
 * Automated data updates are no longer made on a constant basis; rather, data is updated only when changes are needed because of a process
+* `/pronouns` only allows adding/removing one pronoun role at once.
 
 ### Removed
 * The exalt/unexalt commands were removed.
@@ -31,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The forums-interacting aspect of the bot was removed.
 * The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.
 * The wiki stylist was temporarily disabled.
+* `/me` was removed.
 
 ### Fixed
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))

@@ -60,59 +60,23 @@ class MemberCommands(commands.Cog, name='Member'):
 
         return await ctx.interaction.response.send_message(embed = help_embed)
 
-    @commands.command()
-    async def pronouns(self, ctx, *args):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles your pronoun roles."
+    )
+    async def pronouns(self, 
+        ctx,
+        pronouns: Option(str, "The pronoun to add/remove from your account.", choices = [ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY], required = True)
+        ):
         """Assigns or removes pronoun roles from a user."""
-        member = ctx.message.author
-        if len(args) < 1:
-            await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
-        he_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_HE)
-        she_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_SHE)
-        they_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_THEY)
-        for arg in args:
-            if arg.lower() in ["he", "him", "his", "he / him / his"]:
-                if he_role in member.roles:
-                    await ctx.send("Oh, looks like you already have the He / Him / His role. Removing it.")
-                    await member.remove_roles(he_role)
-                else:
-                    await member.add_roles(he_role)
-                    await ctx.send("Added the He / Him / His role.")
-            elif arg.lower() in ["she", "her", "hers", "she / her / hers"]:
-                if she_role in member.roles:
-                    await ctx.send("Oh, looks like you already have the She / Her / Hers role. Removing it.")
-                    await member.remove_roles(she_role)
-                else:
-                    await member.add_roles(she_role)
-                    await ctx.send("Added the She / Her / Hers role.")
-            elif arg.lower() in ["they", "them", "their", "they / them / their"]:
-                if they_role in member.roles:
-                    await ctx.send("Oh, looks like you already have the They / Them / Theirs role. Removing it.")
-                    await member.remove_roles(they_role)
-                else:
-                    await member.add_roles(they_role)
-                    await ctx.send("Added the They / Them / Theirs role.")
-            elif arg.lower() in ["remove", "clear", "delete", "nuke"]:
-                await member.remove_roles(he_role, she_role, they_role)
-                return await ctx.send("Alrighty, your pronouns have been removed.")
-            elif arg.lower() in ["help", "what"]:
-                return await ctx.send("For help with pronouns, please use `!help pronouns`.")
-            else:
-                return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
-                "> `!pronouns he  ` (which gives you *He / Him / His*)\n" +
-                "> `!pronouns she ` (which gives you *She / Her / Hers*)\n" +
-                "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
-                "To remove pronouns, use `!pronouns remove`.\n" +
-                "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
-
-    # Never understood why this exists when there's the built in /me
-    @commands.command()
-    async def me(self, ctx, *args):
-        """Replaces the good ol' /me"""
-        await ctx.message.delete()
-        if len(args) < 1:
-            return await ctx.send(f"*{ctx.message.author.mention} " + "is cool!*")
+        member = ctx.author
+        pronoun_role = discord.utils.get(member.guild.roles, name=pronouns)
+        if pronoun_role in member.roles:
+            await member.remove_roles(pronoun_role)
+            await ctx.interaction.response.send_message(content = f"Removed your `{pronouns}` role.")
         else:
-            await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
+            await member.add_roles(pronoun_role)
+            await ctx.interaction.response.send_message(content = f"Added the `{pronouns}` role to your profile.")
 
     @commands.command()
     async def profile(self, ctx, name:str=False):
