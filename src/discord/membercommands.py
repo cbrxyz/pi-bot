@@ -1,4 +1,7 @@
 import discord
+import aiohttp
+import re
+import datetime
 from discord.commands import Option
 import random
 import wikipedia as wikip
@@ -78,25 +81,82 @@ class MemberCommands(commands.Cog, name='Member'):
             await member.add_roles(pronoun_role)
             await ctx.interaction.response.send_message(content = f"Added the `{pronouns}` role to your profile.")
 
-    @commands.command()
-    async def profile(self, ctx, name:str=False):
-        if name == False:
-            member = ctx.message.author
-            name = member.nick
-            if name == None:
-                name = member.name
-        elif name.find("<@") != -1:
-            iden = await harvest_id(name)
-            member = ctx.message.author.guild.get_member(int(iden))
-            name = member.nick
-            if name == None:
-                name = member.name
-        embed = assemble_embed(
-            title=f"Scioly.org Information for {name}",
-            desc=(f"[`Forums`](https://scioly.org/forums/memberlist.php?mode=viewprofile&un={name}) | [`Wiki`](https://scioly.org/wiki/index.php?title=User:{name})"),
-            hexcolor="#2E66B6"
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gets the profile information for a username."
+    )
+    async def profile(self,
+        ctx,
+        username: Option(str, "The username to get information about. Defaults to your nickname/username.", required = True)
+        ):
+        if username == None:
+            member = ctx.author
+            username = member.nick
+            if username == None:
+                username = member.name
+
+        session = aiohttp.ClientSession()
+        page = await session.get(f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}")
+        await session.close()
+        if page.status > 400:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a user by the username of `{username}`.")
+        text = await page.content.read()
+        text = text.decode('utf-8')
+
+        description = ""
+        total_posts_matches = re.search(r"(?:<dt>Total posts:<\/dt>\s+<dd>)(\d+)", text, re.MULTILINE)
+        if total_posts_matches == None:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a user by the username of `{username}`.")
+        else:
+            description += f"**Total Posts:** `{total_posts_matches.group(1)} posts`\n"
+
+        has_thanked_matches = re.search(r"Has thanked: <a.*?>(\d+)", text, re.MULTILINE)
+        description += f"**Has Thanked:** `{has_thanked_matches.group(1)} times`\n"
+
+        been_thanked_matches = re.search(r"Been(?:&nbsp;)?thanked: <a.*?>(\d+)", text, re.MULTILINE)
+        description += f"**Been Thanked:** `{been_thanked_matches.group(1)} times`\n"
+
+        date_regexes = [
+            {"name": "Joined", "regex": r"<dt>Joined:</dt>\s+<dd>(.*?)</dd>"},
+            {"name": "Last Active", "regex": r"<dt>Last active:</dt>\s+<dd>(.*?)</dd>"},
+        ]
+        for pattern in date_regexes:
+            try:
+                matches = re.search(pattern["regex"], text, re.MULTILINE)
+                raw_dt_string = matches.group(1)
+                raw_dt_string = raw_dt_string.replace("st", "")
+                raw_dt_string = raw_dt_string.replace("nd", "")
+                raw_dt_string = raw_dt_string.replace("rd", "")
+                raw_dt_string = raw_dt_string.replace("th", "")
+
+                raw_dt = datetime.datetime.strptime(raw_dt_string, "%B %d, %Y, %I:%M %p")
+                description += f"**{pattern['name']}:** {discord.utils.format_dt(raw_dt, 'R')}\n"
+            except:
+                # Occurs if the time can't be parsed/found
+                pass
+
+        for i in range(1, 7):
+            stars_matches = re.search(rf"<img src=\"./images/ranks/stars{i}\.gif\"", text, re.MULTILINE)
+            if stars_matches != None:
+                description += f"\n**Stars:** {i * ':star:'}"
+                break
+            exalts_matches = re.search(rf"<img src=\"./images/ranks/exalt{i}\.gif\"", text, re.MULTILINE)
+            if exalts_matches != None:
+                description += f"\n**Stars:** {4 * ':star:'}\n" # All exalts have 4 stars
+                description += f"**Medals:** {i * ':medal:'}"
+                break
+
+        profile_embed = discord.Embed(
+            title = f"`{username}`",
+            color = discord.Color(0x2E66B6),
+            description = description
         )
-        await ctx.send(embed=embed)
+
+        avatar_matches = re.search(r"<img class=\"avatar\" src=\"(.*?)\"", text, re.MULTILINE)
+        if avatar_matches != None:
+            profile_embed.set_thumbnail(url = "https://scioly.org/forums" + avatar_matches.group(1)[1:])
+
+        await ctx.interaction.response.send_message(embed = profile_embed)
 
     @commands.command()
     async def latex(self, ctx, *args):
