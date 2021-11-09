@@ -166,10 +166,13 @@ class MemberCommands(commands.Cog, name='Member'):
         guild = ctx.author.guild
         await ctx.interaction.response.send_message(content = f"Currently, there are `{len(guild.members)}` members in the server.")
 
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles the Alumni role."
+    )
     async def alumni(self, ctx):
         """Removes or adds the alumni role from a user."""
-        member = ctx.message.author
+        member = ctx.author
         div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
         div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
         div_c_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
@@ -177,37 +180,43 @@ class MemberCommands(commands.Cog, name='Member'):
         role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
         if role in member.roles:
             await member.remove_roles(role)
-            await ctx.send("Removed your alumni status.")
+            await ctx.interaction.response.send_message(content = "Removed your alumni status.")
         else:
             await member.add_roles(role)
-            await ctx.send(f"Added the alumni role, and removed all other division roles.")
+            await ctx.interaction.response.send_message(content = f"Added the alumni role, and removed all other division roles.")
 
-    @commands.command(aliases=["div"])
-    async def division(self, ctx, div):
-        if div.lower() == "a":
-            res = await self.__assign_div(ctx, "Division A")
-            await ctx.send("Assigned you the Division A role, and removed all other divison/alumni roles.")
-        elif div.lower() == "b":
-            res = await self.__assign_div(ctx, "Division B")
-            await ctx.send("Assigned you the Division B role, and removed all other divison/alumni roles.")
-        elif div.lower() == "c":
-            res = await self.__assign_div(ctx, "Division C")
-            await ctx.send("Assigned you the Division C role, and removed all other divison/alumni roles.")
-        elif div.lower() == "d":
-            await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
-        elif div.lower() in ["remove", "clear", "none", "x"]:
-            member = ctx.message.author
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles division roles for the user."
+    )
+    async def division(self,
+        ctx,
+        div: Option(str, "The division to assign the user with.", choices = ["Division A", "Division B", "Division C", "Alumni", "None"], required = True)
+        ):
+        if div == "Division A":
+            res = await self._assign_div(ctx, "Division A")
+            await ctx.interaction.response.send_message(content = "Assigned you the Division A role, and removed all other divison/alumni roles.")
+        elif div == "Division B":
+            res = await self._assign_div(ctx, "Division B")
+            await ctx.interaction.response.send_message(content = "Assigned you the Division B role, and removed all other divison/alumni roles.")
+        elif div == "Division C":
+            res = await self._assign_div(ctx, "Division C")
+            await ctx.interaction.response.send_message(content = "Assigned you the Division C role, and removed all other divison/alumni roles.")
+        elif div == "Alumni":
+            res = await self._assign_div(ctx, "Alumni")
+            await ctx.interaction.response.send_message(content = "Assigned you the Alumni role, and removed all other divison/alumni roles.")
+        elif div == "None":
+            member = ctx.author
             div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
             div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
             div_c_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
-            await member.remove_roles(div_a_role, div_b_role, div_c_role)
-            await ctx.send("Removed all of your division/alumni roles.")
-        else:
-            return await ctx.send("Sorry, I don't seem to see that division. Try `!division c` to assign the Division C role, or `!division d` to assign the Division D role.")
+            alumni_role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
+            await member.remove_roles(div_a_role, div_b_role, div_c_role, alumni_role)
+            await ctx.interaction.response.send_message(content = "Removed all of your division/alumni roles.")
 
-    async def __assign_div(self, ctx, div):
+    async def _assign_div(self, ctx, div):
         """Assigns a user a div"""
-        member = ctx.message.author
+        member = ctx.author
         role = discord.utils.get(member.guild.roles, name=div)
         div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
         div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
