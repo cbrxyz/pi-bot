@@ -158,45 +158,13 @@ class MemberCommands(commands.Cog, name='Member'):
 
         await ctx.interaction.response.send_message(embed = profile_embed)
 
-    @commands.command()
-    async def latex(self, ctx, *args):
-        new_args = " ".join(args)
-        print(new_args)
-        new_args = new_args.replace(" ", r"&space;")
-        print(new_args)
-        await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}" + new_args + "}")
-
-    @commands.command(aliases=["membercount"])
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns the number of members in the server."
+    )
     async def count(self, ctx):
-        guild = ctx.message.author.guild
-        await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
-
-    @commands.command()
-    async def resultstemplate(self, ctx, url):
-        if url.find("scilympiad.com") == -1:
-            return await ctx.send("The URL must be a Scilympiad results link.")
-        await ctx.send("**Warning:** Because Scilympiad is constantly evolving, this command may break. Please preview the template on the wiki before saving! If this command breaks, please DM pepperonipi or open an issue on GitHub. Thanks!")
-        res = await make_results_template(url)
-        with open("resultstemplate.txt", "w+") as t:
-            t.write(res)
-        file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
-        await ctx.send(file=file)
-
-    @commands.command()
-    async def school(self, ctx, title, state):
-        lists = await get_school_listing(title, state)
-        fields = []
-        if len(lists) > 20:
-            return await ctx.send(f"Woah! Your query returned `{len(lists)}` schools, which is too much to send at once. Try narrowing your query!")
-        for l in lists:
-            fields.append({'name': l['name'], 'value': f"```{l['wikicode']}```", 'inline': "False"})
-        embed = assemble_embed(
-            title="School Data",
-            desc=f"Your query for `{title}` in `{state}` returned `{len(lists)}` results. Thanks for contribtuing to the wiki!",
-            fields=fields,
-            hexcolor="#2E66B6"
-        )
-        await ctx.send(embed=embed)
+        guild = ctx.author.guild
+        await ctx.interaction.response.send_message(content = f"Currently, there are `{len(guild.members)}` members in the server.")
 
     @commands.command()
     async def alumni(self, ctx):
