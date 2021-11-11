@@ -226,47 +226,22 @@ class MemberCommands(commands.Cog, name='Member'):
         await member.add_roles(role)
         return True
 
-    @commands.command()
-    async def list(self, ctx, cmd:str=False):
-        """Lists all of the commands a user may access."""
-        if cmd == False: # for quick list of commands
-            ls = await get_quick_list(ctx)
-            await ctx.send(embed=ls)
-        if cmd == "all" or cmd == "commands":
-            ls = await get_list(ctx.message.author, 1)
-            sent_list = await ctx.send(embed=ls)
-            await sent_list.add_reaction(EMOJI_FAST_REVERSE)
-            await sent_list.add_reaction(EMOJI_LEFT_ARROW)
-            await sent_list.add_reaction(EMOJI_RIGHT_ARROW)
-            await sent_list.add_reaction(EMOJI_FAST_FORWARD)
-        elif cmd == "states":
-            states_list = await get_state_list()
-            list = assemble_embed(
-                title="List of all states",
-                desc="\n".join([f"`{state}`" for state in states_list])
-            )
-            await ctx.send(embed=list)
-        elif cmd == "events":
-            events_list = [r['eventName'] for r in EVENT_INFO]
-            list = assemble_embed(
-                title="List of all events",
-                desc="\n".join([f"`{name}`" for name in events_list])
-            )
-            await ctx.send(embed=list)
-
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles the visibility of the #games channel."
+    )
     async def games(self, ctx):
         """Removes or adds someone to the games channel."""
-        games_channel = discord.utils.get(ctx.message.author.guild.text_channels, name=CHANNEL_GAMES)
-        member = ctx.message.author
+        games_channel = discord.utils.get(ctx.author.guild.text_channels, name=CHANNEL_GAMES)
+        member = ctx.author
         role = discord.utils.get(member.guild.roles, name=ROLE_GAMES)
         if role in member.roles:
             await member.remove_roles(role)
-            await ctx.send("Removed you from the games club... feel free to come back anytime!")
+            await ctx.interaction.response.send_message(content = "Removed you from the games club... feel free to come back anytime!")
             await games_channel.send(f"{member.mention} left the party.")
         else:
             await member.add_roles(role)
-            await ctx.send(f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:")
+            await ctx.interaction.response.send_message(content = f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:")
             await games_channel.send(f"Please welcome {member.mention} to the party!!")
 
     @commands.command(aliases=["state"])

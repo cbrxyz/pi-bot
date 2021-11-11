@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.
 * The wiki stylist was temporarily disabled.
 * `/me` was removed.
+* `/list` was removed, as users can now see all commands in a list through Discord UI.
 * `/latex`, `/resultstemplate`, and `/school` were temporarily removed.
 
 ### Fixed
