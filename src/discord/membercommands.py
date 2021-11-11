@@ -67,7 +67,7 @@ class MemberCommands(commands.Cog, name='Member'):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Toggles your pronoun roles."
     )
-    async def pronouns(self, 
+    async def pronouns(self,
         ctx,
         pronouns: Option(str, "The pronoun to add/remove from your account.", choices = [ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY], required = True)
         ):
@@ -244,17 +244,21 @@ class MemberCommands(commands.Cog, name='Member'):
             await ctx.interaction.response.send_message(content = f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:")
             await games_channel.send(f"Please welcome {member.mention} to the party!!")
 
-    @commands.command(aliases=["state"])
-    async def states(self, ctx, *args):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles the visibility of state roles and channels."
+    )
+    async def states(self,
+        ctx,
+        states: Option(str, "The states to toggle. For example 'Missouri, Iowa, South Dakota'.`", required = True)
+        ):
         """Assigns someone with specific states."""
-        new_args = [str(arg).lower() for arg in args]
-
-        # Fix commas as possible separator
-        if len(new_args) == 1:
-            new_args = new_args[0].split(",")
+        new_args = states.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
+        new_args = [arg.strip() for arg in new_args]
+        print(new_args)
 
-        member = ctx.message.author
+        member = ctx.author
         states = await get_state_list()
         states = [s[:s.rfind(" (")] for s in states]
         triple_word_states = [s for s in states if len(s.split(" ")) > 2]
@@ -262,12 +266,10 @@ class MemberCommands(commands.Cog, name='Member'):
         removed_roles = []
         added_roles = []
         for term in ["california", "ca", "cali"]:
-            if term in [arg.lower() for arg in args]:
-                return await ctx.send("Which California, North or South? Try `!state norcal` or `!state socal`.")
-        if len(new_args) < 1:
-            return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
-        elif len(new_args) > 10:
-            return await ctx.send("Sorry, you are attempting to add/remove too many states at once.")
+            if term in [arg.lower() for arg in new_args]:
+                return await ctx.interaction.response.send_message("Which California, North or South? Try `/state norcal` or `/state socal`.")
+        if len(new_args) > 10:
+            return await ctx.interaction.response.send_message("Sorry, you are attempting to add/remove too many states at once.")
         for string in ["South", "North"]:
             california_list = [f"California ({string})", f"California-{string}", f"California {string}", f"{string}ern California", f"{string} California", f"{string} Cali", f"Cali {string}", f"{string} CA", f"CA {string}"]
             if string == "North":
@@ -320,7 +322,7 @@ class MemberCommands(commands.Cog, name='Member'):
         for arg in new_args:
             role_name = await lookup_role(arg)
             if role_name == False:
-                return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
+                return await ctx.interaction.response.send_message(f"Sorry, the `{arg}` state could not be found. Try again.")
             role = discord.utils.get(member.guild.roles, name=role_name)
             if role in member.roles:
                 await member.remove_roles(role)
@@ -334,7 +336,7 @@ class MemberCommands(commands.Cog, name='Member'):
             state_res = "Removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
         else:
             state_res = "Added states " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", and removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
-        await ctx.send(state_res)
+        await ctx.interaction.response.send_message(state_res)
 
     def is_not_staff(exception: Type[commands.CommandError], message: str):
         async def predicate(ctx):
