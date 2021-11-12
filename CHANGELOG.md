@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The exalt/unexalt commands were removed.
 * The getVariable command was removed.
 * The nukeuntil command was temporarily removed.
+* Users can no longer indefinitely self-mute.
 * Google Sheets is no longer used to store data, and all systems related to storing data in Google Sheets were removed.
 * The forums-interacting aspect of the bot was removed.
 * The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.

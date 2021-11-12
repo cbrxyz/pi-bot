@@ -7,12 +7,14 @@ import random
 import wikipedia as wikip
 from discord.ext import commands
 import src.discord.globals
-from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
+from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, CHANNEL_UNSELFMUTE, ROLE_SELFMUTE, TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
 from embed import assemble_embed
 from src.discord.utils import harvest_id
+from src.discord.views import YesNo
 from src.wiki.wiki import get_page_tables
 from src.wiki.scilympiad import make_results_template, get_points
 from src.wiki.schools import get_school_listing
+from src.mongo.mongo import insert
 from commands import get_list, get_quick_list, get_help
 from lists import get_state_list
 from src.discord.utils import lookup_role
@@ -345,19 +347,76 @@ class MemberCommands(commands.Cog, name='Member'):
             raise exception(message)
         return commands.check(predicate)
 
-    @commands.command()
-    @is_not_staff(SelfMuteCommandStaffInvoke, "A staff member attempted to invoke selfmute.")
-    async def selfmute(self, ctx, *args):
+    #@is_not_staff(SelfMuteCommandStaffInvoke, "A staff member attempted to invoke selfmute.")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Mutes yourself."
+    )
+    async def selfmute(self,
+        ctx,
+        mute_length: Option(str, "How long to mute yourself for.", choices = [
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year"
+        ])
+        ):
         """
         Self mutes the user that invokes the command.
-
-        :param *args: The time to mute the user for.
-        :type *args: str
         """
-        user = ctx.message.author
+        member = ctx.author
 
-        time = " ".join(args)
-        await _mute(ctx, user, time, self=True)
+        times = {
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
+        }
+        selected_time = times[mute_length]
+
+        original_shown_embed = discord.Embed(
+            title = "Mute Confirmation",
+            color = discord.Color.brand_red(),
+            description = f"""
+            You will be muted across the entire server. You will no longer be able to communicate in any channels you can read until {discord.utils.format_dt(selected_time)}.
+            """
+        )
+
+        view = YesNo()
+        await ctx.interaction.response.send_message(content = "Please confirm that you would like to mute yourself.", view = view, embed = original_shown_embed, ephemeral = True)
+
+        await view.wait()
+        if view.value:
+            try:
+                role = discord.utils.get(member.guild.roles, name=ROLE_SELFMUTE)
+                unselfmute_channel = discord.utils.get(member.guild.text_channels, name = CHANNEL_UNSELFMUTE)
+                await member.add_roles(role)
+                await insert("data", "cron",
+                    {
+                        "type": "UNSELFMUTE",
+                        "user": member.id,
+                        "time": times[mute_length],
+                        "tag": str(member)
+                    }
+                )
+                return await ctx.interaction.edit_original_message(content = f"You have been muted. You may use the button in the {unselfmute_channel} channel to unmute.", embed = None, view = None)
+            except:
+                pass
+
+        return await ctx.interaction.edit_original_message(content = f"The operation was cancelled, and you can still speak throughout the server.", embed = None, view = None)
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, SelfMuteCommandStaffInvoke):

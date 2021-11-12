@@ -61,21 +61,6 @@ class Confirm(discord.ui.View):
         else:
             await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
 
-class YesNo(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-        self.value = None
-
-    @discord.ui.button(label = "Yes", style = discord.ButtonStyle.green)
-    async def yes(self, button: discord.Button, interaction: discord.Interaction):
-        self.value = True
-        self.stop()
-
-    @discord.ui.button(label = "No", style = discord.ButtonStyle.red)
-    async def no(self, button: discord.Button, interaction: discord.Interaction):
-        self.value = False
-        self.stop()
-
 class NukeStopButton(discord.ui.Button["Nuke"]):
 
     def __init__(self, nuke):
@@ -1439,7 +1424,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = 'eventremove',
         description = "Removes an event's availability and optionally, its role from all users."
     )
-    async def event_remove(self, 
+    async def event_remove(self,
         ctx,
         event_name: Option(str, "The name of the event to remove.", required = True),
         delete_role: Option(str, "Whether to delete the event role from all users. 'no' allows role to remain.", choices = ["no", "yes"], default = "no", required = True)
