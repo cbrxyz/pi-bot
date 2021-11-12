@@ -480,10 +480,14 @@ class MemberCommands(commands.Cog, name='Member'):
                 await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
                 await update_tournament_list(ctx.bot, {})
 
-    @commands.command(aliases=["what"])
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns information about the bot and server."
+    )
     async def about(self, ctx):
         """Prints information about the bot."""
-        await ctx.send(get_about())
+        avatar_url = self.bot.user.display_avatar.url
+        await ctx.interaction.response.send_message(embed = get_about(avatar_url))
 
     @commands.command(aliases=["server", "link", "invitelink"])
     async def invite(self, ctx):

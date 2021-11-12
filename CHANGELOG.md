@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The default Python runtime was updated to 3.9.7.
 * New tournament channels will not be created if an appropriate tournament channel already exists, just in the archived category
 * Automated data updates are no longer made on a constant basis; rather, data is updated only when changes are needed because of a process
+* The layout of the `/about` embed response was slightly updated.
 * `/pronouns` only allows adding/removing one pronoun role at once.
 
 ### Removed
