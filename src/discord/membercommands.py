@@ -489,30 +489,45 @@ class MemberCommands(commands.Cog, name='Member'):
         avatar_url = self.bot.user.display_avatar.url
         await ctx.interaction.response.send_message(embed = get_about(avatar_url))
 
-    @commands.command(aliases=["server", "link", "invitelink"])
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns the Discord server invite."
+    )
     async def invite(self, ctx):
-        await ctx.send("https://discord.gg/C9PGV6h")
+        await ctx.interaction.response.send_message("https://discord.gg/C9PGV6h")
 
-    @commands.command()
-    async def forums(self, ctx):
-        await ctx.send("<https://scioly.org/forums>")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns a link to the Scioly.org forums."
+    )
+    async def link(self,
+        ctx,
+        destination: Option(str, "The area of the site to link to.", choices = ["forums", "exchange", "gallery", "obb"], required = True)
+        ):
+        if destination == "forums":
+            await ctx.interaction.response.send_message("<https://scioly.org/forums>")
+        elif destination == "exchange":
+            await ctx.interaction.response.send_message("<https://scioly.org/tests>")
+        elif destination == "gallery":
+            await ctx.interaction.response.send_message("<https://scioly.org/gallery>")
+        elif destination == "obb":
+            await ctx.interaction.response.send_message("<https://scioly.org/obb>")
 
-    @commands.command()
-    async def obb(self, ctx):
-        await ctx.send("<https://scioly.org/obb>")
-
-    @commands.command(aliases=["tests", "testexchange"])
-    async def exchange(self, ctx):
-        await ctx.send("<https://scioly.org/tests>")
-
-    @commands.command()
-    async def gallery(self, ctx):
-        await ctx.send("<https://scioly.org/gallery>")
-
-    @commands.command(aliases=["random"])
-    async def rand(self, ctx, a=1, b=10):
-        r = random.randrange(a, b + 1)
-        await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns a random number, inclusively."
+    )
+    async def random(self,
+        ctx,
+        minimum: Option(int, "The minimum number to choose from. Defaults to 0.", required = False),
+        maximum: Option(int, "The maximum number to choose from. Defaults to 10.", required = False),
+        ):
+        if minimum == None:
+            minimum = 0
+        if maximum == None:
+            maximum = 10
+        num = random.randrange(minimum, maximum + 1)
+        await ctx.interaction.response.send_message(f"Random number between `{minimum}` and `{maximum}`: `{num}`")
 
     @commands.command()
     async def rule(self, ctx, num):
