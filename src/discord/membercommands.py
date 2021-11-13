@@ -529,39 +529,64 @@ class MemberCommands(commands.Cog, name='Member'):
         num = random.randrange(minimum, maximum + 1)
         await ctx.interaction.response.send_message(f"Random number between `{minimum}` and `{maximum}`: `{num}`")
 
-    @commands.command()
-    async def rule(self, ctx, num):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns information about a given rule."
+    )
+    async def rule(self, 
+        ctx, 
+        rule: Option(str, "The rule to cite.", choices = [
+            "Rule #1: Treat all with respect.",
+            "Rule #2: No profanity/innapropriateness.",
+            "Rule #3: Treat delicate subjects carefully.",
+            "Rule #4: Do not spam or flood.",
+            "Rule #5: Avoid excessive pinging.",
+            "Rule #6: Avoid excessive caps.",
+            "Rule #7: No doxxing/name-dropping.",
+            "Rule #8: No witch-hunting.",
+            "Rule #9: No impersonating.",
+            "Rule #10: Do not use alts.",
+            "Rule #11: Do not violate SOINC copyrights.",
+            "Rule #12: No advertising.",
+            "Rule #13: Use good judgement."
+        ])
+        ):
         """Gets a specified rule."""
-        if not num.isdigit() or int(num) < 1 or int(num) > 13:
-            # If the rule number is not actually a number
-            return await ctx.send("Please use a valid rule number, from 1 through 13. (Ex: `!rule 7`)")
+        num = re.findall(r'Rule #(\d+)', rule)
+        num = int(num[0])
         rule = RULES[int(num) - 1]
-        return await ctx.send(f"**Rule {num}:**\n> {rule}")
+        return await ctx.interaction.response.send_message(f"**Rule {num}:**\n> {rule}")
 
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Information about gaining the @Coach role."
+    )
     async def coach(self, ctx):
         """Gives an account the coach role."""
-        await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
+        await ctx.interaction.response.send_message("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.", ephemeral = True)
 
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Information about the current server."
+    )
     async def info(self, ctx):
         """Gets information about the Discord server."""
-        server = ctx.message.guild
+        server = ctx.guild
         name = server.name
         owner = server.owner
-        creation_date = server.created_at
+        creation_date = discord.utils.format_dt(server.created_at, 'R')
         emoji_count = len(server.emojis)
-        icon = server.icon_url_as(format=None, static_format='jpeg')
-        animated_icon = server.is_icon_animated()
+        icon = server.icon.url
+        animated_icon = server.icon.is_animated()
         iden = server.id
-        banner = server.banner_url
+        banner = server.banner.url if server.banner != None else "None"
         desc = server.description
         mfa_level = server.mfa_level
         verification_level = server.verification_level
         content_filter = server.explicit_content_filter
         default_notifs = server.default_notifications
         features = server.features
-        splash = server.splash_url
+        splash = server.splash.url if server.splash != None else "None"
         premium_level = server.premium_tier
         boosts = server.premium_subscription_count
         channel_count = len(server.channels)
@@ -586,13 +611,12 @@ class MemberCommands(commands.Cog, name='Member'):
         role_count = len(server.roles)
         member_count = len(server.members)
         max_members = server.max_members
-        discovery_splash_url = server.discovery_splash_url
+        discovery_splash_url = server.discovery_splash.url if server.discovery_splash != None else "None"
         member_percentage = round(member_count/max_members * 100, 3)
         emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
         channel_percentage = round(channel_count/500 * 100, 3)
         role_percenatege = round(role_count/250 * 100, 3)
 
-        staff_member = await is_staff()
         fields = [
                 {
                     "name": "Basic Information",
@@ -615,7 +639,7 @@ class MemberCommands(commands.Cog, name='Member'):
                     "inline": False
                 }
             ]
-        if staff_member and ctx.channel.category.name == CATEGORY_STAFF:
+        if ctx.channel.category.name == CATEGORY_STAFF:
             fields.extend(
                 [{
                     "name": "Staff Information",
@@ -654,13 +678,16 @@ class MemberCommands(commands.Cog, name='Member'):
                     "inline": False
                 }
             ])
-        embed = assemble_embed(
+
+        embed = discord.Embed(
             title=f"Information for `{name}`",
-            desc=f"**Description:** {desc}",
-            thumbnailUrl=icon,
-            fields=fields
+            description=f"**Description:** {desc}",
         )
-        await ctx.send(embed=embed)
+        embed.set_thumbnail(url = icon)
+        for field in fields:
+            embed.add_field(**field)
+
+        await ctx.interaction.response.send_message(embed=embed)
 
     @commands.command(aliases=["r"])
     async def report(self, ctx, *args):

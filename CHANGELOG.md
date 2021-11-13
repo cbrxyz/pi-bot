@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The layout of the `/about` embed response was slightly updated.
 * `/pronouns` only allows adding/removing one pronoun role at once.
 * `/forums`, `/obb`, `/gallery`, and `/exchange` were simplified into `/link`.
+* `/info` no longer checks for the user's staff role, and instead only checks the category name of the channel the command was called in.
 
 ### Removed
 * The exalt/unexalt commands were removed.
