@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 * The exalt/unexalt commands were removed.
 * The getVariable command was removed.
+* The report command was removed.
 * The nukeuntil command was temporarily removed.
 * Users can no longer indefinitely self-mute.
 * Google Sheets is no longer used to store data, and all systems related to storing data in Google Sheets were removed.

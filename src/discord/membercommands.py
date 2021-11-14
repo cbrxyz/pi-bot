@@ -689,32 +689,6 @@ class MemberCommands(commands.Cog, name='Member'):
 
         await ctx.interaction.response.send_message(embed=embed)
 
-    @commands.command(aliases=["r"])
-    async def report(self, ctx, *args):
-        """Creates a report that is sent to staff members."""
-        server = ctx.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-        message = args[0]
-        if len(args) > 1:
-            message = ' '.join(args)
-        poster = str(ctx.message.author)
-        embed = assemble_embed(
-            title=f"Report Received (using `!report`)",
-            webcolor="red",
-            authorName = poster,
-            authorIcon = ctx.message.author.avatar_url_as(format="jpg"),
-            fields = [{
-                "name": "Message",
-                "value": message,
-                "inline": False
-            }]
-        )
-        message = await reports_channel.send(embed=embed)
-        REPORTS.append(message.id)
-        await message.add_reaction("\U00002705")
-        await message.add_reaction("\U0000274C")
-        await ctx.send("Thanks, report created.")
-
     # TODO: NOT TESTED
     @commands.command()
     async def wiki(self, ctx, command:str=False, *args):
