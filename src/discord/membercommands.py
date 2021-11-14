@@ -502,10 +502,14 @@ class MemberCommands(commands.Cog, name='Member'):
     )
     async def link(self,
         ctx,
-        destination: Option(str, "The area of the site to link to.", choices = ["forums", "exchange", "gallery", "obb"], required = True)
+        destination: Option(str, "The area of the site to link to.", choices = ["forums", "exchange", "gallery", "obb", "wiki", "tests"], required = True)
         ):
         if destination == "forums":
             await ctx.interaction.response.send_message("<https://scioly.org/forums>")
+        elif destination == "wiki":
+            await ctx.interaction.response.send_message("<https://scioly.org/wiki>")
+        elif destination == "tests":
+            await ctx.interaction.response.send_message("<https://scioly.org/tests>")
         elif destination == "exchange":
             await ctx.interaction.response.send_message("<https://scioly.org/tests>")
         elif destination == "gallery":
@@ -689,58 +693,50 @@ class MemberCommands(commands.Cog, name='Member'):
 
         await ctx.interaction.response.send_message(embed=embed)
 
-    # TODO: NOT TESTED
-    @commands.command()
-    async def wiki(self, ctx, command:str=False, *args):
-        # Check to make sure not too much at once
-        if not command:
-            return await ctx.send("<https://scioly.org/wiki>")
-        if len(args) > 7:
-            return await ctx.send("Slow down there buster. Please keep the command to 12 or less arguments at once.")
-        multiple = False
-        for arg in args:
-            if arg[:1] == "-":
-                multiple = arg.lower() == "-multiple"
-        if command in ["summary"]:
-            if multiple:
-                for arg in [arg for arg in args if arg[:1] != "-"]:
-                    text = await implement_command("summary", arg)
-                    if text == False:
-                        await ctx.send(f"The `{arg}` page does not exist!")
-                    else:
-                        await ctx.send(" ".join(text))
-            else:
-                string_sum = " ".join([arg for arg in args if arg[:1] != "-"])
-                text = await implement_command("summary", string_sum)
-                if text == False:
-                    await ctx.send(f"The `{arg}` page does not exist!")
-                else:
-                    await ctx.send(" ".join(text))
-        elif command in ["search"]:
-            if multiple:
-                return await ctx.send("Ope! No multiple searches at once yet!")
-            searches = await implement_command("search", " ".join([arg for arg in args]))
-            await ctx.send("\n".join([f"`{s}`" for s in searches]))
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns a summary of a wiki page."
+    )
+    async def wikisummary(
+        self,
+        ctx,
+        page: Option(str, "The name of the page to return a summary about. Correct caps must be used.", required = True)
+    ):
+        command = await implement_command("summary", page)
+        if command == False:
+            await ctx.interaction.response.send_message(f"Unfortunately, the `{page}` page does not exist.")
         else:
-            # Assume link
-            if multiple:
-                new_args = [command] + list(args)
-                for arg in [arg for arg in new_args if arg[:1] != "-"]:
-                    url = await implement_command("link", arg)
-                    if url == False:
-                        await ctx.send(f"The `{arg}` page does not exist!")
-                    await ctx.send(f"<{self.wiki_url_fix(url)}>")
-            else:
-                string_sum = " ".join([arg for arg in args if arg[:1] != "-"])
-                if len(args) > 0 and command.rstrip() != "link":
-                    string_sum = f"{command} {string_sum}"
-                elif command.rstrip() != "link":
-                    string_sum = command
-                url = await implement_command("link", string_sum)
-                if url == False:
-                    await ctx.send(f"The `{string_sum}` page does not exist!")
-                else:
-                    await ctx.send(f"<{self.wiki_url_fix(url)}>")
+            await ctx.interaction.response.send_message(" ".join(command))
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Searches the wiki for a particular page."
+    )
+    async def wikisearch(
+        self,
+        ctx,
+        term: Option(str, "The term to search for across the wiki.", required = True)
+    ):
+        command = await implement_command("search", term)
+        if len(command):
+            await ctx.interaction.response.send_message("\n".join([f"`{search}`" for search in command]))
+        else:
+            await ctx.interaction.response.send_message(f"No pages matching `{term}` were found.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Links to a particular wiki page."
+    )
+    async def wikilink(
+        self,
+        ctx,
+        page: Option(str, "The wiki page to link to. Correct caps must be used.", required = True)
+    ):
+        command = await implement_command("link", page)
+        if command == False:
+            await ctx.interaction.response.send_message(f"The `{page}` page does not yet exist.")
+        else:
+            await ctx.interaction.response.send_message(f"<{self.wiki_url_fix(command)}>")
 
     def wiki_url_fix(self, url):
         return url.replace("%3A", ":").replace(r"%2F","/")
