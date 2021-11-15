@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/invyadd`, `/invyapprove`, `/invyedit`, and `/invyarchive` allow staff to manage invitational data
 * Invitational tournaments can now be archived from any channel
 * `/eventadd` and `/eventremove` allow staff to modify events from the server
+* Event-modifying commands no longer require staff to manually add event roles to the server, instead, roles are automatically generated.
 * `/tagadd`, `/tagedit`, and `/tagremove` allow staff to modify tags from the server
 * `/censoradd` and `/censorremove` allow staff to modify censor entries from the server
 

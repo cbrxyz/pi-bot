@@ -258,7 +258,6 @@ class MemberCommands(commands.Cog, name='Member'):
         new_args = states.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
         new_args = [arg.strip() for arg in new_args]
-        print(new_args)
 
         member = ctx.author
         states = await get_state_list()
@@ -768,35 +767,39 @@ class MemberCommands(commands.Cog, name='Member'):
             except wikip.exceptions.DisambiguationError as e:
                 return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
 
-    @commands.command(aliases=["event"])
-    async def events(self, ctx, *args):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles event roles."
+    )
+    async def events(self,
+        ctx,
+        events: Option(str, "The events to toggle. For example, 'anatomy, astro, wq'.")
+        ):
         """Adds or removes event roles from a user."""
-        if len(args) < 1:
-            return await ctx.send("You need to specify at least one event to add/remove!")
-        elif len(args) > 10:
-            return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
-        member = ctx.message.author
-        new_args = [str(arg).lower() for arg in args]
+        if len(events) > 100:
+            return await ctx.interaction.response.send_message("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
+        member = ctx.author
 
         # Fix commas as possible separator
-        if len(new_args) == 1:
-            new_args = new_args[0].split(",")
+        new_args = events.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
+        new_args = [arg.strip() for arg in new_args]
 
-        event_info = EVENT_INFO
+        event_info = src.discord.globals.EVENT_INFO
         event_names = []
         removed_roles = []
         added_roles = []
         could_not_handle = []
         multi_word_events = []
 
-        if type(EVENT_INFO) == int:
+        print(event_info)
+        if type(event_info) == int:
             # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
-            return await ctx.send("Apologies... refreshing data currently. Try again in a few seconds.")
+            return await ctx.interaction.response.send_message("Apologies... refreshing data currently. Try again in a few seconds.")
 
         for i in range(7, 1, -1):
             # Supports adding 7-word to 2-word long events
-            multi_word_events += [e['eventName'] for e in event_info if len(e['eventName'].split(" ")) == i]
+            multi_word_events += [e['name'] for e in event_info if len(e['name'].split(" ")) == i]
             for event in multi_word_events:
                 words = event.split(" ")
                 all_here = 0
@@ -815,9 +818,9 @@ class MemberCommands(commands.Cog, name='Member'):
         for arg in new_args:
             found_event = False
             for event in event_info:
-                aliases = [abbr.lower() for abbr in event['event_abbreviations']]
-                if arg.lower() in aliases or arg.lower() == event['eventName'].lower():
-                    event_names.append(event['eventName'])
+                aliases = [alias.lower() for alias in event['aliases']]
+                if arg.lower() in aliases or arg.lower() == event['name'].lower():
+                    event_names.append(event['name'])
                     found_event = True
                     break
             if not found_event:
@@ -836,7 +839,7 @@ class MemberCommands(commands.Cog, name='Member'):
             event_res = "Removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         else:
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
-        await ctx.send(event_res)
+        await ctx.interaction.response.send_message(event_res)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
