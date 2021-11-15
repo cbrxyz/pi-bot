@@ -1,13 +1,19 @@
 import random
 import asyncio
 
+import discord
 from discord.ext import commands
+from discord.commands import Option
 
 from commandchecks import not_blacklisted_channel
 from src.discord.utils import sanitize_mention
-from src.discord.globals import CHANNEL_WELCOME, STEALFISH_BAN
+from src.discord.globals import CHANNEL_WELCOME, SLASH_COMMAND_GUILDS
+
+from doggo import get_doggo, get_shiba
 
 import xkcd as xkcd_module # not to interfere with xkcd method
+
+fish_now = 0
 
 class FunCommands(commands.Cog, name='Fun'):
     def __init__(self, bot):
@@ -34,76 +40,81 @@ class FunCommands(commands.Cog, name='Fun'):
             r"*{1} wonders where he can get more of {2}* :spoon:",
             r"*{1} thinks that {2} tastes out of this world* :alien:",
         ]
-    
+
 
     async def get_bear_message(self, user):
         message = random.choice(self.BEAR_MESSAGES)
         message = message.replace(r"{1}", fr"<@{self.BEAR_ID}>").replace(r"{2}", f"{user}")
         return message
 
-    @commands.command(aliases=["eats", "beareats"])
-    async def eat(self, ctx, user):
-        """Allows bear to eat users >:D"""
-        if ctx.author.id == self.BEAR_ID:
-            # author is bearasauras
-            message = await self.get_bear_message(user)
-            await ctx.message.delete()
-            await ctx.send(message)
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Trout slaps yourself or another user!"
+    )
+    async def trout(self,
+        ctx,
+        member: Option(discord.Member, "The member to trout slap! If not given, Pi-Bot will trout slap you!", required = False)
+        ):
+        if member == None:
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} trout slaps themselves!")
         else:
-            await ctx.message.reply("rawr! only bear can eat users!")
-    
-    @commands.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def trout(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. Not so fast!")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} trout slaps themselves!")
-        else:
-            await ctx.send(f"{ctx.message.author.mention} slaps {member} with a giant trout!")
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} slaps {member.mention} with a giant trout!")
         await ctx.send("http://gph.is/1URFXN9")
-    
-    @commands.command(aliases=["givecookie"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def cookie(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} gives themselves a cookie.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives a cookie to yourself or another user!"
+    )
+    async def cookie(self,
+        ctx,
+        member: Option(discord.Member, "The member to give a cookie to. If not provided, gives a cookie to yourself.", required = False)
+        ):
+        if member == None:
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives themselves a cookie.")
         else:
-            await ctx.send(f"{ctx.message.author.mention} gives {member} a cookie!")
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member.mention} a cookie!")
         await ctx.send("http://gph.is/1UOaITh")
-    
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives a cookie to yourself or another user!"
+    )
     async def treat(self, ctx):
-        await ctx.send("You give bernard one treat!")
+        await ctx.interaction.response.send_message("You give bernard one treat!")
         await ctx.send("http://gph.is/11nJAH5")
-    
-    @commands.command(aliases=["givehershey", "hershey"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def hersheybar(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} gives themselves a Hershey bar.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives a cookie to yourself or another user!"
+    )
+    async def hersheybar(self,
+        ctx,
+        member: Option(discord.Member, "The member to give a Hershey Bar to! If not provided, gives a Hershey Bar to yourself!", required = False)
+        ):
+        if member == None:
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives themselves a Hershey bar.")
         else:
-            await ctx.send(f"{ctx.message.author.mention} gives {member} a Hershey bar!")
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member.mention} a Hershey bar!")
         await ctx.send("http://gph.is/2rt64CX")
-    
-    @commands.command(aliases=["giveicecream"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def icecream(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} gives themselves some ice cream.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives a cookie to yourself or another user!"
+    )
+    async def icecream(self,
+        ctx,
+        member: Option(discord.Member, "The member to give ice cream to. If not provided, gives ice cream to yourself!", required = False)
+        ):
+        if member == None:
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives themselves some ice cream.")
         else:
-            await ctx.send(f"{ctx.message.author.mention} gives {member} ice cream!")
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member.mention} ice cream!")
         await ctx.send("http://gph.is/YZLMMs")
-    
-    @commands.command(aliases=["feedbear"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives some fish to bear!"
+    )
     async def fish(self, ctx):
         """Gives a fish to bear."""
         global fish_now
@@ -111,82 +122,86 @@ class FunCommands(commands.Cog, name='Fun'):
         if len(str(fish_now)) > 1500:
             fish_now = round(pow(fish_now, 0.5))
             if fish_now == 69: fish_now = 70
-            return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
+            return await ctx.interaction.response.send_message("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
         if r > 0.9:
             fish_now += 10
             if fish_now == 69: fish_now = 70
-            return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
+            return await ctx.interaction.response.send_message(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
         if r > 0.1:
             fish_now += 1
-            if fish_now == 69: 
+            if fish_now == 69:
                 fish_now = 70
-                return await ctx.send(f"You feed bear two fish. Bear now has {fish_now} fish!")
+                return await ctx.interaction.response.send_message(f"You feed bear two fish. Bear now has {fish_now} fish!")
             else:
-                return await ctx.send(f"You feed bear one fish. Bear now has {fish_now} fish!")
+                return await ctx.interaction.response.send_message(f"You feed bear one fish. Bear now has {fish_now} fish!")
         if r > 0.02:
             fish_now += 0
-            return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
+            return await ctx.interaction.response.send_message(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
         else:
             fish_now = round(pow(fish_now, 0.5))
             if fish_now == 69: fish_now = 70
-            return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
-    
-    @commands.command(aliases=["badbear"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+            return await ctx.interaction.response.send_message(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Steals some fish from bear!"
+    )
     async def stealfish(self, ctx):
         global fish_now
-        member = ctx.message.author
         r = random.random()
-        if member.id in STEALFISH_BAN:
-            return await ctx.send("Hey! You've been banned from stealing fish for now.")
         if r >= 0.75:
             ratio = r - 0.5
             fish_now = round(fish_now * (1 - ratio))
             per = round(ratio * 100)
-            return await ctx.send(f"You stole {per}% of bear's fish!")
+            return await ctx.interaction.response.send_message(f"You stole {per}% of bear's fish!")
         if r >= 0.416:
-            parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-            STEALFISH_BAN.append(member.id)
-            CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-            return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 hour!")
+            fish_now = round(fish_now * 0.99)
+            return await ctx.interaction.response.send_message(f"You stole just 1% of bear's fish!")
         if r >= 0.25:
-            parsed = dateparser.parse("1 day", settings={"PREFER_DATES_FROM": "future"})
-            STEALFISH_BAN.append(member.id)
-            CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-            return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 day!")
+            ratio = r + 0.75
+            fish_now = round(fish_now * ratio)
+            per = round(ratio * 100) - 100
+            return await ctx.interaction.response.send_message(f"Uhh... something went wrong! You gave bear another {per}% of his fish!")
         if r >= 0.01:
-            return await ctx.send("Hmm, nothing happened. *crickets*")
-        else:
-            STEALFISH_BAN.append(member.id)
-            return await ctx.send("You are banned from using `!stealfish` until the next version of Pi-Bot is released.")
-    
-    @commands.command(aliases=["doggobomb"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def dogbomb(self, ctx, member:str=False):
+            return await ctx.interaction.response.send_message("Hmm, nothing happened. *crickets*")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Dog bombs another user!"
+    )
+    async def dogbomb(self,
+        ctx,
+        member: Option(discord.Member, "The member to dog bomb!", required = True)
+        ):
         """Dog bombs someone!"""
-        if member == False:
-            return await ctx.send("Tell me who you want to dog bomb!! :dog:")
         doggo = await get_doggo()
+        await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} dog bombed you!!")
         await ctx.send(doggo)
-        await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
-    
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def shibabomb(self, ctx, member:str=False):
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Shiba bombs another user!"
+    )
+    async def shibabomb(self,
+        ctx,
+        member: Option(discord.Member, "The member to shiba bomb!", required = True)
+        ):
         """Shiba bombs a user!"""
-        if member == False:
-            return await ctx.send("Tell me who you want to shiba bomb!! :dog:")
         doggo = await get_shiba()
+        await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} shiba bombed you!!")
         await ctx.send(doggo)
-        await ctx.send(f"{member}, <@{ctx.message.author.id}> shiba bombed you!!")
-    
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Rolls the magic 8 ball..."
+    )
     async def magic8ball(self, ctx):
-        msg = await ctx.send("Swishing the magic 8 ball...")
-        await ctx.channel.trigger_typing()
-        await asyncio.sleep(3)
-        await msg.delete()
+        await ctx.interaction.response.send_message("Swishing the magic 8 ball...")
+        await asyncio.sleep(1)
+        await ctx.interaction.edit_original_message(content="Swishing the magic 8 ball..")
+        await asyncio.sleep(1)
+        await ctx.interaction.edit_original_message(content="Swishing the magic 8 ball.")
+        await asyncio.sleep(1)
         sayings = [
             "Yes.",
             "Ask again later.",
@@ -209,19 +224,23 @@ class FunCommands(commands.Cog, name='Fun'):
             "Definitely no."
         ]
         response = random.choice(sayings)
-        await ctx.message.reply(f"**{response}**")
-        
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def xkcd(self, ctx, num = None):
+        await ctx.interaction.edit_original_message(content = f"**{response}**")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gets an xkcd comic!"
+    )
+    async def xkcd(self,
+        ctx,
+        num: Option(int, "The number of the xkcd comic to get. If not provided, gets a random comic.", required = False)
+        ):
         max_num = await xkcd_module.get_max()
         if num == None:
-            rand = random.randrange(1, int(max_num))
-            return await xkcd(ctx, str(rand))
-        if num.isdigit() and 1 <= int(num) <= int(max_num):
-            return await ctx.send(f"https://xkcd.com/{num}")
+            num = random.randrange(1, max_num)
+        if 1 <= num <= max_num:
+            return await ctx.interaction.response.send_message(f"https://xkcd.com/{num}")
         else:
-            return await ctx.send("Invalid attempted number for xkcd.")
+            return await ctx.interaction.response.send_message("Invalid attempted number for xkcd.")
 
 def setup(bot):
     bot.add_cog(FunCommands(bot))

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Event-modifying commands no longer require staff to manually add event roles to the server, instead, roles are automatically generated.
 * `/tagadd`, `/tagedit`, and `/tagremove` allow staff to modify tags from the server
 * `/censoradd` and `/censorremove` allow staff to modify censor entries from the server
+* `/stealfish` can now occasionally give bear more fish rather than take fish away.
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
@@ -44,8 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.
 * The wiki stylist was temporarily disabled.
 * `/me` was removed.
+* `/eat` was removed.
+* `/report` was removed.
 * `/list` was removed, as users can now see all commands in a list through Discord UI.
 * `/latex`, `/resultstemplate`, and `/school` were temporarily removed.
+* Users will no longer be banned from using `/stealfish`.
 
 ### Fixed
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
