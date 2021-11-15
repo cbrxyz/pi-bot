@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The getVariable command was removed.
 * The report command was removed.
 * The nukeuntil command was temporarily removed.
+* The `/graphpage` and `/graphscilympiad` commands were temporarily removed.
 * Users can no longer indefinitely self-mute.
 * Google Sheets is no longer used to store data, and all systems related to storing data in Google Sheets were removed.
 * The forums-interacting aspect of the bot was removed.
