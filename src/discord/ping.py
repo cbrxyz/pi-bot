@@ -84,61 +84,6 @@ class PingManager(commands.Cog):
         else:
             return await ctx.interaction.response.send_message("You can't enter DND mode without any pings!")
 
-    @commands.command()
-    async def ping(self, ctx, command=None, *args):
-        """Controls Pi-Bot's ping interface."""
-        member = ctx.author.id
-        if command.lower() in ["delete", "remove"]:
-            user = next((u for u in PING_INFO if u['id'] == member), None)
-            if user == None or len(user['pings']) == 0:
-                return await ctx.send("You have no registered pings.")
-            for arg in args:
-                if arg == "all":
-                    user['pings'] = []
-                    return await ctx.send("I removed all of your pings.")
-                if arg in user['pings']:
-                    user['pings'].remove(arg)
-                    await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
-                elif f"\\b({arg})\\b" in user['pings']:
-                    user['pings'].remove(f"\\b({arg})\\b")
-                    await ctx.send(f"I removed the `{arg}` word ping you were referencing.")
-                elif f"({arg})" in user['pings']:
-                    user['pings'].remove(f"({arg})")
-                    await ctx.send(f"I removed the `{arg}` RegExp ping you were referencing.")
-                else:
-                    return await ctx.send(f"I can't find my phone or the **`{arg}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `!ping list`.")
-            return await ctx.send("I removed all pings you requested.")
-        elif command.lower() in ["list", "all"]:
-            user = next((u for u in PING_INFO if u['id'] == member), None)
-            if user == None or len(user['pings']) == 0:
-                return await ctx.send("You have no registered pings.")
-            else:
-                pings = user['pings']
-                regex_pings = []
-                word_pings = []
-                for ping in pings:
-                    if ping[:2] == "\\b":
-                        word_pings.append(ping)
-                    else:
-                        regex_pings.append(ping)
-                if len(regex_pings) > 0:
-                    await ctx.send("Your RegEx pings are: " + ", ".join([f"`{regex}`" for regex in regex_pings]))
-                if len(word_pings) > 0:
-                    await ctx.send("Your word pings are: " + ", ".join([f"`{word[3:-3]}`" for word in word_pings]))
-        elif command.lower() in ["test", "try"]:
-            user = next((u for u in PING_INFO if u['id'] == member), None)
-            user_pings = user['pings']
-            matched = False
-            for arg in args:
-                for ping in user_pings:
-                    if len(re.findall(ping, arg, re.I)) > 0:
-                        await ctx.send(f"Your ping `{ping}` matches `{arg}`.")
-                        matched = True
-            if not matched:
-                await ctx.send("Your test matched no pings of yours.")
-        else:
-            return await ctx.send("Sorry, I can't find that command.")
-
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Adds a new word to ping on."
@@ -183,7 +128,38 @@ class PingManager(commands.Cog):
         ctx,
         test: Option(str, "The phrase to test your pings against.", required = True)
         ):
-        pass
+        member = ctx.author
+        user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
+        user_pings = user['word_pings'] + user['regex_pings']
+        matched = False
+        response = ""
+        for ping in user_pings:
+            if len(re.findall(ping, test, re.I)) > 0:
+                response += (f"Your ping `{ping}` matches `{test}`.")
+                matched = True
+        if not matched:
+            return await ctx.interaction.response.send_message("Your test matched no pings of yours.")
+        else:
+            return await ctx.interaction.response.send_message(response)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Lists all of your pings."
+    )
+    async def pinglist(self, ctx):
+        member = ctx.author
+        user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
+        if user == None or len(user['word_pings'] + user['regex_pings']) == 0:
+            return await ctx.interaction.response.send_message("You have no registered pings.")
+        else:
+            response = ""
+            if len(user['regex_pings']) > 0:
+                response += ("Your RegEx pings are: " + ", ".join([f"`{regex}`" for regex in user['regex_pings']]))
+            if len(user['word_pings']) > 0:
+                response += ("Your pings are: " + ", ".join([f"`{word}`" for word in user['word_pings']]))
+            if not len(response):
+                response = "You have no registered pings."
+            await ctx.interaction.response.send_message(response)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
