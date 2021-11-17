@@ -1,8 +1,12 @@
 import discord
 from discord.ext import commands
+from discord.commands import Option
 import re
-from src.discord.globals import PING_INFO, PI_BOT_IDS, CHANNEL_BOTSPAM
+import src.discord.globals
+from src.discord.globals import PING_INFO, PI_BOT_IDS, CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
 from embed import assemble_embed
+
+from src.mongo.mongo import insert, update
 
 import time
 
@@ -60,71 +64,31 @@ class PingManager(commands.Cog):
         )
         await user_to_send.send(embed=embed)
 
-    @commands.command(aliases=["donotdisturb"])
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles 'Do Not Disturb' mode for pings."
+    )
     async def dnd(self, ctx):
-        member = ctx.message.author.id
+        member = ctx.author.id
         if any([True for u in PING_INFO if u['id'] == member]):
             user = next((u for u in PING_INFO if u['id'] == member), None)
             if 'dnd' not in user:
                 user['dnd'] = True
-                return await ctx.send("Enabled DND mode for pings.")
+                return await ctx.interaction.response.send_message("Enabled DND mode for pings.")
             elif user['dnd'] == True:
                 user['dnd'] = False
-                return await ctx.send("Disabled DND mode for pings.")
+                return await ctx.interaction.response.send_message("Disabled DND mode for pings.")
             else:
                 user['dnd'] = True
-                return await ctx.send("Enabled DND mode for pings.")
+                return await ctx.interaction.response.send_message("Enabled DND mode for pings.")
         else:
-            return await ctx.send("You can't enter DND mode without any pings!")
+            return await ctx.interaction.response.send_message("You can't enter DND mode without any pings!")
 
     @commands.command()
     async def ping(self, ctx, command=None, *args):
         """Controls Pi-Bot's ping interface."""
-        if command is None:
-            return await ctx.send("Uh, I need a command you want to run.")
-        member = ctx.message.author.id
-        if len(args) > 8:
-            return await ctx.send("You are giving me too many pings at once! Please separate your requests over multiple commands.")
-        if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp", "delete", "remove", "test", "try"] and len(args) < 1:
-            return await ctx.send(f"In order to {command} a ping, you must supply a regular expression or word.")
-        if command.lower() in ["add", "new", "addregex", "newregex", "addregexp", "newregexp"]:
-            # Check to see if author in ping info already
-            ignored_list = []
-            if any([True for u in PING_INFO if u['id'] == member]):
-                #yes
-                user = next((u for u in PING_INFO if u['id'] == member), None)
-                pings = user['pings']
-                for arg in args:
-                    try:
-                        re.findall(arg, "test phrase")
-                    except:
-                        await ctx.send(f"Ignoring adding the `{arg}` ping because it uses illegal characters.")
-                        ignored_list.append(arg)
-                        continue
-                    if f"({arg})" in pings or f"\\b({arg})\\b" in pings or arg in pings:
-                        await ctx.send(f"Ignoring adding the `{arg}` ping because you already have a ping currently set as that.")
-                        ignored_list.append(arg)
-                    else:
-                        if command.lower() in ["add", "new"]:
-                            print(f"adding word: {re.escape(arg)}")
-                            pings.append(fr"\b({re.escape(arg)})\b")
-                        else:
-                            print(f"adding regexp: {arg}")
-                            pings.append(fr"({arg})")
-            else:
-                # nope
-                if command.lower() in ["add", "new"]:
-                    PING_INFO.append({
-                        "id": member,
-                        "pings": [fr"\b({re.escape(arg)})\b" for arg in args]
-                    })
-                else:
-                    PING_INFO.append({
-                        "id": member,
-                        "pings": [fr"({arg})" for arg in args]
-                    })
-            return await ctx.send(f"Alrighty... I've got you all set up for the following pings: " + (" ".join([f"`{arg}`" for arg in args if arg not in ignored_list])))
-        elif command.lower() in ["delete", "remove"]:
+        member = ctx.author.id
+        if command.lower() in ["delete", "remove"]:
             user = next((u for u in PING_INFO if u['id'] == member), None)
             if user == None or len(user['pings']) == 0:
                 return await ctx.send("You have no registered pings.")
@@ -174,6 +138,88 @@ class PingManager(commands.Cog):
                 await ctx.send("Your test matched no pings of yours.")
         else:
             return await ctx.send("Sorry, I can't find that command.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Adds a new word to ping on."
+    )
+    async def pingadd(self,
+        ctx,
+        word: Option(str, "The new word to add a ping for.", required = True)
+        ):
+        # Check to see if author in ping info already
+        member = ctx.author
+        if any([True for u in src.discord.globals.PING_INFO if u['user_id'] == member.id]):
+            # User already has an object in the PING_INFO dictionary
+            user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
+            pings = user['word_pings'] + user['regex_pings']
+            try:
+                re.findall(word, "test phrase")
+            except:
+                return await ctx.interaction.response.send_message(f"Ignoring adding the `{word}` ping because it uses illegal characters.")
+            if f"({word})" in pings or f"\\b({word})\\b" in pings or word in pings:
+                return await ctx.interaction.response.send_message(f"Ignoring adding the `{word}` ping because you already have a ping currently set as that.")
+            else:
+                print(f"adding word: {re.escape(word)}")
+                pings.append(fr"\b({re.escape(word)})\b")
+                await update("data", "pings", user['_id'], {"$push": {"word_pings": word}})
+        else:
+            # User does not already have an object in the PING_INFO dictionary
+            new_user_dict = {
+                "user_id": member.id,
+                "word_pings": [word],
+                "regex_pings": [],
+                "dnd": False
+            }
+            src.discord.globals.PING_INFO.append(new_user_dict)
+            await insert("data", "pings", new_user_dict)
+        return await ctx.interaction.response.send_message(f"Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be responsible with the pinging feature. Using pings senselessly (such as pinging for \"the\" or \"a\") may result in you being temporarily disallowed from using or receiving pings.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Tests your pings against a test phrase."
+    )
+    async def pingtest(self,
+        ctx,
+        test: Option(str, "The phrase to test your pings against.", required = True)
+        ):
+        pass
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Removes a ping term."
+    )
+    async def pingremove(self,
+        ctx,
+        word: Option(str, "The word to remove a ping for. Or use 'all' to remove all pings.", required = True)
+        ):
+        member = ctx.author
+        user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
+        if user == None or len(user['word_pings'] + user['regex_pings']) == 0:
+            return await ctx.interaction.response.send_message("You have no registered pings.")
+        if word == "all":
+            user['word_pings'] = []
+            user['regex_pings'] = []
+            await update("data", "pings", user['_id'], {"$pull": {"word_pings": {}, "regex_pings": {}}})
+            return await ctx.interaction.response.send_message("I removed all of your pings.")
+        if word in user['word_pings']:
+            user['word_pings'].remove(word)
+            await update("data", "pings", user['_id'], {"$pull": {"word_pings": word}})
+            return await ctx.interaction.response.send_message(f"I removed the `{word}` ping you were referencing.")
+        elif word in user['regex_pings']:
+            user['regex_pings'].remove(word)
+            await update("data", "pings", user['_id'], {"$pull": {"regex_pings": word}})
+            return await ctx.interaction.response.send_message(f"I removed the `{word}` RegEx ping you were referencing.")
+        elif f"\\b({word})\\b" in user['word_pings']:
+            user['word_pings'].remove(f"\\e({word})\\b")
+            await update("data", "pings", user['_id'], {"$pull": {"word_pings": f"\\e({word})\\b"}})
+            return await ctx.interaction.response.send_message(f"I removed the `{word}` ping you were referencing.")
+        elif f"({word})" in user['word_pings']:
+            user['word_pings'].remove(f"({word})")
+            await update("data", "pings", user['_id'], {"$pull": {"word_pings": f"({word})"}})
+            return await ctx.interaction.response.send_message(f"I removed the `{word}` RegEx ping you were referencing.")
+        else:
+            return await ctx.interaction.response.send_message(f"I can't find the **`{word}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `/pinglist`.")
 
 def setup(bot):
     bot.add_cog(PingManager(bot))
