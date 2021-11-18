@@ -1,5 +1,0 @@
-#######
-#
-# THE MAGICAL TESTING PLACE
-#
-#######

@@ -25,7 +25,6 @@ from commanderrors import SelfMuteCommandStaffInvoke
 from typing import Type
 from src.discord.tournaments import update_tournament_list
 from src.discord.utils import auto_report
-from info import get_about
 from src.wiki.wiki import implement_command
 from aioify import aioify
 
@@ -485,8 +484,27 @@ class MemberCommands(commands.Cog, name='Member'):
     )
     async def about(self, ctx):
         """Prints information about the bot."""
+        version = "4.5.19"
+        repo = "https://github.com/cbrxyz/pi-bot"
+        wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
+        forums_link = "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
         avatar_url = self.bot.user.display_avatar.url
-        await ctx.interaction.response.send_message(embed = get_about(avatar_url))
+
+        embed = discord.Embed(
+            title = f"**Pi-Bot {version}**",
+            color = discord.Color(0xF86D5F),
+            description = f"""
+            Hey there! I'm Pi-Bot, and I help to manage the Scioly.org forums, wiki, and chat. You'll often see me around this Discord server to help users get roles and information about Science Olympiad.
+
+            I'm developed by the community. If you'd like to find more about development, you can find more by visiting the links below.
+            """
+        )
+        embed.add_field(name = "Code Repository", value = repo, inline = False)
+        embed.add_field(name = "Wiki Page", value = wiki_link, inline = False)
+        embed.add_field(name = "Forums Page", value = forums_link, inline = False)
+        embed.set_thumbnail(url = avatar_url)
+
+        await ctx.interaction.response.send_message(embed = embed)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
@@ -536,8 +554,8 @@ class MemberCommands(commands.Cog, name='Member'):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Returns information about a given rule."
     )
-    async def rule(self, 
-        ctx, 
+    async def rule(self,
+        ctx,
         rule: Option(str, "The rule to cite.", choices = [
             "Rule #1: Treat all with respect.",
             "Rule #2: No profanity/innapropriateness.",

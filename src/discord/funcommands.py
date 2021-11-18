@@ -1,5 +1,7 @@
 import random
 import asyncio
+import aiohttp
+import json
 
 import discord
 from discord.ext import commands
@@ -8,8 +10,6 @@ from discord.commands import Option
 from commandchecks import not_blacklisted_channel
 from src.discord.utils import sanitize_mention
 from src.discord.globals import CHANNEL_WELCOME, SLASH_COMMAND_GUILDS
-
-from doggo import get_doggo, get_shiba
 
 import xkcd as xkcd_module # not to interfere with xkcd method
 
@@ -174,7 +174,16 @@ class FunCommands(commands.Cog, name='Fun'):
         member: Option(discord.Member, "The member to dog bomb!", required = True)
         ):
         """Dog bombs someone!"""
-        doggo = await get_doggo()
+        session = aiohttp.ClientSession()
+        page = await session.get(f"https://dog.ceo/api/breeds/image/random")
+        await session.close()
+        if page.status > 400:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a doggo to bomb with...")
+        text = await page.content.read()
+        text = text.decode('utf-8')
+        jso = json.loads(text)
+
+        doggo = jso['message']
         await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} dog bombed you!!")
         await ctx.send(doggo)
 
@@ -187,7 +196,16 @@ class FunCommands(commands.Cog, name='Fun'):
         member: Option(discord.Member, "The member to shiba bomb!", required = True)
         ):
         """Shiba bombs a user!"""
-        doggo = await get_shiba()
+        session = aiohttp.ClientSession()
+        page = await session.get(f"https://dog.ceo/api/breed/shiba/images/random")
+        await session.close()
+        if page.status > 400:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a shiba to bomb with...")
+        text = await page.content.read()
+        text = text.decode('utf-8')
+        jso = json.loads(text)
+
+        doggo = jso['message']
         await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} shiba bombed you!!")
         await ctx.send(doggo)
 
