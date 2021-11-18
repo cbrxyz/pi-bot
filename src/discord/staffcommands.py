@@ -7,7 +7,7 @@ from discord.commands.commands import slash_command
 from discord.errors import NoEntryPointError
 
 from discord.ext import commands
-from discord.commands import Option
+from discord.commands import Option, permissions
 from commandchecks import is_staff, is_launcher
 
 import dateparser
@@ -18,7 +18,7 @@ from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, C
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
-from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH
+from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH, ROLE_STAFF, ROLE_VIP
 from bot import listen_for_response
 
 from src.discord.utils import harvest_id
@@ -109,6 +109,7 @@ class LauncherCommands(commands.Cog):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Confirms a user, giving them access to the server."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, ROLE_LH, guild_id = SERVER_ID)
     async def confirm(self,
         ctx,
         member: Option(discord.Member, "The member to confirm.")
@@ -130,6 +131,7 @@ class LauncherCommands(commands.Cog):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Nukes a certain amount of messages."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def nuke(self,
         ctx,
         count: Option(int, "The amount of messages to nuke.")
@@ -349,6 +351,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Kicks user from the server."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def kick(self,
         ctx,
         member: Option(discord.Member, "The user to kick from the server."),
@@ -389,6 +392,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unmutes a user immediately."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unmute(self,
         ctx,
         member: Option(discord.Member, "The user to unmute.")
@@ -425,6 +429,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Bans a user from the server."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def ban(self,
         ctx,
         member: Option(discord.Member, "The user to ban."),
@@ -501,6 +506,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Mutes a user."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def mute(self,
         ctx,
         member: Option(discord.Member, "The user to mute."),
@@ -584,6 +590,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Enables slowmode in the current channel, or an alternate channel."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def slowmode(self,
         ctx,
         mode: Option(str, "How to change the slowmode in the channel.", choices = ["set", "remove"]),
@@ -602,6 +609,7 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Allows staff to manipulate the CRON list."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def cron(self, ctx):
         """
         Allows staff to manipulate the CRON list.
@@ -635,6 +643,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Opens a voice channel clone of a channel."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def vc(self, ctx):
         server = ctx.author.guild
         if ctx.channel.category.name == CATEGORY_TOURNAMENTS:
@@ -726,6 +735,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Finds a user by their ID."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def userfromid(self,
         ctx,
         iden: Option(str, "The ID to lookup.")
@@ -738,6 +748,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Locks a channel, preventing members from sending messages."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def lock(self, ctx):
         """Locks a channel to Member access."""
         member = ctx.author
@@ -766,6 +777,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unlocks a channel, allowing members to speak after the channel was originally locked."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unlock(self, ctx):
         """Unlocks a channel to Member access."""
         member = ctx.author
@@ -798,6 +810,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Runs Pi-Bot's Most Edits Table wiki functionality."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def met(self, ctx):
         """Runs Pi-Bot's Most Edits Table"""
         msg1 = await ctx.respond("Attemping to run the Most Edits Table.")
@@ -876,6 +889,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Archives a tournament channel, preventing members from sending messages."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def archive(self, ctx):
         tournament = [t for t in TOURNAMENT_INFO if t[1] == ctx.channel.name]
         bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
@@ -903,6 +917,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Refreshes data from the bot's database."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def refresh(self, ctx):
         """Refreshes data from the sheet."""
         await update_tournament_list(ctx.bot)
@@ -917,6 +932,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "status",
         description = "Staff command. Update Pi-Bot's Discord status."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def change_status(self,
         ctx,
         activity: Option(str, "The activity the bot will be doing.", choices = ["playing", "listening", "watching"], required = True),
@@ -969,6 +985,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyadd",
         description = "Staff command. Adds a new invitational for voting."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def invitational_add(self,
         ctx,
         official_name: Option(str, "The official name of the tournament, such as MIT Invitational.", required = True),
@@ -1059,6 +1076,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyapprove",
         description = "Staff command. Approves a invitational to be fully opened."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def invitational_approve(self,
         ctx,
         short_name: Option(str, "The short name of the invitational, such as 'mit'.", required = True)
@@ -1079,6 +1097,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyedit",
         description = "Staff command. Edits data about an invitational channel."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def invitational_edit(self,
         ctx,
         short_name: Option(str, "The short name of the invitational you would like to edit, such as 'mit'.", required = True),
@@ -1177,6 +1196,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invyarchive",
         description = "Staff command. Archives an invitational channel."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def invitational_archive(self,
         ctx,
         short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
@@ -1196,6 +1216,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "invydelete",
         description = "Staff command. Deletes an invitational channel from the server."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def invitational_delete(self,
         ctx,
         short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
@@ -1229,6 +1250,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = 'censoradd',
         description = 'Staff commands. Adds a word or emoji to the censor list.'
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def censor_add(self,
         ctx,
         censor_type: Option(str, "Whether to add a new word or emoji to the list.", choices = ["word", "emoji"], required = True),
@@ -1252,6 +1274,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = 'censorremove',
         description = 'Staff command. Removes a word/emoji from the censor list.'
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def censor_remove(self,
         ctx,
         censor_type: Option(str, "Whether to remove a word or emoji.", choices = ["word", "emoji"], required = True),
@@ -1275,6 +1298,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "tagadd",
         description = "Staff command. Adds a new tag."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def tag_add(self,
         ctx,
         tag_name: Option(str, "The name of the tag to add.", required = True),
@@ -1326,6 +1350,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "tagedit",
         description = "Staff command. Edits an existing tag."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def tag_edit(self,
         ctx,
         tag_name: Option(str, "The tag name to edit the text of.", required = True),
@@ -1377,6 +1402,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "tagremove",
         description = "Staff command. Removes a tag completely."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def tag_remove(self,
         ctx,
         tag_name: Option(str, "The name of the tag to remove.", required = True)
@@ -1394,6 +1420,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = "eventadd",
         description = "Staff command. Adds a new event."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def event_add(self,
         ctx,
         event_name: Option(str, "The name of the new event.", required = True),
@@ -1424,6 +1451,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name = 'eventremove',
         description = "Removes an event's availability and optionally, its role from all users."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def event_remove(self,
         ctx,
         event_name: Option(str, "The name of the event to remove.", required = True),

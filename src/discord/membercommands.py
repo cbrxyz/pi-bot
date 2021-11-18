@@ -843,7 +843,7 @@ class MemberCommands(commands.Cog, name='Member'):
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Allows staff to manipulate the CRON list."
+        description = "Gets a tag."
     )
     async def tag(self,
         ctx,
