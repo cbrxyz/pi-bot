@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import discord
 import datetime
 import asyncio
@@ -12,6 +13,7 @@ from commandchecks import is_staff, is_launcher
 
 import dateparser
 import pytz
+import webcolors
 
 import src.discord.globals
 from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST, EMOJI_GUILDS, TAGS, EVENT_INFO
@@ -83,6 +85,66 @@ class Nuke(discord.ui.View):
     def __init__(self):
         super().__init__()
         button = NukeStopButton(self)
+        self.add_item(button)
+
+class EmbedButton(discord.ui.Button["EmbedView"]):
+
+    def __init__(self, view, text, style, row, update_value):
+        super().__init__(label = text, style = style, row = row)
+        self.embed_view = view
+        self.update_value = update_value
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.update_value == 'complete':
+            # If complete button is clicked, stop the view immediately
+            self.embed_view.stopped_status = 'successful'
+            self.embed_view.stop()
+
+        await interaction.response.defer()
+        info_message = await self.embed_view.channel.send("Please send the new value for the parameter. The operation will be cancelled if no operation was sent within 2 minutes.")
+        response_message = await listen_for_response(
+            follow_id = self.embed_view.user.id,
+            timeout = 120,
+        )
+
+        await info_message.delete()
+        await response_message.delete()
+        if response_message == None:
+            self.embed_view.stopped_status = 'failed'
+
+        self.embed_view.embed_update[self.update_value] = response_message.content
+        self.embed_view.stop()
+
+class EmbedView(discord.ui.View):
+
+    # This will be updated when the user updates an embed property
+    embed_update = {}
+    user = None
+    channel = None
+    stopped_status = None
+
+    def __init__(self, embed_dict, ctx):
+        super().__init__()
+        self.user = ctx.user
+        self.channel = ctx.channel
+
+        associations = [
+            {'proper_name': 'Title', 'dict_values': ['title'], 'row': 0},
+            {'proper_name': 'Description', 'dict_values': ['description'], 'row': 0},
+            {'proper_name': 'Title URL', 'dict_values': ['url', 'title_url', 'titleUrl'], 'row': 0},
+            {'proper_name': 'Color', 'dict_values': ['color'], 'row': 0}
+        ]
+        for association in associations:
+            for dict_value in association['dict_values']:
+                if dict_value in embed_dict:
+                    button = EmbedButton(self, f"Edit {association['proper_name']}", discord.ButtonStyle.gray, association['row'], association['dict_values'][0])
+                    self.add_item(button)
+                else:
+                    button = EmbedButton(self, f"Set {association['proper_name']}", discord.ButtonStyle.green, association['row'], association['dict_values'][0])
+                    self.add_item(button)
+
+        # Add complete operation
+        button = EmbedButton(self, "Complete", discord.ButtonStyle.green, 1, 'complete')
         self.add_item(button)
 
 class LauncherCommands(commands.Cog):
@@ -848,42 +910,117 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
         await ctx.send(file=file, embed=embed)
 
-    @commands.command()
-    async def prepembed(self, ctx, channel:discord.TextChannel, *, jsonInput):
+    def _generate_embed(self, embed_dict: dict) -> discord.Embed:
+        new_embed_dict = {}
+        if 'title' in embed_dict:
+            new_embed_dict['title'] = embed_dict['title']
+        if 'description' in embed_dict:
+            new_embed_dict['description'] = embed_dict['description']
+        if 'title_url' in embed_dict:
+            new_embed_dict['title_url'] = embed_dict['title_url']
+        if 'titleUrl' in embed_dict:
+            new_embed_dict['title_url'] = embed_dict['titleUrl']
+        if 'color' in embed_dict:
+            new_embed_dict['color'] = embed_dict['color']
+        if 'hexColor' in embed_dict:
+            new_embed_dict['color'] = embed_dict['hexColor']
+        if 'webColor' in embed_dict:
+            try:
+                new_embed_dict['color'] = webcolors.name_to_hex(embed_dict['webColor'])
+            except:
+                pass
+        if 'thumbnail_url' in embed_dict:
+            new_embed_dict['thumbnail_url'] = embed_dict['thumbnail_url']
+        if 'thumbnailUrl' in embed_dict:
+            new_embed_dict['thumbnail_url'] = embed_dict['thumbnailUrl']
+        if 'authorName' in embed_dict:
+            new_embed_dict['author_name'] = embed_dict['authorName']
+        if 'author_name' in embed_dict:
+            new_embed_dict['author_name'] = embed_dict['author_name']
+        if 'author_url' in embed_dict:
+            new_embed_dict['author_url'] = embed_dict['author_url']
+        if 'authorUrl' in embed_dict:
+            new_embed_dict['author_url'] = embed_dict['authorUrl']
+        if 'author_icon' in embed_dict:
+            new_embed_dict['author_icon'] = embed_dict['author_icon']
+        if 'authorIcon' in embed_dict:
+            new_embed_dict['author_icon'] = embed_dict['authorIcon']
+        if 'fields' in embed_dict:
+            new_embed_dict['fields'] = embed_dict['fields']
+        if 'footer_text' in embed_dict:
+            new_embed_dict['footer_text'] = embed_dict['footer_text']
+        if 'footerText' in embed_dict:
+            new_embed_dict['footer_text'] = embed_dict['footerText']
+        if 'footer_url' in embed_dict:
+            new_embed_dict['footer_url'] = embed_dict['footer_url']
+        if 'footerUrl' in embed_dict:
+            new_embed_dict['footer_url'] = embed_dict['footerUrl']
+        if 'image_url' in embed_dict:
+            new_embed_dict['image_url'] = embed_dict['image_url']
+        if 'imageUrl' in embed_dict:
+            new_embed_dict['image_url'] = embed_dict['imageUrl']
+        if not len(new_embed_dict.items()):
+            new_embed_dict['description'] = "This embed contains nothing, so a blank description was set."
+        return discord.Embed(**new_embed_dict)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Assembles an embed in a particular channel."
+    )
+    async def prepembed(self,
+        ctx,
+        channel: Option(discord.TextChannel, "The channel to send the message to.", required = True),
+        json_input: Option(bool, "Whether to use JSON to initially generate the embed.", name = "json", required = False, default = False)
+        ):
         """Helps to create an embed to be sent to a channel."""
-        jso = json.loads(jsonInput)
-        title = jso['title'] if 'title' in jso else ""
-        desc = jso['description'] if 'description' in jso else ""
-        titleUrl = jso['titleUrl'] if 'titleUrl' in jso else ""
-        hexcolor = jso['hexColor'] if 'hexColor' in jso else "#2E66B6"
-        webcolor = jso['webColor'] if 'webColor' in jso else ""
-        thumbnailUrl = jso['thumbnailUrl'] if 'thumbnailUrl' in jso else ""
-        authorName = jso['authorName'] if 'authorName' in jso else ""
-        authorUrl = jso['authorUrl'] if 'authorUrl' in jso else ""
-        authorIcon = jso['authorIcon'] if 'authorIcon' in jso else ""
-        if 'author' in jso:
-            authorName = ctx.message.author.name
-            authorIcon = ctx.message.author.avatar_url_as(format="jpg")
-        fields = jso['fields'] if 'fields' in jso else ""
-        footerText = jso['footerText'] if 'footerText' in jso else ""
-        footerUrl = jso['footerUrl'] if 'footerUrl' in jso else ""
-        imageUrl = jso['imageUrl'] if 'imageUrl' in jso else ""
-        embed = assemble_embed(
-            title=title,
-            desc=desc,
-            titleUrl=titleUrl,
-            hexcolor=hexcolor,
-            webcolor=webcolor,
-            thumbnailUrl=thumbnailUrl,
-            authorName=authorName,
-            authorUrl=authorUrl,
-            authorIcon=authorIcon,
-            fields=fields,
-            footerText=footerText,
-            footerUrl=footerUrl,
-            imageUrl=imageUrl
-        )
-        await channel.send(embed=embed)
+        # First, send response message so it can be repeatedly edited later
+        if json_input:
+            await ctx.interaction.response.send_message("Loading JSON file...")
+        else:
+            await ctx.interaction.response.send_message("No JSON file provided. Initializing empty embed.")
+
+        embed_dict = {}
+        if json_input:
+            await ctx.interaction.response.defer()
+            await ctx.send("Please send the JSON file containing the embed message as a `.json` file.")
+            file_message = await listen_for_response(
+                follow_id = ctx.user.id,
+                timeout = 120,
+            )
+            # If emoji message has file, use this as emoji, otherwise, use default emoji provided
+            if file_message == None:
+                await ctx.interaction.response.send_message(content = "No emoji was provided, so the operation was cancelled.")
+                return
+
+            if not len(file_message.attachments) or file_message.attachments[0].content_type != "application/json":
+                await ctx.interaction.response.send_message(content = "I couldn't find a `.json` attachment on your message. Opertion aborted.")
+
+            text = await file_message.attachments[0].read()
+            text = text.decode('utf-8')
+            jso = json.loads(text)
+
+            if 'author' in jso:
+                jso['author_name'] = ctx.author.name
+                jso['author_icon'] = ctx.author.avatar_url_as(format="jpg")
+
+            embed_dict = jso
+
+        complete = False
+        response = None
+        while not complete:
+            response = self._generate_embed(embed_dict)
+            view = EmbedView(embed_dict, ctx)
+            await ctx.interaction.edit_original_message(content = f"This embed will be sent to {channel.mention}:", embed = response, view = view)
+            await view.wait()
+            if view.stopped_status == None:
+                embed_dict.update(view.embed_update)
+            else:
+                if view.stopped_status == 'failed':
+                    await ctx.interaction.edit_original_message(content = "An error has occurred. You may not have responded to my query in 2 minutes. Operation cancelled.", embed = None, view = None)
+                elif view.stopped_status == 'completed':
+                    complete = True
+
+        await ctx.send("hi")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],

@@ -15,7 +15,6 @@ from src.wiki.wiki import get_page_tables
 from src.wiki.scilympiad import make_results_template, get_points
 from src.wiki.schools import get_school_listing
 from src.mongo.mongo import insert
-from commands import get_list, get_quick_list, get_help
 from src.lists import get_state_list
 from src.discord.utils import lookup_role
 from src.discord.mute import _mute
