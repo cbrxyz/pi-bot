@@ -11,8 +11,6 @@ from commandchecks import not_blacklisted_channel
 from src.discord.utils import sanitize_mention
 from src.discord.globals import CHANNEL_WELCOME, SLASH_COMMAND_GUILDS
 
-import xkcd as xkcd_module # not to interfere with xkcd method
-
 fish_now = 0
 
 class FunCommands(commands.Cog, name='Fun'):
@@ -252,7 +250,13 @@ class FunCommands(commands.Cog, name='Fun'):
         ctx,
         num: Option(int, "The number of the xkcd comic to get. If not provided, gets a random comic.", required = False)
         ):
-        max_num = await xkcd_module.get_max()
+        session = aiohttp.ClientSession()
+        res = await session.get("https://xkcd.com/info.0.json")
+        text = await res.text()
+        await session.close()
+        json_obj = json.loads(text)
+        max_num = json_obj['num']
+
         if num == None:
             num = random.randrange(1, max_num)
         if 1 <= num <= max_num:

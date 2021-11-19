@@ -15,7 +15,6 @@ from discord.ext import commands
 from src.discord.utils import auto_report
 from src.mongo.mongo import get_censor
 from embed import assemble_embed
-from commands import get_list
 from commanderrors import CommandNotAllowedInChannel
 
 ##############
@@ -223,26 +222,6 @@ async def on_raw_reaction_add(payload):
                 print("Report handled.")
                 await messageObj.delete()
             return
-
-@bot.event
-async def on_reaction_add(reaction, user):
-    msg = reaction.message
-    if len(msg.embeds) > 0:
-        if msg.embeds[0].title.startswith("List of Commands") and user.id not in PI_BOT_IDS:
-            currentPage = int(re.findall(r'(\d+)(?=\/)', msg.embeds[0].title)[0])
-            print(currentPage)
-            ls = False
-            if reaction.emoji == EMOJI_FAST_REVERSE:
-                ls = await get_list(user, 1)
-            elif reaction.emoji == EMOJI_LEFT_ARROW:
-                ls = await get_list(user, currentPage - 1)
-            elif reaction.emoji == EMOJI_RIGHT_ARROW:
-                ls = await get_list(user, currentPage + 1)
-            elif reaction.emoji == EMOJI_FAST_FORWARD:
-                ls = await get_list(user, 100)
-            if ls != False:
-                await reaction.message.edit(embed=ls)
-            await reaction.remove(user)
 
 @bot.event
 async def on_member_join(member):

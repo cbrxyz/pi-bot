@@ -47,9 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/me` was removed.
 * `/eat` was removed.
 * `/report` was removed.
-* `/list` was removed, as users can now see all commands in a list through Discord UI.
+* `/list` and `/help` were removed, as users can now see all commands in a list through Discord UI.
 * `/latex`, `/resultstemplate`, and `/school` were temporarily removed.
-* Multiple files were cleaned up and removed (`info.py`, `resultstemplate.txt`, `doggo.py`)
 * Users will no longer be banned from using `/stealfish`.
 
 ### Fixed
