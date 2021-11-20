@@ -89,19 +89,28 @@ class Nuke(discord.ui.View):
 
 class EmbedButton(discord.ui.Button["EmbedView"]):
 
-    def __init__(self, view, text, style, row, update_value):
+    def __init__(self, view, text, style, row, update_value, help_message = ""):
         super().__init__(label = text, style = style, row = row)
         self.embed_view = view
         self.update_value = update_value
+        self.help_message = help_message
 
     async def callback(self, interaction: discord.Interaction):
+        # Check if the Complete button was pressed - if so, stop process
         if self.update_value == 'complete':
             # If complete button is clicked, stop the view immediately
             self.embed_view.stopped_status = 'successful'
             self.embed_view.stop()
 
+        if self.update_value in ['author_icon', 'author_url'] and not any([value in self.embed_view.embed_dict for value in ['author_name', 'authorName']]):
+            help_message = await self.embed_view.channel.send("You can not set the author URL/icon without first setting the author name. This message will automatically disappear in 10 seconds.")
+            await asyncio.sleep(10)
+            await help_message.delete()
+            self.embed_view.stop()
+            return
+
         await interaction.response.defer()
-        info_message = await self.embed_view.channel.send("Please send the new value for the parameter. The operation will be cancelled if no operation was sent within 2 minutes.")
+        info_message = await self.embed_view.channel.send(f"Please send the new value for the parameter. The operation will be cancelled if no operation was sent within 2 minutes.\n\n{self.help_message}")
         response_message = await listen_for_response(
             follow_id = self.embed_view.user.id,
             timeout = 120,
@@ -112,6 +121,13 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         if response_message == None:
             self.embed_view.stopped_status = 'failed'
 
+        if not len(response_message.content):
+            help_message = await self.embed_view.channel.send("I couldn't find any text response in the message you just sent. Remember that for images, only URLs will work. I can't accept files for any value!")
+            await asyncio.sleep(10)
+            await help_message.delete()
+            self.embed_view.stop()
+            return
+
         self.embed_view.embed_update[self.update_value] = response_message.content
         self.embed_view.stop()
 
@@ -119,33 +135,46 @@ class EmbedView(discord.ui.View):
 
     # This will be updated when the user updates an embed property
     embed_update = {}
+    embed_dict = {}
     user = None
     channel = None
     stopped_status = None
 
     def __init__(self, embed_dict, ctx):
         super().__init__()
+        self.embed_dict = embed_dict
         self.user = ctx.user
         self.channel = ctx.channel
 
         associations = [
-            {'proper_name': 'Title', 'dict_values': ['title'], 'row': 0},
+            {'proper_name': 'Title', 'dict_values': ['title'], 'row': 0, 'help': "To remove the title, simply respond with `remove`."},
             {'proper_name': 'Description', 'dict_values': ['description'], 'row': 0},
-            {'proper_name': 'Title URL', 'dict_values': ['url', 'title_url', 'titleUrl'], 'row': 0},
-            {'proper_name': 'Color', 'dict_values': ['color'], 'row': 0}
+            {'proper_name': 'Title URL', 'dict_values': ['url', 'title_url', 'titleUrl'], 'row': 0, 'help': "To remove the URL from the title, simply respond with `remove`."},
+            {'proper_name': 'Color', 'dict_values': ['color'], 'row': 0, 'help': "Please send the color formatted as a hex color. For Scioly.org-related color codes, see <https://scioly.org/wiki/index.php/Scioly.org:Design>. To remove the color, simply respond with `remove`."},
+            {'proper_name': 'Thumbnail Image (from URL)', 'dict_values': ['thumbnail_url', 'thumbnailUrl'], 'row': 1, 'help': "Please note that only HTTPS URLs will work. To remove the thumbnail, respond simply with `remove`."},
+            {'proper_name': 'Image (from URL)', 'dict_values': ['image_url', 'imageUrl'], 'row': 1, 'help': "Please note that only HTTPS URLs will work. To remove the image, simply respond with `remove`."},
+            {'proper_name': 'Author Name', 'dict_values': ['author_name', 'authorName'], 'row': 2, 'help': "To remove the author name (and therefore, the author icon/URL), simply respond with `remove`."},
+            {'proper_name': 'Author Icon (from URL)', 'dict_values': ['author_icon', 'authorIcon'], 'row': 2, 'help': "To remove the author icon, simply respond with `remove`."},
+            {'proper_name': 'Author URL', 'dict_values': ['author_url', 'authorUrl'], 'row': 2, 'help': "To remove the URL link from the author value, simply respond with `remove`."},
+            {'proper_name': 'Footer Text', 'dict_values': ['footer_text', 'footerText'], 'row': 2, 'help': "To remove the footer text, simply respond with `remove`."},
+            {'proper_name': 'Footer Icon (from URL)', 'dict_values': ['footer_icon', 'footerIcon'], 'row': 2, 'help': "To remove the footer icon, simply respond with `remove`."},
         ]
         for association in associations:
-            for dict_value in association['dict_values']:
-                if dict_value in embed_dict:
-                    button = EmbedButton(self, f"Edit {association['proper_name']}", discord.ButtonStyle.gray, association['row'], association['dict_values'][0])
-                    self.add_item(button)
-                else:
-                    button = EmbedButton(self, f"Set {association['proper_name']}", discord.ButtonStyle.green, association['row'], association['dict_values'][0])
-                    self.add_item(button)
+            if len([dict_value for dict_value in association['dict_values'] if dict_value in embed_dict]):
+                button = EmbedButton(self, f"Edit {association['proper_name']}", discord.ButtonStyle.gray, association['row'], association['dict_values'][0], association['help'] if 'help' in association else "")
+                self.add_item(button)
+            else:
+                button = EmbedButton(self, f"Set {association['proper_name']}", discord.ButtonStyle.green, association['row'], association['dict_values'][0], association['help'] if 'help' in association else "")
+                self.add_item(button)
+
+        # Field operations
+        self.add_item(EmbedButton(self, "Add Field", discord.ButtonStyle.green, 3, 'add_field'))
+        self.add_item(EmbedButton(self, "Edit Fields", discord.ButtonStyle.gray, 3, 'edit_fields'))
+        self.add_item(EmbedButton(self, "Remove Field", discord.ButtonStyle.danger, 3, 'remove_field'))
 
         # Add complete operation
-        button = EmbedButton(self, "Complete", discord.ButtonStyle.green, 1, 'complete')
-        self.add_item(button)
+        self.add_item(EmbedButton(self, "Complete", discord.ButtonStyle.green, 4, 'complete'))
+        self.add_item(EmbedButton(self, "Abort", discord.ButtonStyle.danger, 4, 'cancel'))
 
 class LauncherCommands(commands.Cog):
 
@@ -916,52 +945,84 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             new_embed_dict['title'] = embed_dict['title']
         if 'description' in embed_dict:
             new_embed_dict['description'] = embed_dict['description']
+        if 'url' in embed_dict:
+            new_embed_dict['url'] = embed_dict['url']
         if 'title_url' in embed_dict:
-            new_embed_dict['title_url'] = embed_dict['title_url']
+            new_embed_dict['url'] = embed_dict['title_url']
         if 'titleUrl' in embed_dict:
-            new_embed_dict['title_url'] = embed_dict['titleUrl']
-        if 'color' in embed_dict:
-            new_embed_dict['color'] = embed_dict['color']
+            new_embed_dict['url'] = embed_dict['titleUrl']
+
+        # Convert color properties to one concise color property to check for class
         if 'hexColor' in embed_dict:
-            new_embed_dict['color'] = embed_dict['hexColor']
+            embed_dict['color'] = embed_dict['hexColor']
         if 'webColor' in embed_dict:
             try:
-                new_embed_dict['color'] = webcolors.name_to_hex(embed_dict['webColor'])
+                embed_dict['color'] = webcolors.name_to_hex(embed_dict['webColor'])
             except:
                 pass
-        if 'thumbnail_url' in embed_dict:
-            new_embed_dict['thumbnail_url'] = embed_dict['thumbnail_url']
-        if 'thumbnailUrl' in embed_dict:
-            new_embed_dict['thumbnail_url'] = embed_dict['thumbnailUrl']
-        if 'authorName' in embed_dict:
-            new_embed_dict['author_name'] = embed_dict['authorName']
-        if 'author_name' in embed_dict:
-            new_embed_dict['author_name'] = embed_dict['author_name']
-        if 'author_url' in embed_dict:
-            new_embed_dict['author_url'] = embed_dict['author_url']
-        if 'authorUrl' in embed_dict:
-            new_embed_dict['author_url'] = embed_dict['authorUrl']
-        if 'author_icon' in embed_dict:
-            new_embed_dict['author_icon'] = embed_dict['author_icon']
-        if 'authorIcon' in embed_dict:
-            new_embed_dict['author_icon'] = embed_dict['authorIcon']
-        if 'fields' in embed_dict:
-            new_embed_dict['fields'] = embed_dict['fields']
-        if 'footer_text' in embed_dict:
-            new_embed_dict['footer_text'] = embed_dict['footer_text']
-        if 'footerText' in embed_dict:
-            new_embed_dict['footer_text'] = embed_dict['footerText']
-        if 'footer_url' in embed_dict:
-            new_embed_dict['footer_url'] = embed_dict['footer_url']
-        if 'footerUrl' in embed_dict:
-            new_embed_dict['footer_url'] = embed_dict['footerUrl']
-        if 'image_url' in embed_dict:
-            new_embed_dict['image_url'] = embed_dict['image_url']
-        if 'imageUrl' in embed_dict:
-            new_embed_dict['image_url'] = embed_dict['imageUrl']
+        if 'color' in embed_dict and isinstance(embed_dict['color'], discord.Color):
+            new_embed_dict['color'] = embed_dict['color']
+        if 'color' in embed_dict and isinstance(embed_dict['color'], str):
+            if embed_dict['color'].startswith('#'):
+                new_embed_dict['color'] = discord.Color(int(embed_dict['color'][1:], 16))
+            elif len(embed_dict['color']) <= 6:
+                new_embed_dict['color'] = discord.Color(int(embed_dict['color'], 16))
+
         if not len(new_embed_dict.items()):
             new_embed_dict['description'] = "This embed contains nothing, so a blank description was set."
-        return discord.Embed(**new_embed_dict)
+        response = discord.Embed(**new_embed_dict)
+
+        if 'thumbnail_url' in embed_dict:
+            response.set_thumbnail(url = embed_dict['thumbnail_url'])
+        if 'thumbnailUrl' in embed_dict:
+            response.set_thumbnail(url = embed_dict['thumbnailUrl'])
+
+        if 'authorName' in embed_dict or 'author_name' in embed_dict:
+            # Author name must be defined for other attributes to work
+
+            author_dict = {}
+            if 'authorName' in embed_dict:
+                author_dict['name'] = embed_dict['authorName']
+            if 'author_name' in embed_dict:
+                author_dict['name'] = embed_dict['author_name']
+            if 'author_url' in embed_dict:
+                author_dict['url'] = embed_dict['author_url']
+            if 'authorUrl' in embed_dict:
+                author_dict['url'] = embed_dict['authorUrl']
+            if 'author_icon' in embed_dict:
+                author_dict['icon_url'] = embed_dict['author_icon']
+            if 'authorIcon' in embed_dict:
+                author_dict['icon_url'] = embed_dict['authorIcon']
+            response.set_author(**author_dict)
+
+        if 'fields' in embed_dict:
+            # If error, don't stress, just move on
+            try:
+                for field in embed_dict['fields']:
+                    response.add_field(**field)
+            except:
+                pass
+
+        footer_dict = {}
+        if 'footer_text' in embed_dict:
+            footer_dict['text'] = embed_dict['footer_text']
+        if 'footerText' in embed_dict:
+            footer_dict['text'] = embed_dict['footerText']
+        if 'footer_icon' in embed_dict:
+            footer_dict['icon_url'] = embed_dict['footer_icon']
+        if 'footerIcon' in embed_dict:
+            footer_dict['icon_url'] = embed_dict['footerIcon']
+        if 'footerUrl' in embed_dict:
+            footer_dict['icon_url'] = embed_dict['footerUrl']
+        if len(footer_dict.items()):
+            response.set_footer(**footer_dict)
+
+        if 'image_url' in embed_dict:
+            response.set_image(url = embed_dict['image_url'])
+        if 'imageUrl' in embed_dict:
+            response.set_image(url = embed_dict['imageUrl'])
+
+        return response
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
@@ -1013,7 +1074,22 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await ctx.interaction.edit_original_message(content = f"This embed will be sent to {channel.mention}:", embed = response, view = view)
             await view.wait()
             if view.stopped_status == None:
-                embed_dict.update(view.embed_update)
+                removed = False
+                easy_removes = ['title', 'url', 'color', 'thumbnail_url', 'image_url', 'footer_text', 'footer_url', 'author_url', 'author_icon']
+                for removal in easy_removes:
+                    if removal in view.embed_update and view.embed_update[removal] == 'remove':
+                        del embed_dict[removal]
+                        removed = True
+
+                if 'author_name' in view.embed_update and view.embed_update['author_name'] == 'remove':
+                    del embed_dict['author_name']
+                    del embed_dict['author_url']
+                    del embed_dict['author_icon']
+                    removed = True
+
+                if not removed:
+                    # If just removed, don't actually set the value to 'remove'
+                    embed_dict.update(view.embed_update)
             else:
                 if view.stopped_status == 'failed':
                     await ctx.interaction.edit_original_message(content = "An error has occurred. You may not have responded to my query in 2 minutes. Operation cancelled.", embed = None, view = None)
