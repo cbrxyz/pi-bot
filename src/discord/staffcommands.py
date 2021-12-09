@@ -10,6 +10,7 @@ from discord.errors import NoEntryPointError
 from discord.ext import commands
 from discord.commands import Option, permissions
 from discord.ext.commands.errors import NotOwner
+from discord.types.embed import EmbedField
 from commandchecks import is_staff, is_launcher
 
 import dateparser
@@ -101,8 +102,21 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
             super().__init__(label = f"Edit {name}", style = discord.ButtonStyle.gray)
         elif self.status == "toggle":
             super().__init__(label = self.name, style = discord.ButtonStyle.blurple)
+        elif self.status == "complete":
+            super().__init__(label = "Complete Field", style = discord.ButtonStyle.green)
 
-    async def callback(self, ctx, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
+
+        if self.raw_name == "complete":
+            if not ('name' in self.field_manager_view.field and 'value' in self.field_manager_view.field):
+                help_message = await self.field_manager_view.channel.send("This field can not yet be completed, because you haven't defined both the field name and value.")
+                await asyncio.sleep(10)
+                await help_message.delete()
+                self.field_manager_view.stop()
+            else:
+                self.field_manager_view.stopped_status = "completed"
+                self.field_manager_view.stop()
+                return
 
         await interaction.response.defer()
         info_message = await self.field_manager_view.channel.send(f"Please send the new value for the {self.raw_name}. The operation will be cancelled if no operation was sent within 2 minutes.")
@@ -131,6 +145,12 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
         else:
             self.field_manager_view.field[self.raw_name] = response_message.content
 
+        # Update fields
+        if self.field_manager_view.index >= len(self.field_manager_view.fields):
+            self.field_manager_view.fields.append(self.field_manager_view.field)
+        else:
+            self.field_manager_view.fields[self.field_manager_view.index] = self.field_manager_view.field
+            self.field_manager_view.embed_update = {'fields': self.field_manager_view.fields}
         self.field_manager_view.stop()
 
 class EmbedFieldManagerView(discord.ui.View):
@@ -142,6 +162,7 @@ class EmbedFieldManagerView(discord.ui.View):
         self.user = ctx.user
         self.fields = fields
         self.index = index
+        self.embed_update = {}
         super().__init__()
 
         self.field = {}
@@ -162,6 +183,7 @@ class EmbedFieldManagerView(discord.ui.View):
             self.field['inline'] = False
 
         self.add_item(EmbedFieldManagerButton(self, f"Inline: {self.field['inline']} (Toggle)", "inline", status = "toggle"))
+        self.add_item(EmbedFieldManagerButton(self, "Complete", "complete", status = "complete"))
 
 class EmbedButton(discord.ui.Button["EmbedView"]):
 
@@ -187,7 +209,8 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
 
         if self.update_value == 'add_field':
             self.embed_view.embed_update['add_field'] = {'index': len(self.embed_view.embed_dict['fields']) if 'fields' in self.embed_view.embed_dict else 0}
-        if self.update_value == 'edit_field':
+            return self.embed_view.stop()
+        if self.update_value == 'edit_fields':
             # Check to see if any fields actually exist
             if 'fields' not in self.embed_view.embed_dict or not len(self.embed_view.embed_dict['fields']):
                 await self.embed_view.channel.send("It appears no fields exist in the embed currently.")
@@ -224,6 +247,7 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
                 if min_num <= int(response_message.content) <= max_num:
                     self.embed_view.embed_update['edit_field'] = {'index': int(response_message.content)}
             self.embed_view.embed_update['add_field'] = {'index': len(self.embed_view.embed_dict['fields']) if 'fields' in self.embed_view.embed_dict else 0}
+            return self.embed_view.stop()
 
         await interaction.response.defer()
         info_message = await self.embed_view.channel.send(f"Please send the new value for the parameter. The operation will be cancelled if no operation was sent within 2 minutes.\n\n{self.help_message}")
@@ -1193,40 +1217,50 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             view = None
             if embed_field_manager:
                 if 'fields' not in embed_dict:
-                    embed_dict['fields'] = {}
+                    embed_dict['fields'] = []
                 view = EmbedFieldManagerView(ctx, embed_dict['fields'], embed_field_index)
             else:
                 view = EmbedView(embed_dict, ctx)
             await ctx.interaction.edit_original_message(content = f"This embed will be sent to {channel.mention}:", embed = response, view = view)
             await view.wait()
             if view.stopped_status == None:
-                if view.embed_update in ['add_field', 'edit_field']:
-                    # Switch to field manager mode
-                    embed_field_manager = True
-                    embed_field_index = view.embed_update[list(view.embed_update.items()[0])]
+                if isinstance(view, EmbedFieldManagerView):
+                    embed_dict.update(view.embed_update)
 
-                removed = False
-                easy_removes = ['title', 'url', 'color', 'thumbnail_url', 'image_url', 'footer_text', 'footer_url', 'author_url', 'author_icon']
-                for removal in easy_removes:
-                    if removal in view.embed_update and view.embed_update[removal] == 'remove':
-                        del embed_dict[removal]
+                elif isinstance(view, EmbedView):
+                    if any(key in view.embed_update for key in ['add_field', 'edit_fields']):
+                        # Switch to field manager mode
+                        embed_field_manager = True
+                        embed_field_index = view.embed_update[list(view.embed_update.items())[0][0]]['index']
+
+                    removed = False
+                    easy_removes = ['title', 'url', 'color', 'thumbnail_url', 'image_url', 'footer_text', 'footer_url', 'author_url', 'author_icon']
+                    for removal in easy_removes:
+                        if removal in view.embed_update and view.embed_update[removal] == 'remove':
+                            del embed_dict[removal]
+                            removed = True
+
+                    if 'author_name' in view.embed_update and view.embed_update['author_name'] == 'remove':
+                        del embed_dict['author_name']
+                        del embed_dict['author_url']
+                        del embed_dict['author_icon']
                         removed = True
 
-                if 'author_name' in view.embed_update and view.embed_update['author_name'] == 'remove':
-                    del embed_dict['author_name']
-                    del embed_dict['author_url']
-                    del embed_dict['author_icon']
-                    removed = True
-
-                if not removed:
-                    # If just removed, don't actually set the value to 'remove'
-                    embed_dict.update(view.embed_update)
+                    if not removed or not any(key in view.embed_update for key in ['add_field', 'edit_fields']):
+                        # If just removed, don't actually set the value to 'remove'
+                        # Or, if attempting to add/edit fields
+                        embed_dict.update(view.embed_update)
 
             else:
                 if view.stopped_status == 'failed':
                     await ctx.interaction.edit_original_message(content = "An error has occurred. You may not have responded to my query in 2 minutes, or your message may not have been formatted correctly. Operation cancelled.", embed = None, view = None)
                 elif view.stopped_status == 'completed':
-                    complete = True
+                    if isinstance(view, EmbedFieldManagerView):
+                        # If embed field manager in play, actually update fields and return to old view
+                        embed_dict.update(view.embed_update)
+                        embed_field_manager = False
+                    elif isinstance(view, EmbedView):
+                        complete = True
 
         await ctx.send("hi")
 
