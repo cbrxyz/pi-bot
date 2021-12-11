@@ -197,8 +197,9 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         # Check if the Complete button was pressed - if so, stop process
         if self.update_value == 'complete':
             # If complete button is clicked, stop the view immediately
-            self.embed_view.stopped_status = 'successful'
+            self.embed_view.stopped_status = 'completed'
             self.embed_view.stop()
+            return
 
         if self.update_value in ['author_icon', 'author_url'] and not any([value in self.embed_view.embed_dict for value in ['author_name', 'authorName']]):
             help_message = await self.embed_view.channel.send("You can not set the author URL/icon without first setting the author name. This message will automatically disappear in 10 seconds.")
@@ -1268,7 +1269,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                     elif isinstance(view, EmbedView):
                         complete = True
 
-        await ctx.send("hi")
+        await channel.send(embed = response)
+        await ctx.interaction.edit_original_message(content = "The embed was succesfully sent!", embed = None, view = None)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
