@@ -201,6 +201,17 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             self.embed_view.stop()
             return
 
+        if self.update_value == 'cancel':
+            # If abort button is clicked, stop the view immediately
+            self.embed_view.stopped_status = 'aborted'
+            self.embed_view.stop()
+            return
+
+        if self.update_value in ['import', 'export']:
+            self.embed_view.embed_update[self.update_value] = True
+            self.embed_view.stop()
+            return
+
         if self.update_value in ['author_icon', 'author_url'] and not any([value in self.embed_view.embed_dict for value in ['author_name', 'authorName']]):
             help_message = await self.embed_view.channel.send("You can not set the author URL/icon without first setting the author name. This message will automatically disappear in 10 seconds.")
             await asyncio.sleep(10)
@@ -320,6 +331,8 @@ class EmbedView(discord.ui.View):
         # Add complete operation
         self.add_item(EmbedButton(self, "Complete", discord.ButtonStyle.green, 4, 'complete'))
         self.add_item(EmbedButton(self, "Abort", discord.ButtonStyle.danger, 4, 'cancel'))
+        self.add_item(EmbedButton(self, "Import", discord.ButtonStyle.blurple, 4, 'import'))
+        self.add_item(EmbedButton(self, "Export", discord.ButtonStyle.blurple, 4, 'export'))
 
 class LauncherCommands(commands.Cog):
 
@@ -1175,41 +1188,12 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     async def prepembed(self,
         ctx,
-        channel: Option(discord.TextChannel, "The channel to send the message to.", required = True),
-        json_input: Option(bool, "Whether to use JSON to initially generate the embed.", name = "json", required = False, default = False)
+        channel: Option(discord.TextChannel, "The channel to send the message to.", required = True)
         ):
         """Helps to create an embed to be sent to a channel."""
-        # First, send response message so it can be repeatedly edited later
-        if json_input:
-            await ctx.interaction.response.send_message("Loading JSON file...")
-        else:
-            await ctx.interaction.response.send_message("No JSON file provided. Initializing empty embed.")
 
         embed_dict = {}
-        if json_input:
-            await ctx.interaction.response.defer()
-            await ctx.send("Please send the JSON file containing the embed message as a `.json` file.")
-            file_message = await listen_for_response(
-                follow_id = ctx.user.id,
-                timeout = 120,
-            )
-            # If emoji message has file, use this as emoji, otherwise, use default emoji provided
-            if file_message == None:
-                await ctx.interaction.response.send_message(content = "No emoji was provided, so the operation was cancelled.")
-                return
-
-            if not len(file_message.attachments) or file_message.attachments[0].content_type != "application/json":
-                await ctx.interaction.response.send_message(content = "I couldn't find a `.json` attachment on your message. Opertion aborted.")
-
-            text = await file_message.attachments[0].read()
-            text = text.decode('utf-8')
-            jso = json.loads(text)
-
-            if 'author' in jso:
-                jso['author_name'] = ctx.author.name
-                jso['author_icon'] = ctx.author.avatar_url_as(format="jpg")
-
-            embed_dict = jso
+        await ctx.interaction.response.send_message("Initializing...")
 
         complete = False
         embed_field_manager = False
@@ -1240,6 +1224,42 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         embed_field_index = view.embed_update[list(view.embed_update.items())[0][0]]['index']
                         embed_dict['fields'].pop(embed_field_index)
 
+                    if 'import' in view.embed_update:
+                        # Import a JSON file as the embed dict
+                        await ctx.interaction.edit_original_message(content = "Please send the JSON file containing the embed message as a `.json` file.", view = None, embed = None)
+                        file_message = await listen_for_response(
+                            follow_id = ctx.user.id,
+                            timeout = 120,
+                        )
+                        # If emoji message has file, use this as emoji, otherwise, use default emoji provided
+                        if file_message == None:
+                            await ctx.interaction.edit_original_message(content = "No file was provided, so the operation was cancelled.")
+                            return
+
+                        if not len(file_message.attachments) or file_message.attachments[0].content_type != "application/json":
+                            await ctx.interaction.edit_original_message(content = "I couldn't find a `.json` attachment on your message. Opertion aborted.")
+
+                        text = await file_message.attachments[0].read()
+                        text = text.decode('utf-8')
+                        jso = json.loads(text)
+                        await file_message.delete()
+
+                        if 'author' in jso:
+                            jso['author_name'] = ctx.author.name
+                            jso['author_icon'] = ctx.author.avatar_url_as(format="jpg")
+
+                        embed_dict = jso
+
+                    if 'export' in view.embed_update:
+                        # Generate a JSON file as the embed dict
+                        with open('embed_export.json', 'w+') as file:
+                            json.dump(embed_dict, file)
+
+                        await ctx.interaction.edit_original_message(content = "Here is the exported embed! The embed creator will return in approximately 15 seconds.", embed = None, view = None)
+                        file_message = await ctx.channel.send(file = discord.File('embed_export.json'))
+                        await asyncio.sleep(15)
+                        await file_message.delete()
+
                     removed = False
                     easy_removes = ['title', 'url', 'color', 'thumbnail_url', 'image_url', 'footer_text', 'footer_url', 'author_url', 'author_icon']
                     for removal in easy_removes:
@@ -1253,7 +1273,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         del embed_dict['author_icon']
                         removed = True
 
-                    if not removed or not any(key in view.embed_update for key in ['add_field', 'edit_field']):
+                    if not removed and not any(key in view.embed_update for key in ['add_field', 'edit_field', 'import', 'export']):
                         # If just removed, don't actually set the value to 'remove'
                         # Or, if attempting to add/edit fields
                         embed_dict.update(view.embed_update)
@@ -1261,6 +1281,10 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             else:
                 if view.stopped_status == 'failed':
                     await ctx.interaction.edit_original_message(content = "An error has occurred. You may not have responded to my query in 2 minutes, or your message may not have been formatted correctly. Operation cancelled.", embed = None, view = None)
+                    return
+                elif view.stopped_status == 'aborted':
+                    await ctx.interaction.edit_original_message(content = "The embed creation was aborted.", embed = None, view = None)
+                    return
                 elif view.stopped_status == 'completed':
                     if isinstance(view, EmbedFieldManagerView):
                         # If embed field manager in play, actually update fields and return to old view
