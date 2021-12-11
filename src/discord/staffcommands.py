@@ -117,27 +117,27 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
                 self.field_manager_view.stopped_status = "completed"
                 self.field_manager_view.stop()
                 return
+        if self.raw_name != "inline":
+            await interaction.response.defer()
+            info_message = await self.field_manager_view.channel.send(f"Please send the new value for the {self.raw_name}. The operation will be cancelled if no operation was sent within 2 minutes.")
+            response_message = await listen_for_response(
+                follow_id = self.field_manager_view.user.id,
+                timeout = 120,
+            )
 
-        await interaction.response.defer()
-        info_message = await self.field_manager_view.channel.send(f"Please send the new value for the {self.raw_name}. The operation will be cancelled if no operation was sent within 2 minutes.")
-        response_message = await listen_for_response(
-            follow_id = self.field_manager_view.user.id,
-            timeout = 120,
-        )
+            await info_message.delete()
 
-        await info_message.delete()
+            if response_message == None:
+                self.field_manager_view.stopped_status = 'failed'
 
-        if response_message == None:
-            self.field_manager_view.stopped_status = 'failed'
+            await response_message.delete()
 
-        await response_message.delete()
-
-        if not len(response_message.content):
-            help_message = await self.field_manager_view.channel.send("I couldn't find any text response in the message you just sent. Remember that for images, only URLs will work. I can't accept files for the {self.raw_name}!")
-            await asyncio.sleep(10)
-            await help_message.delete()
-            self.field_manager_view.stop()
-            return
+            if not len(response_message.content):
+                help_message = await self.field_manager_view.channel.send("I couldn't find any text response in the message you just sent. Remember that for images, only URLs will work. I can't accept files for the {self.raw_name}!")
+                await asyncio.sleep(10)
+                await help_message.delete()
+                self.field_manager_view.stop()
+                return
 
         if self.raw_name == "inline":
             # Editing name
@@ -210,7 +210,8 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         if self.update_value == 'add_field':
             self.embed_view.embed_update['add_field'] = {'index': len(self.embed_view.embed_dict['fields']) if 'fields' in self.embed_view.embed_dict else 0}
             return self.embed_view.stop()
-        if self.update_value == 'edit_fields':
+
+        if self.update_value in ['edit_field', 'remove_field']:
             # Check to see if any fields actually exist
             if 'fields' not in self.embed_view.embed_dict or not len(self.embed_view.embed_dict['fields']):
                 await self.embed_view.channel.send("It appears no fields exist in the embed currently.")
@@ -222,7 +223,7 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             min_num = 1
             max_num = len(fields)
 
-            info_message = await self.embed_view.channel.send(f"Please type in the index of the field you would like to edit. `1` refers to the first field, `2` to the second, etc...\n\nThe minimum accepted value is `1` and the maximum accepted value is `{len(fields)}`!")
+            info_message = await self.embed_view.channel.send(f"Please type in the index of the field you would like to {'edit' if self.update_value == 'edit_field' else 'remove'}. `1` refers to the first field, `2` to the second, etc...\n\nThe minimum accepted value is `1` and the maximum accepted value is `{len(fields)}`!")
 
             valid_response = False
             while not valid_response:
@@ -239,14 +240,15 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
                     await self.embed_view.channel.send("I couldn't find any content in your message. Aborting.")
                     return self.embed_view.stop()
 
-                if not response_message.isnumeric():
+                if not response_message.content.isnumeric():
                     self.embed_view.stopped_status = 'failed'
                     await self.embed_view.channel.send("It appears that your message did not solely contain a number. Please try again.")
                     return self.embed_view.stop()
 
                 if min_num <= int(response_message.content) <= max_num:
-                    self.embed_view.embed_update['edit_field'] = {'index': int(response_message.content)}
-            self.embed_view.embed_update['add_field'] = {'index': len(self.embed_view.embed_dict['fields']) if 'fields' in self.embed_view.embed_dict else 0}
+                    self.embed_view.embed_update[self.update_value] = {'index': int(response_message.content) - 1}
+                    valid_response = True
+
             return self.embed_view.stop()
 
         await interaction.response.defer()
@@ -311,7 +313,7 @@ class EmbedView(discord.ui.View):
 
         # Field operations
         self.add_item(EmbedButton(self, "Add Field", discord.ButtonStyle.green, 3, 'add_field'))
-        self.add_item(EmbedButton(self, "Edit Fields", discord.ButtonStyle.gray, 3, 'edit_fields'))
+        self.add_item(EmbedButton(self, "Edit Fields", discord.ButtonStyle.gray, 3, 'edit_field'))
         self.add_item(EmbedButton(self, "Remove Field", discord.ButtonStyle.danger, 3, 'remove_field'))
 
         # Add complete operation
@@ -1228,10 +1230,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                     embed_dict.update(view.embed_update)
 
                 elif isinstance(view, EmbedView):
-                    if any(key in view.embed_update for key in ['add_field', 'edit_fields']):
+                    if any(key in view.embed_update for key in ['add_field', 'edit_field']):
                         # Switch to field manager mode
                         embed_field_manager = True
                         embed_field_index = view.embed_update[list(view.embed_update.items())[0][0]]['index']
+
+                    if 'remove_field' in view.embed_update:
+                        embed_field_index = view.embed_update[list(view.embed_update.items())[0][0]]['index']
+                        embed_dict['fields'].pop(embed_field_index)
 
                     removed = False
                     easy_removes = ['title', 'url', 'color', 'thumbnail_url', 'image_url', 'footer_text', 'footer_url', 'author_url', 'author_icon']
@@ -1246,7 +1252,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         del embed_dict['author_icon']
                         removed = True
 
-                    if not removed or not any(key in view.embed_update for key in ['add_field', 'edit_fields']):
+                    if not removed or not any(key in view.embed_update for key in ['add_field', 'edit_field']):
                         # If just removed, don't actually set the value to 'remove'
                         # Or, if attempting to add/edit fields
                         embed_dict.update(view.embed_update)
