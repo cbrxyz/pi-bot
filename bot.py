@@ -144,15 +144,19 @@ async def listen_for_response(
 
 @bot.event
 async def on_message(message):
-    if message.author.id in PI_BOT_IDS: return
+    # Nothing needs to be done to the bot's own messages
+    if message.author.id in PI_BOT_IDS:
+        return
 
+    # If user is being listened to, return their message
     for listener in listeners.items():
         if message.author.id == listener[1]['follow_id']:
             listeners[listener[0]]['message'] = message
 
-    # Log DMs (might put this into cog idk this just needs to run b4 the censor)
-    if type(message.channel) == discord.DMChannel:
+    # Log DMs
+    if type(message.channel) == discord.DMChannel and message.author not in PI_BOT_IDS:
         await send_to_dm_log(message)
+        print(f"Message from {message.author} through DM's: {message.content}")
     else:
         # Print to output
         if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
@@ -191,37 +195,6 @@ async def on_message(message):
         await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
     elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
         await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-
-    if re.match(r'\s*[!"#$%&\'()*+,\-./:;<=>?@[\]^_`{|}~]', message.content.lstrip()[1:]) == None: # A bit messy, but gets it done
-        await bot.process_commands(message)
-
-@bot.event
-async def on_raw_reaction_add(payload):
-    if payload.user_id not in PI_BOT_IDS:
-        guild = bot.get_guild(payload.guild_id)
-        reports_channel = discord.utils.get(guild.text_channels, name=CHANNEL_REPORTS)
-        if payload.emoji.name == EMOJI_UNSELFMUTE:
-            guild = bot.get_guild(payload.guild_id)
-            self_muted_role = discord.utils.get(guild.roles, name=ROLE_SELFMUTE)
-            un_self_mute_channel = discord.utils.get(guild.text_channels, name=CHANNEL_UNSELFMUTE)
-            member = payload.member
-            message = await un_self_mute_channel.fetch_message(payload.message_id)
-            if self_muted_role in member.roles:
-                await member.remove_roles(self_muted_role)
-            await message.clear_reactions()
-            await message.add_reaction(EMOJI_FULL_UNSELFMUTE)
-            for obj in CRON_LIST[:]:
-                if obj['do'] == f'unmute {payload.user_id}':
-                    CRON_LIST.remove(obj)
-        if payload.message_id in REPORTS:
-            messageObj = await reports_channel.fetch_message(payload.message_id)
-            if payload.emoji.name == "\U0000274C": # :x:
-                print("Report cleared with no action.")
-                await messageObj.delete()
-            if payload.emoji.name == "\U00002705": # :white_check_mark:
-                print("Report handled.")
-                await messageObj.delete()
-            return
 
 @bot.event
 async def on_member_join(member):
@@ -475,15 +448,7 @@ async def on_command_error(ctx, error):
     print("Command Error:")
     print(error)
 
-    # Okay, a bit sketch, but it works.
-    # The idea is this: we want this global error handler to handle all errors
-    #  that come in here. The outputs here are refered to as the default response.
-    # Now, specific commands might have their own error handling which might
-    #  handle certain errors differently. In such cases, we don't want this global
-    #  handler to run.
-    # We use `__slots__` in ctx to achieve this. There we can store a bit/bool flag
-    #  to signal whether we handled the error in a local or cog level handler.
-
+    # If a cog has a separate error handler, don't also run the global error handler
     if (ctx.command.has_error_handler() or ctx.cog.has_error_handler()) and ctx.__slots__ == True:
         return
 

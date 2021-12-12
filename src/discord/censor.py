@@ -9,9 +9,6 @@ class Censor(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # @commands.Cog.listener()
-    # gets called by main on_message in bot.py. A bit scuffed, butthe censor
-    #  should be the executed BEFORE commands
     async def on_message(self, message):
         """
         Will censor the message. Will replace any flags in content with "<censored>".
@@ -21,7 +18,6 @@ class Censor(commands.Cog):
         :type message: discord.Message
         """
         content = message.content
-        # print(f"content before censor: \"{content}\"")
         for word in src.discord.globals.CENSOR['words']:
             if len(re.findall(fr"\b({word})\b", content, re.I)):
                 print(f"Censoring message by {message.author} because of the word: `{word}`")
@@ -35,8 +31,8 @@ class Censor(commands.Cog):
         if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
             print(f"Censoring message by {message.author} because of the it mentioned a Discord invite link.")
             await message.delete()
-            ssChannel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
-            await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {ssChannel.mention}.*")
+            support_channel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
+            await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {support_channel.mention}.*")
 
     async def __censor(self, message):
         """Constructs Pi-Bot's censor."""
