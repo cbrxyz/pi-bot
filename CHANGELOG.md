@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/tagadd`, `/tagedit`, and `/tagremove` allow staff to modify tags from the server
 * `/censoradd` and `/censorremove` allow staff to modify censor entries from the server
 * `/stealfish` can now occasionally give bear more fish rather than take fish away.
+* `/prepembed` now has an interactive creation tool to create embeds.
+* `/prepembed` now allows for exporting/import embeds.
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).

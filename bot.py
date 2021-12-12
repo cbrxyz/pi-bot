@@ -564,6 +564,7 @@ async def on_error(event, *args, **kwargs):
 bot.load_extension("src.discord.censor")
 bot.load_extension("src.discord.ping")
 bot.load_extension("src.discord.staffcommands")
+bot.load_extension("src.discord.embed")
 bot.load_extension("src.discord.membercommands")
 bot.load_extension("src.discord.devtools")
 bot.load_extension("src.discord.funcommands")
