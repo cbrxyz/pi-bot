@@ -5,7 +5,7 @@ from discord.ext import commands
 import discord.commands
 from discord.commands import Option, permissions
 
-from src.discord.globals import SLASH_COMMAND_GUILDS
+from src.discord.globals import SLASH_COMMAND_GUILDS, ROLE_STAFF, ROLE_VIP, SERVER_ID
 
 from bot import listen_for_response
 
@@ -380,6 +380,7 @@ class EmbedCommands(commands.Cog):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Assembles an embed in a particular channel."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def prepembed(self,
         ctx,
         channel: Option(discord.TextChannel, "The channel to send the message to.", required = True)
