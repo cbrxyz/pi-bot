@@ -6,7 +6,7 @@ from src.discord.globals import ROLE_VIP, ROLE_STAFF, ROLE_AD, ROLE_LH, SERVER_I
 async def is_bear(ctx):
     """Checks to see if the user is bear, or pepperonipi (for debugging purposes)."""
     return ctx.message.author.id == 353730886577160203 or ctx.message.author.id == 715048392408956950
-    
+
 def is_staff():
     """Checks to see if the author of ctx message is a staff member."""
     def predicate(ctx):
@@ -17,7 +17,15 @@ def is_staff():
         if any(r in [staffRole, vipRole] for r in member.roles): return True
         raise commands.MissingAnyRole([staffRole, vipRole])
     return commands.check(predicate)
-    
+
+def is_staff_from_ctx(ctx):
+    guild = ctx.guild
+    member = ctx.author
+    staff_role = discord.utils.get(guild.roles, name=ROLE_STAFF)
+    vip_role = discord.utils.get(guild.roles, name=ROLE_VIP)
+    if any(r in [staff_role, vip_role] for r in member.roles): return True
+    raise commands.MissingAnyRole([staff_role, vip_role])
+
 async def is_author_staff(author: discord.abc.User):
     """Checks to see if the author is a staff member."""
     vipRole = discord.utils.get(author.guild.roles, name=ROLE_VIP)
@@ -34,7 +42,7 @@ async def is_launcher(ctx):
     print(any(r in [staffRole, vipRole, lhRole] for r in member.roles))
     if any(r in [staffRole, vipRole, lhRole] for r in member.roles): return True
     raise commands.MissingAnyRole([staffRole, vipRole, lhRole])
-    
+
 def check_is_launcher():
     return commands.check(is_launcher)
 
@@ -53,9 +61,9 @@ def not_blacklisted_channel(blacklist):
             if channel == discord.utils.get(server.text_channels, name=c):
                 raise CommandNotAllowedInChannel(channel, "Command was invoked in a blacklisted channel.")
         return True
-    
+
     return commands.check(predicate)
-    
+
 def is_whitelisted_channel(whitelist):
     """Given a string array whitelist, check if command was invoked in specified whitelisted channels."""
     async def predicate(ctx):
@@ -65,5 +73,5 @@ def is_whitelisted_channel(whitelist):
             if channel == discord.utils.get(server.text_channels, name=c):
                 return True
         raise CommandNotAllowedInChannel(channel, "Command was invoked in a non-whitelisted channel.")
-    
+
     return commands.check(predicate)

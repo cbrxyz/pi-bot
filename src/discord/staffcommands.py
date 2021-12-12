@@ -11,6 +11,7 @@ from discord.ext import commands
 from discord.commands import Option, permissions
 from discord.ext.commands.errors import NotOwner
 from discord.types.embed import EmbedField
+import commandchecks
 from commandchecks import is_staff, is_launcher
 
 import dateparser
@@ -141,6 +142,8 @@ class LauncherCommands(commands.Cog):
         count: Option(int, "The amount of messages to nuke.")
     ):
         """Nukes (deletes) a specified amount of messages."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         global STOPNUKE
         MAX_DELETE = 100
         if int(count) > MAX_DELETE:
@@ -362,6 +365,8 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         reason: Option(str, "The reason to kick the member for.")
     ):
         """Kicks a member for the specified reason."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         original_shown_embed = discord.Embed(
             title = "Kick Confirmation",
             color = discord.Color.brand_red(),
@@ -402,6 +407,8 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         member: Option(discord.Member, "The user to unmute.")
     ):
         """Unmutes a user."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         original_shown_embed = discord.Embed(
             title = "Unmute Confirmation",
             color = discord.Color.brand_red(),
@@ -453,6 +460,8 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         ])
     ):
         """Bans a user."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         times = {
             "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
             "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
@@ -537,6 +546,8 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         :param *args: The time to mute the user for.
         :type *args: str
         """
+        commandchecks.is_staff_from_ctx(ctx)
+
         times = {
             "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
             "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
@@ -601,6 +612,8 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
         channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
     ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         true_channel = channel or ctx.channel
         if mode == "remove":
             await true_channel.edit(slowmode_delay = 0)
@@ -623,6 +636,8 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             2. Create relevant action rows.
             3. Perform steps as staff request.
         """
+        commandchecks.is_staff_from_ctx(ctx)
+
         cron_list = await get_cron()
 
         cron_embed = discord.Embed(
@@ -649,6 +664,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def vc(self, ctx):
+        commandchecks.is_staff_from_ctx(ctx)
+
         server = ctx.author.guild
         if ctx.channel.category.name == CATEGORY_TOURNAMENTS:
             test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
@@ -745,6 +762,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         iden: Option(str, "The ID to lookup.")
     ):
         """Mentions a user with the given ID."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         user = self.bot.get_user(int(iden))
         await ctx.respond(user.mention, ephemeral = True)
 
@@ -755,6 +774,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def lock(self, ctx):
         """Locks a channel to Member access."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         member = ctx.author
         channel = ctx.channel
 
@@ -784,6 +805,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unlock(self, ctx):
         """Unlocks a channel to Member access."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         member = ctx.author
         channel = ctx.channel
 
@@ -817,6 +840,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def met(self, ctx):
         """Runs Pi-Bot's Most Edits Table"""
+        commandchecks.is_staff_from_ctx(ctx)
+
         msg1 = await ctx.respond("Attemping to run the Most Edits Table.")
         res = await run_table()
         print(res)
@@ -858,6 +883,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def archive(self, ctx):
+        commandchecks.is_staff_from_ctx(ctx)
+
         tournament = [t for t in TOURNAMENT_INFO if t[1] == ctx.channel.name]
         bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
         archive_cat = discord.utils.get(ctx.guild.categories, name = CATEGORY_ARCHIVE)
@@ -887,6 +914,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def refresh(self, ctx):
         """Refreshes data from the sheet."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         await update_tournament_list(ctx.bot)
         res = await refresh_algorithm()
         if res == True:
@@ -917,6 +946,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             "1 year",
             ])
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if activity == "playing":
             await self.bot.change_presence(activity = discord.Game(name = message))
             await ctx.interaction.response.send_message(content = f"The status was updated to: `Playing {message}`.")
@@ -960,6 +991,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         tourney_date: Option(str, "The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.", required = True),
         status: Option(str, "Determines if the new tournament channel will be sent to voting or added immediately.", choices = ["voting", "add_immediately"], required = True)
     ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         new_tourney_doc = {
             'official_name': official_name,
             'channel_name': channel_name,
@@ -1048,6 +1081,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ctx,
         short_name: Option(str, "The short name of the invitational, such as 'mit'.", required = True)
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         invitationals = await get_invitationals()
         found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
         if len(found_invitationals) < 1:
@@ -1075,6 +1110,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             "tournament date"
         ])
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         invitationals = await get_invitationals()
         found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
         if len(found_invitationals) < 1:
@@ -1168,6 +1205,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ctx,
         short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         invitationals = await get_invitationals()
         found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
         if not len(found_invitationals):
@@ -1188,6 +1227,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ctx,
         short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
     ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         invitationals = await get_invitationals()
         found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
         if not len(found_invitationals):
@@ -1223,6 +1264,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         censor_type: Option(str, "Whether to add a new word or emoji to the list.", choices = ["word", "emoji"], required = True),
         phrase: Option(str, "The new word or emoji to add. For a new word, type the word. For a new emoji, send the emoji.", required = True)
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if censor_type == "word":
             if phrase in CENSOR['words']:
                 await ctx.interaction.response.send_message(content = f"`{phrase}` is already in the censored words list. Operation cancelled.")
@@ -1247,6 +1290,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         censor_type: Option(str, "Whether to remove a word or emoji.", choices = ["word", "emoji"], required = True),
         phrase: Option(str, "The word or emoji to remove from the censor list.", required = True)
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if censor_type == "word":
             if phrase not in CENSOR["words"]:
                 await ctx.interaction.response.send_message(content = f"`{phrase}` is not in the list of censored words.")
@@ -1272,6 +1317,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         launch_helpers: Option(str, "Whether launch helpers can use. Defaults to yes.", choices = ["yes", "no"], default = "yes"),
         members: Option(str, "Whether all members can use this tag. Defaults to yes.", choices = ["yes", "no"], default = "yes")
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if tag_name in [t['name'] for t in src.discord.globals.TAGS]:
             await ctx.interaction.response.send_message(content = f"The `{tag_name}` tag has already been added. To edit this tag, please use `/tagedit` instead.")
         else:
@@ -1324,6 +1371,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         launch_helpers: Option(str, "Whether launch helpers can use. Defaults to 'do not change'.", choices = ["yes", "no", "do not change"], default = "do not change"),
         members: Option(str, "Whether all members can use this tag. Defaults to 'do not change'.", choices = ["yes", "no", "do not change"], default = "do not change")
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if tag_name not in [t['name'] for t in src.discord.globals.TAGS]:
             return await ctx.interaction.response.send_message(content = f"No tag with name `{tag_name}` could be found.")
 
@@ -1374,6 +1423,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ctx,
         tag_name: Option(str, "The name of the tag to remove.", required = True)
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if tag_name not in [t['name'] for t in src.discord.globals.TAGS]:
             return await ctx.interaction.response.send_message(content = f"No tag with the name of `{tag_name}` was found.")
 
@@ -1393,6 +1444,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         event_name: Option(str, "The name of the new event.", required = True),
         event_aliases: Option(str, "The aliases for the new event. Format as 'alias1, alias2'.")
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if event_name in [e['name'] for e in src.discord.globals.EVENT_INFO]:
             return await ctx.interaction.response.send_message(content = f"The `{event_name}` event has already been added.")
 
@@ -1424,6 +1477,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         event_name: Option(str, "The name of the event to remove.", required = True),
         delete_role: Option(str, "Whether to delete the event role from all users. 'no' allows role to remain.", choices = ["no", "yes"], default = "no", required = True)
         ):
+        commandchecks.is_staff_from_ctx(ctx)
+
         if event_name not in [e['name'] for e in src.discord.globals.EVENT_INFO]:
             return await ctx.interaction.response.send_message(content = f"The `{event_name}` event does not exist.")
 

@@ -6,6 +6,7 @@ import discord.commands
 from discord.commands import Option, permissions
 
 from src.discord.globals import SLASH_COMMAND_GUILDS, ROLE_STAFF, ROLE_VIP, SERVER_ID
+import commandchecks
 
 from bot import listen_for_response
 
@@ -386,6 +387,7 @@ class EmbedCommands(commands.Cog):
         channel: Option(discord.TextChannel, "The channel to send the message to.", required = True)
         ):
         """Helps to create an embed to be sent to a channel."""
+        commandchecks.is_staff_from_ctx(ctx)
 
         embed_dict = {}
         await ctx.interaction.response.send_message("Initializing...")
