@@ -117,6 +117,7 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
                 self.field_manager_view.stopped_status = "completed"
                 self.field_manager_view.stop()
                 return
+
         if self.raw_name != "inline":
             await interaction.response.defer()
             info_message = await self.field_manager_view.channel.send(f"Please send the new value for the {self.raw_name}. The operation will be cancelled if no operation was sent within 2 minutes.")
@@ -138,6 +139,18 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
                 await help_message.delete()
                 self.field_manager_view.stop()
                 return
+
+            # Check for limits
+            limits = {
+                'name': 256,
+                'value': 1024
+            }
+            for k, v in limits.items():
+                if self.raw_name == k and len(response_message.content) > v:
+                    help_message = await self.field_manager_view.channel.send(f"Unforunately, you can not provide a {k} longer than {v} characters. Please try again!")
+                    await help_message.delete(delay = 10)
+                    self.field_manager_view.stop()
+                    return
 
         if self.raw_name == "inline":
             # Editing name
@@ -213,13 +226,17 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             return
 
         if self.update_value in ['author_icon', 'author_url'] and not any([value in self.embed_view.embed_dict for value in ['author_name', 'authorName']]):
-            help_message = await self.embed_view.channel.send("You can not set the author URL/icon without first setting the author name. This message will automatically disappear in 10 seconds.")
-            await asyncio.sleep(10)
-            await help_message.delete()
+            help_message = await self.embed_view.channel.send("You can not set the author URL/icon without first setting the author name.")
+            await help_message.delete(delay = 10)
             self.embed_view.stop()
             return
 
         if self.update_value == 'add_field':
+            if 'fields' in self.embed_view.embed_dict and len(self.embed_view.embed_dict['fields']) == 25:
+                help_message = await self.embed_view.channel.send("You can't have more than 25 embed fields! Don't be so selfish, keeping all of the embed fields to yourself!")
+                await help_message.delete(delay = 10)
+                self.embed_view.stop()
+                return
             self.embed_view.embed_update['add_field'] = {'index': len(self.embed_view.embed_dict['fields']) if 'fields' in self.embed_view.embed_dict else 0}
             return self.embed_view.stop()
 
@@ -281,6 +298,20 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             await help_message.delete()
             self.embed_view.stop()
             return
+
+        # Check for embed limits
+        limits = {
+            'title': 256,
+            'description': 4096,
+            'footer_text': 2048,
+            'author_name': 256
+        }
+        for k, v in limits.items():
+            if self.update_value == k and len(response_message.content) > v:
+                help_message = await self.embed_view.channel.send(f"Unfortunately, you provided a string that is longer than the allowable length for that value. Please provide a value that is less than {v} characters.")
+                await help_message.delete(delay = 10)
+                self.embed_view.stop()
+                return
 
         self.embed_view.embed_update[self.update_value] = response_message.content
         self.embed_view.stop()
