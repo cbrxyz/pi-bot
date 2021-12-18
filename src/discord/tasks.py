@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 import src.discord.globals
 
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, delete
+from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, insert, delete
 from src.wiki.stylist import prettify_templates
 from src.discord.utils import auto_report
 
@@ -74,6 +74,39 @@ class CronTasks(commands.Cog):
                 await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{string}`")
         except Exception as e:
             await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
+
+    async def add_to_cron(self, item_dict: dict):
+        """
+        Adds the given document to the CRON list.
+        """
+        await insert('data', 'cron', item_dict)
+
+    async def schedule_unban(self, user: discord.User, time: datetime.datetime):
+        item_dict = {
+            'type': "UNBAN",
+            'user': user.id,
+            'time': time,
+            'tag': str(user)
+        }
+        await self.add_to_cron(item_dict)
+
+    async def schedule_unmute(self, user: discord.User, time: datetime.datetime):
+        item_dict = {
+            'type': "UNMUTE",
+            'user': user.id,
+            'time': time,
+            'tag': str(user)
+        }
+        await self.add_to_cron(item_dict)
+
+    async def schedule_unselfmute(self, user: discord.User, time: datetime.datetime):
+        item_dict = {
+            'type': "UNSELFMUTE",
+            'user': user.id,
+            'time': time,
+            'tag': str(user)
+        }
+        await self.add_to_cron(item_dict)
 
     @tasks.loop(minutes=5)
     async def update_member_count(self):
