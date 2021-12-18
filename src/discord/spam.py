@@ -3,6 +3,7 @@ import datetime
 from discord.ext import commands
 import src.discord.globals
 from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
+from bot import create_staff_message
 import re
 
 class SpamManager(commands.Cog):
@@ -39,7 +40,23 @@ class SpamManager(commands.Cog):
 
         if matching_messages_count >= self.mute_limit:
             await self.mute(message.author)
-            await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+
+            # Send info message to channel about mute
+            info_message = await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+
+            # Send info message to staff about mute
+            staff_embed_message = discord.Embed(
+                title = f"Automatic mute occurred",
+                color = discord.Color.yellow(),
+                description = f"""
+                {message.author.mention} was automatically muted in {message.channel} for **repeatedly spamming similar messages**. The user was **repeatedly warned**, and sent **{self.mute_limit} messages** before a mute was applied.
+
+                Their mute will automatically expire in: {discord.utils.format_dt(discord.utils.utcnow() + datetime.timedelta(hours = 1), 'R')}.
+
+                No further action needs to be taken. To teleport to the issue, please [click here]({info_message.jump_url}). Please know that the offending messages may have been deleted by the author or staff.
+                """
+            )
+            await create_staff_message(staff_embed_message)
         elif matching_messages_count >= self.warning_limit:
             await message.author.send(f"{message.author.mention}, please avoid spamming. Additional spam will lead to your account being temporarily muted.")
 
@@ -52,7 +69,23 @@ class SpamManager(commands.Cog):
 
         if caps_messages_count >= self.caps_limit and self.has_caps(message):
             await self.mute(message.author)
-            await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+
+            # Send info message to channel about mute
+            info_message = await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
+
+            # Send info message to staff about mute
+            staff_embed_message = discord.Embed(
+                title = f"Automatic mute occurred",
+                color = discord.Color.yellow(),
+                description = f"""
+                {message.author.mention} was automatically muted in {message.channel} for **repeatedly using caps** in their messages. The user was **repeatedly warned**, and sent **{self.caps_limit} messages** before a mute was applied.
+
+                Their mute will automatically expire in: {discord.utils.format_dt(discord.utils.utcnow() + datetime.timedelta(hours = 1), 'R')}.
+
+                No further action needs to be taken. To teleport to the issue, please [click here]({info_message.jump_url}). Please know that the offending messages may have been deleted by the author or staff.
+                """
+            )
+            await create_staff_message(staff_embed_message)
         elif caps_messages_count >= self.warning_limit and self.has_caps(message):
             await message.author.send(f"{message.author.mention}, please avoid using all caps in your messages. Repeatedly doing so will cause your account to be temporarily muted.")
 
@@ -66,7 +99,7 @@ class SpamManager(commands.Cog):
         cron_cog = self.bot.get_cog("CronTasks")
         await cron_cog.schedule_unmute(member, unmute_time)
         await member.add_roles(muted_role)
-        # await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
+
 
     async def store_and_validate(self, message: discord.Message):
         """

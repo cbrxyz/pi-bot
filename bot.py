@@ -128,6 +128,11 @@ async def listen_for_response(
             return listeners[my_id]['message']
     return None
 
+async def create_staff_message(embed: discord.Embed):
+    guild = bot.get_guild(SERVER_ID)
+    messages_channel = discord.utils.get(guild.text_channels, name = 'messages')
+    await messages_channel.send(embed = embed)
+
 @bot.event
 async def on_message(message):
     # Nothing needs to be done to the bot's own messages
