@@ -34,10 +34,31 @@ class Censor(commands.Cog):
             support_channel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
             await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {support_channel.mention}.*")
 
+    def censor_needed(self, message) -> bool:
+        """
+        Determines whether the message has content that needs to be censored.
+        """
+        content = message.content
+        for word in src.discord.globals.CENSOR['words']:
+            if len(re.findall(fr"\b({word})\b", content, re.I)):
+                return True
+        for word in src.discord.globals.CENSOR['emojis']:
+            if len(re.findall(fr"{word}", content)):
+                return True
+        return False
+
+    def discord_invite_censor_needed(self, message) -> bool:
+        """
+        Determines whether the Discord invite link censor is needed. In other words, whether this message contains a Discord invite link.
+        """
+        if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", message.content, re.I)) > 0 or len(re.findall("discord.com/invite", message.content, re.I)) > 0):
+            return True
+        return False
+
     async def __censor(self, message):
         """Constructs Pi-Bot's censor."""
         channel = message.channel
-        ava = message.author.avatar_url
+        ava = message.author.avatar.url
         wh = await channel.create_webhook(name="Censor (Automated)")
         content = message.content
         for word in src.discord.globals.CENSOR['words']:

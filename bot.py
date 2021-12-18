@@ -13,7 +13,6 @@ from discord import channel
 from discord.ext import commands
 
 from src.discord.utils import auto_report
-from src.mongo.mongo import get_censor
 from embed import assemble_embed
 from commanderrors import CommandNotAllowedInChannel
 
@@ -46,7 +45,6 @@ bot.remove_command("help")
 ##############
 # ASYNC WRAPPERS
 ##############
-# aiowikip = aioify(obj=wikip)
 
 ##############
 # FUNCTIONS
@@ -59,21 +57,29 @@ async def on_ready():
 
 @bot.event
 async def on_message_edit(before, after):
-    if (datetime.datetime.now() - after.created_at).total_seconds() < 2:
-        # no need to log edit events for messages just created
+    # Do not trigger the message edit event for newly-created messages
+    if (discord.utils.utcnow() - after.created_at).total_seconds() < 2:
         return
+
+    # Log edit event
     print('Message from {0.author} edited to: {0.content}, from: {1.content}'.format(after, before))
-    for word in src.discord.globals.CENSOR['words']:
-        if len(re.findall(fr"\b({word})\b", after.content, re.I)):
-            print(f"Censoring message by {after.author} because of the word: `{word}`")
-            await after.delete()
-    for word in src.discord.globals.CENSOR['emojis']:
-        if len(re.findall(fr"{word}", after.content)):
-            print(f"Censoring message by {after.author} because of the emoji: `{word}`")
-            await after.delete()
-    if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in after.content) and (len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0):
-        print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
+
+    # Stop the event here for DM's (no need to censor, as author is the only one who can see them)
+    if isinstance(after.channel, discord.DMChannel):
+        return
+
+    # Delete messages that contain censored words
+    censor_cog = bot.get_cog("Censor")
+    censor_found = censor_cog.censor_needed(after)
+    if censor_found:
         await after.delete()
+        await after.author.send("You recently edited a message, but it **contained a censored word**! Therefore, I unfortunately had to delete it. In the future, please do not edit innapropriate words into your messages, and they will not be deleted.")
+
+    # Delete messages that have Discord invite links in them
+    discord_invite_found = censor_cog.discord_invite_censor_needed(after)
+    if discord_invite_found:
+        await after.delete()
+        await after.author.send("You recently edited a message, but it **contained a link to another Discord server**! Therefore, I unfortunately had to delete it. In the future, please do not edit Discord invite links into your messages and they will not be deleted.")
 
 async def send_to_dm_log(message):
     server = bot.get_guild(SERVER_ID)
