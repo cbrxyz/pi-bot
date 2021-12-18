@@ -139,7 +139,7 @@ async def on_message(message):
         if message.author.id == listener[1]['follow_id']:
             listeners[listener[0]]['message'] = message
 
-    # Log DMs
+    # Log incoming direct messages
     if type(message.channel) == discord.DMChannel and message.author not in PI_BOT_IDS:
         await send_to_dm_log(message)
         print(f"Message from {message.author} through DM's: {message.content}")
@@ -155,32 +155,9 @@ async def on_message(message):
 
     # SPAM TESTING (should prob put in its own cog cuz its not essential for censor or commands)
     #  if spamming commands, we should just issue a command cooldown (2-5s makes sense)
-    global RECENT_MESSAGES
-    caps = False
-    u = sum(1 for c in message.content if c.isupper())
-    l = sum(1 for c in message.content if c.islower())
-    if u > (l + 3): caps = True
-    RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
-    # Spam checker
-    if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
-        muted_role = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
-        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-        CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
-        await message.author.add_roles(muted_role)
-        await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await auto_report(bot, "User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
-    elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
-        await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
-    # Caps checker
-    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 8 and caps:
-        muted_role = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
-        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-        CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
-        await message.author.add_roles(muted_role)
-        await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
-    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
-        await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
+    spam = bot.get_cog("SpamManager")
+    if spam != None:
+        await spam.store_and_validate(message)
 
 @bot.event
 async def on_member_join(member):
@@ -520,6 +497,7 @@ bot.load_extension("src.discord.membercommands")
 bot.load_extension("src.discord.devtools")
 bot.load_extension("src.discord.funcommands")
 bot.load_extension("src.discord.tasks")
+bot.load_extension("src.discord.spam")
 
 if dev_mode:
     bot.run(DEV_TOKEN)
