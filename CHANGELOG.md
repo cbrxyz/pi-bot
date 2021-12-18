@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/stealfish` can now occasionally give bear more fish rather than take fish away.
 * `/prepembed` now has an interactive creation tool to create embeds.
 * `/prepembed` now allows for exporting/import embeds.
+* Direct message logs are now more cleanly formatted and use relative dates.
+* Users are now sent a direct message about why their message was deleted after editing it to include a censored term.
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
@@ -55,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
+* Direct message logs no longer log outgoing messages from the bot.
 
 ## 4.5.19 - 2020-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))

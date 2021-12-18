@@ -82,44 +82,24 @@ async def on_message_edit(before, after):
         await after.author.send("You recently edited a message, but it **contained a link to another Discord server**! Therefore, I unfortunately had to delete it. In the future, please do not edit Discord invite links into your messages and they will not be deleted.")
 
 async def send_to_dm_log(message):
-    server = bot.get_guild(SERVER_ID)
-    dmChannel = discord.utils.get(server.text_channels, name=CHANNEL_DMLOG)
-    embed = assemble_embed(
-        title=":speech_balloon: New DM",
-        fields=[
-            {
-                    "name": "Author",
-                    "value": message.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": message.id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Content",
-                    "value": message.content if len(message.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
+    """
+    Sends a direct message object to the staff log channel.
+    """
+    # Get the relevant objects
+    guild = bot.get_guild(SERVER_ID)
+    dm_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
+
+    # Create an embed containing the direct message info and send it to the log channel
+    message_embed = discord.Embed(
+        title = ":speech_balloon: Incoming Direct Message to Pi-Bot",
+        description = message.content if len(message.content) > 0 else "This message contained no content.",
+        color = discord.Color.brand_green()
     )
-    await dmChannel.send(embed=embed)
+    message_embed.add_field(name = "Author", value = message.author.mention, inline = True)
+    message_embed.add_field(name = "Message ID", value = message.id, inline = True)
+    message_embed.add_field(name = "Sent", value = discord.utils.format_dt(message.created_at, 'R'), inline = True)
+    message_embed.add_field(name = "Attachments", value = " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None", inline = True)
+    await dm_channel.send(embed = message_embed)
 
 listeners = {}
 async def listen_for_response(
