@@ -68,15 +68,19 @@ async def on_message_edit(before, after):
     if isinstance(after.channel, discord.DMChannel):
         return
 
+    # Stop here for messages from Pi-Bot (no need to do anything else)
+    if after.author.id in PI_BOT_IDS or after.author == bot:
+        return
+
     # Delete messages that contain censored words
     censor_cog = bot.get_cog("Censor")
-    censor_found = censor_cog.censor_needed(after)
+    censor_found = censor_cog.censor_needed(after.content)
     if censor_found:
         await after.delete()
         await after.author.send("You recently edited a message, but it **contained a censored word**! Therefore, I unfortunately had to delete it. In the future, please do not edit innapropriate words into your messages, and they will not be deleted.")
 
     # Delete messages that have Discord invite links in them
-    discord_invite_found = censor_cog.discord_invite_censor_needed(after)
+    discord_invite_found = censor_cog.discord_invite_censor_needed(after.content)
     if discord_invite_found:
         await after.delete()
         await after.author.send("You recently edited a message, but it **contained a link to another Discord server**! Therefore, I unfortunately had to delete it. In the future, please do not edit Discord invite links into your messages and they will not be deleted.")
@@ -131,7 +135,7 @@ async def listen_for_response(
 @bot.event
 async def on_message(message):
     # Nothing needs to be done to the bot's own messages
-    if message.author.id in PI_BOT_IDS:
+    if message.author.id in PI_BOT_IDS or message.author == bot:
         return
 
     # If user is being listened to, return their message
@@ -140,7 +144,7 @@ async def on_message(message):
             listeners[listener[0]]['message'] = message
 
     # Log incoming direct messages
-    if type(message.channel) == discord.DMChannel and message.author not in PI_BOT_IDS:
+    if type(message.channel) == discord.DMChannel and message.author not in PI_BOT_IDS and message.author != bot:
         await send_to_dm_log(message)
         print(f"Message from {message.author} through DM's: {message.content}")
     else:
@@ -165,9 +169,11 @@ async def on_member_join(member):
 
     # Check to see if user's name is innapropriate
     name = member.name
-    for word in src.discord.globals.CENSOR['words']:
-        if len(re.findall(fr"\b({word})\b", name, re.I)):
-            await auto_report(bot, "Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
+    censor_cog = bot.get_cog('Censor')
+    if censor_cog.censor_needed(name):
+        # If name contains a censored link
+        reporter_cog = bot.get_cog('Reporter')
+        await reporter_cog.create_innapropriate_username_report(member, member.name)
 
     # Send welcome message to the welcoming channel
     join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
@@ -503,6 +509,7 @@ bot.load_extension("src.discord.devtools")
 bot.load_extension("src.discord.funcommands")
 bot.load_extension("src.discord.tasks")
 bot.load_extension("src.discord.spam")
+bot.load_extension("src.discord.reporter")
 
 if dev_mode:
     bot.run(DEV_TOKEN)

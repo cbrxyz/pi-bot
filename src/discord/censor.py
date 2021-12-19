@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import src.discord.globals
-from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS
+from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, CATEGORY_STAFF
 import re
 from commandchecks import is_author_staff
 
@@ -17,6 +17,10 @@ class Censor(commands.Cog):
             if censor gets triggered if and only if the author is not a staff member.
         :type message: discord.Message
         """
+        # Do not act on messages in staff channels
+        if message.channel.category != None and message.channel.category.name == CATEGORY_STAFF:
+            return
+
         content = message.content
         for word in src.discord.globals.CENSOR['words']:
             if len(re.findall(fr"\b({word})\b", content, re.I)):
@@ -34,11 +38,10 @@ class Censor(commands.Cog):
             support_channel = discord.utils.get(message.author.guild.text_channels, name=CHANNEL_SUPPORT)
             await message.channel.send(f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {support_channel.mention}.*")
 
-    def censor_needed(self, message) -> bool:
+    def censor_needed(self, content: str) -> bool:
         """
         Determines whether the message has content that needs to be censored.
         """
-        content = message.content
         for word in src.discord.globals.CENSOR['words']:
             if len(re.findall(fr"\b({word})\b", content, re.I)):
                 return True
@@ -47,11 +50,11 @@ class Censor(commands.Cog):
                 return True
         return False
 
-    def discord_invite_censor_needed(self, message) -> bool:
+    def discord_invite_censor_needed(self, content) -> bool:
         """
-        Determines whether the Discord invite link censor is needed. In other words, whether this message contains a Discord invite link.
+        Determines whether the Discord invite link censor is needed. In other words, whether this content contains a Discord invite link.
         """
-        if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in message.content) and (len(re.findall("discord.gg", message.content, re.I)) > 0 or len(re.findall("discord.com/invite", message.content, re.I)) > 0):
+        if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in content) and (len(re.findall("discord.gg", content, re.I)) > 0 or len(re.findall("discord.com/invite", content, re.I)) > 0):
             return True
         return False
 

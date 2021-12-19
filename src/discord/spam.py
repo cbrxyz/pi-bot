@@ -106,10 +106,14 @@ class SpamManager(commands.Cog):
         """
         Stores a message in recent_messages and validates whether the message is spam or not.
         """
+        # No need to take action for bots
+        if message.author.bot:
+            return
+
         # Store message
         self.recent_messages.insert(0, message)
         self.recent_messages = self.recent_messages[:20] # Only store 20 recent messages at once
-
+    
         await self.check_for_repetition(message)
         await self.check_for_caps(message)
 

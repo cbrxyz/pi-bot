@@ -3,7 +3,6 @@ import datetime
 from discord.ext import commands
 import src.discord.globals
 from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
-from bot import create_staff_message
 import re
 
 """
@@ -16,7 +15,7 @@ class IgnoreButton(discord.ui.Button):
     This causes the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated
     """
 
-    view: discord.ui.View
+    view = None
 
     def __init__(self, view):
         self.view = view
@@ -40,7 +39,7 @@ class ChangeInnapropriateUsername(discord.ui.Button):
     This caues the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated.
     """
 
-    view: discord.ui.View
+    view = None
 
     def __init__(self, view):
         self.view = view
@@ -68,8 +67,8 @@ class ChangeInnapropriateUsername(discord.ui.Button):
         # TODO
 
 class KickUserButton(discord.ui.Button):
-
-    view: discord.ui.View
+    
+    view = None
 
     def __init__(self, view):
         self.view = view
@@ -107,17 +106,37 @@ class InnapropriateUsername(discord.ui.View):
         self.report_id = report_id
         self.offending_username = offending_username
         super().__init__(timeout = 86400) # Timeout after one day
+
+        # Add relevant buttons
         super().add_item(IgnoreButton(self))
+        super().add_item(ChangeInnapropriateUsername(self))
+        super().add_item(KickUserButton(self))
 
 class Reporter(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        print("Initialized Reporter cog.")
 
     async def create_staff_message(self, embed: discord.Embed):
         guild = self.bot.get_guild(SERVER_ID)
-        messages_channel = discord.utils.get(guild.text_channels, name = 'messages')
-        await messages_channel.send(embed = embed)
+        reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
+        await reports_channel.send(embed = embed)
+
+    async def create_innapropriate_username_report(self, member: discord.Member, offending_username: str):
+        guild = self.bot.get_guild(SERVER_ID)
+        reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
+
+        # Assemble relevant embed
+        embed = discord.Embed(
+            title = "Innapropriate Username Detected",
+            color = discord.Color.brand_red(),
+            description = f"""{member.mention} was found to have the offending username: `{offending_username}`.
+
+            You can take some action by using the buttons below.
+            """
+        )
+        await reports_channel.send(embed = embed, view = InnapropriateUsername(member, 123, offending_username))
 
 def setup(bot):
     bot.add_cog(Reporter(bot))
