@@ -128,11 +128,6 @@ async def listen_for_response(
             return listeners[my_id]['message']
     return None
 
-async def create_staff_message(embed: discord.Embed):
-    guild = bot.get_guild(SERVER_ID)
-    messages_channel = discord.utils.get(guild.text_channels, name = 'messages')
-    await messages_channel.send(embed = embed)
-
 @bot.event
 async def on_message(message):
     # Nothing needs to be done to the bot's own messages
@@ -164,18 +159,25 @@ async def on_message(message):
 
 @bot.event
 async def on_member_join(member):
-    role = discord.utils.get(member.guild.roles, name=ROLE_UC)
-    join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
-    await member.add_roles(role)
+    # Give new user confirmed role
+    unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+    await member.add_roles(unconfirmed_role)
+
+    # Check to see if user's name is innapropriate
     name = member.name
     for word in src.discord.globals.CENSOR['words']:
         if len(re.findall(fr"\b({word})\b", name, re.I)):
             await auto_report(bot, "Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
+
+    # Send welcome message to the welcoming channel
+    join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
     await join_channel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " +
     "You can add roles here, using the commands shown at the top of this channel. " +
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." +
     "\n\n" +
     "**Please add roles by typing the commands above into the text box, and if you have a question, please type it here. After adding roles, a moderator will give you access to the rest of the server to chat with other members!**")
+
+    # Send fun alert message on every 100 members who join
     member_count = len(member.guild.members)
     lounge_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LOUNGE)
     if member_count % 100 == 0:
