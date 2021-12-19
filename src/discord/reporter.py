@@ -33,6 +33,40 @@ class IgnoreButton(discord.ui.Button):
         # Update the report database
         # TODO
 
+class ChangeInnapropriateUsername(discord.ui.Button):
+    """
+    A button that changes the username of a user.
+
+    This caues the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated.
+    """
+
+    view: discord.ui.View
+
+    def __init__(self, view):
+        self.view = view
+        super().__init__(style = discord.ButtonStyle.green, label = "Change Username", custom_id = f"{view.report_id}:change_username")
+
+    async def callback(self, interaction: discord.Interaction):
+        # Delete the original message
+        await interaction.message.delete()
+
+        # Check to make sure user is still in server before taking action
+        member_still_here = self.view.member in self.view.member.guild.members
+
+        # Send an informational message about the report being updated
+        closed_reports = discord.utils.get(interaction.guild.text_channels, name = 'closed-reports')
+        if member_still_here:
+            await closed_reports.send(f"**Member's username was changed** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, and their username was changed to `boomilever`.")
+
+            # Change the user's username
+            await self.view.member.edit(nick = "boomilever")
+
+        else:
+            await closed_reports.send(f"**Member's username was attempted to be changed** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, and their username was attempted to be changed to `boomilever`, however, the user had left the server.")
+
+        # Update the report database
+        # TODO
+
 class InnapropriateUsername(discord.ui.View):
 
     member: discord.Member
