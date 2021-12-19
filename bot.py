@@ -154,15 +154,13 @@ async def on_message(message):
             # avoid sending logs for messages in log channels
             print(f'Message from {message.author} in #{message.channel}: {message.content}')
 
+    # Check if the message contains a censored word/emoji
     censor = bot.get_cog("Censor")
-    if censor != None: # only case where this occurs if the cog is disabled
-        await censor.on_message(message)
+    await censor.on_message(message)
 
-    # SPAM TESTING (should prob put in its own cog cuz its not essential for censor or commands)
-    #  if spamming commands, we should just issue a command cooldown (2-5s makes sense)
+    # Check to see if the message contains repeated content or has too many caps
     spam = bot.get_cog("SpamManager")
-    if spam != None:
-        await spam.store_and_validate(message)
+    await spam.store_and_validate(message)
 
 @bot.event
 async def on_member_join(member):
