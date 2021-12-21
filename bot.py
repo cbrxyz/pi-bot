@@ -191,22 +191,27 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_remove(member):
+    # Post a leaving info message
     leave_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
     unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+
     if unconfirmed_role in member.roles:
         unconfirmed_statement = "Unconfirmed: :white_check_mark:"
     else:
         unconfirmed_statement = "Unconfirmed: :x:"
+
     joined_at = f"Joined at: `{str(member.joined_at)}`"
+
     if member.nick != None:
         await leave_channel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmed_statement}\n{joined_at}")
     else:
         await leave_channel.send(f"**{member}** has left the server (or was removed).\n{unconfirmed_statement}\n{joined_at}")
+
+    # Delete any messages the user left in the welcoming channel
     welcome_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
-    # when user leaves, determine if they are mentioned in any messages in #welcome, delete if so
-    async for message in welcome_channel.history(oldest_first=True):
+    async for message in welcome_channel.history():
         if not message.pinned:
-            if member in message.mentions:
+            if member in message.mentions or member == message.author:
                 await message.delete()
 
 @bot.event
