@@ -235,86 +235,16 @@ async def on_user_update(before, after):
 
 @bot.event
 async def on_raw_message_edit(payload):
-    # Get the logger cog
+    # Get the logger cog and log edited message
     logger_cog = bot.get_cog("Logger")
     await logger_cog.log_edit_message_payload(payload)
 
 @bot.event
 async def on_raw_message_delete(payload):
-    channel = bot.get_channel(payload.channel_id)
-    guild = bot.get_guild(SERVER_ID) if channel.type == discord.ChannelType.private else channel.guild
-    if channel.type != discord.ChannelType.private and channel.name in [CHANNEL_REPORTS, CHANNEL_DELETEDM]:
-        print("Ignoring deletion event because of the channel it's from.")
-        return
-    deleted_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DELETEDM)
-    try:
-        message = payload.cached_message
-        channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
-        embed = assemble_embed(
-            title=":fire: Deleted Message",
-            fields=[
-                {
-                    "name": "Author",
-                    "value": message.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Channel",
-                    "value": channel_name,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": message.id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Edited At (UTC)",
-                    "value": message.edited_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Content",
-                    "value": str(message.content)[:1024] if len(message.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds])[:1024] if len(message.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
-        )
-        await deleted_channel.send(embed=embed)
-    except Exception as e:
-        print(e)
-        embed = assemble_embed(
-            title=":fire: Deleted Message",
-            fields=[
-                {
-                    "name": "Channel",
-                    "value": bot.get_channel(payload.channel_id).mention,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": payload.message_id,
-                    "inline": "True"
-                }
-            ]
-        )
-        await deleted_channel.send(embed=embed)
-
+    # Get the logger cog and log deleted message
+    logger_cog = bot.get_cog("Logger")
+    await logger_cog.log_delete_message_payload(payload)
+    
 @bot.event
 async def on_command_error(ctx, error):
     print("Command Error:")
