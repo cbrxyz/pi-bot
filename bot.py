@@ -235,122 +235,9 @@ async def on_user_update(before, after):
 
 @bot.event
 async def on_raw_message_edit(payload):
-    channel = bot.get_channel(payload.channel_id)
-    guild = bot.get_guild(SERVER_ID) if channel.type == discord.ChannelType.private else channel.guild
-    edited_channel = discord.utils.get(guild.text_channels, name=CHANNEL_EDITEDM)
-    if channel.type != discord.ChannelType.private and channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]:
-        return
-    try:
-        message = payload.cached_message
-        if (datetime.datetime.now() - message.created_at).total_seconds() < 2:
-            # no need to log events because message was created
-            return
-        message_now = await channel.fetch_message(message.id)
-        channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
-        embed = assemble_embed(
-            title=":pencil: Edited Message",
-            fields=[
-                {
-                    "name": "Author",
-                    "value": message.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Channel",
-                    "value": channel_name,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": message.id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Edited At (UTC)",
-                    "value": message_now.edited_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Past Content",
-                    "value": message.content[:1024] if len(message.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "New Content",
-                    "value": message_now.content[:1024] if len(message_now.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
-        )
-        await edited_channel.send(embed=embed)
-    except Exception as e:
-        message_now = await channel.fetch_message(payload.message_id)
-        embed = assemble_embed(
-            title=":pencil: Edited Message",
-            fields=[
-                {
-                    "name": "Channel",
-                    "value": bot.get_channel(payload.channel_id).mention,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": payload.message_id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Author",
-                    "value": message_now.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message_now.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Edited At (UTC)",
-                    "value": message_now.edited_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "New Content",
-                    "value": message_now.content[:1024] if len(message_now.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Raw Payload",
-                    "value": str(payload.data)[:1024] if len(payload.data) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Current Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message_now.attachments]) if len(message_now.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Current Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message_now.embeds])[:1024] if len(message_now.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
-        )
-        await edited_channel.send(embed=embed)
+    # Get the logger cog
+    logger_cog = bot.get_cog("Logger")
+    await logger_cog.log_edit_message_payload(payload)
 
 @bot.event
 async def on_raw_message_delete(payload):
@@ -521,6 +408,7 @@ bot.load_extension("src.discord.funcommands")
 bot.load_extension("src.discord.tasks")
 bot.load_extension("src.discord.spam")
 bot.load_extension("src.discord.reporter")
+bot.load_extension("src.discord.logger")
 
 if dev_mode:
     bot.run(DEV_TOKEN)
