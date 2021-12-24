@@ -216,10 +216,16 @@ async def on_member_remove(member):
 
 @bot.event
 async def on_member_update(before, after):
-    if after.nick == None: return
-    for word in src.discord.globals.CENSOR['words']:
-        if len(re.findall(fr"\b({word})\b", after.nick, re.I)):
-            await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
+    # Notify staff if the user updated their name to include an innapropriate name
+    if after.nick == None: return # No need to check if user does not have a new nickname set
+
+    # Get the Censor cog
+    censor_cog = bot.get_cog("Censor")
+    censor_found = censor_cog.censor_needed(after.nick)
+    if censor_found:
+        # If name contains a censored link
+        reporter_cog = bot.get_cog('Reporter')
+        await reporter_cog.create_innapropriate_username_report(after, after.nick)
 
 @bot.event
 async def on_user_update(before, after):

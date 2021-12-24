@@ -67,7 +67,7 @@ class ChangeInnapropriateUsername(discord.ui.Button):
         # TODO
 
 class KickUserButton(discord.ui.Button):
-    
+
     view = None
 
     def __init__(self, view):
