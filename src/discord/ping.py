@@ -27,20 +27,21 @@ class PingManager(commands.Cog):
             # If the message is coming from #bot-spam
             pingable = False
         if pingable:
-            for user in PING_INFO:
-                if user['id'] == message.author.id:
+            for user in src.discord.globals.PING_INFO:
+                if user['user_id'] == message.author.id:
                     continue
-                pings = user['pings']
+                pings = [rf'\b({ping})\b' for ping in user['word_pings']]
+                pings.extend(user['regex_pings'])
                 for ping in pings:
                     if len(re.findall(ping, message.content, re.I)) > 0 and message.author.discriminator != "0000":
                         # Do not send a ping if the user is mentioned
-                        user_is_mentioned = user['id'] in [m.id for m in message.mentions]
-                        if user['id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
+                        user_is_mentioned = user['user_id'] in [m.id for m in message.mentions]
+                        if user['user_id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
                             # Check that the user can actually see the message
                             name = message.author.nick
                             if name == None:
                                 name = message.author.name
-                            await self.__ping_pm(user['id'], name, ping, message.channel.name, message.content, message.jump_url)
+                            await self.__ping_pm(user['user_id'], name, ping, message.channel.name, message.content, message.jump_url)
 
     async def __ping_pm(self, user_id, pinger, ping_exp, channel, content, jump_url):
         """Allows Pi-Bot to PM a user about a ping."""
