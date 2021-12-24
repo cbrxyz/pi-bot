@@ -1,19 +1,12 @@
 import discord
-import os
 import traceback
 import re
-import time
 import asyncio
 import uuid
-import datetime
-import dateparser
-import numpy as np
 
-from discord import channel
 from discord.ext import commands
 
 from src.discord.utils import auto_report
-from embed import assemble_embed
 from commanderrors import CommandNotAllowedInChannel
 
 ##############
@@ -244,7 +237,7 @@ async def on_raw_message_delete(payload):
     # Get the logger cog and log deleted message
     logger_cog = bot.get_cog("Logger")
     await logger_cog.log_delete_message_payload(payload)
-    
+
 @bot.event
 async def on_command_error(ctx, error):
     print("Command Error:")

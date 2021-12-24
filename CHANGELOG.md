@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Users are now sent a direct message about why their message was deleted after editing it to include a censored term.
 * Staff can now change a user's nickname or kick the user from a innapropriate username report.
 * Edited message logs now include a link to jump to a message.
+* Deleted message logs of non-cached messages now contain an explanation for why more data is not available in the log.
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
@@ -39,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/info` no longer checks for the user's staff role, and instead only checks the category name of the channel the command was called in.
 * `/wiki` was split into separate commands: `/wikilink`, `/wikisearch`, and `/wikisummary`.
 * Users who are repeatedly spamming/using caps are now warned through direct messages, rather than in public channels.
-* Edited message logs now use Discord UI relative times instead of displaying times in UTC.
+* Edited and deleted message logs now use Discord UI relative times instead of displaying times in UTC.
 
 ### Removed
 * The exalt/unexalt commands were removed.
@@ -58,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/list` and `/help` were removed, as users can now see all commands in a list through Discord UI.
 * `/latex`, `/resultstemplate`, and `/school` were temporarily removed.
 * Users will no longer be banned from using `/stealfish`.
-* Edited message logs no longer show the raw event payload.
+* Edited and deleted message logs no longer show the raw event payload.
 
 ### Fixed
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
