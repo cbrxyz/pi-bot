@@ -11,51 +11,80 @@ from src.mongo.mongo import insert, update
 import time
 
 class PingManager(commands.Cog):
+
+    recent_messages = {}
+
     def __init__(self, bot):
         self.bot = bot
-        print("Ping manager enabled")
+        self.recent_messages = {}
+        print("Initialized Ping cog.")
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        # Do not ping for messages in a private channel
         if message.channel.type == discord.ChannelType.private: return
-        if message.author.id in PI_BOT_IDS: return
-        pingable = True
-        if message.content[:1] == "!" or message.content[:1] == "?" or message.content[:2] == "pb" or message.content[:2] == "bp":
-            pingable = False
-        botspam = discord.utils.get(message.guild.text_channels, name = CHANNEL_BOTSPAM)
-        if message.channel.id == botspam.id: #724125653212987454:
-            # If the message is coming from #bot-spam
-            pingable = False
-        if pingable:
-            for user in src.discord.globals.PING_INFO:
-                if user['user_id'] == message.author.id:
-                    continue
-                pings = [rf'\b({ping})\b' for ping in user['word_pings']]
-                pings.extend(user['regex_pings'])
-                for ping in pings:
-                    if len(re.findall(ping, message.content, re.I)) > 0 and message.author.discriminator != "0000":
-                        # Do not send a ping if the user is mentioned
-                        user_is_mentioned = user['user_id'] in [m.id for m in message.mentions]
-                        if user['user_id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
-                            # Check that the user can actually see the message
-                            name = message.author.nick
-                            if name == None:
-                                name = message.author.name
-                            await self.__ping_pm(user['user_id'], name, ping, message.channel.name, message.content, message.jump_url)
+        
+        # Do not ping for messages from a bot
+        if message.author.bot:
+            return
+
+        # Do not ping if the message is coming from the botspam channel
+        botspam_channel = discord.utils.get(message.guild.text_channels, name = CHANNEL_BOTSPAM)
+        if message.channel == botspam_channel:
+            return
+
+        # Store the message to generate recent message history
+        if message.channel.id not in self.recent_messages:
+            self.recent_messages[message.channel.id] = [message]
+        else:
+            self.recent_messages[message.channel.id].append(message)
+            if len(self.recent_messages[message.channel.id]) > 5:
+                self.recent_messages[message.channel.id] = self.recent_messages[message.channel.id][1:] # Cut off the message from the longest time ago if there are too many messages stored
+
+        print(self.recent_messages)
+
+        test_embed = discord.Embed(
+            title = "This is a test!",
+            description = "\n".join([f"{message.author.mention}: {self.truncate_text(message.content, 100)}" for message in self.recent_messages[message.channel.id]])
+        )
+        await message.channel.send(embed = test_embed)
+ 
+        # Send a ping alert to the relevant users
+        for user in src.discord.globals.PING_INFO:
+            if user['user_id'] == message.author.id:
+                continue
+            pings = [rf'\b({ping})\b' for ping in user['word_pings']]
+            pings.extend(user['regex_pings'])
+            for ping in pings:
+                if len(re.findall(ping, message.content, re.I)) > 0 and message.author.discriminator != "0000":
+                    # Do not send a ping if the user is mentioned
+                    user_is_mentioned = user['user_id'] in [m.id for m in message.mentions]
+                    if user['user_id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
+                        # Check that the user can actually see the message
+                        await self.__ping_pm(user['user_id'], message.author, ping, message.channel, message.content, message.jump_url)
+
+    def truncate_text(self, text, length):
+        if len(text) > length:
+            return text[:length - 3] + "..."
+        else:
+            return text
 
     async def __ping_pm(self, user_id, pinger, ping_exp, channel, content, jump_url):
         """Allows Pi-Bot to PM a user about a ping."""
+        
         user_to_send = self.bot.get_user(user_id)
         try:
             content = re.sub(rf'{ping_exp}', r'**\1**', content, flags=re.I)
         except Exception as e:
             print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
         ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
-        warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {ping_exp}`"
+        description = "One of your pings was mentioned by a user in the Scioly.org Discord server!"
+        description = description + "\n\n" + "\n".join([f"{message.author.mention}: {self.truncate_text(message.content, 100)}" for message in self.recent_messages[channel.id]])
+        description = description + "\n\n" + f"Come check out the conversation! [Click here]({jump_url}) to be teleported to the message!"
         embed = discord.Embed(
             title = ":bellhop: Ping Alert!",
             color = discord.Color.brand_red(),
-            description = (f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning)
+            description = description
         )
         fields=[
             {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
@@ -63,12 +92,14 @@ class PingManager(commands.Cog):
             {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
             {"name": "Content", "value": content, "inline": "False"}
         ]
-        for field in fields:
-            embed.add_field(
-                name = field['name'],
-                value = field['value'],
-                inline = field['inline']
-            )
+        # for field in fields:
+        #     embed.add_field(
+        #         name = field['name'],
+        #         value = field['value'],
+        #         inline = field['inline']
+        #     )
+        embed.set_thumbnail(url = pinger.display_avatar.url)
+        embed.set_footer(text = f"If you don't want this ping anymore, type /pingremove {ping_exp} below!")
 
         await user_to_send.send(embed = embed)
 
