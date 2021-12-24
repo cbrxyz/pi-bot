@@ -51,18 +51,25 @@ class PingManager(commands.Cog):
             print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
         ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
         warning = f"\n\nIf you don't want this ping anymore, in `#bot-spam` on the server, send `!ping remove {ping_exp}`"
-        embed = assemble_embed(
-            title=":bellhop: Ping Alert!",
-            desc=(f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning),
-            fields=[
-                {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
-                {"name": "Jump To Message", "value": f"[Click here!]({jump_url})", "inline": "True"},
-                {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
-                {"name": "Content", "value": content, "inline": "False"}
-            ],
-            hexcolor="#2E66B6"
+        embed = discord.Embed(
+            title = ":bellhop: Ping Alert!",
+            color = discord.Color.brand_red(),
+            description = (f"Looks like `{pinger}` pinged a ping expression of yours in the Scioly.org Discord Server!" + warning)
         )
-        await user_to_send.send(embed=embed)
+        fields=[
+            {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
+            {"name": "Jump To Message", "value": f"[Click here!]({jump_url})", "inline": "True"},
+            {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
+            {"name": "Content", "value": content, "inline": "False"}
+        ]
+        for field in fields:
+            embed.add_field(
+                name = field['name'],
+                value = field['value'],
+                inline = field['inline']
+            )
+
+        await user_to_send.send(embed = embed)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
