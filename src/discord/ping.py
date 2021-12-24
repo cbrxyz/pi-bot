@@ -3,12 +3,9 @@ from discord.ext import commands
 from discord.commands import Option
 import re
 import src.discord.globals
-from src.discord.globals import PING_INFO, PI_BOT_IDS, CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
-from embed import assemble_embed
+from src.discord.globals import PING_INFO, CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
 
 from src.mongo.mongo import insert, update
-
-import time
 
 class PingManager(commands.Cog):
 
@@ -23,7 +20,7 @@ class PingManager(commands.Cog):
     async def on_message(self, message):
         # Do not ping for messages in a private channel
         if message.channel.type == discord.ChannelType.private: return
-        
+
         # Do not ping for messages from a bot
         if message.author.bot:
             return
@@ -41,14 +38,6 @@ class PingManager(commands.Cog):
             if len(self.recent_messages[message.channel.id]) > 5:
                 self.recent_messages[message.channel.id] = self.recent_messages[message.channel.id][1:] # Cut off the message from the longest time ago if there are too many messages stored
 
-        print(self.recent_messages)
-
-        test_embed = discord.Embed(
-            title = "This is a test!",
-            description = "\n".join([f"{message.author.mention}: {self.truncate_text(message.content, 100)}" for message in self.recent_messages[message.channel.id]])
-        )
-        await message.channel.send(embed = test_embed)
- 
         # Send a ping alert to the relevant users
         for user in src.discord.globals.PING_INFO:
             if user['user_id'] == message.author.id:
@@ -63,7 +52,14 @@ class PingManager(commands.Cog):
                         # Check that the user can actually see the message
                         await self.__ping_pm(user['user_id'], message.author, ping, message.channel, message.content, message.jump_url)
 
-    def truncate_text(self, text, length):
+    def format_text(self, text, length, expression):
+        # Attempt to highlight the ping expression in the text
+        try:
+            text = re.sub(rf'{expression}', r'**\1**', text, flags=re.I)
+        except Exception as e:
+            print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
+
+        # Prevent the text from being too long
         if len(text) > length:
             return text[:length - 3] + "..."
         else:
@@ -71,36 +67,24 @@ class PingManager(commands.Cog):
 
     async def __ping_pm(self, user_id, pinger, ping_exp, channel, content, jump_url):
         """Allows Pi-Bot to PM a user about a ping."""
-        
+        # Get the relevant user to send the alert message to
         user_to_send = self.bot.get_user(user_id)
-        try:
-            content = re.sub(rf'{ping_exp}', r'**\1**', content, flags=re.I)
-        except Exception as e:
-            print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
-        ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
-        description = "One of your pings was mentioned by a user in the Scioly.org Discord server!"
-        description = description + "\n\n" + "\n".join([f"{message.author.mention}: {self.truncate_text(message.content, 100)}" for message in self.recent_messages[channel.id]])
+
+        # Create the alert embed
+        description = "**One of your pings was mentioned by a user in the Scioly.org Discord server!**"
+        description = description + "\n\n" + "\n".join([f"{message.author.mention}: {self.format_text(message.content, 100, ping_exp)}" for message in self.recent_messages[channel.id]])
         description = description + "\n\n" + f"Come check out the conversation! [Click here]({jump_url}) to be teleported to the message!"
         embed = discord.Embed(
             title = ":bellhop: Ping Alert!",
             color = discord.Color.brand_red(),
             description = description
         )
-        fields=[
-            {"name": "Expression Matched", "value": f" `{ping_exp}`", "inline": "True"},
-            {"name": "Jump To Message", "value": f"[Click here!]({jump_url})", "inline": "True"},
-            {"name": "Channel", "value": f"`#{channel}`", "inline": "True"},
-            {"name": "Content", "value": content, "inline": "False"}
-        ]
-        # for field in fields:
-        #     embed.add_field(
-        #         name = field['name'],
-        #         value = field['value'],
-        #         inline = field['inline']
-        #     )
         embed.set_thumbnail(url = pinger.display_avatar.url)
-        embed.set_footer(text = f"If you don't want this ping anymore, type /pingremove {ping_exp} below!")
 
+        ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
+        embed.set_footer(text = f"If you don't want this ping anymore, type /pingremove {ping_exp} in the Scioly.org Discord server!")
+
+        # Send the user an alert message
         await user_to_send.send(embed = embed)
 
     @discord.commands.slash_command(
@@ -145,7 +129,8 @@ class PingManager(commands.Cog):
                 return await ctx.interaction.response.send_message(f"Ignoring adding the `{word}` ping because you already have a ping currently set as that.")
             else:
                 print(f"adding word: {re.escape(word)}")
-                pings.append(fr"\b({re.escape(word)})\b")
+                relevant_doc = [doc for doc in src.discord.globals.PING_INFO if doc['user_id'] == member.id][0]
+                relevant_doc['word_pings'].append(word)
                 await update("data", "pings", user['_id'], {"$push": {"word_pings": word}})
         else:
             # User does not already have an object in the PING_INFO dictionary
