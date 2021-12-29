@@ -49,32 +49,6 @@ class CronTasks(commands.Cog):
         src.discord.globals.CENSOR = await get_censor()
         print("Fetched previous variables.")
 
-    async def handle_cron(self, string):
-        try:
-            if string.find("unban") != -1:
-                iden = int(string.split(" ")[1])
-                server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-                member = await self.bot.fetch_user(int(iden))
-                await server.unban(member)
-                print(f"Unbanned user ID: {iden}")
-            elif string.find("unmute") != -1:
-                iden = int(string.split(" ")[1])
-                server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-                member = server.get_member(int(iden))
-                role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_MUTED)
-                self_role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_SELFMUTE)
-                await member.remove_roles(role, self_role)
-                print(f"Unmuted user ID: {iden}")
-            elif string.find("unstealfishban") != -1:
-                iden = int(string.split(" ")[1])
-                src.discord.globals.STEALFISH_BAN.remove(iden)
-                print(f"Un-stealfished user ID: {iden}")
-            else:
-                print("ERROR:")
-                await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{string}`")
-        except Exception as e:
-            await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
-
     async def add_to_cron(self, item_dict: dict):
         """
         Adds the given document to the CRON list.
@@ -147,10 +121,12 @@ class CronTasks(commands.Cog):
                         print(f"Un-stealfished user ID: {iden}")
                     else:
                         print("ERROR:")
-                        await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{string}`")
+                        reporter_cog = self.bot.get_cog('Reporter')
+                        await reporter_cog.create_cron_task_report(task)
                     await delete("data", "cron", task["_id"])
-                except Exception as e:
-                    await auto_report(self.bot, "Error with a cron task", "red", f"Error: `{e}`\nOriginal task: `{string}`")
+                except Exception as _:
+                    reporter_cog = self.bot.get_cog('Reporter')
+                    await reporter_cog.create_cron_task_report(task)
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):

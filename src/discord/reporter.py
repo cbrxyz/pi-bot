@@ -1,5 +1,6 @@
 import discord
 import datetime
+import json
 from discord.ext import commands
 import src.discord.globals
 from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
@@ -137,6 +138,29 @@ class Reporter(commands.Cog):
             """
         )
         await reports_channel.send(embed = embed, view = InnapropriateUsername(member, 123, offending_username))
+
+    async def create_cron_task_report(self, task: dict):
+        guild = self.bot.get_guild(SERVER_ID)
+        reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
+
+        # Serialize values
+        task['_id'] = str(task['_id']) # ObjectID is not serializable by default
+        if 'time' in task:
+            task['time'] = datetime.datetime.strftime(task['time'], "%m/%d/%Y, %H:%M:%S") # datetime.datetime is not serializable by default
+
+        # Assemble the embed
+        embed = discord.Embed(
+            title = "Error with CRON Task",
+            description = f"""
+            There was an error with the following CRON task:
+            ```python
+            {json.dumps(task, indent = 4)}
+            ```
+            Because this likely a development error, no actions can immediately be taken. Please contact a developer to learn more.
+            """,
+            color = discord.Color.brand_red()
+        )
+        await reports_channel.send(embed = embed)
 
 def setup(bot):
     bot.add_cog(Reporter(bot))
