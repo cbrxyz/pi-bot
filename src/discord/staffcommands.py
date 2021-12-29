@@ -21,7 +21,7 @@ import webcolors
 import src.discord.globals
 from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST, EMOJI_GUILDS, TAGS, EVENT_INFO
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
-from src.discord.globals import PI_BOT_IDS, ROLE_EM
+from src.discord.globals import PI_BOT_IDS, ROLE_EM, CHANNEL_TOURNAMENTS
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
 from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH, ROLE_STAFF, ROLE_VIP
 from bot import listen_for_response
@@ -32,7 +32,6 @@ from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, upd
 
 from src.discord.mute import _mute
 import matplotlib.pyplot as plt
-from embed import assemble_embed
 
 from typing import Type
 
@@ -865,16 +864,16 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await msg2.delete()
 
         file = discord.File("met.png", filename="met.png")
-        embed = assemble_embed(
-            title="**Top wiki editors for the past week!**",
-            desc=("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" +
+        embed = discord.Embed(
+            title = "**Top wiki editors for the past week!**",
+            description = ("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" +
             f"`1st` - **{names[0]}** ({data[0]} edits)\n" +
             f"`2nd` - **{names[1]}** ({data[1]} edits)\n" +
             f"`3rd` - **{names[2]}** ({data[2]} edits)\n" +
             f"`4th` - **{names[3]}** ({data[3]} edits)\n" +
             f"`5th` - **{names[4]}** ({data[4]} edits)"),
-            imageUrl="attachment://met.png",
         )
+        embed.set_image(url = "attachment://met.png")
         await ctx.send(file=file, embed=embed)
 
     @discord.commands.slash_command(
@@ -894,12 +893,12 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             tournament_formal = tournament[0][0]
         tournament_role = discord.utils.get(ctx.guild.roles, name = tournament_formal)
         all_tourney_role = discord.utils.get(ctx.guild.roles, name = ROLE_AT)
-        embed = assemble_embed(
+        embed = discord.Embed(
             title = 'This channel is now archived.',
-            desc = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' +
+            description = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' +
             f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {ctx.channel.mention}. This channel is now read-only.\n\n' +
             f'If you would like to no longer view this channel, you are welcome to type `!tournament {tournament_name}` into {bot_spam}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
-            webcolor='red'
+            color = discord.Color.brand_red()
         )
         await ctx.channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
         await ctx.channel.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
@@ -1210,12 +1209,15 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         invitationals = await get_invitationals()
         found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
         if not len(found_invitationals):
-            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with a short name of {short_name}.")
-        else:
-            invitational = found_invitationals[0]
-            await update("data", "invitationals", invitational["_id"], {"$set": {"status": "archived"}})
-            await ctx.interaction.response.send_message(content = f"The **`{invitational['official_name']}`** is now being archived.")
-            await update_tournament_list(self.bot, {})
+            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with a short name of {short_name}.", ephemeral = True)
+
+        # Invitational was found
+        invitational = found_invitationals[0]
+
+        # Update the database and tournament list
+        await update("data", "invitationals", invitational["_id"], {"$set": {"status": "archived"}})
+        await ctx.interaction.response.send_message(content = f"The **`{invitational['official_name']}`** is now being archived.", ephemeral = True)
+        await update_tournament_list(self.bot, {})
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
