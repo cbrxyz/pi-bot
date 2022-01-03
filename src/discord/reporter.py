@@ -6,6 +6,8 @@ import src.discord.globals
 from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
 import re
 
+from typing import Union
+
 """
 Relevant views.
 """
@@ -124,9 +126,14 @@ class Reporter(commands.Cog):
         reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
         await reports_channel.send(embed = embed)
 
-    async def create_innapropriate_username_report(self, member: discord.Member, offending_username: str):
+    async def create_innapropriate_username_report(self, member: Union[discord.Member, discord.User], offending_username: str):
         guild = self.bot.get_guild(SERVER_ID)
         reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
+
+        # Turn User into Member - if not possible, ignore the report, as no action needs to be taken
+        member = guild.get_member(member.id)
+        if member == None:
+            return
 
         # Assemble relevant embed
         embed = discord.Embed(

@@ -222,9 +222,13 @@ async def on_member_update(before, after):
 
 @bot.event
 async def on_user_update(before, after):
-    for word in src.discord.globals.CENSOR['words']:
-        if len(re.findall(fr"\b({word})\b", after.name, re.I)):
-            await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
+    # Get the Censor cog and see if user's new username is offending censor
+    censor_cog = bot.get_cog("Censor")
+    censor_found = censor_cog.censor_needed(after.name)
+    if censor_found:
+        # If name contains a censored link
+        reporter_cog = bot.get_cog('Reporter')
+        await reporter_cog.create_innapropriate_username_report(after, after.name)
 
 @bot.event
 async def on_raw_message_edit(payload):
