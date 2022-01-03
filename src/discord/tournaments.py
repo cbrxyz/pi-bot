@@ -59,7 +59,7 @@ class TournamentDropdown(discord.ui.Select):
                     emoji = tourney.emoji
                 )
             )
-        
+
         super().__init__(
             options = final_options,
             min_values = 1,
@@ -164,7 +164,7 @@ async def update_tournament_list(bot, rename_dict = {}):
 
                 embed = discord.Embed(
                     title = 'This channel is now archived.',
-                    description = (f'Thank you all for your discussion around the **{t.official_name}**. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' + 
+                    description = (f'Thank you all for your discussion around the **{t.official_name}**. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' +
                     f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {competitions_channel.mention}. This channel is now read-only.\n\n' +
                     f'If you would like to no longer view this channel, you are welcome to remove the role using the dropdowns in {tourney_channel.mention}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
                     color = discord.Color.brand_red()
@@ -179,7 +179,8 @@ async def update_tournament_list(bot, rename_dict = {}):
             if (day_diff < (-1 * after_days)):
                 # If past tournament date, now out of range
                 if ch.category.name != CATEGORY_ARCHIVE:
-                    await auto_report("Tournament Channel & Role Needs to be Archived", "orange", f"The {ch.mention} channel and {r.mention} role need to be archived, as it is after the tournament date.")
+                    reporter_cog = bot.get_cog("Reporter")
+                    await reporter_cog.create_invitational_archive_report(t, ch, r)
 
             to_change = {}
             if ch.topic != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.":

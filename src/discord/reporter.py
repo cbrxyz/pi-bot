@@ -9,6 +9,8 @@ import re
 
 from typing import Union
 
+from src.discord.tournaments import Tournament
+
 """
 Relevant views.
 """
@@ -124,6 +126,50 @@ class KickUserButton(discord.ui.Button):
         # Update the report database
         # TODO
 
+class InvitationalArchiveButton(discord.ui.Button):
+
+    view = None
+
+    def __init__(self, view):
+        self.view = view
+        super().__init__(style = discord.ButtonStyle.red, label = "Archive", custom_id = f"{view.report_id}:invy_archive")
+
+    async def callback(self, interaction: discord.Interaction):
+        # Delete the original message
+        await interaction.message.delete()
+
+        # Update the tournaments database
+        # TODO
+
+        # Send an informational message about the report being updated
+        closed_reports = discord.utils.get(interaction.guild.text_channels, name = 'closed-reports')
+        await closed_reports.send(f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.view.tournament_obj.official_name} was archived after being open for {self.view.tournament_obj.closed_days} after the tournament date on {discord.utils.format_dt(self.view.tournament_obj.tourney_date, 'D')}.")
+
+        # Update the report database
+        # TODO
+
+class InvitationalExtendButton(discord.ui.Button):
+
+    view = None
+
+    def __init__(self, view):
+        self.view = view
+        super().__init__(style = discord.ButtonStyle.gray, label = "Extend", custom_id = f"{view.report_id}:invy_extend")
+
+    async def callback(self, interaction: discord.Interaction):
+        # Delete the original message
+        await interaction.message.delete()
+
+        # Update the tournaments database
+        # TODO
+
+        # Send an informational message about the report being updated
+        closed_reports = discord.utils.get(interaction.guild.text_channels, name = 'closed-reports')
+        await closed_reports.send(f"**Invitational archive warning was extended** by {interaction.user.mention} - A warning about the {self.view.tournament_obj.official_name} channel being open too long was sent, but the warning was extended by 15 days. Users are still able to chat in the tournament channel.")
+
+        # Update the report database
+        # TODO
+
 class InnapropriateUsername(discord.ui.View):
 
     member: discord.Member
@@ -156,6 +202,24 @@ class InvitationalRequest(discord.ui.View):
         # Add relevant buttons
         super().add_item(IgnoreButton(self))
         super().add_item(CompletedButton(self))
+
+class InvitationalArchive(discord.ui.View):
+
+    report_id: int
+    tournament_obj: Tournament
+    channel: discord.TextChannel
+    role: discord.Role
+
+    def __init__(self, tournament_obj: Tournament, channel: discord.TextChannel, role: discord.Role, report_id: int):
+        self.report_id = report_id
+        self.tournament_obj = tournament_obj
+        self.channel = channel
+        self.role = role
+        super().__init__(timeout = 86400)
+
+        # Add relevant buttons
+        super().add_item(InvitationalArchiveButton(self))
+        super().add_item(InvitationalExtendButton(self))
 
 class Reporter(commands.Cog):
 
@@ -228,6 +292,22 @@ class Reporter(commands.Cog):
             color = discord.Color.yellow()
         )
         await reports_channel.send(embed = embed, view = InvitationalRequest(user, invitational_name, 123))
+
+    async def create_invitational_archive_report(self, tournament_obj: Tournament, channel: discord.TextChannel, role: discord.Role):
+        guild = self.bot.get_guild(SERVER_ID)
+        reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
+
+        embed = discord.Embed(
+            title = "Invitational Channel Suggested to be Archived",
+            description = f"""
+            The `{tournament_obj.official_name}` occurred on {discord.utils.format_dt(tournament_obj.tourney_date, 'D')}. Because it has been {tournament_obj.closed_days} days since that date, the tournament channel should potentially be archived.
+
+            Archiving tournaments helps to prevent spam in tournament channels where competitors may be looking for updates. If tournamnet events are still occurring (such as waiting on results or event notifications), consider extending this warning.
+            """,
+            color = discord.Color.orange()
+        )
+        # TODO Fix report ID generation
+        await reports_channel.send(embed = embed, view = InvitationalArchive(tournament_obj, channel, role, 123))
 
 def setup(bot):
     bot.add_cog(Reporter(bot))
