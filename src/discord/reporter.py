@@ -2,6 +2,7 @@ import discord
 import datetime
 import json
 from discord.ext import commands
+from discord.flags import MemberCacheFlags
 import src.discord.globals
 from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
 import re
@@ -30,7 +31,32 @@ class IgnoreButton(discord.ui.Button):
 
         # Send an informational message about the report being ignored
         closed_reports = discord.utils.get(interaction.guild.text_channels, name = 'closed-reports')
-        await closed_reports.send(f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, but the report was ignored.")
+        if isinstance(self.view, InnapropriateUsername):
+            await closed_reports.send(f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, but the report was ignored.")
+        elif isinstance(self.view, InvitationalRequest):
+            await closed_reports.send(f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} requested adding a invitational channel for `{self.view.invitational_name}`, but the report was ignored.")
+
+        # Update the report database
+        # TODO
+
+class CompletedButton(discord.ui.Button):
+    """
+    A button to mark a report as completed.
+    """
+
+    view = None
+
+    def __init__(self, view):
+        self.view = view
+        super().__init__(style = discord.ButtonStyle.green, label = "Mark as Completed", custom_id = f"{view.report_id}:mark_completed")
+
+    async def callback(self, interaction: discord.Interaction):
+        # Delete the original message
+        await interaction.message.delete()
+
+        # Send an informational message about the report being updated
+        closed_reports = discord.utils.get(interaction.guild.text_channels, name = 'closed-reports')
+        await closed_reports.send(f"**Invitational channel request was fulfilled** by {interaction.user.mention} - {self.view.member.mention} requested adding a invitational channel for the `{self.view.invitational_name}`, and the request has been fulfilled.")
 
         # Update the report database
         # TODO
@@ -115,6 +141,22 @@ class InnapropriateUsername(discord.ui.View):
         super().add_item(ChangeInnapropriateUsername(self))
         super().add_item(KickUserButton(self))
 
+class InvitationalRequest(discord.ui.View):
+
+    member: discord.Member
+    report_id: int
+    invitational_name: str
+
+    def __init__(self, member: discord.Member, invitational_name: str, report_id: int):
+        self.member = member
+        self.report_id = report_id
+        self.invitational_name = invitational_name
+        super().__init__(timeout = 86400)
+
+        # Add relevant buttons
+        super().add_item(IgnoreButton(self))
+        super().add_item(CompletedButton(self))
+
 class Reporter(commands.Cog):
 
     def __init__(self, bot):
@@ -168,6 +210,24 @@ class Reporter(commands.Cog):
             color = discord.Color.brand_red()
         )
         await reports_channel.send(embed = embed)
+
+    async def create_invitational_request_report(self, user: discord.Member, invitational_name: str):
+        guild = self.bot.get_guild(SERVER_ID)
+        reports_channel = discord.utils.get(guild.text_channels, name = 'reports')
+
+        # Assemble the embed
+        embed = discord.Embed(
+            title = "New Invitational Channel Request",
+            description = f"""
+            {user.mention} has requested adding a new invitational channel for: `{invitational_name}`.
+
+            If this report is unhelpful (the invitational already exists, the report is spam), then please ignore this report.
+
+            To proceed with adding the invitational channel, please use the `/invyadd` command.
+            """,
+            color = discord.Color.yellow()
+        )
+        await reports_channel.send(embed = embed, view = InvitationalRequest(user, invitational_name, 123))
 
 def setup(bot):
     bot.add_cog(Reporter(bot))

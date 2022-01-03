@@ -478,6 +478,19 @@ class MemberCommands(commands.Cog, name='Member'):
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Requests a new invitational channel! Note: This request will be sent to staff for approval."
+    )
+    async def request(
+        self,
+        ctx,
+        invitational: Option(str, "The official name of the invitational you would like to add.", required = True)
+    ):
+        reporter_cog = self.bot.get_cog("Reporter")
+        await reporter_cog.create_invitational_request_report(ctx.author, invitational)
+        await ctx.interaction.response.send_message(f"Thanks for the request. Staff will review your request to add an invitational channel for `{invitational}`. In the meantime, please do not make additional requests.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Returns information about the bot and server."
     )
     async def about(self, ctx):
