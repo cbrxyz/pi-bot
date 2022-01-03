@@ -22,6 +22,30 @@ class Tournament:
         self.voters = objects.get('voters')
         self.status = objects.get('status')
 
+class AllTournamentsView(discord.ui.View):
+    """
+    A view class for holding the button to toggle visibility of all tournaments for a user.
+    """
+
+    def __init__(self):
+        super().__init__(timeout = None)
+
+    @discord.ui.button(label = "Toggle All Tournaments", style = discord.ButtonStyle.gray)
+    async def toggle(self, _: discord.ui.Button, interaction: discord.Interaction):
+        # Get the relevant member asking to toggle all tournaments
+        member = interaction.user
+        assert isinstance(member, discord.Member)
+
+        all_tournaments_role = discord.utils.get(interaction.guild.roles, name = ROLE_AT)
+        assert isinstance(all_tournaments_role, discord.Role)
+
+        if all_tournaments_role in member.roles:
+            await member.remove_roles(all_tournaments_role)
+            await interaction.response.send_message(content = "I have removed your `All Tournaments` role!", ephemeral = True)
+        else:
+            await member.add_roles(all_tournaments_role)
+            await interaction.response.send_message(content = "I have added the `All Tournaments` role to your profile.", ephemeral = True)
+
 class TournamentDropdown(discord.ui.Select):
 
     def __init__(self, month_tournaments, bot, voting = False):
@@ -224,3 +248,6 @@ async def update_tournament_list(bot, rename_dict = {}):
         await tourney_channel.send("Please choose from the requested tournaments below:", view = TournamentDropdownView(voting_tournaments, bot, voting = True))
     else:
         await tourney_channel.send("Sorry, there no invitationals are currently being voted on.")
+
+    # Give user option to enable/disable visibility of all tournaments
+    await tourney_channel.send("Additionally, you can toggle visibility of all tournaments by using the button below:", view = AllTournamentsView())
