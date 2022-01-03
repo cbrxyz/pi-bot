@@ -6,7 +6,6 @@ import uuid
 
 from discord.ext import commands
 
-from src.discord.utils import auto_report
 from commanderrors import CommandNotAllowedInChannel
 
 ##############

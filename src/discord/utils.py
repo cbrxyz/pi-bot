@@ -1,26 +1,6 @@
 import discord
 from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, TAGS
-from embed import assemble_embed
 from src.mongo.mongo import get_censor
-
-# Meant for Pi-Bot only
-async def auto_report(bot, reason, color, message):
-    """Allows Pi-Bot to generate a report by himself."""
-    server = bot.get_guild(SERVER_ID)
-    reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-    embed = assemble_embed(
-        title=f"{reason} (message from Pi-Bot)",
-        webcolor=color,
-        fields = [{
-            "name": "Message",
-            "value": message,
-            "inline": False
-        }]
-    )
-    message = await reports_channel.send(embed=embed)
-    REPORTS.append(message.id)
-    await message.add_reaction("\U00002705")
-    await message.add_reaction("\U0000274C")
 
 async def sanitize_mention(member):
     if member == False: return True

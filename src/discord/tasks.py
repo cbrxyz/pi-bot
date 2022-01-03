@@ -8,7 +8,6 @@ import src.discord.globals
 from src.discord.tournaments import update_tournament_list
 from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, insert, delete
 from src.wiki.stylist import prettify_templates
-from src.discord.utils import auto_report
 
 class CronTasks(commands.Cog):
     def __init__(self, bot):

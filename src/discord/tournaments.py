@@ -2,7 +2,6 @@ import discord
 from src.discord.globals import TOURNAMENT_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT, CHANNEL_COMPETITIONS
 import datetime
 from src.mongo.mongo import get_invitationals, update_many
-from src.discord.utils import auto_report
 
 class Tournament:
 

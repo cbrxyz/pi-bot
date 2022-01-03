@@ -22,7 +22,6 @@ from commanderrors import SelfMuteCommandStaffInvoke
 
 from typing import Type
 from src.discord.tournaments import update_tournament_list
-from src.discord.utils import auto_report
 from src.wiki.wiki import implement_command
 from aioify import aioify
 
