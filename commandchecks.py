@@ -26,7 +26,7 @@ def is_staff_from_ctx(ctx):
     if any(r in [staff_role, vip_role] for r in member.roles): return True
     raise commands.MissingAnyRole([staff_role, vip_role])
 
-async def is_author_staff(author: discord.abc.User):
+async def is_author_staff(author: discord.Member):
     """Checks to see if the author is a staff member."""
     vipRole = discord.utils.get(author.guild.roles, name=ROLE_VIP)
     staffRole = discord.utils.get(author.guild.roles, name=ROLE_STAFF)
