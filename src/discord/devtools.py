@@ -12,18 +12,25 @@ class DevCommands(commands.Cog):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Returns the current channel ID."
     )
-    async def getchannelid(self, ctx):
+    async def getchannelid(self, 
+                           ctx,
+                           channel: Option(discord.TextChannel, "The channel to get the ID of.", required = False)
+                          ):
         """Gets the channel ID of the current channel."""
-        await ctx.interaction.response.send_message(f"{ctx.channel.mention}: `{ctx.channel.id}`")
+        if not channel:
+            # If no channel was specified, assume the user is referring to the current channel
+            channel = ctx.channel
+
+        await ctx.interaction.response.send_message(f"{channel.mention}: `{channel.id}`")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Returns the ID "
     )
     async def getemojiid(self,
-        ctx,
-        emoji: Option(str, "The emoji to get the ID of.", required = True)
-        ):
+                         ctx,
+                         emoji: Option(str, "The emoji to get the ID of.", required = True)
+                        ):
         """Gets the ID of the given emoji."""
         await ctx.interaction.response.send_message(f"{emoji}: `{emoji}`")
 
@@ -32,9 +39,9 @@ class DevCommands(commands.Cog):
         description = "Returns the ID "
     )
     async def getroleid(self,
-        ctx,
-        name: Option(str, "The name of the role to get the ID of.", required = True)
-        ):
+                        ctx,
+                        name: Option(str, "The name of the role to get the ID of.", required = True)
+                       ):
         role = discord.utils.get(ctx.guild.roles, name = name)
         if role != None:
             await ctx.interaction.response.send_message(f"{str(role)}: `{role.mention}`")
@@ -43,13 +50,16 @@ class DevCommands(commands.Cog):
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Returns the ID of a user."
+        description = "Returns the ID of a user (or yourself)."
     )
     async def getuserid(self,
-        ctx,
-        user: Option(discord.Member, "The member to get the ID of.", required = True)
-        ):
+                        ctx,
+                        user: Option(discord.Member, "The member to get the ID of.", required = False)
+                       ):
         """Gets the user ID of the caller or another user."""
+        if not user:
+            user = ctx.author
+
         await ctx.interaction.response.send_message(f"{str(user)}: `{user.id}`")
 
     @discord.commands.slash_command(
