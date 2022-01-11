@@ -1,9 +1,7 @@
 import discord
-import datetime
 from discord.ext import commands
-import src.discord.globals
+
 from src.discord.globals import CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG, SERVER_ID
-import re
 
 class Logger(commands.Cog):
 
@@ -35,7 +33,8 @@ class Logger(commands.Cog):
             channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
 
             embed = discord.Embed(
-                title=":pencil: Edited Message"
+                title = ":pencil: Edited Message",
+                color = discord.Color.yellow()
             )
             fields = [
                 {
@@ -96,7 +95,8 @@ class Logger(commands.Cog):
         except Exception as _: # No cached message is available
             message_now = await channel.fetch_message(payload.message_id)
             embed = discord.Embed(
-                title=":pencil: Edited Message"
+                title = ":pencil: Edited Message",
+                color = discord.Color.orange()
             )
 
             fields=[
@@ -167,7 +167,8 @@ class Logger(commands.Cog):
             message = payload.cached_message
             channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
             embed = discord.Embed(
-                title=":fire: Deleted Message"
+                title=":fire: Deleted Message",
+                color = discord.Color.brand_red()
             )
             fields=[
                 {
@@ -182,7 +183,7 @@ class Logger(commands.Cog):
                 },
                 {
                     "name": "Message ID",
-                    "value": payload.message_id,
+                    "value": f"`{payload.message_id}`",
                     "inline": "True"
                 },
                 {
@@ -224,7 +225,8 @@ class Logger(commands.Cog):
 
             embed = discord.Embed(
                 title = ":fire: Deleted Message",
-                description = "Because this message was not cached, I was unable to retrieve its content before it was deleted."
+                description = "Because this message was not cached, I was unable to retrieve its content before it was deleted.",
+                color = discord.Color.dark_red()
             )
             fields=[
                 {
@@ -234,7 +236,7 @@ class Logger(commands.Cog):
                 },
                 {
                     "name": "Message ID",
-                    "value": payload.message_id,
+                    "value": f"`{payload.message_id}`",
                     "inline": "True"
                 }
             ]
