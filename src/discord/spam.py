@@ -1,18 +1,17 @@
 import discord
 import datetime
 from discord.ext import commands
-import src.discord.globals
-from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
-import re
+from src.discord.globals import ROLE_MUTED, SERVER_ID
 
 class SpamManager(commands.Cog):
 
     recent_messages = []
 
     # Limits
-    caps_limit = 8
-    mute_limit = 6
-    warning_limit = 3
+    recent_messages_limit = 20 # The number of recent messages that are stored
+    caps_limit = 8 # The number of messages that can be sent containing caps before a mute is issued
+    mute_limit = 6 # The number of messages that can be sent containing the same content before a mute is issued
+    warning_limit = 3 # The number of messages that can be sent containing caps or the same content before a warning is issued to the offending user
 
     def __init__(self, bot):
         self.bot = bot
@@ -30,10 +29,13 @@ class SpamManager(commands.Cog):
 
         return caps
 
-    async def check_for_repetition(self, message: discord.Message):
+    async def check_for_repetition(self, message: discord.Message) -> None:
         """
         Checks to see if the message has been repeated often recently, and takes action if action is needed.
         """
+        # Type checking
+        assert isinstance(message.author, discord.Member)
+
         matching_messages = filter(lambda m: m.author == message.author and m.content.lower() == message.content.lower(), self.recent_messages)
         matching_messages_count = len(list(matching_messages))
 
@@ -60,10 +62,13 @@ class SpamManager(commands.Cog):
         elif matching_messages_count >= self.warning_limit:
             await message.author.send(f"{message.author.mention}, please avoid spamming. Additional spam will lead to your account being temporarily muted.")
 
-    async def check_for_caps(self, message:discord.Message):
+    async def check_for_caps(self, message:discord.Message) -> None:
         """
         Checks the message to see if it and recent messages contain a lot of capital letters.
         """
+        # Type checking
+        assert isinstance(message.author, discord.Member)
+
         caps_messages = filter(lambda m: m.author == message.author and self.has_caps(m) and len(m.content) > 5, self.recent_messages)
         caps_messages_count = len(list(caps_messages))
 
@@ -90,19 +95,22 @@ class SpamManager(commands.Cog):
         elif caps_messages_count >= self.warning_limit and self.has_caps(message):
             await message.author.send(f"{message.author.mention}, please avoid using all caps in your messages. Repeatedly doing so will cause your account to be temporarily muted.")
 
-    async def mute(self, member: discord.Member):
+    async def mute(self, member: discord.Member) -> None:
         """
         Mutes the user and schedules an unmute for an hour later in CRON.
         """
         guild = self.bot.get_guild(SERVER_ID)
         muted_role = discord.utils.get(guild.roles, name=ROLE_MUTED)
         unmute_time = discord.utils.utcnow() + datetime.timedelta(hours = 1)
+
+        # Type checking
+        assert isinstance(muted_role, discord.Role)
+
         cron_cog = self.bot.get_cog("CronTasks")
         await cron_cog.schedule_unmute(member, unmute_time)
         await member.add_roles(muted_role)
 
-
-    async def store_and_validate(self, message: discord.Message):
+    async def store_and_validate(self, message: discord.Message) -> None:
         """
         Stores a message in recent_messages and validates whether the message is spam or not.
         """
@@ -112,8 +120,8 @@ class SpamManager(commands.Cog):
 
         # Store message
         self.recent_messages.insert(0, message)
-        self.recent_messages = self.recent_messages[:20] # Only store 20 recent messages at once
-    
+        self.recent_messages = self.recent_messages[:self.recent_messages_limit] # Only store 20 recent messages at once
+
         await self.check_for_repetition(message)
         await self.check_for_caps(message)
 

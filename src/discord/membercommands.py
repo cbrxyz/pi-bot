@@ -16,7 +16,6 @@ from src.wiki.schools import get_school_listing
 from src.mongo.mongo import insert
 from src.lists import get_state_list
 from src.discord.utils import lookup_role
-from src.discord.mute import _mute
 from commandchecks import is_staff
 from commanderrors import SelfMuteCommandStaffInvoke
 

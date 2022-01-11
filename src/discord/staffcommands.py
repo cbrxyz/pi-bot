@@ -30,7 +30,6 @@ from src.discord.utils import harvest_id
 from src.wiki.mosteditstable import run_table
 from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete
 
-from src.discord.mute import _mute
 import matplotlib.pyplot as plt
 
 from typing import Type
