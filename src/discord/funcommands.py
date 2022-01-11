@@ -36,22 +36,101 @@ class FunCommands(commands.Cog, name='Fun'):
     )
     async def treat(self,
                     ctx,
-                    type: Option(str, "The type of treat to give!", choices = ["chocolate bar", "cookie", "ice cream"], required = True),
+                    type: Option(str, "The type of treat to give!", choices = ["chocolate bar", "cookie", "ice cream", "pizza", "boba", "a slice of cake", "chips and salsa", "brownie", "cotton candy"], required = True),
                     member: Option(discord.Member, "The member to give the treat to! Defaults to yourself!", required = False)
                     ):
         snacks = {
             'chocolate bar': {
                 'name': 'a chocolate bar',
-                'gif': 'http://gph.is/2rt64CX'
+                'gifs': [
+                    'http://gph.is/2rt64CX',
+                    'https://media.giphy.com/media/Wrscj8qsDogR4QHx2j/giphy.gif',
+                    'https://media.giphy.com/media/gIqguY2jmB31LZqWip/giphy.gif',
+                    'https://media.giphy.com/media/xUA7aUV3sYqsCkRLa0/giphy.gif',
+                    'https://media.giphy.com/media/gGwL4lMFOdSsGQlJEG/giphy.gif'
+                ]
             },
             'ice cream': {
                 'name': 'ice cream',
-                'gif': 'http://gph.is/YZLMMs'
+                'gifs': [
+                    'http://gph.is/YZLMMs',
+                    'https://media.giphy.com/media/PB5E8c20NXslUuIxna/giphy.gif',
+                    'https://media.giphy.com/media/CqS6nhPTCu6e5v2R03/giphy.gif',
+                    'https://media.giphy.com/media/GB91uLrgyuul2/giphy.gif',
+                    'https://media.giphy.com/media/uUs14eCA2SBgs/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/26uf7yJapo82e48yA/giphy.gif',
+                ]
             },
             'cookie': {
                 'name': 'a cookie',
-                'gif': 'http://gph.is/1UOaITh'
+                'gifs': [
+                    'http://gph.is/1UOaITh',
+                    'https://media.giphy.com/media/59Ve1fnBdol8c/giphy.gif',
+                    'https://media.giphy.com/media/JIPEUnwfxjtT0OapJb/giphy.gif',
+                    'https://media.giphy.com/media/26FeXTOe2R9kfpObC/giphy.gif',
+                    'https://media.giphy.com/media/EKUvB9uFnm2Xe/giphy.gif',
+                    'https://media.giphy.com/media/38a2gPetE4RuE/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/c7maSqDI7j2ww/giphy.gif',
+                ]
             },
+            'pizza': {
+                'name': 'pizza',
+                'gifs': [
+                    'https://media.giphy.com/media/3osxYoufeOGOA7xiX6/giphy.gif',
+                    'https://media.giphy.com/media/1108D2tVaUN3eo/giphy.gif',
+                    'https://media.giphy.com/media/QR7ci2sbhrkzxAuMHH/giphy.gif',
+                    'https://media.giphy.com/media/hmzAcor7gBsbK/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/aCKMaeduKfFXG/giphy.gif'
+                ]
+            },
+            'boba': {
+                'name': 'boba',
+                'gifs': [
+                    'https://media.giphy.com/media/7SZzZO5EG1S6QLJeUL/giphy.gif',
+                    'https://media.giphy.com/media/r6P5BC5b4SS2Y/giphy.gif',
+                    'https://media.giphy.com/media/cRLPmyXQhtRXnRXfDX/giphy.gif',
+                    'https://media.giphy.com/media/h8CD39vtPVoMEoqZZ3/giphy.gif',
+                    'https://media.giphy.com/media/Y4VNo2dIdW8bpDgRXt/giphy.gif'
+                ]
+            },
+            'a slice of cake': {
+                'name': 'a slice of cake',
+                'gifs': [
+                    'https://media.giphy.com/media/He4wudo59enf2/giphy.gif',
+                    'https://media.giphy.com/media/l0Iy4ppWvwQ4SXPxK/giphy.gif',
+                    'https://media.giphy.com/media/zBU43ZvUVj37a/giphy.gif',
+                    'https://media.giphy.com/media/wPamPmbGkWkQE/giphy.gif',
+                    'https://media.giphy.com/media/JMfzwxEIbd6zC/giphy.gif'
+                ]
+            },
+            'chips and salsa': {
+                'name': 'chips and salsa, I suppose',
+                'gifs': [
+                    'https://media.giphy.com/media/xThuWwvZWJ4NOB6j6w/giphy.gif',
+                    'https://media.giphy.com/media/wZOF08rE9knDTYsY4G/giphy.gif',
+                    'https://media.giphy.com/media/1O3nlwRXcOJYLv1Neh/giphy.gif',
+                    'https://media.giphy.com/media/YrN8O2eGl2f5GucpEf/giphy.gif'
+                ]
+            },
+            'brownie': {
+                'name': 'a brownie',
+                'gifs': [
+                    'https://media.giphy.com/media/BkWHoSRB6gR2M/giphy.gif',
+                    'https://media.giphy.com/media/abOlz9ygIm9Es/giphy.gif',
+                    'https://media.giphy.com/media/l0MYEU0YyoTEpTDby/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/VdQ8b54TJZ9kXClaSw/giphy.gif',
+                    'https://media.giphy.com/media/ziuCU2H0DdtGoZdJu3/giphy.gif'
+                ]
+            },
+            'cotton candy': {
+                'name': 'cotton candy',
+                'gifs': [
+                    'https://media.giphy.com/media/1X7A3s673cLWovCQCE/giphy.gif',
+                    'https://media.giphy.com/media/dXKH2jCT9tINyVWlUp/giphy.gif',
+                    'https://media.giphy.com/media/V83Khg0lCKyOc/giphy.gif',
+                    'https://media.giphy.com/media/ZcVI712Fcol3EeLltH/giphy-downsized-large.gif'
+                ]
+            }
         }
         if not member or member == ctx.author:
             member = "themselves"
@@ -59,7 +138,7 @@ class FunCommands(commands.Cog, name='Fun'):
             member = member.mention
 
         await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member} {snacks[type]['name']}!")
-        await ctx.send(snacks[type]['gif'])
+        await ctx.send(random.choice(snacks[type]['gifs']))
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
