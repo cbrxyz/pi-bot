@@ -1,49 +1,20 @@
+import discord
+from discord.ext import commands
+from discord.commands import Option
 import random
 import asyncio
 import aiohttp
 import json
 
-import discord
-from discord.ext import commands
-from discord.commands import Option
-
-from commandchecks import not_blacklisted_channel
-from src.discord.utils import sanitize_mention
-from src.discord.globals import CHANNEL_WELCOME, SLASH_COMMAND_GUILDS
+from src.discord.globals import SLASH_COMMAND_GUILDS
 
 fish_now = 0
 
 class FunCommands(commands.Cog, name='Fun'):
+
     def __init__(self, bot):
         self.bot = bot
-        self.BEAR_ID = 353730886577160203
-        self.BEAR_MESSAGES = [
-            r"*{1} eats {2}* :fork_and_knife:",
-            r"*{1} consumes {2}!* :fork_knife_plate:",
-            r"*{1} thinks that {2} tasted pretty good...* :yum:",
-            r"*{1} thinks that {2} tasted pretty awful...* :face_vomiting:",
-            r"*{1} enjoyed eating {2}!* :yum:",
-            r"*{1} hopes he gets to eat {2} again!* :smile:",
-            r"*{1} thinks that {2} is delicious!* :yum:",
-            r"*{1} likes eating {2} better than fish* :yum:",
-            r"*{1} thinks that {2} was yummy!!* :blush:",
-            r"*{1} is pretty full after eating {2}* :blush:",
-            r"*{1} liked eating {2}* :heart:",
-            r"*{1} isn't cuckoo for Cocoa Puffs, but rather {2}* :zany_face:",
-            r"*{1} wonders when he gets to eat more {2}* :thinking:",
-            r"*{1} has a hot take: {2} tastes pretty bomb* :fire:",
-            r"*{1} can't believe he doesn't eat {2} more often!* :exploding_head:",
-            r"*{1} would be lying to say he didn't like eating {2}* :liar:",
-            r"*{1} would eat {2} at any time of the day!* :candy:",
-            r"*{1} wonders where he can get more of {2}* :spoon:",
-            r"*{1} thinks that {2} tastes out of this world* :alien:",
-        ]
-
-
-    async def get_bear_message(self, user):
-        message = random.choice(self.BEAR_MESSAGES)
-        message = message.replace(r"{1}", fr"<@{self.BEAR_ID}>").replace(r"{2}", f"{user}")
-        return message
+        print("Initialized Fun cog.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
@@ -61,53 +32,34 @@ class FunCommands(commands.Cog, name='Fun'):
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Gives a cookie to yourself or another user!"
+        description = "Gives a treat to yourself or another user!"
     )
-    async def cookie(self,
-        ctx,
-        member: Option(discord.Member, "The member to give a cookie to. If not provided, gives a cookie to yourself.", required = False)
-        ):
-        if member == None:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives themselves a cookie.")
+    async def treat(self,
+                    ctx,
+                    type: Option(str, "The type of treat to give!", choices = ["chocolate bar", "cookie", "ice cream"], required = True),
+                    member: Option(discord.Member, "The member to give the treat to! Defaults to yourself!", required = False)
+                    ):
+        snacks = {
+            'chocolate bar': {
+                'name': 'a chocolate bar',
+                'gif': 'http://gph.is/2rt64CX'
+            },
+            'ice cream': {
+                'name': 'ice cream',
+                'gif': 'http://gph.is/YZLMMs'
+            },
+            'cookie': {
+                'name': 'a cookie',
+                'gif': 'http://gph.is/1UOaITh'
+            },
+        }
+        if not member or member == ctx.author:
+            member = "themselves"
         else:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member.mention} a cookie!")
-        await ctx.send("http://gph.is/1UOaITh")
+            member = member.mention
 
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Gives a cookie to yourself or another user!"
-    )
-    async def treat(self, ctx):
-        await ctx.interaction.response.send_message("You give bernard one treat!")
-        await ctx.send("http://gph.is/11nJAH5")
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Gives a cookie to yourself or another user!"
-    )
-    async def hersheybar(self,
-        ctx,
-        member: Option(discord.Member, "The member to give a Hershey Bar to! If not provided, gives a Hershey Bar to yourself!", required = False)
-        ):
-        if member == None:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives themselves a Hershey bar.")
-        else:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member.mention} a Hershey bar!")
-        await ctx.send("http://gph.is/2rt64CX")
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Gives a cookie to yourself or another user!"
-    )
-    async def icecream(self,
-        ctx,
-        member: Option(discord.Member, "The member to give ice cream to. If not provided, gives ice cream to yourself!", required = False)
-        ):
-        if member == None:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives themselves some ice cream.")
-        else:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member.mention} ice cream!")
-        await ctx.send("http://gph.is/YZLMMs")
+        await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member} {snacks[type]['name']}!")
+        await ctx.send(snacks[type]['gif'])
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],

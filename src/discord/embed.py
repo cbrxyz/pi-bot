@@ -7,7 +7,6 @@ from discord.commands import Option, permissions
 
 from src.discord.globals import SLASH_COMMAND_GUILDS, ROLE_STAFF, ROLE_VIP, SERVER_ID
 import commandchecks
-
 from bot import listen_for_response
 
 class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
