@@ -8,12 +8,13 @@ import json
 
 from src.discord.globals import SLASH_COMMAND_GUILDS
 
-fish_now = 0
-
 class FunCommands(commands.Cog, name='Fun'):
+
+    fish_count: int
 
     def __init__(self, bot):
         self.bot = bot
+        self.fish_count = 0
         print("Initialized Fun cog.")
 
     @discord.commands.slash_command(
@@ -21,13 +22,15 @@ class FunCommands(commands.Cog, name='Fun'):
         description = "Trout slaps yourself or another user!"
     )
     async def trout(self,
-        ctx,
-        member: Option(discord.Member, "The member to trout slap! If not given, Pi-Bot will trout slap you!", required = False)
-        ):
-        if member == None:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} trout slaps themselves!")
+                    ctx,
+                    member: Option(discord.Member, "The member to trout slap! If not given, Pi-Bot will trout slap you!", required = False)
+                   ):
+        if not member or member == ctx.author:
+            member = "themselves"
         else:
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} slaps {member.mention} with a giant trout!")
+            member = member.mention
+
+        await ctx.interaction.response.send_message(f"{ctx.author.mention} slaps {member} with a giant trout!")
         await ctx.send("http://gph.is/1URFXN9")
 
     @discord.commands.slash_command(
@@ -146,51 +149,58 @@ class FunCommands(commands.Cog, name='Fun'):
     )
     async def fish(self, ctx):
         """Gives a fish to bear."""
-        global fish_now
         r = random.random()
-        if len(str(fish_now)) > 1500:
-            fish_now = round(pow(fish_now, 0.5))
-            if fish_now == 69: fish_now = 70
+
+        if len(str(self.fish_count)) > 1000000:
+            self.fish_count = round(pow(self.fish_count, 0.5))
+            if self.fish_count == 69: self.fish_count = 70
             return await ctx.interaction.response.send_message("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
+
         if r > 0.9:
-            fish_now += 10
-            if fish_now == 69: fish_now = 70
-            return await ctx.interaction.response.send_message(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
-        if r > 0.1:
-            fish_now += 1
-            if fish_now == 69:
-                fish_now = 70
-                return await ctx.interaction.response.send_message(f"You feed bear two fish. Bear now has {fish_now} fish!")
+            self.fish_count += 10
+            if self.fish_count == 69: self.fish_count = 70
+            return await ctx.interaction.response.send_message(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {self.fish_count} fish!")
+
+        elif r > 0.1:
+            self.fish_count += 1
+            if self.fish_count == 69:
+                self.fish_count = 70
+                return await ctx.interaction.response.send_message(f"You feed bear two fish. Bear now has {self.fish_count} fish!")
             else:
-                return await ctx.interaction.response.send_message(f"You feed bear one fish. Bear now has {fish_now} fish!")
-        if r > 0.02:
-            fish_now += 0
-            return await ctx.interaction.response.send_message(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
+                return await ctx.interaction.response.send_message(f"You feed bear one fish. Bear now has {self.fish_count} fish!")
+
+        elif r > 0.02:
+            self.fish_count += 0
+            return await ctx.interaction.response.send_message(f"You can't find any fish... and thus can't feed bear. Bear still has {self.fish_count} fish.")
+
         else:
-            fish_now = round(pow(fish_now, 0.5))
-            if fish_now == 69: fish_now = 70
-            return await ctx.interaction.response.send_message(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
+            self.fish_count = round(pow(self.fish_count, 0.5))
+            if self.fish_count == 69: self.fish_count = 70
+            return await ctx.interaction.response.send_message(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {self.fish_count} fish. \n:sob:\n:sob:\n:sob:")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Steals some fish from bear!"
     )
     async def stealfish(self, ctx):
-        global fish_now
         r = random.random()
+
         if r >= 0.75:
             ratio = r - 0.5
-            fish_now = round(fish_now * (1 - ratio))
+            self.fish_count = round(self.fish_count * (1 - ratio))
             per = round(ratio * 100)
             return await ctx.interaction.response.send_message(f"You stole {per}% of bear's fish!")
-        if r >= 0.416:
-            fish_now = round(fish_now * 0.99)
+
+        elif r >= 0.416:
+            self.fish_count = round(self.fish_count * 0.99)
             return await ctx.interaction.response.send_message(f"You stole just 1% of bear's fish!")
-        if r >= 0.25:
+
+        elif r >= 0.25:
             ratio = r + 0.75
-            fish_now = round(fish_now * ratio)
+            self.fish_count = round(self.fish_count * ratio)
             per = round(ratio * 100) - 100
             return await ctx.interaction.response.send_message(f"Uhh... something went wrong! You gave bear another {per}% of his fish!")
+
         if r >= 0.01:
             return await ctx.interaction.response.send_message("Hmm, nothing happened. *crickets*")
 
@@ -199,9 +209,9 @@ class FunCommands(commands.Cog, name='Fun'):
         description = "Dog bombs another user!"
     )
     async def dogbomb(self,
-        ctx,
-        member: Option(discord.Member, "The member to dog bomb!", required = True)
-        ):
+                      ctx,
+                      member: Option(discord.Member, "The member to dog bomb!", required = True)
+                     ):
         """Dog bombs someone!"""
         session = aiohttp.ClientSession()
         page = await session.get(f"https://dog.ceo/api/breeds/image/random")
@@ -213,7 +223,10 @@ class FunCommands(commands.Cog, name='Fun'):
         jso = json.loads(text)
 
         doggo = jso['message']
-        await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} dog bombed you!!")
+        if member == ctx.author:
+            await ctx.interaction.response.send_message(f"{member.mention} dog bombed themselves!!")
+        else:
+            await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} dog bombed you!!")
         await ctx.send(doggo)
 
     @discord.commands.slash_command(
@@ -221,9 +234,9 @@ class FunCommands(commands.Cog, name='Fun'):
         description = "Shiba bombs another user!"
     )
     async def shibabomb(self,
-        ctx,
-        member: Option(discord.Member, "The member to shiba bomb!", required = True)
-        ):
+                        ctx,
+                        member: Option(discord.Member, "The member to shiba bomb!", required = True)
+                       ):
         """Shiba bombs a user!"""
         session = aiohttp.ClientSession()
         page = await session.get(f"https://dog.ceo/api/breed/shiba/images/random")
@@ -235,7 +248,10 @@ class FunCommands(commands.Cog, name='Fun'):
         jso = json.loads(text)
 
         doggo = jso['message']
-        await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} shiba bombed you!!")
+        if member == ctx.author:
+            await ctx.interaction.response.send_message(f"{member.mention} shiba bombed themselves!!")
+        else:
+            await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} shiba bombed you!!")
         await ctx.send(doggo)
 
     @discord.commands.slash_command(
@@ -278,9 +294,9 @@ class FunCommands(commands.Cog, name='Fun'):
         description = "Gets an xkcd comic!"
     )
     async def xkcd(self,
-        ctx,
-        num: Option(int, "The number of the xkcd comic to get. If not provided, gets a random comic.", required = False)
-        ):
+                   ctx,
+                   num: Option(int, "The number of the xkcd comic to get. If not provided, gets a random comic.", required = False)
+                  ):
         session = aiohttp.ClientSession()
         res = await session.get("https://xkcd.com/info.0.json")
         text = await res.text()
