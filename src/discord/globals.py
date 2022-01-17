@@ -24,8 +24,6 @@ PI_BOT_IDS = [
     743254543952904197,
     637519324072116247
 ]
-RULES_CHANNEL_ID = 737087680269123606
-WELCOME_CHANNEL_ID = 743253216921387088
 DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK", "scioly"]
 SLASH_COMMAND_GUILDS = int(os.getenv('SLASH_COMMAND_GUILDS'))
 EMOJI_GUILDS = [int(iden) for iden in [os.getenv('EMOJI_GUILDS')]]
@@ -109,18 +107,11 @@ RULES = [
 # VARIABLES
 ##############
 fish_now = 0
-can_post = False
-do_hourly_sync = False
 CENSOR = {}
 EVENT_INFO = 0
-REPORTS = []
 PING_INFO = []
-RECENT_MESSAGES = []
-STEALFISH_BAN = []
 TOURNAMENT_INFO = []
 TAGS = []
-STOPNUKE = datetime.datetime.utcnow()  # Was a bool, not is a datetime
-CRON_LIST = []
 CURRENT_WIKI_PAGE = None
 
 SETTINGS = {

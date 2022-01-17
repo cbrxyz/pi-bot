@@ -23,7 +23,7 @@ from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, C
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM, CHANNEL_TOURNAMENTS
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
-from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH, ROLE_STAFF, ROLE_VIP
+from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, ROLE_LH, ROLE_STAFF, ROLE_VIP
 from bot import listen_for_response
 
 from src.wiki.mosteditstable import run_table
@@ -141,7 +141,6 @@ class LauncherCommands(commands.Cog):
         """Nukes (deletes) a specified amount of messages."""
         commandchecks.is_staff_from_ctx(ctx)
 
-        global STOPNUKE
         MAX_DELETE = 100
         if int(count) > MAX_DELETE:
             return await ctx.respond("Chill. No more than deleting 100 messages at a time.")
