@@ -83,14 +83,11 @@ class MemberCommands(commands.Cog):
         description = "Gets the profile information for a username."
     )
     async def profile(self,
-        ctx,
-        username: Option(str, "The username to get information about. Defaults to your nickname/username.", required = True)
-        ):
+                      ctx,
+                      username: Option(str, "The username to get information about. Defaults to your nickname/username.", required = False)
+                     ):
         if username == None:
-            member = ctx.author
-            username = member.nick
-            if username == None:
-                username = member.name
+            username = ctx.author.nick or ctx.author.name
 
         session = aiohttp.ClientSession()
         page = await session.get(f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}")
@@ -169,19 +166,9 @@ class MemberCommands(commands.Cog):
     )
     async def alumni(self, ctx):
         """Removes or adds the alumni role from a user."""
-        member = ctx.author
-        div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
-        div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
-        div_c_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
-        await member.remove_roles(div_a_role, div_b_role, div_c_role)
-        role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
-        if role in member.roles:
-            await member.remove_roles(role)
-            await ctx.interaction.response.send_message(content = "Removed your alumni status.")
-        else:
-            await member.add_roles(role)
-            await ctx.interaction.response.send_message(content = f"Added the alumni role, and removed all other division roles.")
-
+        await self._assign_div(ctx, "Alumni")
+        await ctx.interaction.response.send_message(content = "Assigned you the Alumni role, and removed all other divison/alumni roles.")
+        
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Toggles division roles for the user."
@@ -191,16 +178,16 @@ class MemberCommands(commands.Cog):
         div: Option(str, "The division to assign the user with.", choices = ["Division A", "Division B", "Division C", "Alumni", "None"], required = True)
         ):
         if div == "Division A":
-            res = await self._assign_div(ctx, "Division A")
+            await self._assign_div(ctx, "Division A")
             await ctx.interaction.response.send_message(content = "Assigned you the Division A role, and removed all other divison/alumni roles.")
         elif div == "Division B":
-            res = await self._assign_div(ctx, "Division B")
+            await self._assign_div(ctx, "Division B")
             await ctx.interaction.response.send_message(content = "Assigned you the Division B role, and removed all other divison/alumni roles.")
         elif div == "Division C":
-            res = await self._assign_div(ctx, "Division C")
+            await self._assign_div(ctx, "Division C")
             await ctx.interaction.response.send_message(content = "Assigned you the Division C role, and removed all other divison/alumni roles.")
         elif div == "Alumni":
-            res = await self._assign_div(ctx, "Alumni")
+            await self._assign_div(ctx, "Alumni")
             await ctx.interaction.response.send_message(content = "Assigned you the Alumni role, and removed all other divison/alumni roles.")
         elif div == "None":
             member = ctx.author
