@@ -7,7 +7,7 @@ import random
 import wikipedia as wikip
 from discord.ext import commands
 import src.discord.globals
-from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, CHANNEL_UNSELFMUTE, ROLE_SELFMUTE, TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
+from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, CHANNEL_UNSELFMUTE, ROLE_SELFMUTE, TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
 from src.discord.views import YesNo
 from src.wiki.wiki import get_page_tables
 from src.wiki.scilympiad import make_results_template, get_points
@@ -35,12 +35,16 @@ class MemberCommands(commands.Cog):
         description = "Looking for help? Try this!"
     )
     async def help(self,
-        ctx
-        ):
+                   ctx
+                  ):
         """Allows a user to request help for a command."""
         server = self.bot.get_guild(SERVER_ID)
         invitationals_channel = discord.utils.get(server.text_channels, name = CHANNEL_TOURNAMENTS)
         roles_channel = discord.utils.get(server.text_channels, name = CHANNEL_ROLES)
+
+        # Type checking
+        assert isinstance(invitationals_channel, discord.TextChannel)
+        assert isinstance(roles_channel, discord.TextChannel)
 
         help_embed = discord.Embed(
             title = "Looking for help?",
@@ -61,9 +65,9 @@ class MemberCommands(commands.Cog):
         description = "Toggles your pronoun roles."
     )
     async def pronouns(self,
-        ctx,
-        pronouns: Option(str, "The pronoun to add/remove from your account.", choices = [ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY], required = True)
-        ):
+                       ctx,
+                       pronouns: Option(str, "The pronoun to add/remove from your account.", choices = [ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY], required = True)
+                      ):
         """Assigns or removes pronoun roles from a user."""
         member = ctx.author
         pronoun_role = discord.utils.get(member.guild.roles, name=pronouns)
