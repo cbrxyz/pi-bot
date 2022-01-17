@@ -1,17 +1,9 @@
-import discord
-from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, TAGS
-from src.mongo.mongo import get_censor
+from typing import Union 
 
-async def sanitize_mention(member):
-    if member == False: return True
-    if member == "@everyone" or member == "@here": return False
-    if member[:3] == "<@&": return False
-    return True
-
-async def harvest_id(user):
-    return user.replace("<@!", "").replace(">", "")
-
-async def lookup_role(name):
+async def lookup_role(name: str) -> Union[str, bool]:
+    """
+    Gets the official state role name for a state name or abbreviation.
+    """
     name = name.title()
     if name == "Al" or name == "Alabama": return "Alabama"
     elif name == "All" or name == "All States": return "All States"

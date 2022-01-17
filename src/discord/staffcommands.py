@@ -26,7 +26,6 @@ from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELF
 from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH, ROLE_STAFF, ROLE_VIP
 from bot import listen_for_response
 
-from src.discord.utils import harvest_id
 from src.wiki.mosteditstable import run_table
 from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete
 
