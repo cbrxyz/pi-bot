@@ -18,12 +18,13 @@ def is_staff():
         raise commands.MissingAnyRole([staffRole, vipRole])
     return commands.check(predicate)
 
-def is_staff_from_ctx(ctx):
+def is_staff_from_ctx(ctx, no_raise = False):
     guild = ctx.guild
     member = ctx.author
     staff_role = discord.utils.get(guild.roles, name=ROLE_STAFF)
     vip_role = discord.utils.get(guild.roles, name=ROLE_VIP)
     if any(r in [staff_role, vip_role] for r in member.roles): return True
+    if no_raise: return False # Option for evading default behavior of raising error
     raise commands.MissingAnyRole([staff_role, vip_role])
 
 async def is_author_staff(author: discord.Member):

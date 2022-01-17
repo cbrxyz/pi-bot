@@ -15,7 +15,7 @@ from src.wiki.schools import get_school_listing
 from src.mongo.mongo import insert
 from src.lists import get_state_list
 from src.discord.utils import lookup_role
-from commandchecks import is_staff
+from commandchecks import is_staff, is_staff_from_ctx
 from commanderrors import SelfMuteCommandStaffInvoke
 
 from typing import Type
@@ -219,6 +219,10 @@ class MemberCommands(commands.Cog):
         games_channel = discord.utils.get(ctx.author.guild.text_channels, name=CHANNEL_GAMES)
         member = ctx.author
         role = discord.utils.get(member.guild.roles, name=ROLE_GAMES)
+
+        # Type checking
+        assert isinstance(games_channel, discord.TextChannel)
+
         if role in member.roles:
             await member.remove_roles(role)
             await ctx.interaction.response.send_message(content = "Removed you from the games club... feel free to come back anytime!")
@@ -233,9 +237,9 @@ class MemberCommands(commands.Cog):
         description = "Toggles the visibility of state roles and channels."
     )
     async def states(self,
-        ctx,
-        states: Option(str, "The states to toggle. For example 'Missouri, Iowa, South Dakota'.`", required = True)
-        ):
+                     ctx,
+                     states: Option(str, "The states to toggle. For example 'Missouri, Iowa, South Dakota'.", required = True)
+                    ):
         """Assigns someone with specific states."""
         new_args = states.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
@@ -321,36 +325,32 @@ class MemberCommands(commands.Cog):
             state_res = "Added states " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", and removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
         await ctx.interaction.response.send_message(state_res)
 
-    def is_not_staff(exception: Type[commands.CommandError], message: str):
-        async def predicate(ctx):
-            if not is_staff():
-                return True
-            raise exception(message)
-        return commands.check(predicate)
-
-    #@is_not_staff(SelfMuteCommandStaffInvoke, "A staff member attempted to invoke selfmute.")
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Mutes yourself."
     )
     async def selfmute(self,
-        ctx,
-        mute_length: Option(str, "How long to mute yourself for.", choices = [
-            "10 minutes",
-            "30 minutes",
-            "1 hour",
-            "2 hours",
-            "8 hours",
-            "1 day",
-            "4 days",
-            "7 days",
-            "1 month",
-            "1 year"
-        ])
-        ):
+                       ctx,
+                       mute_length: Option(str, "How long to mute yourself for.", choices = [
+                           "10 minutes",
+                           "30 minutes",
+                           "1 hour",
+                           "2 hours",
+                           "4 hours",
+                           "8 hours",
+                           "1 day",
+                           "4 days",
+                           "7 days",
+                           "1 month",
+                           "1 year"
+                       ], required = True)
+                      ):
         """
         Self mutes the user that invokes the command.
         """
+        if is_staff_from_ctx(ctx, no_raise = True):
+            return await ctx.interaction.response.send_message("Staff members can't self mute! Sorry!")
+            
         member = ctx.author
 
         times = {
@@ -398,10 +398,6 @@ class MemberCommands(commands.Cog):
                 pass
 
         return await ctx.interaction.edit_original_message(content = f"The operation was cancelled, and you can still speak throughout the server.", embed = None, view = None)
-
-    async def cog_command_error(self, ctx, error):
-        if isinstance(error, SelfMuteCommandStaffInvoke):
-            return await ctx.send("Staff members can't self mute.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
