@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import json
+import re
 from discord.ext import commands
 import discord.commands
 from discord.commands import Option, permissions
@@ -151,6 +152,12 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             self.embed_view.stop()
             return
 
+        if self.update_value == 'url' and 'title' not in self.embed_view.embed_dict:
+            help_message = await self.embed_view.channel.send("You can not set the title URL without first setting the title.")
+            await help_message.delete(delay = 10)
+            self.embed_view.stop()
+            return
+
         if self.update_value == 'add_field':
             if 'fields' in self.embed_view.embed_dict and len(self.embed_view.embed_dict['fields']) == 25:
                 help_message = await self.embed_view.channel.send("You can't have more than 25 embed fields! Don't be so selfish, keeping all of the embed fields to yourself!")
@@ -232,6 +239,12 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
                 await help_message.delete(delay = 10)
                 self.embed_view.stop()
                 return
+
+        if self.update_value == 'color' and not len(re.findall(r'#[0-9a-f]{6}', response_message.content.lower())):
+            help_message = await self.embed_view.channel.send(f"The color you provide must be a hex code. For example, `#abbb02` or `#222ddd`.")
+            await help_message.delete(delay = 10)
+            self.embed_view.stop()
+            return
 
         self.embed_view.embed_update[self.update_value] = response_message.content
         self.embed_view.stop()
