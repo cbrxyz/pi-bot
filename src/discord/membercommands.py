@@ -23,15 +23,12 @@ from src.discord.tournaments import update_tournament_list
 from src.wiki.wiki import implement_command
 from aioify import aioify
 
-class MemberCommands(commands.Cog, name='Member'):
+class MemberCommands(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
         self.aiowikip = aioify(obj=wikip)
-        print("Member commands loaded")
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        pass
+        print("Initialized MemberCommands cog.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
