@@ -15,6 +15,7 @@ from src.wiki.schools import get_school_listing
 from src.mongo.mongo import insert
 from src.lists import get_state_list
 from src.discord.utils import lookup_role
+from __init__ import __version__
 from commandchecks import is_staff, is_staff_from_ctx
 from commanderrors import SelfMuteCommandStaffInvoke
 
@@ -404,10 +405,10 @@ class MemberCommands(commands.Cog):
         description = "Requests a new invitational channel! Note: This request will be sent to staff for approval."
     )
     async def request(
-        self,
-        ctx,
-        invitational: Option(str, "The official name of the invitational you would like to add.", required = True)
-    ):
+                      self,
+                      ctx,
+                      invitational: Option(str, "The official name of the invitational you would like to add.", required = True)
+                     ):
         reporter_cog = self.bot.get_cog("Reporter")
         await reporter_cog.create_invitational_request_report(ctx.author, invitational)
         await ctx.interaction.response.send_message(f"Thanks for the request. Staff will review your request to add an invitational channel for `{invitational}`. In the meantime, please do not make additional requests.")
@@ -418,14 +419,13 @@ class MemberCommands(commands.Cog):
     )
     async def about(self, ctx):
         """Prints information about the bot."""
-        version = "4.5.19"
         repo = "https://github.com/cbrxyz/pi-bot"
         wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
         forums_link = "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
         avatar_url = self.bot.user.display_avatar.url
 
         embed = discord.Embed(
-            title = f"**Pi-Bot {version}**",
+            title = f"**Pi-Bot {__version__}**",
             color = discord.Color(0xF86D5F),
             description = f"""
             Hey there! I'm Pi-Bot, and I help to manage the Scioly.org forums, wiki, and chat. You'll often see me around this Discord server to help users get roles and information about Science Olympiad.
@@ -452,9 +452,9 @@ class MemberCommands(commands.Cog):
         description = "Returns a link to the Scioly.org forums."
     )
     async def link(self,
-        ctx,
-        destination: Option(str, "The area of the site to link to.", choices = ["forums", "exchange", "gallery", "obb", "wiki", "tests"], required = True)
-        ):
+                   ctx,
+                   destination: Option(str, "The area of the site to link to.", choices = ["forums", "exchange", "gallery", "obb", "wiki", "tests"], required = True)
+                  ):
         if destination == "forums":
             await ctx.interaction.response.send_message("<https://scioly.org/forums>")
         elif destination == "wiki":
@@ -473,14 +473,13 @@ class MemberCommands(commands.Cog):
         description = "Returns a random number, inclusively."
     )
     async def random(self,
-        ctx,
-        minimum: Option(int, "The minimum number to choose from. Defaults to 0.", required = False),
-        maximum: Option(int, "The maximum number to choose from. Defaults to 10.", required = False),
-        ):
-        if minimum == None:
-            minimum = 0
-        if maximum == None:
-            maximum = 10
+                     ctx,
+                     minimum: Option(int, "The minimum number to choose from. Defaults to 0.", required = False, default = 0),
+                     maximum: Option(int, "The maximum number to choose from. Defaults to 10.", required = False, default = 10),
+                    ):
+        if minimum > maximum:
+            maximum, minimum = minimum, maximum
+
         num = random.randrange(minimum, maximum + 1)
         await ctx.interaction.response.send_message(f"Random number between `{minimum}` and `{maximum}`: `{num}`")
 
