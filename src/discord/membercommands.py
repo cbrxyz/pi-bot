@@ -690,32 +690,35 @@ class MemberCommands(commands.Cog):
     def wiki_url_fix(self, url):
         return url.replace("%3A", ":").replace(r"%2F","/")
 
-    @commands.command(aliases=["wp"])
-    async def wikipedia(self, ctx, request:str=False, *args):
-        term = " ".join(args)
-        if request == False:
-            return await ctx.send("You must specifiy a command and keyword, such as `!wikipedia search \"Science Olympiad\"`")
-        if request == "search":
-            return await ctx.send("\n".join([f"`{result}`" for result in self.aiowikip.search(term, results=5)]))
-        elif request == "summary":
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Searches for information on Wikipedia, the free encyclopedia!"
+    )
+    async def wikipedia(self,
+                        ctx,
+                        command: Option(str, "The command to execute.", choices = ["search", "summary", "link"], required = True),
+                        request: Option(str, "The request to execute the command upon. What to search or summarize, etc.", required = True)
+                       ):
+        if command == "search":
+            return await ctx.interaction.response.send_message("\n".join([f"`{result}`" for result in self.aiowikip.search(request, results=5)]))
+
+        elif command == "summary":
             try:
-                term = term.title()
-                page = await self.aiowikip.page(term)
-                return await ctx.send(self.aiowikip.summary(term, sentences=3) + f"\n\nRead more on Wikipedia here: <{page.url}>!")
+                page = await self.aiowikip.page(request)
+                return await ctx.interaction.response.send_message(self.aiowikip.summary(request, sentences=3) + f"\n\nRead more on Wikipedia here: <{page.url}>!")
             except wikip.exceptions.DisambiguationError as e:
-                return await ctx.send(f"Sorry, the `{term}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
+                return await ctx.interaction.response.send_message(f"Sorry, the `{request}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
             except wikip.exceptions.PageError as e:
-                return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-        else:
+                return await ctx.interaction.response.send_message(f"Sorry, but the `{request}` page doesn't exist! Try another term!")
+
+        elif command == "link":
             try:
-                term = f"{request} {term}".strip()
-                term = term.title()
-                page = await self.aiowikip.page(term)
-                return await ctx.send(f"Sure, here's the link: <{page.url}>")
+                page = await self.aiowikip.page(request)
+                return await ctx.interaction.response.send_message(f"Sure, here's the link: <{page.url}>")
             except wikip.exceptions.PageError as e:
-                return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
+                return await ctx.interaction.response.send_message(f"Sorry, but the `{request}` page doesn't exist! Try another term!")
             except wikip.exceptions.DisambiguationError as e:
-                return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
+                return await ctx.interaction.response.send_message(f"Sorry, but the `{request}` page is a disambiguation page. Please try again!")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
