@@ -799,22 +799,25 @@ class MemberCommands(commands.Cog):
         description = "Gets a tag."
     )
     async def tag(self,
-        ctx,
-        tag_name: Option(str, "The name of the tag to get.", required = True)
-        ):
+                  ctx,
+                  tag_name: Option(str, "The name of the tag to get.", required = True)
+                 ):
         member = ctx.author
-        print(src.discord.globals.TAGS)
+
         if not len(src.discord.globals.TAGS):
             return await ctx.interaction.response.send_message("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
-        staff = is_staff()
+
+        staff = is_staff_from_ctx(ctx, no_raise = True)
         lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
+
         for t in src.discord.globals.TAGS:
             if t['name'] == tag_name:
-                if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
+                if staff or (t['permissions']['launch_helpers'] and lh_role in member.roles) or (t['permissions']['members'] and member_role in member.roles):
                     return await ctx.interaction.response.send_message(content = t['output'])
                 else:
                     return await ctx.interaction.response.send_message(content = "Unfortunately, you do not have the permissions for this tag.")
+
         return await ctx.interaction.response.send_message("Tag not found.")
 
 def setup(bot):
