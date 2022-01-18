@@ -488,23 +488,23 @@ class MemberCommands(commands.Cog):
         description = "Returns information about a given rule."
     )
     async def rule(self,
-        ctx,
-        rule: Option(str, "The rule to cite.", choices = [
-            "Rule #1: Treat all with respect.",
-            "Rule #2: No profanity/innapropriateness.",
-            "Rule #3: Treat delicate subjects carefully.",
-            "Rule #4: Do not spam or flood.",
-            "Rule #5: Avoid excessive pinging.",
-            "Rule #6: Avoid excessive caps.",
-            "Rule #7: No doxxing/name-dropping.",
-            "Rule #8: No witch-hunting.",
-            "Rule #9: No impersonating.",
-            "Rule #10: Do not use alts.",
-            "Rule #11: Do not violate SOINC copyrights.",
-            "Rule #12: No advertising.",
-            "Rule #13: Use good judgement."
-        ])
-        ):
+                   ctx,
+                   rule: Option(str, "The rule to cite.", choices = [
+                       "Rule #1: Treat all with respect.",
+                       "Rule #2: No profanity/innapropriateness.",
+                       "Rule #3: Treat delicate subjects carefully.",
+                       "Rule #4: Do not spam or flood.",
+                       "Rule #5: Avoid excessive pinging.",
+                       "Rule #6: Avoid excessive caps.",
+                       "Rule #7: No doxxing/name-dropping.",
+                       "Rule #8: No witch-hunting.",
+                       "Rule #9: No impersonating.",
+                       "Rule #10: Do not use alts.",
+                       "Rule #11: Do not violate SOINC copyrights.",
+                       "Rule #12: No advertising.",
+                       "Rule #13: Use good judgement."
+                   ])
+                  ):
         """Gets a specified rule."""
         num = re.findall(r'Rule #(\d+)', rule)
         num = int(num[0])
@@ -561,7 +561,6 @@ class MemberCommands(commands.Cog):
             # convert user objects to mentions
             boosters[i] = b.mention
         boosters = ", ".join(boosters)
-        print(boosters)
         role_count = len(server.roles)
         member_count = len(server.members)
         max_members = server.max_members
@@ -648,10 +647,10 @@ class MemberCommands(commands.Cog):
         description = "Returns a summary of a wiki page."
     )
     async def wikisummary(
-        self,
-        ctx,
-        page: Option(str, "The name of the page to return a summary about. Correct caps must be used.", required = True)
-    ):
+                          self,
+                          ctx,
+                          page: Option(str, "The name of the page to return a summary about. Correct caps must be used.", required = True)
+                         ):
         command = await implement_command("summary", page)
         if command == False:
             await ctx.interaction.response.send_message(f"Unfortunately, the `{page}` page does not exist.")
@@ -663,10 +662,10 @@ class MemberCommands(commands.Cog):
         description = "Searches the wiki for a particular page."
     )
     async def wikisearch(
-        self,
-        ctx,
-        term: Option(str, "The term to search for across the wiki.", required = True)
-    ):
+                         self,
+                         ctx,
+                         term: Option(str, "The term to search for across the wiki.", required = True)
+                        ):
         command = await implement_command("search", term)
         if len(command):
             await ctx.interaction.response.send_message("\n".join([f"`{search}`" for search in command]))
@@ -678,10 +677,10 @@ class MemberCommands(commands.Cog):
         description = "Links to a particular wiki page."
     )
     async def wikilink(
-        self,
-        ctx,
-        page: Option(str, "The wiki page to link to. Correct caps must be used.", required = True)
-    ):
+                       self,
+                       ctx,
+                       page: Option(str, "The wiki page to link to. Correct caps must be used.", required = True)
+                      ):
         command = await implement_command("link", page)
         if command == False:
             await ctx.interaction.response.send_message(f"The `{page}` page does not yet exist.")
