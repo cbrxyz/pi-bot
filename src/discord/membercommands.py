@@ -725,9 +725,9 @@ class MemberCommands(commands.Cog):
         description = "Toggles event roles."
     )
     async def events(self,
-        ctx,
-        events: Option(str, "The events to toggle. For example, 'anatomy, astro, wq'.")
-        ):
+                     ctx,
+                     events: Option(str, "The events to toggle. For example, 'anatomy, astro, wq'.")
+                    ):
         """Adds or removes event roles from a user."""
         if len(events) > 100:
             return await ctx.interaction.response.send_message("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
@@ -745,7 +745,6 @@ class MemberCommands(commands.Cog):
         could_not_handle = []
         multi_word_events = []
 
-        print(event_info)
         if type(event_info) == int:
             # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
             return await ctx.interaction.response.send_message("Apologies... refreshing data currently. Try again in a few seconds.")
@@ -768,6 +767,7 @@ class MemberCommands(commands.Cog):
                         added_roles.append(event)
                     for word in words:
                         new_args.remove(word.lower())
+
         for arg in new_args:
             found_event = False
             for event in event_info:
@@ -778,6 +778,7 @@ class MemberCommands(commands.Cog):
                     break
             if not found_event:
                 could_not_handle.append(arg)
+                
         for event in event_names:
             role = discord.utils.get(member.guild.roles, name=event)
             if role in member.roles:
@@ -786,12 +787,14 @@ class MemberCommands(commands.Cog):
             else:
                 await member.add_roles(role)
                 added_roles.append(event)
+
         if len(added_roles) > 0 and len(removed_roles) == 0:
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         elif len(removed_roles) > 0 and len(added_roles) == 0:
             event_res = "Removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         else:
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
+
         await ctx.interaction.response.send_message(event_res)
 
     @discord.commands.slash_command(
