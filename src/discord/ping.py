@@ -1,4 +1,5 @@
 import discord
+import datetime
 from discord.ext import commands
 from discord.commands import Option
 import re
@@ -65,10 +66,24 @@ class PingManager(commands.Cog):
         else:
             return text
 
+    def expire_recent_messages(self) -> None:
+        """
+        Remove all recent messages older than a specified amount of time.
+
+        Currently, this is called whenever a ping PM is sent.
+        """
+        for _, messages in self.recent_messages.items():
+            for message in messages[:]:
+                if (discord.utils.utcnow() - message.created_at) > datetime.timedelta(hours = 3):
+                    messages.remove(message)
+
     async def __ping_pm(self, user_id, pinger, ping_exp, channel, content, jump_url):
         """Allows Pi-Bot to PM a user about a ping."""
         # Get the relevant user to send the alert message to
         user_to_send = self.bot.get_user(user_id)
+
+        # Remove messages from recent_messages that are too older
+        self.expire_recent_messages()
 
         # Create the alert embed
         description = "**One of your pings was mentioned by a user in the Scioly.org Discord server!**"

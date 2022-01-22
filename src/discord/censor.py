@@ -87,9 +87,8 @@ class Censor(commands.Cog):
         await wh.send(content, username = f"{author} (auto-censor)", avatar_url = avatar, allowed_mentions = mention_perms)
         await wh.delete()
 
-        # unless author is staff, replace content for other cogs (allows for staff to then add swears and censored words to pings)
-        if not await is_author_staff(message.author):
-            message.content = content # apply to message to not propogate censored words to other things like commands
+        # Replace content with censored content for other cogs
+        message.content = content # apply to message to not propogate censored words to other things like commands
 
 def setup(bot):
     bot.add_cog(Censor(bot))
