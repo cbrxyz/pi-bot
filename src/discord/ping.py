@@ -211,15 +211,25 @@ class PingManager(commands.Cog):
         ):
         member = ctx.author
         user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
-        user_pings = user['word_pings'] + user['regex_pings']
+        assert isinstance(user, dict)
+
+        word_pings = [{'new': rf'\b({ping})\b', 'original': ping} for ping in user['word_pings']]
+        user_pings = word_pings + user['regex_pings']
         matched = False
         response = ""
+
         for ping in user_pings:
-            if len(re.findall(ping, test, re.I)) > 0:
-                response += (f"Your ping `{ping}` matches `{test}`.")
-                matched = True
+            if isinstance(ping, dict):
+                if len(re.findall(ping['new'], test, re.I)) > 0:
+                    response += (f"Your ping `{ping['original']}` matches `{test}`.\n")
+                    matched = True
+            else:
+                if len(re.findall(ping, test, re.I)) > 0:
+                    response += (f"Your ping `{ping}` matches `{test}`.\n")
+                    matched = True
+
         if not matched:
-            return await ctx.interaction.response.send_message("Your test matched no pings of yours.")
+            return await ctx.interaction.response.send_message(f"`{test}` matched `0` pings.")
         else:
             return await ctx.interaction.response.send_message(response)
 
@@ -230,8 +240,11 @@ class PingManager(commands.Cog):
     async def pinglist(self, ctx):
         member = ctx.author
         user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
+        
+        # User has no pings
         if user == None or len(user['word_pings'] + user['regex_pings']) == 0:
             return await ctx.interaction.response.send_message("You have no registered pings.")
+
         else:
             response = ""
             if len(user['regex_pings']) > 0:
@@ -250,31 +263,45 @@ class PingManager(commands.Cog):
         ctx,
         word: Option(str, "The word to remove a ping for. Or use 'all' to remove all pings.", required = True)
         ):
+        # Get the user's info
         member = ctx.author
         user = next((u for u in src.discord.globals.PING_INFO if u['user_id'] == member.id), None)
+
+        # The user has no pings
         if user == None or len(user['word_pings'] + user['regex_pings']) == 0:
             return await ctx.interaction.response.send_message("You have no registered pings.")
+
+        # Remove all of user's pings
         if word == "all":
             user['word_pings'] = []
             user['regex_pings'] = []
             await update("data", "pings", user['_id'], {"$pull": {"word_pings": {}, "regex_pings": {}}})
             return await ctx.interaction.response.send_message("I removed all of your pings.")
+
+        # Attempt to remove a word ping
         if word in user['word_pings']:
             user['word_pings'].remove(word)
             await update("data", "pings", user['_id'], {"$pull": {"word_pings": word}})
             return await ctx.interaction.response.send_message(f"I removed the `{word}` ping you were referencing.")
+
+        # Attempt to remove a regex ping
         elif word in user['regex_pings']:
             user['regex_pings'].remove(word)
             await update("data", "pings", user['_id'], {"$pull": {"regex_pings": word}})
             return await ctx.interaction.response.send_message(f"I removed the `{word}` RegEx ping you were referencing.")
+
+        # Attempt to remove a word ping with extra formatting
         elif f"\\b({word})\\b" in user['word_pings']:
             user['word_pings'].remove(f"\\e({word})\\b")
             await update("data", "pings", user['_id'], {"$pull": {"word_pings": f"\\e({word})\\b"}})
             return await ctx.interaction.response.send_message(f"I removed the `{word}` ping you were referencing.")
+
+        # Attempt to remove a word ping with alternate extra formatting
         elif f"({word})" in user['word_pings']:
             user['word_pings'].remove(f"({word})")
             await update("data", "pings", user['_id'], {"$pull": {"word_pings": f"({word})"}})
             return await ctx.interaction.response.send_message(f"I removed the `{word}` RegEx ping you were referencing.")
+
         else:
             return await ctx.interaction.response.send_message(f"I can't find the **`{word}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `/pinglist`.")
 
