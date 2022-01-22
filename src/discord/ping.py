@@ -26,6 +26,10 @@ class PingManager(commands.Cog):
         if message.author.bot:
             return
 
+        # Do not ping for messages from webhooks
+        if message.author.discriminator == "0000":
+            return
+
         # Do not ping if the message is coming from the botspam channel
         botspam_channel = discord.utils.get(message.guild.text_channels, name = CHANNEL_BOTSPAM)
         if message.channel == botspam_channel:
@@ -41,24 +45,48 @@ class PingManager(commands.Cog):
 
         # Send a ping alert to the relevant users
         for user in src.discord.globals.PING_INFO:
+            
+            # Do not ping the author of the message
             if user['user_id'] == message.author.id:
                 continue
+
             pings = [rf'\b({ping})\b' for ping in user['word_pings']]
             pings.extend(user['regex_pings'])
-            for ping in pings:
-                if len(re.findall(ping, message.content, re.I)) > 0 and message.author.discriminator != "0000":
-                    # Do not send a ping if the user is mentioned
-                    user_is_mentioned = user['user_id'] in [m.id for m in message.mentions]
-                    if user['user_id'] in [m.id for m in message.channel.members] and ('dnd' not in user or user['dnd'] != True) and not user_is_mentioned:
-                        # Check that the user can actually see the message
-                        await self.__ping_pm(user['user_id'], message.author, ping, message.channel, message.content, message.jump_url)
 
-    def format_text(self, text, length, expression):
+            # Do not ping any users mentioned in the message
+            user_is_mentioned = user['user_id'] in [m.id for m in message.mentions]
+            if user_is_mentioned:
+                continue
+
+            # Do not ping if the user cannot see the channel or has DND enabled
+            user_can_see_channel = user['user_id'] in [m.id for m in message.channel.members]
+            user_in_dnd = 'dnd' in user and user['dnd']
+            if not user_can_see_channel or user_in_dnd:
+                continue
+
+            # Count the number of pings in the message
+            ping_count = 0
+            for ping in pings:
+                if len(re.findall(ping, message.content, re.I)):
+                    ping_count += 1
+
+            if ping_count:
+                user_obj = self.bot.get_user(user['user_id'])
+                await self.send_ping_pm(user_obj, message, ping_count)
+
+    def format_text(self, text, length, user):
         # Attempt to highlight the ping expression in the text
-        try:
-            text = re.sub(rf'{expression}', r'**\1**', text, flags=re.I)
-        except Exception as e:
-            print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
+        user_ping_obj = [user_obj for user_obj in src.discord.globals.PING_INFO if user_obj['user_id'] == user.id][0]
+        assert isinstance(user_ping_obj, dict)
+
+        pings = [rf'\b({ping})\b' for ping in user_ping_obj['word_pings']]
+        pings.extend(user_ping_obj['regex_pings'])
+
+        for expression in pings:
+            try:
+                text = re.sub(rf'{expression}', r'**\1**', text, flags=re.I)
+            except Exception as e:
+                print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
 
         # Prevent the text from being too long
         if len(text) > length:
@@ -77,30 +105,33 @@ class PingManager(commands.Cog):
                 if (discord.utils.utcnow() - message.created_at) > datetime.timedelta(hours = 3):
                     messages.remove(message)
 
-    async def __ping_pm(self, user_id, pinger, ping_exp, channel, content, jump_url):
-        """Allows Pi-Bot to PM a user about a ping."""
-        # Get the relevant user to send the alert message to
-        user_to_send = self.bot.get_user(user_id)
-
-        # Remove messages from recent_messages that are too older
+    async def send_ping_pm(self, user: discord.User, message: discord.Message, ping_count: int) -> None:
+        """
+        Sends a direct message to the user about a message containing a relevant ping expression.
+        """
+        # Expire recent messages
         self.expire_recent_messages()
 
         # Create the alert embed
-        description = "**One of your pings was mentioned by a user in the Scioly.org Discord server!**"
-        description = description + "\n\n" + "\n".join([f"{message.author.mention}: {self.format_text(message.content, 100, ping_exp)}" for message in self.recent_messages[channel.id]])
-        description = description + "\n\n" + f"Come check out the conversation! [Click here]({jump_url}) to be teleported to the message!"
+        description = ""
+        if ping_count == 1:
+            description = "**One of your pings was mentioned by a user in the Scioly.org Discord server!**"
+        elif ping_count > 1:
+            description = "**Several of your pings were mentioned by a user in the Scioly.org Discord server!**"
+            
+        description = description + "\n\n" + "\n".join([f"{message.author.mention}: {self.format_text(message.content, 100, user)}" for message in self.recent_messages[message.channel.id]])
+        description = description + "\n\n" + f"Come check out the conversation! [Click here]({message.jump_url}) to be teleported to the message!"
         embed = discord.Embed(
             title = ":bellhop: Ping Alert!",
             color = discord.Color.brand_red(),
             description = description
         )
-        embed.set_thumbnail(url = pinger.display_avatar.url)
+        embed.set_thumbnail(url = message.author.display_avatar.url)
 
-        ping_exp = ping_exp.replace(r"\b(", "").replace(r")\b", "")
-        embed.set_footer(text = f"If you don't want this ping anymore, type /pingremove {ping_exp} in the Scioly.org Discord server!")
+        embed.set_footer(text = f"If you don't want this ping anymore, use /pingremove in the Scioly.org Discord server!")
 
         # Send the user an alert message
-        await user_to_send.send(embed = embed)
+        await user.send(embed = embed)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
