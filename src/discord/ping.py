@@ -74,8 +74,10 @@ class PingManager(commands.Cog):
                 user_obj = self.bot.get_user(user['user_id'])
                 await self.send_ping_pm(user_obj, message, ping_count)
 
-    def format_text(self, text, length, user):
-        # Attempt to highlight the ping expression in the text
+    def format_text(self, text: str, length: int, user: discord.User) -> str:
+        """
+        Highlights ping expressions in the message and shorten long messages with an ellipsis.
+        """
         user_ping_obj = [user_obj for user_obj in src.discord.globals.PING_INFO if user_obj['user_id'] == user.id][0]
         assert isinstance(user_ping_obj, dict)
 
@@ -133,14 +135,23 @@ class PingManager(commands.Cog):
         # Send the user an alert message
         await user.send(embed = embed)
 
-    @discord.commands.slash_command(
+    ping_group = discord.commands.SlashCommandGroup(
+        "ping",
+        "Manage your pings.",
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Toggles 'Do Not Disturb' mode for pings."
+        permissions = [
+            discord.commands.CommandPermission("Member", 1, True)
+        ]
+    )
+
+    @ping_group.command(
+        description = "Toggles 'Do Not Disturb' mode."
     )
     async def dnd(self, ctx):
-        member = ctx.author.id
-        if any([True for u in PING_INFO if u['id'] == member]):
-            user = next((u for u in PING_INFO if u['id'] == member), None)
+        user = [u for u in src.discord.globals.PING_INFO if u['user_id'] == ctx.author.id]
+
+        if len(user):
+            user = user[0]
             if 'dnd' not in user:
                 user['dnd'] = True
                 return await ctx.interaction.response.send_message("Enabled DND mode for pings.")
@@ -153,9 +164,9 @@ class PingManager(commands.Cog):
         else:
             return await ctx.interaction.response.send_message("You can't enter DND mode without any pings!")
 
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Adds a new word to ping on."
+    @ping_group.command(
+        name = "add",
+        description = "Adds a new ping to notify you about."
     )
     async def pingadd(self,
         ctx,
@@ -190,9 +201,9 @@ class PingManager(commands.Cog):
             await insert("data", "pings", new_user_dict)
         return await ctx.interaction.response.send_message(f"Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be responsible with the pinging feature. Using pings senselessly (such as pinging for \"the\" or \"a\") may result in you being temporarily disallowed from using or receiving pings.")
 
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Tests your pings against a test phrase."
+    @ping_group.command(
+        name = "test",
+        description = "Tests your pings on an example message."
     )
     async def pingtest(self,
         ctx,
@@ -212,9 +223,9 @@ class PingManager(commands.Cog):
         else:
             return await ctx.interaction.response.send_message(response)
 
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Lists all of your pings."
+    @ping_group.command(
+        name = "list",
+        description = "Lists all of your registered pings."
     )
     async def pinglist(self, ctx):
         member = ctx.author
@@ -231,9 +242,9 @@ class PingManager(commands.Cog):
                 response = "You have no registered pings."
             await ctx.interaction.response.send_message(response)
 
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Removes a ping term."
+    @ping_group.command(
+        name = "remove",
+        description = "Removes a ping from your list of registered pings."
     )
     async def pingremove(self,
         ctx,

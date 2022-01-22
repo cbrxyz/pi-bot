@@ -4,7 +4,7 @@ import json
 import discord
 import datetime
 import asyncio
-from discord.commands.commands import slash_command
+from discord.commands import slash_command
 from discord.errors import NoEntryPointError
 
 from discord.ext import commands
