@@ -4,7 +4,7 @@ import json
 from discord.ext import commands
 from discord.flags import MemberCacheFlags
 import src.discord.globals
-from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID
+from src.discord.globals import CENSOR, DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, PI_BOT_IDS, ROLE_MUTED, SERVER_ID, CHANNEL_CLOSED_REPORTS
 import re
 
 from typing import Union
@@ -308,6 +308,27 @@ class Reporter(commands.Cog):
         )
         # TODO Fix report ID generation
         await reports_channel.send(embed = embed, view = InvitationalArchive(tournament_obj, channel, role, 123))
+
+    async def create_cron_unban_auto_notice(self, user: discord.User, is_present: bool, already_unbanned: bool = None) -> None:
+        """
+        Creates a notice (as a closed report) that a user was automatically unbanned through CRON.
+
+        :param user: The user to make the auto notice about.
+        :param is_present: Whether the user was present in the server when the unbanning occurred.
+        """
+        guild = self.bot.get_guild(SERVER_ID)
+        closed_reports_channel = discord.utils.get(guild.text_channels, name = CHANNEL_CLOSED_REPORTS)
+
+        # Type checking
+        assert isinstance(guild, discord.Guild)
+        assert isinstance(closed_reports_channel, discord.TextChannel)
+
+        if is_present:
+            await closed_reports_channel.send(f"**Attempt to automatically unban user by CRON.** A previous timed ban set on {user.mention} expired, therefore CRON attempted to unban the user. However, the user is already in the server, and therefore the user has already been unbanned by a previous staff member. The user is now free to rejoin the server.")
+        elif not is_present and not already_unbanned:
+            await closed_reports_channel.send(f"**User was automatically unbanned by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON has unbanned the user. The user is free to join the server at any time.")
+        elif not is_present and already_unbanned:
+            await closed_reports_channel.send(f"**Attempt to automatically unban user by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON attempted to unban the user. However, the user was already unbanned. The user remains free to join the server at any time.")
 
 def setup(bot):
     bot.add_cog(Reporter(bot))

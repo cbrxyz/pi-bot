@@ -53,6 +53,12 @@ class CronTasks(commands.Cog):
         """
         await insert('data', 'cron', item_dict)
 
+    async def delete_from_cron(self, doc_id: str) -> None:
+        """
+        Deletes a CRON task from the CRON list.
+        """
+        await delete('data', 'cron', doc_id)
+
     async def schedule_unban(self, user: discord.User, time: datetime.datetime) -> None:
         """
         Schedules for a particular Discord user to be unbanned at a particular time.
@@ -116,18 +122,19 @@ class CronTasks(commands.Cog):
         print("Refreshed member count.")
 
     @tasks.loop(minutes=1)
-    async def cron(self):
-        print("Executed cron.")
+    async def cron(self) -> None:
+        """
+        The main CRON handler, running every minute. On every execution of the function, all CRON tasks are fetched and are evaluated to check if they are old and action needs to be taken.
+        """
+        # Get the relevant tasks
         cron_list = await get_cron()
+
         for task in cron_list:
-            if datetime.datetime.utcnow() > task['time']:
-                # The date has passed, now do
+            # If the date has passed, execute task
+            if discord.utils.utcnow() > task['time']:
                 try:
                     if task['type'] == "UNBAN":
-                        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-                        member = await self.bot.fetch_user(task['user'])
-                        await server.unban(member)
-                        print(f"Unbanned user ID: {iden}")
+                        await self.cron_handle_unban(task)
                     elif task['type'] == "UNMUTE":
                         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
                         member = server.get_member(task['user'])
@@ -146,6 +153,35 @@ class CronTasks(commands.Cog):
                 except Exception as _:
                     reporter_cog = self.bot.get_cog('Reporter')
                     await reporter_cog.create_cron_task_report(task)
+
+    async def cron_handle_unban(self, task: dict):
+        """
+        Handles serving CRON tasks with the type of 'UNBAN'.
+        """
+        # Get the necessary resources
+        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        reporter_cog = self.bot.get_cog("Reporter")
+
+        # Type checking
+        assert isinstance(server, discord.Guild)
+
+        # Attempt to unban user
+        member = await self.bot.fetch_user(task['user'])
+        if member in server.members:
+            # User is still in server, thus already unbanned
+            await reporter_cog.create_cron_unban_auto_notice(member, is_present = True)
+        else:
+            # User is not in server, thus unban the
+            already_unbanned = False
+            try:
+                await server.unban(member)
+            except:
+                # The unbanning failed (likely the user was already unbanned)
+                already_unbanned = True
+            await reporter_cog.create_cron_unban_auto_notice(member, is_present = False, already_unbanned = already_unbanned)
+
+        # Remove cron task.
+        await self.delete_from_cron(task['_id'])
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):
