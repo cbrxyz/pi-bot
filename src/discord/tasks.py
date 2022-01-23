@@ -12,6 +12,7 @@ from src.wiki.stylist import prettify_templates
 class CronTasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        print("Initialized Tasks cog.")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -31,8 +32,6 @@ class CronTasks(commands.Cog):
         self.change_bot_status.start()
         self.update_member_count.start()
 
-        print("Tasks cog loaded")
-
     def cog_unload(self):
         self.cron.cancel()
         self.change_bot_status.cancel()
@@ -48,13 +47,16 @@ class CronTasks(commands.Cog):
         src.discord.globals.CENSOR = await get_censor()
         print("Fetched previous variables.")
 
-    async def add_to_cron(self, item_dict: dict):
+    async def add_to_cron(self, item_dict: dict) -> None:
         """
         Adds the given document to the CRON list.
         """
         await insert('data', 'cron', item_dict)
 
-    async def schedule_unban(self, user: discord.User, time: datetime.datetime):
+    async def schedule_unban(self, user: discord.User, time: datetime.datetime) -> None:
+        """
+        Schedules for a particular Discord user to be unbanned at a particular time.
+        """
         item_dict = {
             'type': "UNBAN",
             'user': user.id,
@@ -63,7 +65,10 @@ class CronTasks(commands.Cog):
         }
         await self.add_to_cron(item_dict)
 
-    async def schedule_unmute(self, user: discord.User, time: datetime.datetime):
+    async def schedule_unmute(self, user: discord.User, time: datetime.datetime) -> None:
+        """
+        Schedules for a particular Discord user to be unmuted at a particular time.
+        """
         item_dict = {
             'type': "UNMUTE",
             'user': user.id,
@@ -72,7 +77,10 @@ class CronTasks(commands.Cog):
         }
         await self.add_to_cron(item_dict)
 
-    async def schedule_unselfmute(self, user: discord.User, time: datetime.datetime):
+    async def schedule_unselfmute(self, user: discord.User, time: datetime.datetime) -> None:
+        """
+        Schedules for a particular Discord user to be un-selfmuted at a particular time.
+        """
         item_dict = {
             'type': "UNSELFMUTE",
             'user': user.id,
@@ -83,16 +91,28 @@ class CronTasks(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def update_member_count(self):
-        """Updates the member count shown on hidden VC"""
+        """
+        Autonomous task which updates the member count shown on a voice channel hidden to staff.
+        """
+        # Get the voice channel
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         channel_prefix = "Members"
         vc = discord.utils.find(lambda c: channel_prefix in c.name, guild.voice_channels)
-        mem_count = guild.member_count
-        joined_today = len([m for m in guild.members if m.joined_at.date() == datetime.datetime.today().date()])
         left_channel = discord.utils.get(guild.text_channels, name=src.discord.globals.CHANNEL_LEAVE)
+
+        # Type checking
+        assert isinstance(guild, discord.Guild)
+        assert isinstance(vc, discord.VoiceChannel)
+        assert isinstance(left_channel, discord.TextChannel)
+
+        # Get relevant stats
+        member_count = guild.member_count
+        joined_today = len([m for m in guild.members if isinstance(m.joined_at, datetime.datetime) and m.joined_at.date() == discord.utils.utcnow().date()])
         left_messages = await left_channel.history(limit=200).flatten()
-        left_today = len([m for m in left_messages if m.created_at.date() == datetime.datetime.today().date()])
-        await vc.edit(name=f"{mem_count} Members (+{joined_today}/-{left_today})")
+        left_today = len([m for m in left_messages if m.created_at.date() == discord.utils.utcnow().date()])
+
+        # Edit the voice channel
+        await vc.edit(name=f"{member_count} Members (+{joined_today}/-{left_today})")
         print("Refreshed member count.")
 
     @tasks.loop(minutes=1)
