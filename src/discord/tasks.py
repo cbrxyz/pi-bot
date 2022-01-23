@@ -136,12 +136,7 @@ class CronTasks(commands.Cog):
                     if task['type'] == "UNBAN":
                         await self.cron_handle_unban(task)
                     elif task['type'] == "UNMUTE":
-                        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-                        member = server.get_member(task['user'])
-                        role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_MUTED)
-                        self_role = discord.utils.get(server.roles, name=src.discord.globals.ROLE_SELFMUTE)
-                        await member.remove_roles(role, self_role)
-                        print(f"Unmuted user ID: {iden}")
+                        await self.cron_handle_unmute(task)
                     elif task['type'] == "UNSTEALFISHBAN":
                         src.discord.globals.STEALFISH_BAN.remove(task['user'])
                         print(f"Un-stealfished user ID: {iden}")
@@ -179,6 +174,32 @@ class CronTasks(commands.Cog):
                 # The unbanning failed (likely the user was already unbanned)
                 already_unbanned = True
             await reporter_cog.create_cron_unban_auto_notice(member, is_present = False, already_unbanned = already_unbanned)
+
+        # Remove cron task.
+        await self.delete_from_cron(task['_id'])
+
+    async def cron_handle_unmute(self, task: dict):
+        """
+        Handles serving CRON tasks with the type of 'UNMUTE'.
+        """
+        # Get the necessary resources
+        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        reporter_cog = self.bot.get_cog("Reporter")
+        muted_role = discord.utils.get(server.roles, name = src.discord.globals.ROLE_MUTED)
+
+        # Type checking
+        assert isinstance(server, discord.Guild)
+        assert isinstance(muted_role, discord.Role)
+
+        # Attempt to unmute user
+        member = server.get_member(task['user'])
+        if member in server.members:
+            # User is still in server, thus can be unmuted
+            await member.remove_roles(muted_role)
+            await reporter_cog.create_cron_unmute_auto_notice(member, is_present = True)
+        else:
+            # User is not in server, thus no unmute can occur
+            await reporter_cog.create_cron_unmute_auto_notice(member, is_present = False)
 
         # Remove cron task.
         await self.delete_from_cron(task['_id'])

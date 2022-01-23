@@ -330,5 +330,24 @@ class Reporter(commands.Cog):
         elif not is_present and already_unbanned:
             await closed_reports_channel.send(f"**Attempt to automatically unban user by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON attempted to unban the user. However, the user was already unbanned. The user remains free to join the server at any time.")
 
+    async def create_cron_unmute_auto_notice(self, user: discord.User, is_present: bool) -> None:
+        """
+        Creates a notice (as a closed report) that a user was automatically unmuted through CRON.
+
+        :param user: The user to make the auto notice about.
+        :param is_present: Whether the user was present in the server when the unmuting occurred.
+        """
+        guild = self.bot.get_guild(SERVER_ID)
+        closed_reports_channel = discord.utils.get(guild.text_channels, name = CHANNEL_CLOSED_REPORTS)
+
+        # Type checking
+        assert isinstance(guild, discord.Guild)
+        assert isinstance(closed_reports_channel, discord.TextChannel)
+
+        if is_present:
+            await closed_reports_channel.send(f"**User was automatically unmuted by CRON.** A previous timed mute set on {user.mention} expired, therefore CRON unmuted the user. The user is now free to communicate in the server.")
+        elif not is_present:
+            await closed_reports_channel.send(f"**Attempt to automatically unmute user by CRON.** A previous timed mute on {str(user)} expired, and therefore, CRON attempted to unmute the user. However, because the user is no longer present in the server, no unmute could occur.")
+
 def setup(bot):
     bot.add_cog(Reporter(bot))
