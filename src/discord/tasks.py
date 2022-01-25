@@ -126,6 +126,7 @@ class CronTasks(commands.Cog):
         """
         The main CRON handler, running every minute. On every execution of the function, all CRON tasks are fetched and are evaluated to check if they are old and action needs to be taken.
         """
+        print("Executing CRON...")
         # Get the relevant tasks
         cron_list = await get_cron()
 
@@ -207,7 +208,8 @@ class CronTasks(commands.Cog):
         Handles serving CRON tasks with the type of 'REMOVE_STATUS'.
         """
         # Attempt to remove status
-        src.discord.globals.SETTINGS['change_bot_status_type'] = None # reset local settings
+        src.discord.globals.SETTINGS['custom_bot_status_type'] = None # reset local settings
+        src.discord.globals.SETTINGS['custom_bot_status_text'] = None # reset local settings
         await update('data', 'settings', src.discord.globals.SETTINGS['_id'], { '$set': {'custom_bot_status_type': None, 'custom_bot_status_text': None}}) # update cloud settings
         self.change_bot_status.restart() # update bot now
 
@@ -253,8 +255,6 @@ class CronTasks(commands.Cog):
                 'type': src.discord.globals.SETTINGS['custom_bot_status_type'],
                 'text': src.discord.globals.SETTINGS['custom_bot_status_text'],
             }
-
-        print(bot_status)
 
         if bot_status["type"] == "playing":
             await self.bot.change_presence(activity=discord.Game(name=bot_status["text"]))

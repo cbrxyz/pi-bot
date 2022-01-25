@@ -969,6 +969,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
         }
 
+        # Change settings
+        src.discord.globals.SETTINGS['custom_bot_status_text'] = message
+        src.discord.globals.SETTINGS['custom_bot_status_type'] = activity
+        await update("data", "settings", src.discord.globals.SETTINGS['_id'], 
+                     {"$set": {'custom_bot_status_text': message, 
+                               'custom_bot_status_type': activity}})
+
+        # Insert time length into CRON
         await insert("data", "cron", {
             "type": "REMOVE_STATUS",
             "time": times[length]
