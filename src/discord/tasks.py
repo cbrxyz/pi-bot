@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 import src.discord.globals
 
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, insert, delete
+from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, insert, update, delete
 from src.wiki.stylist import prettify_templates
 
 class CronTasks(commands.Cog):
@@ -137,14 +137,12 @@ class CronTasks(commands.Cog):
                         await self.cron_handle_unban(task)
                     elif task['type'] == "UNMUTE":
                         await self.cron_handle_unmute(task)
-                    elif task['type'] == "UNSTEALFISHBAN":
-                        src.discord.globals.STEALFISH_BAN.remove(task['user'])
-                        print(f"Un-stealfished user ID: {iden}")
+                    elif task['type'] == "REMOVE_STATUS":
+                        await self.cron_handle_remove_status(task)
                     else:
                         print("ERROR:")
                         reporter_cog = self.bot.get_cog('Reporter')
                         await reporter_cog.create_cron_task_report(task)
-                    await delete("data", "cron", task["_id"])
                 except Exception as _:
                     reporter_cog = self.bot.get_cog('Reporter')
                     await reporter_cog.create_cron_task_report(task)
@@ -204,46 +202,67 @@ class CronTasks(commands.Cog):
         # Remove cron task.
         await self.delete_from_cron(task['_id'])
 
+    async def cron_handle_remove_status(self, task: dict):
+        """
+        Handles serving CRON tasks with the type of 'REMOVE_STATUS'.
+        """
+        # Attempt to remove status
+        src.discord.globals.SETTINGS['change_bot_status_type'] = None # reset local settings
+        await update('data', 'settings', src.discord.globals.SETTINGS['_id'], { '$set': {'custom_bot_status_type': None, 'custom_bot_status_text': None}}) # update cloud settings
+        self.change_bot_status.restart() # update bot now
+
+        # Remove cron task.
+        await self.delete_from_cron(task['_id'])
+
     @tasks.loop(hours=1)
     async def change_bot_status(self):
         statuses = [
-            {"type": "playing", "message": "Game On"},
-            {"type": "listening", "message": "my SoM instrument"},
-            {"type": "playing", "message": "with Pi-Bot Beta"},
-            {"type": "playing", "message": "with my gravity vehicle"},
-            {"type": "watching", "message": "the WS trials"},
-            {"type": "watching", "message": "birbs"},
-            {"type": "watching", "message": "2018 Nationals again"},
-            {"type": "watching", "message": "the sparkly stars"},
-            {"type": "watching", "message": "over the week"},
-            {"type": "watching", "message": "for tourney results"},
-            {"type": "listening", "message": "birb sounds"},
-            {"type": "playing", "message": "with proteins"},
-            {"type": "playing", "message": "with my detector"},
-            {"type": "playing", "message": "Minecraft"},
-            {"type": "playing", "message": "with circuits"},
-            {"type": "watching", "message": "my PPP fall"},
-            {"type": "playing", "message": "a major scale"},
-            {"type": "listening", "message": "clinking medals"},
-            {"type": "watching", "message": "the world learn"},
-            {"type": "watching", "message": "SciOly grow"},
-            {"type": "watching", "message": "tutorials"},
-            {"type": "playing", "message": "with wiki templates"},
-            {"type": "playing", "message": "the flute"},
-            {"type": "watching", "message": "bear eat users"},
-            {"type": "watching", "message": "xkcd"},
-            {"type": "playing", "message": "with wiki templates"},
-            {"type": "watching", "message": "Jmol tutorials"},
+            {"type": "playing", "text": "Game On"},
+            {"type": "listening", "text": "my SoM instrument"},
+            {"type": "playing", "text": "with Pi-Bot Beta"},
+            {"type": "playing", "text": "with my gravity vehicle"},
+            {"type": "watching", "text": "the WS trials"},
+            {"type": "watching", "text": "birbs"},
+            {"type": "watching", "text": "2018 Nationals again"},
+            {"type": "watching", "text": "the sparkly stars"},
+            {"type": "watching", "text": "over the week"},
+            {"type": "watching", "text": "for tourney results"},
+            {"type": "listening", "text": "birb sounds"},
+            {"type": "playing", "text": "with proteins"},
+            {"type": "playing", "text": "with my detector"},
+            {"type": "playing", "text": "Minecraft"},
+            {"type": "playing", "text": "with circuits"},
+            {"type": "watching", "text": "my PPP fall"},
+            {"type": "playing", "text": "a major scale"},
+            {"type": "listening", "text": "clinking medals"},
+            {"type": "watching", "text": "the world learn"},
+            {"type": "watching", "text": "SciOly grow"},
+            {"type": "watching", "text": "tutorials"},
+            {"type": "playing", "text": "with wiki templates"},
+            {"type": "playing", "text": "the flute"},
+            {"type": "watching", "text": "bear eat users"},
+            {"type": "watching", "text": "xkcd"},
+            {"type": "playing", "text": "with wiki templates"},
+            {"type": "watching", "text": "Jmol tutorials"},
         ]
+        bot_status = None
         if src.discord.globals.SETTINGS['custom_bot_status_type'] == None:
-            botStatus = random.choice(statuses)
-            if botStatus["type"] == "playing":
-                await self.bot.change_presence(activity=discord.Game(name=botStatus["message"]))
-            elif botStatus["type"] == "listening":
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=botStatus["message"]))
-            elif botStatus["type"] == "watching":
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=botStatus["message"]))
-            print("Changed the bot's status.")
+            bot_status = random.choice(statuses)
+        else:
+            bot_status = {
+                'type': src.discord.globals.SETTINGS['custom_bot_status_type'],
+                'text': src.discord.globals.SETTINGS['custom_bot_status_text'],
+            }
+
+        print(bot_status)
+
+        if bot_status["type"] == "playing":
+            await self.bot.change_presence(activity=discord.Game(name=bot_status["text"]))
+        elif bot_status["type"] == "listening":
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=bot_status["text"]))
+        elif bot_status["type"] == "watching":
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=bot_status["text"]))
+        print("Changed the bot's status.")
 
 def setup(bot):
     bot.add_cog(CronTasks(bot))
