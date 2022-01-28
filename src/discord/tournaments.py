@@ -5,6 +5,9 @@ from src.mongo.mongo import get_invitationals, update_many
 
 class Tournament:
 
+    official_name: str
+    voters: list
+
     def __init__(
             self,
             objects
@@ -33,11 +36,14 @@ class AllTournamentsView(discord.ui.View):
     async def toggle(self, _: discord.ui.Button, interaction: discord.Interaction):
         # Get the relevant member asking to toggle all tournaments
         member = interaction.user
+        guild = interaction.guild
         assert isinstance(member, discord.Member)
+        assert isinstance(guild, discord.Guild)
 
-        all_tournaments_role = discord.utils.get(interaction.guild.roles, name = ROLE_AT)
+        all_tournaments_role = discord.utils.get(guild.roles, name = ROLE_AT)
         assert isinstance(all_tournaments_role, discord.Role)
 
+        # Add/remove the role from the user
         if all_tournaments_role in member.roles:
             await member.remove_roles(all_tournaments_role)
             await interaction.response.send_message(content = "I have removed your `All Tournaments` role!", ephemeral = True)
@@ -71,23 +77,34 @@ class TournamentDropdown(discord.ui.Select):
         self.tournaments = month_tournaments
 
     async def callback(self, interaction: discord.Interaction):
+        # Type checking
         member = interaction.user
+        assert isinstance(member, discord.Member)
+
         server = member.guild
+        assert isinstance(server, discord.Guild)
+
         if not self.voting:
             # If this dropdown isn't being used for voting
             for value in self.values:
-                print(value, 1)
+                # For each tournament selected
                 role = discord.utils.get(server.roles, name=value)
+                assert isinstance(role, discord.Role)
+
                 if role in member.roles:
                     await member.remove_roles(role)
+                    await interaction.response.send_message(f"You have been removed from the `{value}` tournament channel.", ephemeral = True)
                 else:
                     await member.add_roles(role)
+                    await interaction.response.send_message(f"You have been added to the `{value}` tournament channel.", ephemeral = True)
+
         else:
             # This dropdown is being used for voting
             need_to_update = []
             already_voted_for = []
+
             for value in self.values:
-                print(value)
+                # For each tournament selected
                 tournament = discord.utils.get(self.tournaments, official_name = value)
                 if member.id in tournament.voters:
                     # This user has already voted for this tournament.
@@ -96,15 +113,18 @@ class TournamentDropdown(discord.ui.Select):
                     # This user has not already voted for this tournament.
                     tournament.voters.append(member.id)
                     need_to_update.append(tournament)
+
             if len(need_to_update) > 0:
                 # Some docs need to be updated
                 docs_to_update = [t._properties for t in need_to_update]
                 await update_many("data", "invitationals", docs_to_update, {"$push": {"voters": member.id}})
+
             result_string = ""
             for tourney in need_to_update:
                 result_string += f"`{tourney.official_name}` - I added your vote! This tourney now has {len(tourney.voters)} votes!\n"
             for tourney in already_voted_for:
                 result_string += f"`{tourney.official_name}` - You already voted for this channel! This channel has {len(tourney.voters)} votes!\n"
+
             result_string = result_string[:-1] # Delete last newline character
             await interaction.response.send_message(result_string, ephemeral = True)
 
@@ -130,7 +150,7 @@ async def update_tournament_list(bot, rename_dict = {}):
     a = discord.utils.get(server.roles, name=ROLE_AD)
     all_tournaments_role = discord.utils.get(server.roles, name=ROLE_AT)
     open_soon_list = ""
-    now = datetime.datetime.now()
+    now = discord.utils.utcnow()
     if 'channels' in rename_dict:
         for item in rename_dict['channels'].items():
             ch = discord.utils.get(server.text_channels, name = item[0])
