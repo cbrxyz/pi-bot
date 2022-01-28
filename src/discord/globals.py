@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import datetime
+from src.discord.tournaments import INVITATIONAL_INFO
 
 from src.mongo.mongo import update
 
@@ -111,7 +112,7 @@ fish_now = 0
 CENSOR = {}
 EVENT_INFO = 0
 PING_INFO = []
-TOURNAMENT_INFO = []
+INVITATIONAL_INFO = []
 REPORTS = []
 TAGS = []
 CURRENT_WIKI_PAGE = None

@@ -19,7 +19,7 @@ import pytz
 import webcolors
 
 import src.discord.globals
-from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, EMOJI_GUILDS, TAGS, EVENT_INFO
+from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, INVITATIONAL_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, EMOJI_GUILDS, TAGS, EVENT_INFO
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM, CHANNEL_TOURNAMENTS
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
@@ -29,11 +29,13 @@ from bot import listen_for_response
 from src.wiki.mosteditstable import run_table
 from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete
 
+from src.discord.views import YesNo
+
 import matplotlib.pyplot as plt
 
 from typing import Type
 
-from src.discord.tournaments import update_tournament_list
+from src.discord.tournaments import INVITATIONAL_INFO, update_tournament_list
 
 class Confirm(discord.ui.View):
     def __init__(self, author, cancel_response):
@@ -672,7 +674,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 # Make the channel invisible to normal members
                 await new_vc.set_permissions(server.default_role, view_channel=False)
                 at = discord.utils.get(server.roles, name=ROLE_AT)
-                for t in TOURNAMENT_INFO:
+                for t in INVITATIONAL_INFO:
                     if ctx.channel.name == t[1]:
                         tourney_role = discord.utils.get(server.roles, name=t[0])
                         await new_vc.set_permissions(tourney_role, view_channel=True)
@@ -881,7 +883,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     async def archive(self, ctx):
         commandchecks.is_staff_from_ctx(ctx)
 
-        tournament = [t for t in TOURNAMENT_INFO if t[1] == ctx.channel.name]
+        tournament = [t for t in INVITATIONAL_INFO if t[1] == ctx.channel.name]
         bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
         archive_cat = discord.utils.get(ctx.guild.categories, name = CATEGORY_ARCHIVE)
         tournament_name, tournament_formal = None, None
@@ -972,8 +974,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         # Change settings
         src.discord.globals.SETTINGS['custom_bot_status_text'] = message
         src.discord.globals.SETTINGS['custom_bot_status_type'] = activity
-        await update("data", "settings", src.discord.globals.SETTINGS['_id'], 
-                     {"$set": {'custom_bot_status_text': message, 
+        await update("data", "settings", src.discord.globals.SETTINGS['_id'],
+                     {"$set": {'custom_bot_status_text': message,
                                'custom_bot_status_type': activity}})
 
         # Insert time length into CRON

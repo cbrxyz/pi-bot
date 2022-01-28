@@ -1,6 +1,5 @@
 import discord
-from src.discord.globals import TOURNAMENT_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT, CHANNEL_COMPETITIONS
-import datetime
+from src.discord.globals import INVITATIONAL_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT, CHANNEL_COMPETITIONS
 from src.mongo.mongo import get_invitationals, update_many
 
 class Tournament:
@@ -113,18 +112,21 @@ class TournamentDropdown(discord.ui.Select):
                     # This user has not already voted for this tournament.
                     tournament.voters.append(member.id)
                     need_to_update.append(tournament)
-
+    
+            # Update invitationals DB
             if len(need_to_update) > 0:
                 # Some docs need to be updated
                 docs_to_update = [t._properties for t in need_to_update]
                 await update_many("data", "invitationals", docs_to_update, {"$push": {"voters": member.id}})
 
+            # Format output
             result_string = ""
             for tourney in need_to_update:
                 result_string += f"`{tourney.official_name}` - I added your vote! This tourney now has {len(tourney.voters)} votes!\n"
             for tourney in already_voted_for:
                 result_string += f"`{tourney.official_name}` - You already voted for this channel! This channel has {len(tourney.voters)} votes!\n"
 
+            # Send output
             result_string = result_string[:-1] # Delete last newline character
             await interaction.response.send_message(result_string, ephemeral = True)
 
@@ -136,19 +138,36 @@ class TournamentDropdownView(discord.ui.View):
         self.add_item(TournamentDropdown(month_tournaments, bot, voting = self.voting))
 
 async def update_tournament_list(bot, rename_dict = {}):
-    tournaments = await get_invitationals()
-    tournaments = [Tournament(t) for t in tournaments]
-    tournaments.sort(key=lambda t: t.official_name)
-    global TOURNAMENT_INFO
-    TOURNAMENT_INFO = tournaments
+    # Fetch invitationals
+    invitationals = await get_invitationals()
+    invitationals = [Tournament(t) for t in invitationals]
+    invitationals.sort(key=lambda t: t.official_name)
+    
+    # Update global invitational info
+    global INVITATIONAL_INFO
+    INVITATIONAL_INFO = invitationals
+
+    # Get guild and channels
     server = bot.get_guild(SERVER_ID)
+    assert isinstance(server, discord.Guild)
+
     tourney_channel = discord.utils.get(server.text_channels, name=CHANNEL_TOURNAMENTS)
     tournament_category = discord.utils.get(server.categories, name=CATEGORY_TOURNAMENTS)
     bot_spam_channel = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
     server_support_channel = discord.utils.get(server.text_channels, name=CHANNEL_SUPPORT)
-    gm = discord.utils.get(server.roles, name=ROLE_GM)
-    a = discord.utils.get(server.roles, name=ROLE_AD)
+    assert isinstance(tourney_channel, discord.TextChannel)
+    assert isinstance(tournament_category, discord.CategoryChannel)
+    assert isinstance(bot_spam_channel, discord.TextChannel)
+    assert isinstance(server_support_channel, discord.TextChannel)
+    
+    # Get roles
+    global_moderator_role = discord.utils.get(server.roles, name=ROLE_GM)
+    admin_role = discord.utils.get(server.roles, name=ROLE_AD)
     all_tournaments_role = discord.utils.get(server.roles, name=ROLE_AT)
+    assert isinstance(global_moderator_role, discord.Role)
+    assert isinstance(admin_role, discord.Role)
+    assert isinstance(all_tournaments_role, discord.Role)
+
     open_soon_list = ""
     now = discord.utils.utcnow()
     if 'channels' in rename_dict:
@@ -163,7 +182,7 @@ async def update_tournament_list(bot, rename_dict = {}):
             if r != None:
                 # If old-named role exists, then rename
                 await r.edit(name = item[1])
-    for t in tournaments: # For each tournament in the sheet
+    for t in invitationals: # For each tournament in the sheet
         # Check if the channel needs to be made / deleted
         ch = discord.utils.get(server.text_channels, name=t.channel_name)
         r = discord.utils.get(server.roles, name=t.official_name)
@@ -236,7 +255,7 @@ async def update_tournament_list(bot, rename_dict = {}):
 
         To join a tournament channel, use the dropdowns below! Dropdowns are split up by date!
 
-        To request a new tournament channel, please use the `/request` command in {bot_spam_channel.mention}. If you need help, feel free to let a {a.mention} or {gm.mention} know!
+        To request a new tournament channel, please use the `/request` command in {bot_spam_channel.mention}. If you need help, feel free to let a {admin_role.mention} or {global_moderator_role.mention} know!
         """
     )
     await tourney_channel.purge() # Delete all messages to make way for new messages/views
