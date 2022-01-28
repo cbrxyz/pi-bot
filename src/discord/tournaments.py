@@ -137,7 +137,12 @@ class TournamentDropdownView(discord.ui.View):
         self.voting = voting
         self.add_item(TournamentDropdown(month_tournaments, bot, voting = self.voting))
 
-async def update_tournament_list(bot, rename_dict = {}):
+async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
+    """
+    Update the list of invitationals in #invitationals.
+
+    :param rename_dict: A dictionary containing renames of channels and roles that need to be completed.
+    """
     # Fetch invitationals
     invitationals = await get_invitationals()
     invitationals = [Tournament(t) for t in invitationals]
@@ -168,37 +173,49 @@ async def update_tournament_list(bot, rename_dict = {}):
     assert isinstance(admin_role, discord.Role)
     assert isinstance(all_tournaments_role, discord.Role)
 
-    open_soon_list = ""
     now = discord.utils.utcnow()
+
+    # Rename channels if needed
     if 'channels' in rename_dict:
         for item in rename_dict['channels'].items():
-            ch = discord.utils.get(server.text_channels, name = item[0])
-            if ch != None:
+            channel = discord.utils.get(server.text_channels, name = item[0])
+            if channel != None:
                 # If old-named channel exists, then rename
-                await ch.edit(name = item[1])
+                await channel.edit(name = item[1])
+
+    # Rename roles if needed
     if 'roles' in rename_dict:
         for item in rename_dict['roles'].items():
-            r = discord.utils.get(server.roles, name = item[0])
-            if r != None:
+            role = discord.utils.get(server.roles, name = item[0])
+            if role != None:
                 # If old-named role exists, then rename
-                await r.edit(name = item[1])
+                await role.edit(name = item[1])
+
     for t in invitationals: # For each tournament in the sheet
-        # Check if the channel needs to be made / deleted
-        ch = discord.utils.get(server.text_channels, name=t.channel_name)
-        r = discord.utils.get(server.roles, name=t.official_name)
+        channel = discord.utils.get(server.text_channels, name=t.channel_name)
+        role = discord.utils.get(server.roles, name=t.official_name)
+
         tourney_date_str = str(t.tourney_date.date())
-        before_days = int(t.open_days)
         after_days = int(t.closed_days)
         day_diff = (t.tourney_date - now).days
+
         print(f"Tournament List: Handling {t.official_name} (Day diff: {day_diff} days)")
-        if ch != None and t.status == "archived":
+
+        if isinstance(channel, discord.TextChannel) and t.status == "archived":
             # Tournament channel should be archived
-            if ch.category.name != CATEGORY_ARCHIVE:
+            channel_category = channel.category
+            assert isinstance(channel_category, discord.CategoryChannel)
+
+            if channel_category.name != CATEGORY_ARCHIVE:
                 # If channel is not in category archive, then archive it
-                archive_cat = discord.utils.get(server.categories, name = CATEGORY_ARCHIVE)
+                archive_category = discord.utils.get(server.categories, name = CATEGORY_ARCHIVE)
                 competitions_channel = discord.utils.get(server.text_channels, name = CHANNEL_COMPETITIONS)
                 tournament_role = discord.utils.get(server.roles, name = t.official_name)
-                all_tourney_role = discord.utils.get(server.roles, name = ROLE_AT)
+
+                # Type checking
+                assert isinstance(archive_category, discord.CategoryChannel)
+                assert isinstance(competitions_channel, discord.TextChannel)
+                assert isinstance(tournament_role, discord.Role)
 
                 embed = discord.Embed(
                     title = 'This channel is now archived.',
@@ -208,37 +225,37 @@ async def update_tournament_list(bot, rename_dict = {}):
                     color = discord.Color.brand_red()
                 )
 
-                await ch.set_permissions(tournament_role, send_messages = False, view_channel = True)
-                await ch.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
-                await ch.edit(category = archive_cat, position = 1000)
-                await ch.send(embed = embed)
+                await channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
+                await channel.set_permissions(all_tournaments_role, send_messages = False, view_channel = True)
+                await channel.edit(category = archive_category, position = 1000)
+                await channel.send(embed = embed)
 
-        if ch != None and t.status == "open":
+        if channel != None and t.status == "open":
             if (day_diff < (-1 * after_days)):
                 # If past tournament date, now out of range
-                if ch.category.name != CATEGORY_ARCHIVE:
+                if channel.category.name != CATEGORY_ARCHIVE:
                     reporter_cog = bot.get_cog("Reporter")
-                    await reporter_cog.create_invitational_archive_report(t, ch, r)
+                    await reporter_cog.create_invitational_archive_report(t, channel, role)
 
             to_change = {}
-            if ch.topic != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.":
+            if channel.topic != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.":
                 to_change['topic'] = f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}."
 
-            if ch.category.name == CATEGORY_ARCHIVE:
+            if channel.category.name == CATEGORY_ARCHIVE:
                 to_change['category'] = discord.utils.get(server.categories, name = CATEGORY_TOURNAMENTS)
 
             if len(to_change):
-                await ch.edit(**to_change)
+                await channel.edit(**to_change)
 
             # Check permissions in case the channel was previously archived
-            tourney_role_perms = ch.permissions_for(r)
+            tourney_role_perms = channel.permissions_for(role)
             if not tourney_role_perms.read_messages or not tourney_role_perms.send_messages:
-                await ch.set_permissions(r, send_messages = True, read_messages = True)
-            all_tourney_role_perms = ch.permissions_for(all_tournaments_role)
+                await channel.set_permissions(role, send_messages = True, read_messages = True)
+            all_tourney_role_perms = channel.permissions_for(all_tournaments_role)
             if not all_tourney_role_perms.read_messages or not all_tourney_role_perms.send_messages:
-                await ch.set_permissions(all_tournaments_role, send_messages = True, read_messages = True)
+                await channel.set_permissions(all_tournaments_role, send_messages = True, read_messages = True)
 
-        elif ch == None and t.status == "open":
+        elif channel == None and t.status == "open":
             # If tournament needs to be created
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(t.channel_name, category=tournament_category)
