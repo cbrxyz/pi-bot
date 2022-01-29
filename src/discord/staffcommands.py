@@ -97,10 +97,9 @@ class LauncherCommands(commands.Cog):
     def if_launcher_in_welcome(self, ctx):
         # This is a method that will accompany the global cog check.
         # Therefore, this check is representing the proposition `(has launcher role) -> (message in #welcome)`
-        from src.discord.globals import ROLE_STAFF, ROLE_VIP
         member = ctx.message.author
-        lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
-        if lhRole in member.roles and ctx.message.channel.name != CHANNEL_WELCOME:
+        launch_helper_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
+        if launch_helper_role in member.roles and ctx.message.channel.name != CHANNEL_WELCOME:
             staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
             vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
             raise discord.ext.commands.MissingAnyRole([staffRole, vipRole])
@@ -121,7 +120,7 @@ class LauncherCommands(commands.Cog):
         """Allows a staff member to confirm a user."""
         channel = ctx.channel
         if channel.name != CHANNEL_WELCOME:
-            return await ctx.respond("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
+            return await ctx.interaction.response.send_message("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
 
         role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
         role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
@@ -192,39 +191,6 @@ class LauncherCommands(commands.Cog):
 
         msg = await ctx.interaction.original_message()
         await channel.purge(limit=count + 1, check=nuke_check)
-
-        # Let user know messages have been deleted
-        # Waiting to implement until later
-        #
-        # confirm_embed = discord.Embed(
-        #     title = "NUKE COMMAND PANEL",
-        #     color = discord.Color.brand_green(),
-        #     description = f"""
-        #     {count} messages were deleted from the channel commander!
-
-        #     Have a good day!
-        #     """
-        # )
-        # confirm_embed.set_image(url = "https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-        # await ctx.interaction.edit_original_message(embed = confirm_embed, view = None)
-        # await asyncio.sleep(5)
-        # await msg.delete()
-
-    # @commands.command()
-    # @commands.check(is_nuke_allowed)
-    # async def nukeuntil(self, ctx, msgid):
-    #     import datetime
-    #     global STOPNUKE
-    #     channel = ctx.message.channel
-    #     message = await ctx.fetch_message(msgid)
-    #     if channel == message.channel:
-    #         await self._nuke_countdown(ctx)
-    #         if STOPNUKE <= datetime.datetime.utcnow():
-    #             await channel.purge(limit=1000, after=message)
-    #             msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-    #             await msg.delete(delay=5)
-    #     else:
-    #         return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
 
     @nuke.error
     async def nuke_error(self, ctx, error):
