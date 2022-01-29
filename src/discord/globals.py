@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 import datetime
-from src.discord.tournaments import INVITATIONAL_INFO
 
 from src.mongo.mongo import update
 
@@ -87,6 +86,7 @@ EMOJI_RIGHT_ARROW = "\U000027A1"
 EMOJI_FAST_FORWARD = "\U000023E9"
 EMOJI_UNSELFMUTE = "click_to_unmute"
 EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
+EMOJI_LOADING = "<a:loading:909706909404237834>"
 
 # Rules
 RULES = [

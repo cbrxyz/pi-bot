@@ -225,32 +225,40 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
                     color = discord.Color.brand_red()
                 )
 
+                # Send embed and update channel permissions
                 await channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
                 await channel.set_permissions(all_tournaments_role, send_messages = False, view_channel = True)
                 await channel.edit(category = archive_category, position = 1000)
                 await channel.send(embed = embed)
 
-        if channel != None and t.status == "open":
-            if (day_diff < (-1 * after_days)):
-                # If past tournament date, now out of range
-                if channel.category.name != CATEGORY_ARCHIVE:
+        if isinstance(channel, discord.TextChannel) and t.status == "open":
+            # Type checking
+            channel_category = channel.category
+            assert isinstance(channel_category, discord.CategoryChannel)
+            assert isinstance(role, discord.Role)
+
+            if day_diff < -after_days:
+                # If past tournament date, now out of range - make warning report to archive
+                if channel_category.name != CATEGORY_ARCHIVE:
                     reporter_cog = bot.get_cog("Reporter")
                     await reporter_cog.create_invitational_archive_report(t, channel, role)
 
+            # Fix channel attributes in case changed/broken
             to_change = {}
             if channel.topic != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.":
                 to_change['topic'] = f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}."
 
-            if channel.category.name == CATEGORY_ARCHIVE:
+            if channel_category.name == CATEGORY_ARCHIVE:
                 to_change['category'] = discord.utils.get(server.categories, name = CATEGORY_TOURNAMENTS)
 
             if len(to_change):
                 await channel.edit(**to_change)
 
-            # Check permissions in case the channel was previously archived
+            # Fix permissions in case the channel was previously archived
             tourney_role_perms = channel.permissions_for(role)
             if not tourney_role_perms.read_messages or not tourney_role_perms.send_messages:
                 await channel.set_permissions(role, send_messages = True, read_messages = True)
+
             all_tourney_role_perms = channel.permissions_for(all_tournaments_role)
             if not all_tourney_role_perms.read_messages or not all_tourney_role_perms.send_messages:
                 await channel.set_permissions(all_tournaments_role, send_messages = True, read_messages = True)
@@ -259,6 +267,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             # If tournament needs to be created
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(t.channel_name, category=tournament_category)
+
             await new_channel.edit(topic=f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}.", sync_permissions=True)
             await new_channel.set_permissions(new_role, read_messages=True)
             await new_channel.set_permissions(all_tournaments_role, read_messages=True)
@@ -283,17 +292,19 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
         {'name': 'November', 'number': 11, 'year': 2021},
         {'name': 'December', 'number': 12, 'year': 2021},
         {'name': 'January', 'number': 1, 'year': 2022},
-        {'name': 'February', 'number': 2, 'year': 2022}
+        {'name': 'February', 'number': 2, 'year': 2022},
+        {'name': 'March', 'number': 3, 'year': 2022}
     ]
     for month in months:
-        month_tournaments = [t for t in tournaments if t.tourney_date.month == month['number'] and t.tourney_date.year == month['year'] and t.status == "open"]
+        month_tournaments = [t for t in invitationals if t.tourney_date.month == month['number'] and t.tourney_date.year == month['year'] and t.status == "open"]
         if len(month_tournaments) > 0:
             await tourney_channel.send(f"Join a channel for a tournament in **{month['name']} {month['year']}**:", view = TournamentDropdownView(month_tournaments, bot))
         else:
             # No tournaments in the given month :(
-            await tourney_channel.send(f"Sorry, there are no channels opened for tournaments in **{month['name']} {month['year']}**.")
+            # await tourney_channel.send(f"Sorry, there are no channels opened for tournaments in **{month['name']} {month['year']}**.")
+            pass
 
-    voting_tournaments = [t for t in tournaments if t.status == "voting"]
+    voting_tournaments = [t for t in invitationals if t.status == "voting"]
     voting_embed = discord.Embed(
         title = ":second_place: Vote for a Tournament Channel!",
         color = discord.Color(0x2E66B6),

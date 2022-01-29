@@ -7,7 +7,7 @@ import random
 import wikipedia as wikip
 from discord.ext import commands
 import src.discord.globals
-from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, CHANNEL_UNSELFMUTE, ROLE_SELFMUTE, TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
+from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, CHANNEL_UNSELFMUTE, ROLE_SELFMUTE, INVITATIONAL_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
 from src.discord.views import YesNo
 from src.wiki.wiki import get_page_tables
 from src.wiki.scilympiad import make_results_template, get_points
@@ -169,7 +169,7 @@ class MemberCommands(commands.Cog):
         """Removes or adds the alumni role from a user."""
         await self._assign_div(ctx, "Alumni")
         await ctx.interaction.response.send_message(content = "Assigned you the Alumni role, and removed all other divison/alumni roles.")
-        
+
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Toggles division roles for the user."
@@ -351,7 +351,7 @@ class MemberCommands(commands.Cog):
         """
         if is_staff_from_ctx(ctx, no_raise = True):
             return await ctx.interaction.response.send_message("Staff members can't self mute! Sorry!")
-            
+
         member = ctx.author
 
         times = {
@@ -778,7 +778,7 @@ class MemberCommands(commands.Cog):
                     break
             if not found_event:
                 could_not_handle.append(arg)
-                
+
         for event in event_names:
             role = discord.utils.get(member.guild.roles, name=event)
             if role in member.roles:

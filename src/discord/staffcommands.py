@@ -19,7 +19,7 @@ import pytz
 import webcolors
 
 import src.discord.globals
-from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, INVITATIONAL_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, EMOJI_GUILDS, TAGS, EVENT_INFO
+from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, INVITATIONAL_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, EMOJI_GUILDS, TAGS, EVENT_INFO, EMOJI_LOADING
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
 from src.discord.globals import PI_BOT_IDS, ROLE_EM, CHANNEL_TOURNAMENTS
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
@@ -910,16 +910,17 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         description = "Staff command. Refreshes data from the bot's database."
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
-    async def refresh(self, ctx):
+    async def refresh(self, 
+                      ctx,
+                      system: Option(str, "The system to refresh.", choices = ["all", "invitationals"])
+                     ):
         """Refreshes data from the sheet."""
         commandchecks.is_staff_from_ctx(ctx)
 
-        await update_tournament_list(ctx.bot)
-        res = await refresh_algorithm()
-        if res == True:
-            await ctx.respond("Successfully refreshed data from sheet.")
-        else:
-            await ctx.respond(":warning: Unsuccessfully refreshed data from sheet.")
+        if system in ["all", "invitationals"]:
+            await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Updating the invitationals list.")
+            await update_tournament_list(ctx.bot)
+            await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated the invitationals list.")
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
