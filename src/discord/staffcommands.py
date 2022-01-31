@@ -289,17 +289,26 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     async def kick(self,
         ctx,
         member: Option(discord.Member, "The user to kick from the server."),
-        reason: Option(str, "The reason to kick the member for.")
+        reason: Option(str, "The reason to kick the member for."),
+        quiet: Option(str, "Whether to DM the user that they have been kicked. Defaults to no.", choices = ["yes", "no"], default = "no")
     ):
         """Kicks a member for the specified reason."""
+        # Verify the caller is a staff member.
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Send confirmation message to staff member.
         original_shown_embed = discord.Embed(
             title = "Kick Confirmation",
             color = discord.Color.brand_red(),
             description = f"""
             The member {member.mention} will be kicked from the server for:
             `{reason}`
+
+            {
+                "The member will not be notified of being kicked."
+                if quiet == "yes" else
+                "The member will be notified upon kick with the reason listed above."
+            }
 
             **Staff Member:** {ctx.author.mention}
             """
@@ -308,21 +317,32 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         view = Confirm(ctx.author, "The kick operation was cancelled. The user remains in the server.")
         await ctx.respond("Please confirm that you would like to kick this member from the server.", embed = original_shown_embed, view = view, ephemeral = True)
         await view.wait()
+        
+        # Handle response
         if view.value:
             try:
+                if quiet == "no":
+                    alert_embed = discord.Embed(
+                        title = "You have been kicked from the Scioly.org server.",
+                        color = discord.Color.brand_red(),
+                        description = f"""
+                        You have been removed from the Scioly.org server, due to the following reason: `{reason}`
+
+                        If you have any concerns about your kick, you may contact a staff member. Please note that repeated violations may result in an account ban, IP ban, or other further action.
+                        """
+                    )
+                    await member.send("Notice from the Scioly.org server:", embed = alert_embed)
                 await member.kick(reason = reason)
             except:
                 pass
 
-        # Test
+        # Verify that the member was kicked.
         guild = ctx.author.guild
         if member not in guild.members:
             # User was successfully kicked
             await ctx.interaction.edit_original_message(content = "The user was successfully kicked.", embed = None, view = None)
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully kicked because of an error. They remain in the server.", embed = None, view = None)
-
-    # Need to find a way to share _mute() between StaffEssential and MemberCommands
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
