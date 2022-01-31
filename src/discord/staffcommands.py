@@ -89,119 +89,6 @@ class Nuke(discord.ui.View):
         button = NukeStopButton(self)
         self.add_item(button)
 
-class LauncherCommands(commands.Cog):
-
-    def __init__(self, bot):
-        self.bot = bot
-
-    def if_launcher_in_welcome(self, ctx):
-        # This is a method that will accompany the global cog check.
-        # Therefore, this check is representing the proposition `(has launcher role) -> (message in #welcome)`
-        member = ctx.message.author
-        launch_helper_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
-        if launch_helper_role in member.roles and ctx.message.channel.name != CHANNEL_WELCOME:
-            staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
-            vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
-            raise discord.ext.commands.MissingAnyRole([staffRole, vipRole])
-        return True
-
-    async def cog_check(self, ctx):
-        return await is_launcher(ctx) and self.if_launcher_in_welcome(ctx)
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Confirms a user, giving them access to the server."
-    )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, ROLE_LH, guild_id = SERVER_ID)
-    async def confirm(self,
-        ctx,
-        member: Option(discord.Member, "The member to confirm.")
-    ):
-        """Allows a staff member to confirm a user."""
-        channel = ctx.channel
-        if channel.name != CHANNEL_WELCOME:
-            return await ctx.interaction.response.send_message("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
-
-        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        await ctx.respond(f"Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:", ephemeral = True)
-
-        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Nukes a certain amount of messages."
-    )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
-    async def nuke(self,
-        ctx,
-        count: Option(int, "The amount of messages to nuke.")
-    ):
-        """Nukes (deletes) a specified amount of messages."""
-        commandchecks.is_staff_from_ctx(ctx)
-
-        MAX_DELETE = 100
-        if int(count) > MAX_DELETE:
-            return await ctx.respond("Chill. No more than deleting 100 messages at a time.")
-        channel = ctx.channel
-        if int(count) < 0:
-            history = await channel.history(limit=105).flatten()
-            message_count = len(history)
-            if message_count > 100:
-                count = 100
-            else:
-                count = message_count + int(count) - 1
-            if count <= 0:
-                return await ctx.respond("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
-
-        original_shown_embed = discord.Embed(
-            title = "NUKE COMMAND PANEL",
-            color = discord.Color.brand_red(),
-            description = f"""
-            {count} messages will be deleted from {channel.mention} in 10 seconds...
-
-            To stop this nuke, press the red button below!
-            """
-        )
-        view = Nuke()
-        msg = await ctx.respond(embed = original_shown_embed, view = view)
-        await asyncio.sleep(1)
-
-        for i in range(9, 0, -1):
-            original_shown_embed.description = f"""
-            {count} messages will be deleted from {channel.mention} in {i} seconds...
-
-            To stop this nuke, press the red button below!
-            """
-            await ctx.interaction.edit_original_message(embed = original_shown_embed, view = view)
-            if view.stopped:
-                return
-            await asyncio.sleep(1)
-
-        original_shown_embed.description = f"""
-        Now nuking {count} messages from the channel...
-        """
-        await ctx.interaction.edit_original_message(embed = original_shown_embed, view = None)
-
-        # Nuke has not been stopped, proceed with deleting messages
-        def nuke_check(msg: discord.Message):
-            return not len(msg.components) and not msg.pinned
-
-        msg = await ctx.interaction.original_message()
-        await channel.purge(limit=count + 1, check=nuke_check)
-
-    @nuke.error
-    async def nuke_error(self, ctx, error):
-        ctx.__slots__ = True
-        from src.discord.globals import BOT_PREFIX
-        print(f"{BOT_PREFIX}nuke error handler: {error}")
-        if isinstance(error, discord.ext.commands.MissingAnyRole):
-            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
-
-        ctx.__slots__ = False
-
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -317,6 +204,100 @@ class CronView(discord.ui.View):
 class StaffEssential(StaffCommands, name="StaffEsntl"):
     def __init__(self, bot):
         super().__init__(bot)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Confirms a user, giving them access to the server."
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def confirm(self,
+        ctx,
+        member: Option(discord.Member, "The member to confirm.")
+    ):
+        """Allows a staff member to confirm a user."""
+        channel = ctx.channel
+        if channel.name != CHANNEL_WELCOME:
+            return await ctx.interaction.response.send_message("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
+
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        await ctx.respond(f"Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:", ephemeral = True)
+
+        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Nukes a certain amount of messages."
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def nuke(self,
+        ctx,
+        count: Option(int, "The amount of messages to nuke.")
+    ):
+        """Nukes (deletes) a specified amount of messages."""
+        commandchecks.is_staff_from_ctx(ctx)
+
+        MAX_DELETE = 100
+        if int(count) > MAX_DELETE:
+            return await ctx.respond("Chill. No more than deleting 100 messages at a time.")
+        channel = ctx.channel
+        if int(count) < 0:
+            history = await channel.history(limit=105).flatten()
+            message_count = len(history)
+            if message_count > 100:
+                count = 100
+            else:
+                count = message_count + int(count) - 1
+            if count <= 0:
+                return await ctx.respond("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
+
+        original_shown_embed = discord.Embed(
+            title = "NUKE COMMAND PANEL",
+            color = discord.Color.brand_red(),
+            description = f"""
+            {count} messages will be deleted from {channel.mention} in 10 seconds...
+
+            To stop this nuke, press the red button below!
+            """
+        )
+        view = Nuke()
+        msg = await ctx.respond(embed = original_shown_embed, view = view)
+        await asyncio.sleep(1)
+
+        for i in range(9, 0, -1):
+            original_shown_embed.description = f"""
+            {count} messages will be deleted from {channel.mention} in {i} seconds...
+
+            To stop this nuke, press the red button below!
+            """
+            await ctx.interaction.edit_original_message(embed = original_shown_embed, view = view)
+            if view.stopped:
+                return
+            await asyncio.sleep(1)
+
+        original_shown_embed.description = f"""
+        Now nuking {count} messages from the channel...
+        """
+        await ctx.interaction.edit_original_message(embed = original_shown_embed, view = None)
+
+        # Nuke has not been stopped, proceed with deleting messages
+        def nuke_check(msg: discord.Message):
+            return not len(msg.components) and not msg.pinned
+
+        msg = await ctx.interaction.original_message()
+        await channel.purge(limit=count + 1, check=nuke_check)
+
+    @nuke.error
+    async def nuke_error(self, ctx, error):
+        ctx.__slots__ = True
+        from src.discord.globals import BOT_PREFIX
+        print(f"{BOT_PREFIX}nuke error handler: {error}")
+        if isinstance(error, discord.ext.commands.MissingAnyRole):
+            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
+
+        ctx.__slots__ = False
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
@@ -876,7 +857,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         description = "Staff command. Refreshes data from the bot's database."
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
-    async def refresh(self, 
+    async def refresh(self,
                       ctx,
                       system: Option(str, "The system to refresh.", choices = ["all", "invitationals"])
                      ):
@@ -1471,4 +1452,3 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
     bot.add_cog(StaffNonessential(bot))
-    bot.add_cog(LauncherCommands(bot))
