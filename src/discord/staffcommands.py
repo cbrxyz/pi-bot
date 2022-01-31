@@ -354,8 +354,14 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         member: Option(discord.Member, "The user to unmute.")
     ):
         """Unmutes a user."""
+        # Check caller is staff
         commandchecks.is_staff_from_ctx(ctx)
 
+        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
+        if role not in member.roles:
+            return await ctx.respond("The user can't be unmuted because they aren't currently muted.")
+
+        # Send confirmation to staff
         original_shown_embed = discord.Embed(
             title = "Unmute Confirmation",
             color = discord.Color.brand_red(),
@@ -368,16 +374,16 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
         view = Confirm(ctx.author, "The unmute operation was cancelled. The user remains muted.")
         await ctx.respond("Please confirm that you would like to unmute this user.", view = view, embed = original_shown_embed, ephemeral = True)
-
         await view.wait()
-        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
+
+        # Handle response
         if view.value:
             try:
                 await member.remove_roles(role)
             except:
                 pass
 
-        # Test
+        # Test user was unmuted
         if role not in member.roles:
             await ctx.interaction.edit_original_message(content = "The user was succesfully unmuted.", embed = None, view = None)
         else:
