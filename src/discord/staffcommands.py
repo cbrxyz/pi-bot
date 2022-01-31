@@ -234,24 +234,15 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def nuke(self,
         ctx,
-        count: Option(int, "The amount of messages to nuke.")
+        count: Option(int, "The amount of messages to nuke.", min_value = 1, max_value = 100)
     ):
-        """Nukes (deletes) a specified amount of messages."""
+        """
+        Nukes (deletes) a specified amount of messages in a channel.
+        """
+        # Verify the calling user is staff
         commandchecks.is_staff_from_ctx(ctx)
 
-        MAX_DELETE = 100
-        if int(count) > MAX_DELETE:
-            return await ctx.respond("Chill. No more than deleting 100 messages at a time.")
         channel = ctx.channel
-        if int(count) < 0:
-            history = await channel.history(limit=105).flatten()
-            message_count = len(history)
-            if message_count > 100:
-                count = 100
-            else:
-                count = message_count + int(count) - 1
-            if count <= 0:
-                return await ctx.respond("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
 
         original_shown_embed = discord.Embed(
             title = "NUKE COMMAND PANEL",
@@ -263,9 +254,10 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             """
         )
         view = Nuke()
-        msg = await ctx.respond(embed = original_shown_embed, view = view)
+        await ctx.respond(embed = original_shown_embed, view = view)
         await asyncio.sleep(1)
 
+        # Show user countdown for nuke
         for i in range(9, 0, -1):
             original_shown_embed.description = f"""
             {count} messages will be deleted from {channel.mention} in {i} seconds...
@@ -277,27 +269,17 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
                 return
             await asyncio.sleep(1)
 
+        # Delete relevant messages
         original_shown_embed.description = f"""
         Now nuking {count} messages from the channel...
         """
         await ctx.interaction.edit_original_message(embed = original_shown_embed, view = None)
 
-        # Nuke has not been stopped, proceed with deleting messages
         def nuke_check(msg: discord.Message):
             return not len(msg.components) and not msg.pinned
 
-        msg = await ctx.interaction.original_message()
-        await channel.purge(limit=count + 1, check=nuke_check)
-
-    @nuke.error
-    async def nuke_error(self, ctx, error):
-        ctx.__slots__ = True
-        from src.discord.globals import BOT_PREFIX
-        print(f"{BOT_PREFIX}nuke error handler: {error}")
-        if isinstance(error, discord.ext.commands.MissingAnyRole):
-            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
-
-        ctx.__slots__ = False
+        await ctx.interaction.original_message()
+        await channel.purge(limit = count + 1, check = nuke_check)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
