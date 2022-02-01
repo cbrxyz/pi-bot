@@ -395,23 +395,25 @@ class StaffEssential(StaffCommands):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def ban(self,
-        ctx,
-        member: Option(discord.Member, "The user to ban."),
-        reason: Option(str, "The reason to ban the user for."),
-        ban_length: Option(str, "How long to ban the user for.", choices = [
-            "10 minutes",
-            "30 minutes",
-            "1 hour",
-            "2 hours",
-            "8 hours",
-            "1 day",
-            "4 days",
-            "7 days",
-            "1 month",
-            "1 year",
-            "Indefinitely"
-        ])
-    ):
+                  ctx,
+                  member: Option(discord.Member, "The user to ban."),
+                  reason: Option(str, "The reason to ban the user for."),
+                  ban_length: Option(str, "How long to ban the user for.", choices = [
+                      "10 minutes",
+                      "30 minutes",
+                      "1 hour",
+                      "2 hours",
+                      "8 hours",
+                      "1 day",
+                      "4 days",
+                      "7 days",
+                      "1 month",
+                      "1 year",
+                      "Indefinitely"
+                  ]),
+                  quiet: Option(str, "Avoids sending an informative DM to the user upon their ban. Defaults to no (default sends the DM).", choices = ["yes", "no"], default = "no", required = False),
+                  delete_days: Option(int, "The days worth of messages to delete from this user. Defaults to 0.", min_value = 0, max_value = 7, default = 0)
+                 ):
         """Bans a user."""
         commandchecks.is_staff_from_ctx(ctx)
 
@@ -438,7 +440,7 @@ class StaffEssential(StaffCommands):
             title = "Ban Confirmation",
             color = discord.Color.brand_red(),
             description = f"""
-            {member.mention} will be banned from the entire server. They will not be able to re-enter the server until the ban is lifted or the time expires.
+            {member.mention} will be banned from the entire server. They will not be able to re-enter the server until the ban is lifted or the time expires. {delete_days} days worth of this users' messages will be deleted upon banning.
 
             {time_statement}
             """
@@ -447,12 +449,20 @@ class StaffEssential(StaffCommands):
         view = Confirm(ctx.author, "The ban operation was cancelled. They remain in the server.")
         await ctx.respond("Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
-        message = f"You have been banned from the Scioly.org Discord server for {reason}."
-        await member.send(message)
-
         await view.wait()
         if view.value:
             try:
+                if quiet == "no":
+                    alert_embed = discord.Embed(
+                        title = "You have been banned from the Scioly.org server.",
+                        color = discord.Color.brand_red(),
+                        description = f"""
+                        You have been {"permanently" if ban_length == "Indefinitely" else "temporarily"} banned from the Scioly.org server, due to the following reason: `{reason}`
+
+                        If you have any concerns about your ban, you may contact a staff member through the Scioly.org website. Please note that repeated violations may result in an IP ban or other further action. Thank you!
+                        """
+                    )
+                    await member.send("Notice from the Scioly.org server:", embed = alert_embed)
                 await ctx.guild.ban(member, reason=reason)
             except:
                 pass
