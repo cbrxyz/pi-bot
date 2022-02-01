@@ -484,30 +484,26 @@ class StaffEssential(StaffCommands):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def mute(self,
-        ctx,
-        member: Option(discord.Member, "The user to mute."),
-        reason: Option(str, "The reason to mute the user."),
-        mute_length: Option(str, "How long to mute the user for.", choices = [
-            "10 minutes",
-            "30 minutes",
-            "1 hour",
-            "2 hours",
-            "8 hours",
-            "1 day",
-            "4 days",
-            "7 days",
-            "1 month",
-            "1 year",
-            "Indefinitely"
-        ])
-    ):
+                   ctx,
+                   member: Option(discord.Member, "The user to mute."),
+                   reason: Option(str, "The reason to mute the user."),
+                   mute_length: Option(str, "How long to mute the user for.", choices = [
+                       "10 minutes",
+                       "30 minutes",
+                       "1 hour",
+                       "2 hours",
+                       "8 hours",
+                       "1 day",
+                       "4 days",
+                       "7 days",
+                       "1 month",
+                       "1 year",
+                       "Indefinitely"
+                   ]),
+                   quiet: Option(str, "Does not DM the user upon mute. Defaults to no.", choices = ["yes", "no"], default = "no")
+                  ):
         """
         Mutes a user.
-
-        :param user: User to be muted.
-        :type user: discord.Member
-        :param *args: The time to mute the user for.
-        :type *args: str
         """
         commandchecks.is_staff_from_ctx(ctx)
 
@@ -535,6 +531,11 @@ class StaffEssential(StaffCommands):
             color = discord.Color.brand_red(),
             description = f"""
             {member.mention} will be muted across the entire server. The user will no longer be able to communicate in any channels they can read.
+            {
+                "The user will not be notified upon mute."
+                if quiet == "no" else
+                "The user will be notified upon mute."
+            }
 
             {time_statement}
             """
@@ -543,13 +544,21 @@ class StaffEssential(StaffCommands):
         view = Confirm(ctx.author, "The mute operation was cancelled. They remain able to communicate.")
         await ctx.respond("Please confirm that you would like to mute this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
-        message = f"You have been muted from the Scioly.org Discord server for {reason}."
-        await member.send(message)
-
         await view.wait()
         role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
         if view.value:
             try:
+                if quiet == "no":
+                    alert_embed = discord.Embed(
+                        title = "You have been muted in the Scioly.org server.",
+                        color = discord.Color.brand_red(),
+                        description = f"""
+                        You have been {"permanently" if mute_length == "Indefinitely" else "temporarily"} muted from the Scioly.org server, due to the following reason: `{reason}`
+
+                        If you have any concerns about your mute, you may contact a staff member through the Scioly.org website. Please note that repeated violations may result in a ban, IP ban, or other further action. Thank you!
+                        """
+                    )
+                    await member.send("Notice from the Scioly.org server:", embed = alert_embed)
                 await member.add_roles(role)
             except:
                 pass
