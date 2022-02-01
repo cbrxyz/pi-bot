@@ -573,26 +573,47 @@ class StaffEssential(StaffCommands):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
 
-    @discord.commands.slash_command(
+    slowmode_group = discord.commands.SlashCommandGroup(
+        "slowmode",
+        "Manages slowmode for a channel.",
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Enables slowmode in the current channel, or an alternate channel."
+        permissions = [
+            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
+            discord.commands.CommandPermission(ROLE_VIP, 1, True),
+        ]
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
-    async def slowmode(self,
-        ctx,
-        mode: Option(str, "How to change the slowmode in the channel.", choices = ["set", "remove"]),
-        delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
-        channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
-    ):
+
+    @slowmode_group.command(
+        name = "set",
+        description = "Sets the slowmode for a particular channel."
+    )
+    async def slowmode_set(self,
+                           ctx,
+                           delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
+                           channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
+                          ):
         commandchecks.is_staff_from_ctx(ctx)
 
-        true_channel = channel or ctx.channel
-        if mode == "remove":
-            await true_channel.edit(slowmode_delay = 0)
-            await ctx.respond("The slowmode was removed.")
-        elif mode == "set":
-            await true_channel.edit(slowmode_delay = delay)
-            await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
+        channel = channel or ctx.channel
+        await channel.edit(slowmode_delay = delay)
+        await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
+
+    @slowmode_group.command(
+        name = "remove",
+        description = "Removes the slowmode set on a given channel."
+    )
+    async def slowmode_remove(self, 
+                           ctx,
+                           channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
+                          ):
+        """
+        Removes the slowmode set on a particular channel.
+        """
+        commandchecks.is_staff_from_ctx(ctx)
+
+        channel = channel or ctx.channel
+        await channel.edit(slowmode_delay = 0)
+        await ctx.respond(f"Removed the slowmode delay in {channel.mention}.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
