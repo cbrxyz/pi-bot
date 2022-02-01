@@ -49,7 +49,7 @@ class Confirm(discord.ui.View):
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
         if interaction.user == self.author:
-            await interaction.response.edit_message(content="Attempting to run operation...")
+            await interaction.response.edit_message(content=f"{EMOJI_LOADING} Attempting to run operation...")
             self.value = True
             self.interaction = interaction
             self.stop()
@@ -201,7 +201,7 @@ class CronView(discord.ui.View):
 
         self.add_item(CronSelect(docs, bot))
 
-class StaffEssential(StaffCommands, name="StaffEsntl"):
+class StaffEssential(StaffCommands):
     def __init__(self, bot):
         super().__init__(bot)
 
@@ -211,21 +211,21 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def confirm(self,
-        ctx,
-        member: Option(discord.Member, "The member to confirm.")
-    ):
+                      ctx,
+                      member: Option(discord.Member, "The member to confirm.")
+                     ):
         """Allows a staff member to confirm a user."""
         channel = ctx.channel
         if channel.name != CHANNEL_WELCOME:
             return await ctx.interaction.response.send_message("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
 
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Switching roles and cleaning up messages...")
         role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
         role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
         await member.remove_roles(role1)
         await member.add_roles(role2)
-        await ctx.respond(f"Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:", ephemeral = True)
-
         await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
+        await ctx.interaction.edit_original_message(content = f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
@@ -287,11 +287,11 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def kick(self,
-        ctx,
-        member: Option(discord.Member, "The user to kick from the server."),
-        reason: Option(str, "The reason to kick the member for."),
-        quiet: Option(str, "Whether to DM the user that they have been kicked. Defaults to no.", choices = ["yes", "no"], default = "no")
-    ):
+                   ctx,
+                   member: Option(discord.Member, "The user to kick from the server."),
+                   reason: Option(str, "The reason to kick the member for."),
+                   quiet: Option(str, "Whether to DM the user that they have been kicked. Defaults to no.", choices = ["yes", "no"], default = "no")
+                  ):
         """Kicks a member for the specified reason."""
         # Verify the caller is a staff member.
         commandchecks.is_staff_from_ctx(ctx)
@@ -350,9 +350,9 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unmute(self,
-        ctx,
-        member: Option(discord.Member, "The user to unmute.")
-    ):
+                     ctx,
+                     member: Option(discord.Member, "The user to unmute.")
+                    ):
         """Unmutes a user."""
         # Check caller is staff
         commandchecks.is_staff_from_ctx(ctx)
