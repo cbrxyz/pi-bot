@@ -151,11 +151,11 @@ class CronSelect(discord.ui.Select):
         print([d['time'] for d in docs])
         counts = {}
         for doc in docs[:20]:
-            timeframe = (doc['time'] - datetime.datetime.utcnow()).days
+            timeframe = (doc['time'] - discord.utils.utcnow()).days
             if abs(timeframe) < 1:
-                timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).total_seconds() // 3600} hours"
+                timeframe = f"{(doc['time'] - discord.utils.utcnow()).total_seconds() // 3600} hours"
             else:
-                timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).days} days"
+                timeframe = f"{(doc['time'] - discord.utils.utcnow()).days} days"
             tag_name = f"{doc['type'].title()} {doc['tag']}"
             if tag_name in counts:
                 counts[tag_name] = counts[tag_name] + 1
@@ -632,6 +632,8 @@ class StaffEssential(StaffCommands):
         commandchecks.is_staff_from_ctx(ctx)
 
         cron_list = await get_cron()
+        if not len(cron_list):
+            return await ctx.respond(f"Unfortunately, there are no items in the CRON list to manage.")
 
         cron_embed = discord.Embed(
             title = "Managing the CRON list",
@@ -660,30 +662,42 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         commandchecks.is_staff_from_ctx(ctx)
 
         server = ctx.author.guild
-        if ctx.channel.category.name == CATEGORY_TOURNAMENTS:
+        if ctx.channel.category != None and ctx.channel.category.name == CATEGORY_TOURNAMENTS:
+            # Handle for tournament channels
+
             test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
-            if test_vc == None:
+            if not test_vc:
                 # Voice channel needs to be opened
+                await ctx.respond(f"{EMOJI_LOADING} Attempting to open a voice channel...")
                 new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
-                # Make the channel invisible to normal members
+
+                # Make the channel invisible to normal members and give permissions
                 await new_vc.set_permissions(server.default_role, view_channel=False)
-                at = discord.utils.get(server.roles, name=ROLE_AT)
                 for t in INVITATIONAL_INFO:
                     if ctx.channel.name == t[1]:
                         tourney_role = discord.utils.get(server.roles, name=t[0])
                         await new_vc.set_permissions(tourney_role, view_channel=True)
                         break
+
+                # Give permissions to All Tournaments role
+                at = discord.utils.get(server.roles, name=ROLE_AT)
                 await new_vc.set_permissions(at, view_channel=True)
-                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+
+                return await ctx.interaction.edit_original_message(content = "Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
                 return await ctx.respond("Closed the voice channel.")
-        elif ctx.message.channel.category.name == CATEGORY_STATES:
+
+        elif ctx.channel != None and ctx.channel.category.name == CATEGORY_STATES:
+            # Handle for state channels
+            
             test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
-            if test_vc == None:
+            if not test_vc:
                 # Voice channel does not currently exist
+                await ctx.respond(f"{EMOJI_LOADING} Attempting to open a voice channel...")
+
                 if len(ctx.channel.category.channels) == 50:
                     # Too many voice channels in the state category
                     # Let's move one state to the next category
@@ -695,23 +709,31 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         # Success, we found the other category
                         current_cat = ctx.channel.category
                         await current_cat.channels[-1].edit(category = new_cat[1], position = 0)
+
+                # Create new voice channel
                 new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
+    
+                # Give various roles permissions
                 muted_role = discord.utils.get(server.roles, name=ROLE_MUTED)
                 all_states_role = discord.utils.get(server.roles, name=ROLE_ALL_STATES)
                 self_muted_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
                 quarantine_role = discord.utils.get(server.roles, name=ROLE_QUARANTINE)
+
+                # Get official state name to give permissions to role
                 state_role_name = await lookup_role(ctx.channel.name.replace("-", " "))
                 state_role = discord.utils.get(server.roles, name = state_role_name)
+
                 await new_vc.set_permissions(muted_role, connect=False)
                 await new_vc.set_permissions(self_muted_role, connect=False)
                 await new_vc.set_permissions(quarantine_role, connect=False)
                 await new_vc.set_permissions(state_role, view_channel = True, connect=True)
                 await new_vc.set_permissions(all_states_role, view_channel = True, connect=True)
-                current_pos = ctx.channel.position
-                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+
+                return await ctx.interaction.edit_original_message(content = "Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
+                # Voice channel needs to be closed
                 await test_vc.delete()
                 if len(ctx.channel.category.channels) == 49:
                     # If we had to move a channel out of category to make room, move it back
@@ -724,20 +746,28 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         # Success, we found the other category
                         current_cat = ctx.channel.category
                         await new_cat[1].channels[0].edit(category = current_cat, position = 1000)
+
                 return await ctx.respond("Closed the voice channel.")
-        elif ctx.message.channel.name == "games":
+        elif ctx.channel.name == "games":
             # Support for opening a voice channel for #games
+
             test_vc = discord.utils.get(server.voice_channels, name="games")
-            if test_vc == None:
+            if not test_vc:
                 # Voice channel needs to be opened/doesn't exist already
+                await ctx.respond(f"{EMOJI_LOADING} Attempting to open a voice channel...")
+
+                # Create a new voice channel
                 new_vc = await server.create_voice_channel("games", category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
+
+                # Give out various permissions
                 games_role = discord.utils.get(server.roles, name=ROLE_GAMES)
                 member_role = discord.utils.get(server.roles, name=ROLE_MR)
                 await new_vc.set_permissions(games_role, view_channel=True)
                 await new_vc.set_permissions(member_role, view_channel=False)
-                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+
+                return await ctx.interaction.edit_original_message(content = "Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
