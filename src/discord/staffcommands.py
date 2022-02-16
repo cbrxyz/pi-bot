@@ -722,7 +722,12 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 quarantine_role = discord.utils.get(server.roles, name=ROLE_QUARANTINE)
 
                 # Get official state name to give permissions to role
-                state_role_name = await lookup_role(ctx.channel.name.replace("-", " "))
+                state_role_name = ctx.channel.name.replace("-", " ").title()
+                if state_role_name == "California North":
+                    state_role_name = "California (North)"
+                elif state_role_name == "California South":
+                    state_role_name = "California (South)"
+
                 state_role = discord.utils.get(server.roles, name = state_role_name)
 
                 await new_vc.set_permissions(muted_role, connect=False)
