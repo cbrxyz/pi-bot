@@ -802,14 +802,19 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def lock(self, ctx):
         """Locks a channel to Member access."""
+        # Check permissions
         commandchecks.is_staff_from_ctx(ctx)
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to lock channel...")
 
+        # Get variables
         member = ctx.author
         channel = ctx.channel
 
+        # Check channel category
         if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-            return await ctx.respond("This command is not suitable for this channel because of its category.")
+            return await ctx.interaction.edit_original_message(content = "This command is not suitable for this channel because of its category.")
 
+        # Update permissions
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
         if (channel.category.name == CATEGORY_STATES):
             await ctx.channel.set_permissions(member_role, add_reactions=False, send_messages=False)
@@ -824,7 +829,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(admin_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(bot_role, add_reactions=True, send_messages=True, read_messages=True)
-        await ctx.respond("Locked the channel to Member access.")
+
+        # Edit to final message
+        await ctx.interaction.edit_original_message(content = "Locked the channel to Member access.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
@@ -833,16 +840,21 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unlock(self, ctx):
         """Unlocks a channel to Member access."""
+        # Check permissions
         commandchecks.is_staff_from_ctx(ctx)
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to unlock channel...")
 
+        # Get variable
         member = ctx.author
         channel = ctx.channel
 
+        # Check channel category
         if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-            return await ctx.respond("This command is not suitable for this channel because of its category.")
+            return await ctx.interaction.edit_original_message(content = "This command is not suitable for this channel because of its category.")
 
+        # Update permissions
         if (channel.category.name == CATEGORY_SO or channel.category.name == CATEGORY_GENERAL):
-            await ctx.respond("Synced permissions with channel category.")
+            await ctx.interaction.edit_original_message(content = "Synced permissions with channel category.")
             return await channel.edit(sync_permissions=True)
 
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
@@ -859,7 +871,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
-        await ctx.respond("Unlocked the channel to Member access. Please check if permissions need to be synced.")
+
+        # Edit to final message
+        await ctx.interaction.edit_original_message(content = "Unlocked the channel to Member access. Please check if permissions need to be synced.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
