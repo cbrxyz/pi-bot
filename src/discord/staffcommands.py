@@ -919,36 +919,6 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Archives a tournament channel, preventing members from sending messages."
-    )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
-    async def archive(self, ctx):
-        commandchecks.is_staff_from_ctx(ctx)
-
-        tournament = [t for t in INVITATIONAL_INFO if t[1] == ctx.channel.name]
-        bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
-        archive_cat = discord.utils.get(ctx.guild.categories, name = CATEGORY_ARCHIVE)
-        tournament_name, tournament_formal = None, None
-        if len(tournament) > 0:
-            tournament_name = tournament[0][1]
-            tournament_formal = tournament[0][0]
-        tournament_role = discord.utils.get(ctx.guild.roles, name = tournament_formal)
-        all_tourney_role = discord.utils.get(ctx.guild.roles, name = ROLE_AT)
-        embed = discord.Embed(
-            title = 'This channel is now archived.',
-            description = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' +
-            f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {ctx.channel.mention}. This channel is now read-only.\n\n' +
-            f'If you would like to no longer view this channel, you are welcome to type `!tournament {tournament_name}` into {bot_spam}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
-            color = discord.Color.brand_red()
-        )
-        await ctx.channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
-        await ctx.channel.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
-        await ctx.channel.edit(category = archive_cat, position = 1000)
-        await ctx.channel.send(embed = embed)
-        await ctx.channel.respond(content = "The channel is now archived, and members can no longer speak in the channel.", ephemeral = True)
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Refreshes data from the bot's database."
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
