@@ -884,7 +884,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         """Runs Pi-Bot's Most Edits Table"""
         commandchecks.is_staff_from_ctx(ctx)
 
-        msg1 = await ctx.respond("Attemping to run the Most Edits Table.")
+        await ctx.respond(f"{EMOJI_LOADING} Generating the Most Edits Table...")
         res = await run_table()
         print(res)
         names = [v['name'] for v in res]
@@ -901,10 +901,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         plt.tight_layout()
         plt.savefig("met.png")
         plt.close()
-        await msg1.delete()
-        msg2 = await ctx.send("Generating graph...")
+        await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Generating graph...")
         await asyncio.sleep(3)
-        await msg2.delete()
 
         file = discord.File("met.png", filename="met.png")
         embed = discord.Embed(
@@ -917,7 +915,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             f"`5th` - **{names[4]}** ({data[4]} edits)"),
         )
         embed.set_image(url = "attachment://met.png")
-        await ctx.send(file=file, embed=embed)
+        await ctx.interaction.edit_original_message(content = f"The Most Edits Table for the week:", file=file, embed=embed)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
