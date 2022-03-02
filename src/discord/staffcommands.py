@@ -317,7 +317,7 @@ class StaffEssential(StaffCommands):
         view = Confirm(ctx.author, "The kick operation was cancelled. The user remains in the server.")
         await ctx.respond("Please confirm that you would like to kick this member from the server.", embed = original_shown_embed, view = view, ephemeral = True)
         await view.wait()
-        
+
         # Handle response
         if view.value:
             try:
@@ -602,7 +602,7 @@ class StaffEssential(StaffCommands):
         name = "remove",
         description = "Removes the slowmode set on a given channel."
     )
-    async def slowmode_remove(self, 
+    async def slowmode_remove(self,
                            ctx,
                            channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
                           ):
@@ -692,7 +692,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         elif ctx.channel != None and ctx.channel.category.name == CATEGORY_STATES:
             # Handle for state channels
-            
+
             test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
             if not test_vc:
                 # Voice channel does not currently exist
@@ -714,7 +714,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
-    
+
                 # Give various roles permissions
                 muted_role = discord.utils.get(server.roles, name=ROLE_MUTED)
                 all_states_role = discord.utils.get(server.roles, name=ROLE_ALL_STATES)
@@ -960,42 +960,47 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         # Check again to make sure caller is staff
         commandchecks.is_staff_from_ctx(ctx)
 
-        # Update activity
-        if activity == "playing":
-            await self.bot.change_presence(activity = discord.Game(name = message))
-            await ctx.interaction.response.send_message(content = f"The status was updated to: `Playing {message}`.")
-        elif activity == "listening":
-            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.listening, name = message))
-            await ctx.interaction.response.send_message(content = f"The status was updated to: `Listening to {message}`.")
-        elif activity == "watching":
-            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = message))
-            await ctx.interaction.response.send_message(content = f"The status was updated to: `Watching {message}`.")
-
         # CRON functionality
         times = {
-            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
-            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
-            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
-            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
-            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
-            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
-            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
-            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
-            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
-            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
-            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
         }
+        selected_time = times[length]
 
         # Change settings
-        src.discord.globals.SETTINGS['custom_bot_status_text'] = message
-        src.discord.globals.SETTINGS['custom_bot_status_type'] = activity
-        await update("data", "settings", src.discord.globals.SETTINGS['_id'],
-                     {"$set": {'custom_bot_status_text': message,
-                               'custom_bot_status_type': activity}})
+        await src.discord.globals.update_setting(
+            {
+                'custom_bot_status_text': message,
+                'custom_bot_status_type': activity
+            }
+        )
 
         # Insert time length into CRON
         cron_cog = self.bot.get_cog("CronTasks")
-        await cron_cog.schedule_status_remove(times[length])
+        await cron_cog.schedule_status_remove(selected_time)
+
+        # Update activity
+        status_text = None
+        if activity == "playing":
+            await self.bot.change_presence(activity = discord.Game(name = message))
+            status_text = f"Playing {message}"
+        elif activity == "listening":
+            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.listening, name = message))
+            status_text = f"Listening to {message}"
+        elif activity == "watching":
+            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = message))
+            status_text = f"Watching {message}"
+
+        await ctx.interaction.response.send_message(content = f"The status was updated to: `{status_text}`. This status will stay in effect until {discord.utils.format_dt(selected_time, 'F')}.")
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
