@@ -957,8 +957,10 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             "1 year",
             ])
         ):
+        # Check again to make sure caller is staff
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Update activity
         if activity == "playing":
             await self.bot.change_presence(activity = discord.Game(name = message))
             await ctx.interaction.response.send_message(content = f"The status was updated to: `Playing {message}`.")
@@ -992,10 +994,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                                'custom_bot_status_type': activity}})
 
         # Insert time length into CRON
-        await insert("data", "cron", {
-            "type": "REMOVE_STATUS",
-            "time": times[length]
-        })
+        cron_cog = self.bot.get_cog("CronTasks")
+        await cron_cog.schedule_status_remove(times[length])
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],

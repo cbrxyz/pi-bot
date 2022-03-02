@@ -93,6 +93,16 @@ class CronTasks(commands.Cog):
         }
         await self.add_to_cron(item_dict)
 
+    async def schedule_status_remove(self, time: datetime.datetime) -> None:
+        """
+        Schedules Pi-Bot's status to be removed at a specific time.
+        """
+        item_dict = {
+            "type": "REMOVE_STATUS",
+            "time": time
+        }
+        await self.add_to_cron(item_dict)
+
     @tasks.loop(minutes=5)
     async def update_member_count(self):
         """
