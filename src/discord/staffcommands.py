@@ -934,10 +934,19 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await update_tournament_list(ctx.bot)
             await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated the invitationals list.")
 
-    @discord.commands.command(
+    change_status_group = discord.commands.SlashCommandGroup(
+        "status",
+        "Updates the bot's status.",
         guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "status",
-        description = "Staff command. Update Pi-Bot's Discord status."
+        permissions = [
+            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
+            discord.commands.CommandPermission(ROLE_VIP, 1, True),
+        ]
+    )
+
+    @change_status_group.command(
+        name = "set",
+        description = "Staff command. Sets Pi-Bot's status to a custom tagline."
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def change_status(self,
@@ -1001,6 +1010,26 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             status_text = f"Watching {message}"
 
         await ctx.interaction.response.send_message(content = f"The status was updated to: `{status_text}`. This status will stay in effect until {discord.utils.format_dt(selected_time, 'F')}.")
+
+    @change_status_group.command(
+        name = "reset",
+        description = "Staff command. Resets Pi-Bot's status to a custom value."
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def reset_status(self, ctx):
+        # Reset status
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to resetting status...")
+        await src.discord.globals.update_setting(
+            {
+                'custom_bot_status_text': None,
+                'custom_bot_status_type': None
+            }
+        )
+        await ctx.interaction.edit_original_message(content = "Reset the bot's status.")
+
+        # Reset bot status to regularly update
+        cron_cog = self.bot.get_cog("CronTasks")
+        cron_cog.change_bot_status.restart()
 
     @discord.commands.command(
         guild_ids = [SLASH_COMMAND_GUILDS],
