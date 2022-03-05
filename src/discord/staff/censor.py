@@ -60,7 +60,7 @@ class StaffCensor(commands.Cog):
                 await ctx.interaction.edit_original_message(content = f"Added `{first_letter}...{last_letter}` to the censor list.")
         elif censor_type == "emoji":
             if phrase in src.discord.globals.CENSOR['emojis']:
-                await ctx.interaction.edit_original_message(content = f"{phrase} is already in the censored emoijs list. Operation cancelled.")
+                await ctx.interaction.edit_original_message(content = f"Emoji is already in the censored emoijs list. Operation cancelled.")
             else:
                 src.discord.globals.CENSOR['emojis'].append(phrase)
                 await update("data", "censor", src.discord.globals.CENSOR['_id'], {"$push": {"emojis": phrase}})
@@ -76,7 +76,11 @@ class StaffCensor(commands.Cog):
         censor_type: Option(str, "Whether to remove a word or emoji.", choices = ["word", "emoji"], required = True),
         phrase: Option(str, "The word or emoji to remove from the censor list.", required = True)
         ):
+        # Check for staff permissions again
         commandchecks.is_staff_from_ctx(ctx)
+
+        # Send notice message
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to remove {censor_type} from censor list.")
 
         if censor_type == "word":
             if phrase not in src.discord.globals.CENSOR["words"]:
@@ -84,12 +88,14 @@ class StaffCensor(commands.Cog):
             else:
                 src.discord.globals.CENSOR["words"].remove(phrase)
                 await update("data", "censor", src.discord.globals.CENSOR['_id'], {"$pull": {"words": phrase}})
+                await ctx.interaction.edit_original_message(content = f"Removed `{phrase}` from the censor list.")
         elif censor_type == "emoji":
             if phrase not in src.discord.globals.CENSOR["emojis"]:
-                await ctx.interaction.response.send_message(content = f"`{phrase}` is not in the list of censored emojis.")
+                await ctx.interaction.response.send_message(content = f"{phrase} is not in the list of censored emojis.")
             else:
                 src.discord.globals.CENSOR["emojis"].remove(phrase)
                 await update("data", "censor", src.discord.globals.CENSOR["_id"], {"$pull": {"emojis": phrase}})
+                await ctx.interaction.edit_original_message(content = f"Removed {phrase} from the emojis list.")
 
 def setup(bot):
     bot.add_cog(StaffCensor(bot))
