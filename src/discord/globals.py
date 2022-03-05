@@ -110,7 +110,7 @@ RULES = [
 ##############
 fish_now = 0
 CENSOR = {}
-EVENT_INFO = 0
+EVENT_INFO = []
 PING_INFO = []
 INVITATIONAL_INFO = []
 REPORTS = []
