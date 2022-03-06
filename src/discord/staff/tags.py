@@ -2,18 +2,21 @@ import discord
 import re
 
 from discord.ext import commands
-from discord.commands import Option, permissions
+from discord.commands import Option, permissions, ApplicationContext
 import commandchecks
+
+from bot import listen_for_response
 
 import src.discord.globals
 from src.discord.globals import (
+    EMOJI_LOADING,
     SLASH_COMMAND_GUILDS,
     SERVER_ID,
     ROLE_STAFF,
     ROLE_VIP,
 )
 
-from src.mongo.mongo import update
+from src.mongo.mongo import insert, update
 
 
 class StaffTags(commands.Cog):
@@ -38,7 +41,7 @@ class StaffTags(commands.Cog):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
     async def tag_add(
         self,
-        ctx,
+        ctx: ApplicationContext,
         tag_name: Option(str, "The name of the tag to add.", required=True),
         launch_helpers: Option(
             str,
@@ -56,59 +59,53 @@ class StaffTags(commands.Cog):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Notify user that process has started
+        await ctx.interaction.response.send_message(content=f"{EMOJI_LOADING} Attempting to add the `{tag_name}` tag...")
+
+        # Check if tag has already been added
         if tag_name in [t["name"] for t in src.discord.globals.TAGS]:
-            await ctx.interaction.response.send_message(
+            return await ctx.interaction.edit_original_message(
                 content=f"The `{tag_name}` tag has already been added. To edit this tag, please use `/tagedit` instead."
             )
-        else:
-            await ctx.interaction.response.defer()
 
-            succesful = False
-            while not succesful:
-                info_message = await ctx.send(
-                    "Please send the new text for the tag enclosed in a preformatted block. The block should begin and end with three backticks, with no content on the line of the backticks. If no response is found in 2 minutes, the operation will be cancelled."
-                )
-                content_message = await listen_for_response(
-                    follow_id=ctx.user.id,
-                    timeout=120,
-                )
+        # Send directions to caller
+        await ctx.interaction.edit_original_message(
+            content=f"{EMOJI_LOADING} Please send the new text for the tag. You can use formatting and newlines. All text sent in your next message will be included in the tag."
+        )
+        content_message = await listen_for_response(
+            follow_id=ctx.user.id,
+            timeout=120,
+        )
 
-                if content_message == None:
-                    await ctx.interaction.edit_original_message(
-                        content="No message was found within 2 minutes. Operation cancelled."
-                    )
-                    return
+        # If user does not respond, alert them
+        if content_message == None:
+            return await ctx.interaction.edit_original_message(
+                content="No message was found within 2 minutes. Operation cancelled."
+            )
 
-                text = content_message.content
-                await content_message.delete()
-                await info_message.delete()
-                matches = re.findall(
-                    r"(?<=```\n)(.*)(?=\n```)", text, flags=re.MULTILINE | re.DOTALL
-                )
-                if len(matches) < 0:
-                    await ctx.interaction.edit_original_message(
-                        content="No matching preformatted block was found. Operation cancelled."
-                    )
-                    return
-                else:
-                    new_dict = {
-                        "name": tag_name,
-                        "output": matches[0],
-                        "permissions": {
-                            "staff": True,
-                            "launch_helpers": True
-                            if launch_helpers == "yes"
-                            else False,
-                            "members": True if members == "yes" else False,
-                        },
-                    }
+        # Grab text from user's response and delete their response
+        text = content_message.content
+        await content_message.delete()
 
-                    src.discord.globals.TAGS.append(new_dict)
-                    await insert("data", "tags", new_dict)
-                    succesful = True
-                    await ctx.interaction.edit_original_message(
-                        content=f"The `{tag_name}` tag was added!"
-                    )
+        # Construct dict to represent tag
+        new_dict = {
+            "name": tag_name,
+            "output": text,
+            "permissions": {
+                "staff": True,
+                "launch_helpers": True
+                if launch_helpers == "yes"
+                else False,
+                "members": True if members == "yes" else False,
+            },
+        }
+
+        # Add tag to logs
+        src.discord.globals.TAGS.append(new_dict)
+        await insert("data", "tags", new_dict)
+        await ctx.interaction.edit_original_message(
+            content=f"The `{tag_name}` tag was added!"
+        )
 
     @tag_commands_group.command(
         name="edit",
