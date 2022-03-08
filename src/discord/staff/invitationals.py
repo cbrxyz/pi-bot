@@ -213,36 +213,53 @@ class StaffInvitational(commands.Cog):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
     async def invitational_approve(
         self,
-        ctx,
+        ctx: ApplicationContext,
         short_name: Option(
             str, "The short name of the invitational, such as 'mit'.", required=True
         ),
     ):
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
+
+        # Sending message about operation started
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to approve...")
 
         invitationals = await get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
+
+        # If invitational is not found
         if len(found_invitationals) < 1:
-            await ctx.interaction.response.send_message(
+            await ctx.interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`."
             )
+
+        # If an invitational is found
         elif len(found_invitationals) == 1:
+            
+            # Check to see if invitational is already open
             if found_invitationals[0]["status"] == "open":
-                await ctx.interaction.response.send_message(
+                await ctx.interaction.edit_original_message(
                     content=f"The `{short_name}` invitational is already open."
                 )
+
+            # If not, update invitational to be open
             await update(
                 "data",
                 "invitationals",
                 found_invitationals[0]["_id"],
                 {"$set": {"status": "open"}},
             )
-            await ctx.interaction.response.send_message(
+            await ctx.interaction.edit_original_message(
                 content=f"The status of the `{short_name}` invitational was updated."
             )
+
+            # Update tournament list
             await update_tournament_list(self.bot, {})
+
+        else:
+            await ctx.interaction.edit_original_message(content = "I found more than one invitational with a matching name. Contact an administrator - something is wrong.")
 
     @invitational_status_group.command(
         name="edit",
