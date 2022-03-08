@@ -5,12 +5,14 @@ from discord.commands import slash_command
 
 from discord.ext import commands
 from discord.commands import Option, permissions
+from discord.commands.context import ApplicationContext
 import commandchecks
 
 from src.discord.globals import (
     SLASH_COMMAND_GUILDS,
     CATEGORY_ARCHIVE,
     EMOJI_GUILDS,
+    EMOJI_LOADING,
     CATEGORY_TOURNAMENTS,
     SERVER_ID,
     ROLE_STAFF,
@@ -47,7 +49,7 @@ class StaffInvitational(commands.Cog):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
     async def invitational_add(
         self,
-        ctx,
+        ctx: ApplicationContext,
         official_name: Option(
             str,
             "The official name of the tournament, such as MIT Invitational.",
@@ -70,8 +72,10 @@ class StaffInvitational(commands.Cog):
             required=True,
         ),
     ):
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Create tournament doc
         new_tourney_doc = {
             "official_name": official_name,
             "channel_name": channel_name,
@@ -82,41 +86,59 @@ class StaffInvitational(commands.Cog):
             "voters": [],
             "status": "open" if status == "add_immediately" else "voting",
         }
-        await ctx.interaction.response.defer()
+
+        # Send default message
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Loading...")
+
+        # Attempt to get tournament emoji
         emoji = None
         while emoji == None:
-            info_message = await ctx.send(
-                "Please send the emoji to use for the tournament. If you would like to use a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf you would like to use a standard emoji, please send a message with only the standard emoji."
+            # Send info message
+            await ctx.interaction.edit_original_message(
+                content = f"{EMOJI_LOADING}\nPlease send the emoji to use for the tournament. If you would like to use a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf you would like to use a standard emoji, please send a message with only the standard emoji."
             )
+
+            # Get user response
             emoji_message = await listen_for_response(
                 follow_id=ctx.user.id,
                 timeout=120,
             )
+
             # If emoji message has file, use this as emoji, otherwise, use default emoji provided
             if emoji_message == None:
-                await ctx.interaction.response.send_message(
-                    content="No emoji was provided, so the operation was cancelled."
+                return await ctx.interaction.edit_original_message(
+                    content="No emoji was provided after 2 minutes, so the operation was cancelled."
                 )
-                return
 
-            if len(emoji_message.attachments) > 0:
-                # If no attachments provided
+            if len(emoji_message.attachments):
+                # If attachments provided
+
                 emoji_attachment = emoji_message.attachments[0]
                 await emoji_message.delete()
-                await info_message.delete()
+                
+                # Check for attachment size
                 if emoji_attachment.size > 256000:
-                    await ctx.send("Please use an emoji that is less than 256KB.")
+                    size_message = await ctx.send("Please use an emoji that is less than 256KB.")
+                    await size_message.delete(delay = 15)
                     continue
+
+                # Check for attachment type
                 if emoji_attachment.content_type not in [
                     "image/gif",
                     "image/jpeg",
                     "image/png",
                 ]:
-                    await ctx.send("Please use a file that is a GIF, JPEG, or PNG.")
+                    type_message = await ctx.send("Please use a file that is a GIF, JPEG, or PNG.")
+                    await type_message.delete(delay = 15)
                     continue
+
+                # Check for emoji creation in guilds
                 created_emoji = False
-                for guild_id in EMOJI_GUILDS:
+                for i, guild_id in enumerate(EMOJI_GUILDS):
                     guild = self.bot.get_guild(guild_id)
+                    assert isinstance(guild, discord.Guild)
+
+                    # Attempt to add emoji to guild
                     if len(guild.emojis) < guild.emoji_limit:
                         # The guild can fit more custom emojis
                         emoji = await guild.create_custom_emoji(
@@ -125,15 +147,21 @@ class StaffInvitational(commands.Cog):
                             reason=f"Created by {ctx.interaction.user}.",
                         )
                         created_emoji = True
+                        emoji_creation_message = await ctx.send(f"Created {emoji} (`{str(emoji)}`) emoji in guild `{guild_id}`. (Guild {i + 1}/{len(EMOJI_GUILDS)})")
+                        await emoji_creation_message.delete(delay = 10)
+                        break
+
                 if not created_emoji:
-                    await ctx.interaction.response.send_message(
+                    await ctx.interaction.edit_original_message(
                         conten=f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds."
                     )
                     return
 
+            # If just standard emoji, use that
             if len(emoji_message.content) > 0:
                 emoji = emoji_message.content
 
+        # Tournament creation embed description
         description = f"""
             **Official Name:** {official_name}
             **Channel Name:** `#{channel_name}`
@@ -142,16 +170,20 @@ class StaffInvitational(commands.Cog):
             **Tournament Emoji:** {emoji}
             """
 
+        # Update tournament with status
         if status == "add_immediately":
             description += "\n**This tournament channel will be opened immediately.** This means that it will require no votes by users to open. This option should generally only be used for tournaments that have a very strong attendance or desire to be added to the server."
         else:
             description += "\n**This tournament channel will require a certain number of votes to be opened.** This means that the tournament channel will not immediately be created - rather, users will need to vote on the channel being created before the action is done."
 
+        # Final Embed class
         confirm_embed = discord.Embed(
             title=f"Add New Invitational",
             color=discord.Color(0x2E66B6),
             description=description,
         )
+
+        # Use Yes/No view for final confirmation
         view = YesNo()
         await ctx.interaction.edit_original_message(
             content=f"Please confirm that you would like to add the following tournament:",
@@ -164,7 +196,7 @@ class StaffInvitational(commands.Cog):
             new_tourney_doc["emoji"] = str(emoji)
             await insert("data", "invitationals", new_tourney_doc)
             await ctx.interaction.edit_original_message(
-                content="The invitational was added successfully.",
+                content="The invitational was added successfully! The tournament list will now be refreshed.",
                 embed=None,
                 view=None,
             )
