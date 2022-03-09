@@ -280,47 +280,56 @@ class StaffInvitational(commands.Cog):
             choices=["official name", "short name", "emoji", "tournament date"],
         ),
     ):
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Send notice that process has started
+        await ctx.interaction.response.send_message(content = f"{EMOJI_LOADING} Attempting to edit invitational...")
+
+        # Attempt to find invitational
         invitationals = await get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
+
+        # If no invitational was found
         if len(found_invitationals) < 1:
-            await ctx.interaction.response.send_message(
+            await ctx.interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`."
             )
+
+        # If one invitational was found
         elif len(found_invitationals) == 1:
             invitational = found_invitationals[0]
-            relevant_words = {
-                "official name": "official name",
-                "short name": "short name",
-                "emoji": "emoji",
-                "tournament date": "tournament date",
-            }
-            info_message_text = f"Please send the new {relevant_words[feature_to_edit]} relevant to the tournament."
+
+            # Send notice to user about editing invitational
+            info_message_text = f"{EMOJI_LOADING} Please send the new {feature_to_edit} relevant to the tournament."
             if feature_to_edit == "emoji":
                 info_message_text += "\n\nTo use a custom image as the new emoji for the invitational, please send a file that is no larger than 256KB. If you would like to use a new standard emoji for the invitational, please send only the new standard emoji."
             elif feature_to_edit == "tournament date":
                 info_message_text += "\n\nTo update the tournament date, please send the date formatted as YYYY-mm-dd, such as `2022-01-12`."
+            await ctx.interaction.edit_original_message(content = info_message_text)
 
-            await ctx.interaction.response.defer()
-            info_message = await ctx.send(info_message_text)
+            # Ask user for the new content!
             content_message = await listen_for_response(
                 follow_id=ctx.user.id,
                 timeout=120,
             )
 
+            # If a message was found
             if content_message != None:
                 rename_dict = {}
                 await content_message.delete()
-                await info_message.delete()
+
+                # If editing tournament's name
                 if feature_to_edit == "official name":
+                    # Make sure to rename the roles
                     rename_dict = {
                         "roles": {
                             invitational["official_name"]: content_message.content
                         }
                     }
+                    # and update the DB
                     await update(
                         "data",
                         "invitationals",
@@ -330,12 +339,16 @@ class StaffInvitational(commands.Cog):
                     await ctx.interaction.edit_original_message(
                         content=f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**."
                     )
+
+                # If editing tournament's short name
                 elif feature_to_edit == "short name":
+                    # Make sure to rename the channel
                     rename_dict = {
                         "channels": {
                             invitational["channel_name"]: content_message.content
                         }
                     }
+                    # and update the DB
                     await update(
                         "data",
                         "invitationals",
@@ -345,23 +358,30 @@ class StaffInvitational(commands.Cog):
                     await ctx.interaction.edit_original_message(
                         content=f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**."
                     )
+
+                # If editing tournament's emoji
                 elif feature_to_edit == "emoji":
                     emoji = None
                     if len(content_message.attachments):
+
                         # User provided custom emoji
                         emoji_attachment = content_message.attachments[0]
                         if emoji_attachment.size > 256000:
-                            await ctx.interaction.response.send_message(
-                                "Please use an emoji that is less than 256KB. Operation cancelled."
+                            await ctx.interaction.edit_original_message(
+                                content = "Please use an emoji that is less than 256KB. Operation cancelled."
                             )
+
+                        # Check for type
                         if emoji_attachment.content_type not in [
                             "image/gif",
                             "image/jpeg",
                             "image/png",
                         ]:
-                            await ctx.interaction.response.send_message(
-                                "Please use a file that is a GIF, JPEG, or PNG. Operation cancelled."
+                            await ctx.interaction.edit_original_message(
+                                content = "Please use a file that is a GIF, JPEG, or PNG. Operation cancelled."
                             )
+
+                        # Create new emoji, delete old emoji
                         created_emoji = False
                         for guild_id in EMOJI_GUILDS:
                             guild = self.bot.get_guild(guild_id)
@@ -373,7 +393,7 @@ class StaffInvitational(commands.Cog):
                                     await emoji.delete(
                                         reason=f"Replaced with alternate emoji by {ctx.interaction.user}."
                                     )
-                            if len(guild.emojis) < guild.emoji_limit:
+                            if len(guild.emojis) < guild.emoji_limit and not created_emoji:
                                 # The guild can fit more custom emojis
                                 emoji = await guild.create_custom_emoji(
                                     name=f"tournament_{invitational['channel_name']}",
@@ -381,34 +401,42 @@ class StaffInvitational(commands.Cog):
                                     reason=f"Created by {ctx.interaction.user}.",
                                 )
                                 created_emoji = True
+
                         if not created_emoji:
-                            await ctx.interaction.edit_original_message(
+                            return await ctx.interaction.edit_original_message(
                                 content=f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds."
                             )
-                            return
 
+                    # User provided standard emoji
                     else:
-                        # User provided standard emoji
                         emoji = content_message.content
 
+                    # Update the DB with info
                     await update(
                         "data",
                         "invitationals",
                         invitational["_id"],
                         {"$set": {"emoji": emoji}},
                     )
+
+                    # Send confirmation message
                     await ctx.interaction.edit_original_message(
                         content=f"The emoji for `{invitational['official_name']}` was updated to: {emoji}."
                     )
+
+                # If editing the tournament date
                 elif feature_to_edit == "tournament date":
+                    # Get vars
                     date_str = content_message.content
                     date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                    # and update DB
                     await update(
                         "data",
                         "invitationals",
                         invitational["_id"],
                         {"$set": {"tourney_date": date_dt}},
                     )
+                    # and send user confirmation
                     await ctx.interaction.edit_original_message(
                         content=f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}."
                     )
