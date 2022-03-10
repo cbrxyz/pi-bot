@@ -453,23 +453,26 @@ class StaffInvitational(commands.Cog):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
     async def invitational_archive(
         self,
-        ctx,
+        ctx: ApplicationContext,
         short_name: Option(
             str,
             "The short name referring to the invitational, such as 'mit'.",
             required=True,
         ),
     ):
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
+
+        # Let staff know process has started
+        await ctx.interaction.response.send_message(content = f"{EMOJI_LOADING} Attempting to archive the `{short_name}` invitational...")
 
         invitationals = await get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
         if not len(found_invitationals):
-            await ctx.interaction.response.send_message(
-                content=f"Sorry, I couldn't find an invitational with a short name of {short_name}.",
-                ephemeral=True,
+            await ctx.interaction.edit_original_message(
+                content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
 
         # Invitational was found
@@ -482,9 +485,8 @@ class StaffInvitational(commands.Cog):
             invitational["_id"],
             {"$set": {"status": "archived"}},
         )
-        await ctx.interaction.response.send_message(
-            content=f"The **`{invitational['official_name']}`** is now being archived.",
-            ephemeral=True,
+        await ctx.interaction.edit_original_message(
+            content=f"The **`{invitational['official_name']}`** is now being archived."
         )
         await update_tournament_list(self.bot, {})
 
@@ -495,31 +497,43 @@ class StaffInvitational(commands.Cog):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
     async def invitational_delete(
         self,
-        ctx,
+        ctx: ApplicationContext,
         short_name: Option(
             str,
             "The short name referring to the invitational, such as 'mit'.",
             required=True,
         ),
     ):
+        # Check for staff permissions again
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Let staff know process started
+        await ctx.interaction.response.send_message(content = f"{EMOJI_LOADING} Attempting to delete the `{short_name}` invitational...")
+
+        # Attempt to find invitational
         invitationals = await get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
+
         if not len(found_invitationals):
-            await ctx.interaction.response.send_message(
+            await ctx.interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
+
         else:
+            # Find the relevant invitational
             invitational = found_invitationals[0]
+
+            # Get the relevant channel and role
             server = self.bot.get_guild(SERVER_ID)
             ch = discord.utils.get(
                 server.text_channels, name=invitational["channel_name"]
             )
             r = discord.utils.get(server.roles, name=invitational["official_name"])
-            if ch != None and ch.category.name in [
+
+            # Delete the channel and role
+            if ch != None and ch.category != None and ch.category.name in [
                 CATEGORY_ARCHIVE,
                 CATEGORY_TOURNAMENTS,
             ]:
@@ -527,16 +541,20 @@ class StaffInvitational(commands.Cog):
             if r != None:
                 await r.delete()
 
+            # Delete the invitational emoji
             search = re.findall(r"<:.*:\d+>", invitational["emoji"])
             if len(search):
                 emoji = self.bot.get_emoji(search[0])
                 if emoji != None:
                     await emoji.delete()
 
+            # Delete from the DB
             await delete("data", "invitationals", invitational["_id"])
-            await ctx.interaction.response.send_message(
-                f"Deleted the **`{invitational['official_name']}`**."
+            await ctx.interaction.edit_original_message(
+                content = f"Deleted the **`{invitational['official_name']}`**."
             )
+
+            # Update the tournament list to reflect
             await update_tournament_list(self.bot, {})
 
 
