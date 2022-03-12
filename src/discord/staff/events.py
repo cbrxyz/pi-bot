@@ -43,7 +43,7 @@ class StaffEvents(commands.Cog):
         ctx,
         event_name: Option(str, "The name of the new event.", required=True),
         event_aliases: Option(
-            str, "The aliases for the new event. Format as 'alias1, alias2'."
+            str, "The aliases for the new event. Format as 'alias1, alias2'.", required = False
         ),
     ):
         # Check for staff permissions
@@ -62,7 +62,9 @@ class StaffEvents(commands.Cog):
 
         # Construct dictionary to represent event; will be stored in database
         # and local storage
-        aliases_array = re.findall(r"\w+", event_aliases)
+        aliases_array = []
+        if event_aliases != None:
+            aliases_array = re.findall(r"\w+", event_aliases)
         new_dict = {"name": event_name, "aliases": aliases_array}
 
         # Add dict into events container
