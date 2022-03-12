@@ -10,6 +10,7 @@ from discord.errors import NoEntryPointError
 from discord.ext import commands
 from discord.commands import Option, permissions
 from discord.ext.commands.errors import NotOwner
+from discord.commands.context import ApplicationContext
 from discord.types.embed import EmbedField
 import commandchecks
 from commandchecks import is_staff, is_launcher
@@ -395,7 +396,7 @@ class StaffEssential(StaffCommands):
     )
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def ban(self,
-                  ctx,
+                  ctx: ApplicationContext,
                   member: Option(discord.Member, "The user to ban."),
                   reason: Option(str, "The reason to ban the user for."),
                   ban_length: Option(str, "How long to ban the user for.", choices = [
@@ -415,27 +416,32 @@ class StaffEssential(StaffCommands):
                   delete_days: Option(int, "The days worth of messages to delete from this user. Defaults to 0.", min_value = 0, max_value = 7, default = 0)
                  ):
         """Bans a user."""
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Possible times selectable by user
         times = {
-            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
-            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
-            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
-            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
-            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
-            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
-            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
-            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
-            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
-            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
-            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
         }
+
+        # Generate time statement
         time_statement = None
         if ban_length == "Indefinitely":
             time_statement = f"{member.mention} will never be automatically unbanned."
         else:
             time_statement = f"{member.mention} will be banned until {discord.utils.format_dt(times[ban_length], 'F')}."
 
+        # Create confirmation embed to show to staff member
         original_shown_embed = discord.Embed(
             title = "Ban Confirmation",
             color = discord.Color.brand_red(),
@@ -446,12 +452,15 @@ class StaffEssential(StaffCommands):
             """
         )
 
+        # Show view to staff member
         view = Confirm(ctx.author, "The ban operation was cancelled. They remain in the server.")
-        await ctx.respond("Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
+        await ctx.respond(f"{EMOJI_LOADING} Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
         await view.wait()
+        # If staff member selects yes
         if view.value:
             try:
+                # If not quiet, generate embed to send to member
                 if quiet == "no":
                     alert_embed = discord.Embed(
                         title = "You have been banned from the Scioly.org server.",
@@ -463,12 +472,17 @@ class StaffEssential(StaffCommands):
                         """
                     )
                     await member.send("Notice from the Scioly.org server:", embed = alert_embed)
-                await ctx.guild.ban(member, reason=reason)
+
+                # Ban member
+                await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)
             except:
                 pass
+        else:
+            return await ctx.interaction.edit_original_message(content = f"The operation was cancelled.", view = None, embed = None)
 
         if ban_length != "Indefinitely":
-            await insert("data", "cron", {"date": times[ban_length], "do": f"unban {member.id}"})
+            cron_tasks_cog = self.bot.get_cog('CronTasks')
+            await cron_tasks_cog.schedule_unban(member, times[ban_length])
 
         # Test
         guild = ctx.author.guild
@@ -508,17 +522,17 @@ class StaffEssential(StaffCommands):
         commandchecks.is_staff_from_ctx(ctx)
 
         times = {
-            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
-            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
-            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
-            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
-            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
-            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
-            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
-            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
-            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
-            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
-            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
         }
         time_statement = None
         if mute_length == "Indefinitely":
@@ -564,7 +578,8 @@ class StaffEssential(StaffCommands):
                 pass
 
         if mute_length != "Indefinitely":
-            await insert("data", "cron", {"date": times[mute_length], "do": f"unmute {member.id}"})
+            cron_tasks_cog = self.bot.get_cog('CronTasks')
+            await cron_tasks_cog.schedule_unmute(member, times[mute_length])
 
         # Test
         if role in member.roles:
