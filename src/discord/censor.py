@@ -51,8 +51,8 @@ class Censor(commands.Cog):
         for word in src.discord.globals.CENSOR['words']:
             if len(re.findall(fr"\b({word})\b", content, re.I)):
                 return True
-        for word in src.discord.globals.CENSOR['emojis']:
-            if len(re.findall(fr"{word}", content)):
+        for emoji in src.discord.globals.CENSOR['emojis']:
+            if len(re.findall(emoji, content)):
                 return True
         return False
 
@@ -79,8 +79,8 @@ class Censor(commands.Cog):
         # Actually replace content found on the censored words/emojis list
         for word in src.discord.globals.CENSOR['words']:
             content = re.sub(fr'\b({word})\b', "<censored>", content, flags=re.IGNORECASE)
-        for word in src.discord.globals.CENSOR['emojis']:
-            content = re.sub(fr"{word}", "<censored>", content, flags=re.I)
+        for emoji in src.discord.globals.CENSOR['emojis']:
+            content = re.sub(emoji, "<censored>", content, flags=re.I)
 
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)

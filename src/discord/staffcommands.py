@@ -454,7 +454,7 @@ class StaffEssential(StaffCommands):
 
         # Show view to staff member
         view = Confirm(ctx.author, "The ban operation was cancelled. They remain in the server.")
-        await ctx.respond(f"{EMOJI_LOADING} Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
+        await ctx.respond("Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
         await view.wait()
         # If staff member selects yes
@@ -477,8 +477,6 @@ class StaffEssential(StaffCommands):
                 await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)
             except:
                 pass
-        else:
-            return await ctx.interaction.edit_original_message(content = f"The operation was cancelled.", view = None, embed = None)
 
         if ban_length != "Indefinitely":
             cron_tasks_cog = self.bot.get_cog('CronTasks')

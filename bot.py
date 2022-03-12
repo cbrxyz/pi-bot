@@ -5,6 +5,7 @@ import asyncio
 import uuid
 
 from discord.ext import commands
+from discord import RawReactionActionEvent
 
 from commanderrors import CommandNotAllowedInChannel
 
@@ -12,6 +13,7 @@ from commanderrors import CommandNotAllowedInChannel
 # SERVER VARIABLES
 ##############
 
+import src.discord.globals
 from src.discord.globals import *
 
 ##############
@@ -240,6 +242,18 @@ async def on_raw_message_delete(payload):
     # Get the logger cog and log deleted message
     logger_cog = bot.get_cog("Logger")
     await logger_cog.log_delete_message_payload(payload)
+
+@bot.event
+async def on_raw_reaction_add(payload: RawReactionActionEvent):
+    """
+    Handles reaction add events. Currently just used to suppress offensive emojis.
+    """
+    if str(payload.emoji) in src.discord.globals.CENSOR['emojis']:
+        channel = bot.get_channel(payload.channel_id)
+        assert isinstance(channel, discord.TextChannel)
+        partial_message = channel.get_partial_message(payload.message_id)
+        assert isinstance(partial_message, discord.PartialMessage)
+        await partial_message.clear_reaction(payload.emoji)
 
 @bot.event
 async def on_command_error(ctx, error):
