@@ -8,6 +8,7 @@ from discord.commands import Option, permissions
 from discord.commands.context import ApplicationContext
 import commandchecks
 
+import src.discord.globals
 from src.discord.globals import (
     SLASH_COMMAND_GUILDS,
     CATEGORY_ARCHIVE,
@@ -557,6 +558,61 @@ class StaffInvitational(commands.Cog):
             # Update the tournament list to reflect
             await update_tournament_list(self.bot, {})
 
+    @invitational_status_group.command(
+        name="season",
+        description="Staff command. Changes the invitational season, meant to be run once per year.",
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    async def invitational_season(
+        self,
+        ctx: ApplicationContext
+    ):
+        # Check for staff permissions again
+        commandchecks.is_staff_from_ctx(ctx)
+
+        # Let staff know process started
+        await ctx.interaction.response.send_message(content = f"{EMOJI_LOADING} Attempting to run command...")
+
+        assert isinstance(src.discord.globals.SETTINGS['invitational_season'], int)
+        description = f"""
+        This will update the season for the invitational season from `{src.discord.globals.SETTINGS['invitational_season']}` to `{src.discord.globals.SETTINGS['invitational_season'] + 1}`.
+
+        This **will not remove any data**, but the invitational display in the invitationals channel will be updated to only display invitationals relevant to the new season.
+
+        **This command is only meant to be run once per year.**
+        """
+
+        # Ask for permission again
+        confirm_embed = discord.Embed(
+            title=f"WARNING: Attempting to update invitational season.",
+            color=discord.Color.brand_red(),
+            description=description,
+        )
+
+        # Use Yes/No view for final confirmation
+        view = YesNo()
+        await ctx.interaction.edit_original_message(
+            content=f"Please confirm that you would like to update the invitational season:",
+            embed=confirm_embed,
+            view=view,
+        )
+        await view.wait()
+        if view.value:
+            # Let staff member know of success
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Attempting to update the invitational year and refresh tournament list...", view = None, embed = None)
+
+            # Actually update season
+            src.discord.globals.SETTINGS['invitational_season'] += 1
+            tasks_cog = self.bot.get_cog("CronTasks")
+            await tasks_cog.update_setting('invitational_season', src.discord.globals.SETTINGS['invitational_season'] + 1)
+
+            # Update the tournament list to reflect
+            await update_tournament_list(self.bot, {})
+
+            # Send message to staff
+            await ctx.interaction.edit_original_message(content = "The operation succeeded, and the tournament list was refreshed.")
+        else:
+            await ctx.interaction.edit_original_message(content = "The operation was cancelled.", view = None, embed = None)
 
 def setup(bot):
     bot.add_cog(StaffInvitational(bot))

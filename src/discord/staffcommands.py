@@ -940,10 +940,19 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                       system: Option(str, "The system to refresh.", choices = ["all", "invitationals"])
                      ):
         """Refreshes data from the sheet."""
+        # Check for staff permissions again
         commandchecks.is_staff_from_ctx(ctx)
 
-        if system in ["all", "invitationals"]:
-            await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Updating the invitationals list.")
+        # Send initial message...
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Refreshing `{system}`...")
+
+        if system in ["all"]:
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Pulling all updated database information...")
+            tasks_cog = self.bot.get_cog("CronTasks")
+            await tasks_cog.pull_prev_info()
+
+        if system in ["invitationals", "all"]:
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Updating the invitationals list.")
             await update_tournament_list(ctx.bot)
             await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated the invitationals list.")
 

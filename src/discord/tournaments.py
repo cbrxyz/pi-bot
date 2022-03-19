@@ -1,4 +1,5 @@
 import discord
+import src.discord.globals
 from src.discord.globals import INVITATIONAL_INFO, SERVER_ID, CHANNEL_TOURNAMENTS, CATEGORY_TOURNAMENTS, CATEGORY_ARCHIVE, CHANNEL_BOTSPAM, CHANNEL_SUPPORT, ROLE_GM, ROLE_AD, ROLE_AT, CHANNEL_COMPETITIONS
 from src.mongo.mongo import get_invitationals, update_many
 
@@ -287,13 +288,22 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
     await tourney_channel.purge() # Delete all messages to make way for new messages/views
     await tourney_channel.send(embed = help_embed)
 
+    assert isinstance(src.discord.globals.SETTINGS['invitational_season'], int)
+    first_year = src.discord.globals.SETTINGS['invitational_season'] - 1
+    second_year = src.discord.globals.SETTINGS['invitational_season']
     months = [
-        {'name': 'October', 'number': 10, 'year': 2021},
-        {'name': 'November', 'number': 11, 'year': 2021},
-        {'name': 'December', 'number': 12, 'year': 2021},
-        {'name': 'January', 'number': 1, 'year': 2022},
-        {'name': 'February', 'number': 2, 'year': 2022},
-        {'name': 'March', 'number': 3, 'year': 2022}
+        {'name': 'September', 'number': 9, 'year': first_year, 'optional': True},
+        {'name': 'October', 'number': 10, 'year': first_year, 'optional': False},
+        {'name': 'November', 'number': 11, 'year': first_year, 'optional': False},
+        {'name': 'December', 'number': 12, 'year': first_year, 'optional': False},
+        {'name': 'January', 'number': 1, 'year': second_year, 'optional': False},
+        {'name': 'February', 'number': 2, 'year': second_year, 'optional': False},
+        {'name': 'March', 'number': 3, 'year': second_year, 'optional': False},
+        {'name': 'April', 'number': 4, 'year': second_year, 'optional': True},
+        {'name': 'May', 'number': 5, 'year': second_year, 'optional': True},
+        {'name': 'June', 'number': 6, 'year': second_year, 'optional': True},
+        {'name': 'July', 'number': 7, 'year': second_year, 'optional': True},
+        {'name': 'August', 'number': 8, 'year': second_year, 'optional': True},
     ]
     for month in months:
         month_tournaments = [t for t in invitationals if t.tourney_date.month == month['number'] and t.tourney_date.year == month['year'] and t.status == "open"]
@@ -301,8 +311,8 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             await tourney_channel.send(f"Join a channel for a tournament in **{month['name']} {month['year']}**:", view = TournamentDropdownView(month_tournaments, bot))
         else:
             # No tournaments in the given month :(
-            # await tourney_channel.send(f"Sorry, there are no channels opened for tournaments in **{month['name']} {month['year']}**.")
-            pass
+            if not month['optional']:
+                await tourney_channel.send(f"Sorry, there are no channels opened for tournaments in **{month['name']} {month['year']}**.")
 
     voting_tournaments = [t for t in invitationals if t.status == "voting"]
     voting_embed = discord.Embed(

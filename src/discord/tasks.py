@@ -3,6 +3,7 @@ import random
 import datetime
 from discord.ext import commands, tasks
 import src.discord.globals
+from typing import Any
 
 from src.discord.tournaments import update_tournament_list
 from src.mongo.mongo import get_cron, get_pings, get_censor, get_settings, get_reports, get_tags, get_events, insert, update, delete
@@ -102,6 +103,12 @@ class CronTasks(commands.Cog):
             "time": time
         }
         await self.add_to_cron(item_dict)
+
+    async def update_setting(self, setting_name: str, value: Any) -> None:
+        """
+        Updates the value of a setting.
+        """
+        await update('data', 'settings', src.discord.globals.SETTINGS['_id'], { '$set': {setting_name: value}})
 
     @tasks.loop(minutes=5)
     async def update_member_count(self):
