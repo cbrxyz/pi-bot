@@ -129,63 +129,69 @@ class StaffTags(commands.Cog):
             default="do not change",
         ),
     ):
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Notify user that process has started
+        await ctx.interaction.response.send_message(content=f"{EMOJI_LOADING} Attempting to update the `{tag_name}` tag...")
+
+        # Check that tag exists.
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
-            return await ctx.interaction.response.send_message(
+            return await ctx.interaction.edit_original_message(
                 content=f"No tag with name `{tag_name}` could be found."
             )
 
+        # Get relevant tag
         tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
-
-        await ctx.interaction.response.defer()
-        info_message = await ctx.send(
-            f"The current content of the tag is:\n```\n{tag['output']}\n```\nPlease enclose a new message to associate with the tag by entering a message in a preformatted block (a block of text between three backticks)."
+    
+        # Send info message about updating tag
+        info_message = await ctx.interaction.edit_original_message(
+            content = f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag['output']}\n----------\n" +
+            "Please send the new text for the tag below:"
         )
 
+        # Listen for user response
         content_message = await listen_for_response(
             follow_id=ctx.user.id,
             timeout=120,
         )
 
+        # If user did not respond
         if content_message == None:
             await ctx.interaction.edit_original_message(
                 content="No message was found within 2 minutes. Operation cancelled."
             )
             return
 
+        # Get message content
         text = content_message.content
         await content_message.delete()
-        await info_message.delete()
 
-        matches = re.findall(
-            r"(?<=```\n)(.*)(?=\n```)", text, flags=re.MULTILINE | re.DOTALL
+        # update_dict will contain values that need to be updated in DB
+        update_dict = {}
+    
+        # Changing tag object changes tag locally
+        # Always set the new text of tag
+        tag["output"] = text
+        update_dict["output"] = text
+
+        # Change permissions if desired
+        if launch_helpers != "do not change":
+            tag["permissions"]["launch_helpers"] = (
+                True if launch_helpers == "yes" else False
+            )
+            update_dict["permissions.launch_helpers"] = (
+                True if launch_helpers == "yes" else False
+            )
+        if members != "do not change":
+            tag["permissions"]["members"] = True if members == "yes" else False
+            update_dict["permissions.members"] = True if members == "yes" else False
+
+        # Update tag
+        await update("data", "tags", tag["_id"], {"$set": update_dict})
+        await ctx.interaction.edit_original_message(
+            content=f"The `{tag_name}` tag was updated."
         )
-        if len(matches) < 0:
-            await ctx.interaction.edit_original_message(
-                content="No matching preformatted block was found. Operation cancelled."
-            )
-            return
-        else:
-            update_dict = {}
-
-            tag["output"] = matches[0]
-            update_dict["output"] = matches[0]
-            if launch_helpers != "do not change":
-                tag["permissions"]["launch_helpers"] = (
-                    True if launch_helpers == "yes" else False
-                )
-                update_dict["permissions.launch_helpers"] = (
-                    True if launch_helpers == "yes" else False
-                )
-            if members != "do not change":
-                tag["permissions"]["members"] = True if members == "yes" else False
-                update_dict["permissions.members"] = True if members == "yes" else False
-
-            await update("data", "tags", tag["_id"], {"$set": update_dict})
-            await ctx.interaction.edit_original_message(
-                content=f"The `{tag_name}` tag was updated."
-            )
 
     @tag_commands_group.command(
         name="remove",
