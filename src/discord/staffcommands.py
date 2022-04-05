@@ -28,7 +28,7 @@ from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, ROLE_LH, RO
 from bot import listen_for_response
 
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete, delete_by
 
 from src.discord.views import YesNo
 
@@ -1014,6 +1014,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 'custom_bot_status_type': activity
             }
         )
+        
+        # Delete any relevant documents
+        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
 
         # Insert time length into CRON
         cron_cog = self.bot.get_cog("CronTasks")
@@ -1048,6 +1051,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             }
         )
         await ctx.interaction.edit_original_message(content = "Reset the bot's status.")
+
+        # Delete any relevant documents
+        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
 
         # Reset bot status to regularly update
         cron_cog = self.bot.get_cog("CronTasks")
