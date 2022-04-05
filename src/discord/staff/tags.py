@@ -16,7 +16,7 @@ from src.discord.globals import (
     ROLE_VIP,
 )
 
-from src.mongo.mongo import insert, update
+from src.mongo.mongo import insert, update, delete
 
 
 class StaffTags(commands.Cog):
@@ -203,17 +203,27 @@ class StaffTags(commands.Cog):
         ctx,
         tag_name: Option(str, "The name of the tag to remove.", required=True),
     ):
+        # Check for staff permissions again
         commandchecks.is_staff_from_ctx(ctx)
 
+        # Notify user that process has started
+        await ctx.interaction.response.send_message(content=f"{EMOJI_LOADING} Attempting to delete the `{tag_name}` tag...")
+
+        # If tag does not exist
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
-            return await ctx.interaction.response.send_message(
+            return await ctx.interaction.edit_original_message(
                 content=f"No tag with the name of `{tag_name}` was found."
             )
 
+        # Get tag
         tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
+        # and remove it!
         src.discord.globals.TAGS.remove(tag)
+        # and delete it from the DB!
         await delete("data", "tags", tag["_id"])
-        return await ctx.interaction.response.send_message(
+     
+        # Send confirmation message
+        return await ctx.interaction.edit_original_message(
             content=f"The `{tag_name}` tag was deleted."
         )
 
