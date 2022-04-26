@@ -60,7 +60,7 @@ class Confirm(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
     async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user == self.author:
-            await interaction.response.send_message(self.cancel_response, ephemeral=True)
+            await interaction.response.edit_message(content = self.cancel_response, embed = None, view = None)
             self.value = False
             self.stop()
         else:
@@ -583,8 +583,6 @@ class StaffEssential(StaffCommands):
         if role in member.roles:
             # User was successfully muted
             await ctx.interaction.edit_original_message(content = "The user was successfully muted.", embed = None, view = None)
-        else:
-            await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
 
     slowmode_group = discord.commands.SlashCommandGroup(
         "slowmode",
@@ -1014,7 +1012,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 'custom_bot_status_type': activity
             }
         )
-        
+
         # Delete any relevant documents
         await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
 
