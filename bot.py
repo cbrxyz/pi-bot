@@ -148,12 +148,14 @@ async def on_message(message):
             print(f'Message from {message.author} in #{message.channel}: {message.content}')
 
     # Check if the message contains a censored word/emoji
-    censor = bot.get_cog("Censor")
-    await censor.on_message(message)
+    is_private = any([isinstance(message.channel, discord_class) for discord_class in [discord.DMChannel, discord.GroupChannel]])
+    if message.content and not is_private:
+        censor = bot.get_cog("Censor")
+        await censor.on_message(message)
 
-    # Check to see if the message contains repeated content or has too many caps
-    spam = bot.get_cog("SpamManager")
-    await spam.store_and_validate(message)
+        # Check to see if the message contains repeated content or has too many caps
+        spam = bot.get_cog("SpamManager")
+        await spam.store_and_validate(message)
 
 @bot.event
 async def on_member_join(member):
