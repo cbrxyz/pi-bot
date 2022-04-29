@@ -28,7 +28,7 @@ from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, ROLE_LH, RO
 from bot import listen_for_response
 
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete, delete_by
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals, get_pings, insert, update, delete, delete_by
 
 from src.discord.views import YesNo
 
@@ -935,7 +935,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def refresh(self,
                       ctx,
-                      system: Option(str, "The system to refresh.", choices = ["all", "invitationals"])
+                      system: Option(str, "The system to refresh.", choices = ["all", "invitationals", "pings"])
                      ):
         """Refreshes data from the sheet."""
         # Check for staff permissions again
@@ -953,6 +953,11 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Updating the invitationals list.")
             await update_tournament_list(ctx.bot)
             await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated the invitationals list.")
+
+        if system in ["pings", "all"]:
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Updating all users' pings.")
+            src.discord.globals.PING_INFO = await get_pings()
+            await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated all users' pings.") 
 
     change_status_group = discord.commands.SlashCommandGroup(
         "status",
