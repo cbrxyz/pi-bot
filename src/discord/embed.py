@@ -2,11 +2,12 @@ import discord
 import asyncio
 import json
 import re
+import webcolors
 from discord.ext import commands
 import discord.commands
 from discord.commands import Option, permissions
 
-from src.discord.globals import SLASH_COMMAND_GUILDS, ROLE_STAFF, ROLE_VIP, SERVER_ID
+from src.discord.globals import SLASH_COMMAND_GUILDS, ROLE_STAFF, ROLE_VIP, SERVER_ID, EMOJI_LOADING
 import commandchecks
 from bot import listen_for_response
 
@@ -302,6 +303,8 @@ class EmbedCommands(commands.Cog):
 
     def _generate_embed(self, embed_dict: dict) -> discord.Embed:
         new_embed_dict = {}
+
+        # Get primary attributes
         if 'title' in embed_dict:
             new_embed_dict['title'] = embed_dict['title']
         if 'description' in embed_dict:
@@ -328,6 +331,11 @@ class EmbedCommands(commands.Cog):
                 new_embed_dict['color'] = discord.Color(int(embed_dict['color'][1:], 16))
             elif len(embed_dict['color']) <= 6:
                 new_embed_dict['color'] = discord.Color(int(embed_dict['color'], 16))
+        if 'color' in embed_dict and isinstance(embed_dict['color'], int):
+            blue = embed_dict['color'] & 255
+            green = (embed_dict['color'] >> 8) & 255
+            red = (embed_dict['color'] >> 16) & 255
+            new_embed_dict['color'] = discord.Color.from_rgb(red, green, blue)
 
         if not len(new_embed_dict.items()):
             new_embed_dict['description'] = "This embed contains nothing, so a blank description was set."
@@ -337,6 +345,8 @@ class EmbedCommands(commands.Cog):
             response.set_thumbnail(url = embed_dict['thumbnail_url'])
         if 'thumbnailUrl' in embed_dict:
             response.set_thumbnail(url = embed_dict['thumbnailUrl'])
+        if 'thumbnail' in embed_dict:
+            response.set_thumbnail(url = embed_dict['thumbnail']['url'])
 
         if 'authorName' in embed_dict or 'author_name' in embed_dict:
             # Author name must be defined for other attributes to work
@@ -354,6 +364,17 @@ class EmbedCommands(commands.Cog):
                 author_dict['icon_url'] = embed_dict['author_icon']
             if 'authorIcon' in embed_dict:
                 author_dict['icon_url'] = embed_dict['authorIcon']
+            response.set_author(**author_dict)
+
+        # Native discord.py dict format
+        if 'author' in embed_dict:
+            author_dict = {}
+            if 'name' in embed_dict['author']:
+                author_dict['name'] = embed_dict['author']['name']
+            if 'url' in embed_dict['author']:
+                author_dict['url'] = embed_dict['author']['url']
+            if 'icon_url' in embed_dict['author']:
+                author_dict['icon_url'] = embed_dict['author']['icon_url']
             response.set_author(**author_dict)
 
         if 'fields' in embed_dict:
@@ -375,6 +396,12 @@ class EmbedCommands(commands.Cog):
             footer_dict['icon_url'] = embed_dict['footerIcon']
         if 'footerUrl' in embed_dict:
             footer_dict['icon_url'] = embed_dict['footerUrl']
+        if 'footer' in embed_dict:
+            if 'text' in embed_dict['footer']:
+                footer_dict['text'] = embed_dict['footer']['text']
+            if 'icon_url' in embed_dict['footer']:
+                footer_dict['icon_url'] = embed_dict['footer']['icon_url']
+
         if len(footer_dict.items()):
             response.set_footer(**footer_dict)
 
@@ -382,6 +409,8 @@ class EmbedCommands(commands.Cog):
             response.set_image(url = embed_dict['image_url'])
         if 'imageUrl' in embed_dict:
             response.set_image(url = embed_dict['imageUrl'])
+        if 'image' in embed_dict:
+            response.set_image(url = embed_dict['image']['url'])
 
         return response
 
@@ -396,18 +425,38 @@ class EmbedCommands(commands.Cog):
     @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def prepembed(self,
         ctx,
-        channel: Option(discord.TextChannel, "The channel to send the message to.", required = True)
+        channel: Option(discord.TextChannel, "The channel to send the message to. If editing an embed, the message's channel.", required = True),
+        message_id: Option(str, "The ID of the message to edit the embed of.", required = False)
         ):
         """Helps to create an embed to be sent to a channel."""
+        # Check for staff permissions
         commandchecks.is_staff_from_ctx(ctx)
 
         embed_dict = {}
-        await ctx.interaction.response.send_message("Initializing...")
+        try:
+            message_id = int(message_id) if message_id is not None else None
+        except:
+            await ctx.interaction.response.send_message(f":x: `{message_id}` is not a valid message ID.")
+
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Initializing...")
 
         complete = False
         embed_field_manager = False
         embed_field_index = None
         response = None
+
+        # Get old embed if relevant
+        if message_id:
+            try:
+                message = await channel.fetch_message(message_id)
+            except discord.NotFound:
+                return await ctx.interaction.edit_original_message(content = "No message with that ID was found.")
+
+            if not message.embeds:
+                await ctx.interaction.edit_original_message(content = f"The requested message has no embeds.")
+            else:
+                embed_dict = message.embeds[0].to_dict()
+
         while not complete:
             response = self._generate_embed(embed_dict)
             view = None
@@ -502,8 +551,20 @@ class EmbedCommands(commands.Cog):
                     elif isinstance(view, EmbedView):
                         complete = True
 
-        await channel.send(embed = response)
-        await ctx.interaction.edit_original_message(content = "The embed was succesfully sent!", embed = None, view = None)
+        if not message_id:
+            # Send a new embed
+            await channel.send(embed = response)
+            await ctx.interaction.edit_original_message(content = "The embed was succesfully sent!", embed = None, view = None)
+
+        else:
+            # Edit an old embed
+            try:
+                message = await channel.fetch_message(message_id)
+            except discord.NotFound:
+                return await ctx.interaction.edit_original_message(content = "No message with that ID was found.")
+
+            await message.edit(embed = response)
+            await ctx.interaction.edit_original_message(content = "The embed was succesfully edited!", embed = None, view = None)
 
 def setup(bot):
     bot.add_cog(EmbedCommands(bot))

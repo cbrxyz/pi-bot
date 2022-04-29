@@ -356,6 +356,9 @@ bot.load_extension("src.discord.spam")
 bot.load_extension("src.discord.reporter")
 bot.load_extension("src.discord.logger")
 
+# Use old HTTP version
+discord.http.API_VERSION = 9
+
 if dev_mode:
     bot.run(DEV_TOKEN)
 else:
