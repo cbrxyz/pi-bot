@@ -1,6 +1,7 @@
 import wikitextparser as wtp
 from dotenv import load_dotenv, find_dotenv
 import os
+
 load_dotenv(find_dotenv())
 import pywikibot
 import asyncio
@@ -9,7 +10,8 @@ from aioify import aioify
 from src.wiki.wiki import all_pages, set_page_text
 from src.discord.globals import CURRENT_WIKI_PAGE
 
-aiopwb = aioify(obj=pywikibot, name='aiopwb')
+aiopwb = aioify(obj=pywikibot, name="aiopwb")
+
 
 async def prettify_templates():
     global CURRENT_WIKI_PAGE
@@ -25,6 +27,11 @@ async def prettify_templates():
         if page_id > 5:
             page_id = 0
             parsed = wtp.parse(text)
-        await set_page_text(str(title), str(text), "Styled the page according to my stylist. For concerns, see my user page.", minor=True)
+        await set_page_text(
+            str(title),
+            str(text),
+            "Styled the page according to my stylist. For concerns, see my user page.",
+            minor=True,
+        )
         await asyncio.sleep(20)
         page_id += 1
