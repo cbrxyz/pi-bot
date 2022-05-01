@@ -27,11 +27,11 @@ class StaffTags(commands.Cog):
     tag_commands_group = discord.commands.SlashCommandGroup(
         "tagupdate",
         "Updates the bot's tag list.",
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        permissions = [
+        guild_ids=[SLASH_COMMAND_GUILDS],
+        permissions=[
             discord.commands.CommandPermission(ROLE_STAFF, 1, True),
             discord.commands.CommandPermission(ROLE_VIP, 1, True),
-        ]
+        ],
     )
 
     @tag_commands_group.command(
@@ -60,7 +60,9 @@ class StaffTags(commands.Cog):
         commandchecks.is_staff_from_ctx(ctx)
 
         # Notify user that process has started
-        await ctx.interaction.response.send_message(content=f"{EMOJI_LOADING} Attempting to add the `{tag_name}` tag...")
+        await ctx.interaction.response.send_message(
+            content=f"{EMOJI_LOADING} Attempting to add the `{tag_name}` tag..."
+        )
 
         # Check if tag has already been added
         if tag_name in [t["name"] for t in src.discord.globals.TAGS]:
@@ -93,9 +95,7 @@ class StaffTags(commands.Cog):
             "output": text,
             "permissions": {
                 "staff": True,
-                "launch_helpers": True
-                if launch_helpers == "yes"
-                else False,
+                "launch_helpers": True if launch_helpers == "yes" else False,
                 "members": True if members == "yes" else False,
             },
         }
@@ -133,7 +133,9 @@ class StaffTags(commands.Cog):
         commandchecks.is_staff_from_ctx(ctx)
 
         # Notify user that process has started
-        await ctx.interaction.response.send_message(content=f"{EMOJI_LOADING} Attempting to update the `{tag_name}` tag...")
+        await ctx.interaction.response.send_message(
+            content=f"{EMOJI_LOADING} Attempting to update the `{tag_name}` tag..."
+        )
 
         # Check that tag exists.
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
@@ -143,11 +145,11 @@ class StaffTags(commands.Cog):
 
         # Get relevant tag
         tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
-    
+
         # Send info message about updating tag
         info_message = await ctx.interaction.edit_original_message(
-            content = f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag['output']}\n----------\n" +
-            "Please send the new text for the tag below:"
+            content=f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag['output']}\n----------\n"
+            + "Please send the new text for the tag below:"
         )
 
         # Listen for user response
@@ -169,7 +171,7 @@ class StaffTags(commands.Cog):
 
         # update_dict will contain values that need to be updated in DB
         update_dict = {}
-    
+
         # Changing tag object changes tag locally
         # Always set the new text of tag
         tag["output"] = text
@@ -207,7 +209,9 @@ class StaffTags(commands.Cog):
         commandchecks.is_staff_from_ctx(ctx)
 
         # Notify user that process has started
-        await ctx.interaction.response.send_message(content=f"{EMOJI_LOADING} Attempting to delete the `{tag_name}` tag...")
+        await ctx.interaction.response.send_message(
+            content=f"{EMOJI_LOADING} Attempting to delete the `{tag_name}` tag..."
+        )
 
         # If tag does not exist
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
@@ -221,7 +225,7 @@ class StaffTags(commands.Cog):
         src.discord.globals.TAGS.remove(tag)
         # and delete it from the DB!
         await delete("data", "tags", tag["_id"])
-     
+
         # Send confirmation message
         return await ctx.interaction.edit_original_message(
             content=f"The `{tag_name}` tag was deleted."

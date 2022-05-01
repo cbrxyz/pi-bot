@@ -43,7 +43,9 @@ class StaffEvents(commands.Cog):
         ctx,
         event_name: Option(str, "The name of the new event.", required=True),
         event_aliases: Option(
-            str, "The aliases for the new event. Format as 'alias1, alias2'.", required = False
+            str,
+            "The aliases for the new event. Format as 'alias1, alias2'.",
+            required=False,
         ),
     ):
         # Check for staff permissions
@@ -136,7 +138,9 @@ class StaffEvents(commands.Cog):
                 )
 
         # Complete operation of removing event
-        event = [e for e in src.discord.globals.EVENT_INFO if e["name"] == event_name][0]
+        event = [e for e in src.discord.globals.EVENT_INFO if e["name"] == event_name][
+            0
+        ]
         src.discord.globals.EVENT_INFO.remove(event)
         await delete("data", "events", event["_id"])
 

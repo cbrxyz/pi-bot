@@ -5,13 +5,13 @@ import datetime
 from src.mongo.mongo import update
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
-dev_mode = os.getenv('DEV_MODE') == "TRUE"
+TOKEN = os.getenv("DISCORD_TOKEN")
+DEV_TOKEN = os.getenv("DISCORD_DEV_TOKEN")
+dev_mode = os.getenv("DEV_MODE") == "TRUE"
 
 if dev_mode:
     BOT_PREFIX = "?"
-    SERVER_ID = int(os.getenv('DEV_SERVER_ID'))
+    SERVER_ID = int(os.getenv("DEV_SERVER_ID"))
 else:
     BOT_PREFIX = "!"
     SERVER_ID = 698306997287780363
@@ -19,14 +19,19 @@ else:
 ##############
 # CONSTANTS
 ##############
-PI_BOT_IDS = [
-    723767075427844106,
-    743254543952904197,
-    637519324072116247
+PI_BOT_IDS = [723767075427844106, 743254543952904197, 637519324072116247]
+DISCORD_INVITE_ENDINGS = [
+    "9Z5zKtV",
+    "C9PGV6h",
+    "s4kBmas",
+    "ftPTxhC",
+    "gh3aXbq",
+    "skGQXd4",
+    "RnkqUbK",
+    "scioly",
 ]
-DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK", "scioly"]
-SLASH_COMMAND_GUILDS = int(os.getenv('SLASH_COMMAND_GUILDS'))
-EMOJI_GUILDS = [int(iden) for iden in [os.getenv('EMOJI_GUILDS')]]
+SLASH_COMMAND_GUILDS = int(os.getenv("SLASH_COMMAND_GUILDS"))
+EMOJI_GUILDS = [int(iden) for iden in [os.getenv("EMOJI_GUILDS")]]
 
 # Roles
 ROLE_WM = "Wiki/Gallery Moderator"
@@ -102,7 +107,7 @@ RULES = [
     "Do not use multiple accounts within this Server, unless specifically permitted. A separate tournament account may be operated alongside a personal account.",
     "Do not violate Science Olympiad Inc. copyrights. In accordance with the Scioly.org Resource Policy, all sharing of tests on Scioly.org must occur in the designated Test Exchanges. Do not solicit test trades on this Server.",
     "Do not advertise other servers or paid services with which you have an affiliation.",
-    "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'"
+    "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'",
 ]
 
 ##############
@@ -118,11 +123,12 @@ TAGS = []
 CURRENT_WIKI_PAGE = None
 
 SETTINGS = {
-    '_id': None,
-    'custom_bot_status_type': None,
-    'custom_bot_status_text': None,
-    'invitational_season': None
+    "_id": None,
+    "custom_bot_status_type": None,
+    "custom_bot_status_text": None,
+    "invitational_season": None,
 }
+
 
 async def update_setting(values):
     for k, v in values.items():
