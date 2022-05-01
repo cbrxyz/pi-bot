@@ -18,7 +18,7 @@ jobs:
     - name: Install pip packages
       run: |
         pip install --upgrade pip
-        pip install black==22.1.0 pylint==2.12.2 mypy==0.950
+        pip install black==22.3.0 pylint==2.12.2 mypy==0.950
 
     - name: Run black
       if: always()
