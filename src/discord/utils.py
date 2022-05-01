@@ -1,37 +1,9 @@
-import discord
-from src.discord.globals import SERVER_ID, CHANNEL_REPORTS, REPORTS, CENSORED_WORDS, CENSORED_EMOJIS, EVENT_INFO, TAGS
-from embed import assemble_embed
-from src.mongo.mongo import get_censor
+from typing import Union 
 
-# Meant for Pi-Bot only
-async def auto_report(bot, reason, color, message):
-    """Allows Pi-Bot to generate a report by himself."""
-    server = bot.get_guild(SERVER_ID)
-    reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-    embed = assemble_embed(
-        title=f"{reason} (message from Pi-Bot)",
-        webcolor=color,
-        fields = [{
-            "name": "Message",
-            "value": message,
-            "inline": False
-        }]
-    )
-    message = await reports_channel.send(embed=embed)
-    REPORTS.append(message.id)
-    await message.add_reaction("\U00002705")
-    await message.add_reaction("\U0000274C")
-
-async def sanitize_mention(member):
-    if member == False: return True
-    if member == "@everyone" or member == "@here": return False
-    if member[:3] == "<@&": return False
-    return True
-
-async def harvest_id(user):
-    return user.replace("<@!", "").replace(">", "")
-
-async def lookup_role(name):
+async def lookup_role(name: str) -> Union[str, bool]:
+    """
+    Gets the official state role name for a state name or abbreviation.
+    """
     name = name.title()
     if name == "Al" or name == "Alabama": return "Alabama"
     elif name == "All" or name == "All States": return "All States"

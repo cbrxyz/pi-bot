@@ -1,36 +1,42 @@
 import os
 import re
+import json
 import discord
 import datetime
 import asyncio
-from discord.commands.commands import slash_command
+from discord.commands import slash_command
 from discord.errors import NoEntryPointError
 
 from discord.ext import commands
-from discord.commands import Option
+from discord.commands import Option, permissions
+from discord.ext.commands.errors import NotOwner
+from discord.commands.context import ApplicationContext
+from discord.types.embed import EmbedField
+import commandchecks
 from commandchecks import is_staff, is_launcher
 
 import dateparser
 import pytz
+import webcolors
 
-from src.discord.globals import SLASH_COMMAND_GUILDS, TOURNAMENT_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, CRON_LIST, EMOJI_GUILDS
+import src.discord.globals
+from src.discord.globals import CENSOR, SLASH_COMMAND_GUILDS, INVITATIONAL_INFO, CHANNEL_BOTSPAM, CATEGORY_ARCHIVE, ROLE_AT, ROLE_MUTED, EMOJI_GUILDS, TAGS, EVENT_INFO, EMOJI_LOADING
 from src.discord.globals import CATEGORY_SO, CATEGORY_GENERAL, ROLE_MR, CATEGORY_STATES, ROLE_WM, ROLE_GM, ROLE_AD, ROLE_BT
-from src.discord.globals import PI_BOT_IDS, ROLE_EM
+from src.discord.globals import PI_BOT_IDS, ROLE_EM, CHANNEL_TOURNAMENTS
 from src.discord.globals import CATEGORY_TOURNAMENTS, ROLE_ALL_STATES, ROLE_SELFMUTE, ROLE_QUARANTINE, ROLE_GAMES
-from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, STOPNUKE, ROLE_LH
+from src.discord.globals import SERVER_ID, CHANNEL_WELCOME, ROLE_UC, ROLE_LH, ROLE_STAFF, ROLE_VIP
 from bot import listen_for_response
 
-from src.discord.utils import harvest_id
 from src.wiki.mosteditstable import run_table
-from src.mongo.mongo import get_cron, remove_doc, get_invitationals, insert, update, delete
+from src.mongo.mongo import get_cron, remove_doc, get_invitationals, get_pings, insert, update, delete, delete_by
 
-from src.discord.mute import _mute
+from src.discord.views import YesNo
+
 import matplotlib.pyplot as plt
-from embed import assemble_embed
 
 from typing import Type
 
-from src.discord.tournaments import update_tournament_list
+from src.discord.tournaments import INVITATIONAL_INFO, update_tournament_list
 
 class Confirm(discord.ui.View):
     def __init__(self, author, cancel_response):
@@ -44,7 +50,7 @@ class Confirm(discord.ui.View):
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
         if interaction.user == self.author:
-            await interaction.response.edit_message(content="Attempting to run operation...")
+            await interaction.response.edit_message(content=f"{EMOJI_LOADING} Attempting to run operation...")
             self.value = True
             self.interaction = interaction
             self.stop()
@@ -54,26 +60,11 @@ class Confirm(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
     async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user == self.author:
-            await interaction.response.send_message(self.cancel_response, ephemeral=True)
+            await interaction.response.edit_message(content = self.cancel_response, embed = None, view = None)
             self.value = False
             self.stop()
         else:
             await interaction.response.send_message("Sorry, you are not the original staff member who called this method.", ephemeral = True)
-
-class YesNo(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-        self.value = None
-
-    @discord.ui.button(label = "Yes", style = discord.ButtonStyle.green)
-    async def yes(self, button: discord.Button, interaction: discord.Interaction):
-        self.value = True
-        self.stop()
-
-    @discord.ui.button(label = "No", style = discord.ButtonStyle.red)
-    async def no(self, button: discord.Button, interaction: discord.Interaction):
-        self.value = False
-        self.stop()
 
 class NukeStopButton(discord.ui.Button["Nuke"]):
 
@@ -98,150 +89,6 @@ class Nuke(discord.ui.View):
         super().__init__()
         button = NukeStopButton(self)
         self.add_item(button)
-
-class LauncherCommands(commands.Cog):
-
-    def __init__(self, bot):
-        self.bot = bot
-
-    def if_launcher_in_welcome(self, ctx):
-        # This is a method that will accompany the global cog check.
-        # Therefore, this check is representing the proposition `(has launcher role) -> (message in #welcome)`
-        from src.discord.globals import ROLE_STAFF, ROLE_VIP
-        member = ctx.message.author
-        lhRole = discord.utils.get(member.guild.roles, name=ROLE_LH)
-        if lhRole in member.roles and ctx.message.channel.name != CHANNEL_WELCOME:
-            staffRole = discord.utils.get(member.guild.roles, name=ROLE_STAFF)
-            vipRole = discord.utils.get(member.guild.roles, name=ROLE_VIP)
-            raise discord.ext.commands.MissingAnyRole([staffRole, vipRole])
-        return True
-
-    async def cog_check(self, ctx):
-        return await is_launcher(ctx) and self.if_launcher_in_welcome(ctx)
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Confirms a user, giving them access to the server."
-    )
-    async def confirm(self,
-        ctx,
-        member: Option(discord.Member, "The member to confirm.")
-    ):
-        """Allows a staff member to confirm a user."""
-        channel = ctx.channel
-        if channel.name != CHANNEL_WELCOME:
-            return await ctx.respond("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
-
-        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        await ctx.respond(f"Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:", ephemeral = True)
-
-        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Nukes a certain amount of messages."
-    )
-    async def nuke(self,
-        ctx,
-        count: Option(int, "The amount of messages to nuke.")
-    ):
-        """Nukes (deletes) a specified amount of messages."""
-        global STOPNUKE
-        MAX_DELETE = 100
-        if int(count) > MAX_DELETE:
-            return await ctx.respond("Chill. No more than deleting 100 messages at a time.")
-        channel = ctx.channel
-        if int(count) < 0:
-            history = await channel.history(limit=105).flatten()
-            message_count = len(history)
-            if message_count > 100:
-                count = 100
-            else:
-                count = message_count + int(count) - 1
-            if count <= 0:
-                return await ctx.respond("Sorry, you can not delete a negative amount of messages. This is likely because you are asking to save more messages than there are in the channel.")
-
-        original_shown_embed = discord.Embed(
-            title = "NUKE COMMAND PANEL",
-            color = discord.Color.brand_red(),
-            description = f"""
-            {count} messages will be deleted from {channel.mention} in 10 seconds...
-
-            To stop this nuke, press the red button below!
-            """
-        )
-        view = Nuke()
-        msg = await ctx.respond(embed = original_shown_embed, view = view)
-        await asyncio.sleep(1)
-
-        for i in range(9, 0, -1):
-            original_shown_embed.description = f"""
-            {count} messages will be deleted from {channel.mention} in {i} seconds...
-
-            To stop this nuke, press the red button below!
-            """
-            await ctx.interaction.edit_original_message(embed = original_shown_embed, view = view)
-            if view.stopped:
-                return
-            await asyncio.sleep(1)
-
-        original_shown_embed.description = f"""
-        Now nuking {count} messages from the channel...
-        """
-        await ctx.interaction.edit_original_message(embed = original_shown_embed, view = None)
-
-        # Nuke has not been stopped, proceed with deleting messages
-        def nuke_check(msg: discord.Message):
-            return not len(msg.components) and not msg.pinned
-
-        msg = await ctx.interaction.original_message()
-        await channel.purge(limit=count + 1, check=nuke_check)
-
-        # Let user know messages have been deleted
-        # Waiting to implement until later
-        #
-        # confirm_embed = discord.Embed(
-        #     title = "NUKE COMMAND PANEL",
-        #     color = discord.Color.brand_green(),
-        #     description = f"""
-        #     {count} messages were deleted from the channel commander!
-
-        #     Have a good day!
-        #     """
-        # )
-        # confirm_embed.set_image(url = "https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-        # await ctx.interaction.edit_original_message(embed = confirm_embed, view = None)
-        # await asyncio.sleep(5)
-        # await msg.delete()
-
-    # @commands.command()
-    # @commands.check(is_nuke_allowed)
-    # async def nukeuntil(self, ctx, msgid):
-    #     import datetime
-    #     global STOPNUKE
-    #     channel = ctx.message.channel
-    #     message = await ctx.fetch_message(msgid)
-    #     if channel == message.channel:
-    #         await self._nuke_countdown(ctx)
-    #         if STOPNUKE <= datetime.datetime.utcnow():
-    #             await channel.purge(limit=1000, after=message)
-    #             msg = await ctx.send("https://media.giphy.com/media/XUFPGrX5Zis6Y/giphy.gif")
-    #             await msg.delete(delay=5)
-    #     else:
-    #         return await ctx.send("MESSAGE ID DOES NOT COME FROM THIS TEXT CHANNEL. ABORTING NUKE.")
-
-    @nuke.error
-    async def nuke_error(self, ctx, error):
-        ctx.__slots__ = True
-        from src.discord.globals import BOT_PREFIX
-        print(f"{BOT_PREFIX}nuke error handler: {error}")
-        if isinstance(error, discord.ext.commands.MissingAnyRole):
-            return await ctx.send("APOLOGIES. INSUFFICIENT RANK FOR NUKE.")
-
-        ctx.__slots__ = False
 
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
@@ -305,11 +152,11 @@ class CronSelect(discord.ui.Select):
         print([d['time'] for d in docs])
         counts = {}
         for doc in docs[:20]:
-            timeframe = (doc['time'] - datetime.datetime.utcnow()).days
+            timeframe = (doc['time'] - discord.utils.utcnow()).days
             if abs(timeframe) < 1:
-                timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).total_seconds() // 3600} hours"
+                timeframe = f"{(doc['time'] - discord.utils.utcnow()).total_seconds() // 3600} hours"
             else:
-                timeframe = f"{(doc['time'] - datetime.datetime.utcnow()).days} days"
+                timeframe = f"{(doc['time'] - discord.utils.utcnow()).days} days"
             tag_name = f"{doc['type'].title()} {doc['tag']}"
             if tag_name in counts:
                 counts[tag_name] = counts[tag_name] + 1
@@ -355,26 +202,159 @@ class CronView(discord.ui.View):
 
         self.add_item(CronSelect(docs, bot))
 
-class StaffEssential(StaffCommands, name="StaffEsntl"):
+class StaffEssential(StaffCommands):
     def __init__(self, bot):
         super().__init__(bot)
+
+    async def _confirm_core(self, ctx: discord.ApplicationContext, channel: discord.TextChannel, member: discord.Member) -> bool:
+        """
+        Core method responsible for confirming users. Called by /confirm and the
+        'Confirm User' user command.
+
+        Args:
+            ctx (discord.ApplicationContext): The context relevant to confirming
+              the user.
+            channel (discord.TextChannel): The #welcome channel.
+            member (discord.Member): The member to confirm.
+
+        Returns:
+            bool: Whether the member was succesfully confirmed.
+        """
+        if member.bot:
+            await ctx.interaction.edit_original_message(content = ":x: You can't confirm a bot!")
+            return False
+
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+
+        if role2 in member.roles:
+            await ctx.interaction.edit_original_message(content = ":x: This user is already confirmed.")
+            return False
+
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
+        return True
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Confirms a user, giving them access to the server."
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def confirm(self,
+                      ctx,
+                      member: Option(discord.Member, "The member to confirm.")
+                     ):
+        """Allows a staff member to confirm a user."""
+        channel = ctx.channel
+        if channel.name != CHANNEL_WELCOME:
+            return await ctx.interaction.response.send_message("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
+
+        # Confirm member
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Switching roles and cleaning up messages...")
+        response = await self._confirm_core(ctx, channel, member)
+
+        # Sends confirmation message
+        if response:
+            await ctx.interaction.edit_original_message(content = f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:")
+
+    @discord.user_command(
+        name = "Confirm User",
+        guild_ids = [SLASH_COMMAND_GUILDS]
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def confirm_user(self, ctx, member: discord.Member):
+        # Confirm member
+        channel = discord.utils.get(member.guild.text_channels, name = CHANNEL_WELCOME)
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Switching roles and cleaning up messages...", ephemeral = True)
+        response = await self._confirm_core(ctx, channel, member)
+
+        # Send confirmation message
+        if response:
+            await ctx.interaction.edit_original_message(content = f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Staff command. Nukes a certain amount of messages."
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def nuke(self,
+        ctx,
+        count: Option(int, "The amount of messages to nuke.", min_value = 1, max_value = 100)
+    ):
+        """
+        Nukes (deletes) a specified amount of messages in a channel.
+        """
+        # Verify the calling user is staff
+        commandchecks.is_staff_from_ctx(ctx)
+
+        channel = ctx.channel
+
+        original_shown_embed = discord.Embed(
+            title = "NUKE COMMAND PANEL",
+            color = discord.Color.brand_red(),
+            description = f"""
+            {count} messages will be deleted from {channel.mention} in 10 seconds...
+
+            To stop this nuke, press the red button below!
+            """
+        )
+        view = Nuke()
+        await ctx.respond(embed = original_shown_embed, view = view)
+        await asyncio.sleep(1)
+
+        # Show user countdown for nuke
+        for i in range(9, 0, -1):
+            original_shown_embed.description = f"""
+            {count} messages will be deleted from {channel.mention} in {i} seconds...
+
+            To stop this nuke, press the red button below!
+            """
+            await ctx.interaction.edit_original_message(embed = original_shown_embed, view = view)
+            if view.stopped:
+                return
+            await asyncio.sleep(1)
+
+        # Delete relevant messages
+        original_shown_embed.description = f"""
+        Now nuking {count} messages from the channel...
+        """
+        await ctx.interaction.edit_original_message(embed = original_shown_embed, view = None)
+
+        def nuke_check(msg: discord.Message):
+            return not len(msg.components) and not msg.pinned
+
+        await ctx.interaction.original_message()
+        await channel.purge(limit = count + 1, check = nuke_check)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Kicks user from the server."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def kick(self,
-        ctx,
-        member: Option(discord.Member, "The user to kick from the server."),
-        reason: Option(str, "The reason to kick the member for.")
-    ):
+                   ctx,
+                   member: Option(discord.Member, "The user to kick from the server."),
+                   reason: Option(str, "The reason to kick the member for."),
+                   quiet: Option(str, "Whether to DM the user that they have been kicked. Defaults to no.", choices = ["yes", "no"], default = "no")
+                  ):
         """Kicks a member for the specified reason."""
+        # Verify the caller is a staff member.
+        commandchecks.is_staff_from_ctx(ctx)
+
+        # Send confirmation message to staff member.
         original_shown_embed = discord.Embed(
             title = "Kick Confirmation",
             color = discord.Color.brand_red(),
             description = f"""
             The member {member.mention} will be kicked from the server for:
             `{reason}`
+
+            {
+                "The member will not be notified of being kicked."
+                if quiet == "yes" else
+                "The member will be notified upon kick with the reason listed above."
+            }
 
             **Staff Member:** {ctx.author.mention}
             """
@@ -383,13 +363,26 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         view = Confirm(ctx.author, "The kick operation was cancelled. The user remains in the server.")
         await ctx.respond("Please confirm that you would like to kick this member from the server.", embed = original_shown_embed, view = view, ephemeral = True)
         await view.wait()
+
+        # Handle response
         if view.value:
             try:
+                if quiet == "no":
+                    alert_embed = discord.Embed(
+                        title = "You have been kicked from the Scioly.org server.",
+                        color = discord.Color.brand_red(),
+                        description = f"""
+                        You have been removed from the Scioly.org server, due to the following reason: `{reason}`
+
+                        If you have any concerns about your kick, you may contact a staff member. Please note that repeated violations may result in an account ban, IP ban, or other further action.
+                        """
+                    )
+                    await member.send("Notice from the Scioly.org server:", embed = alert_embed)
                 await member.kick(reason = reason)
             except:
                 pass
 
-        # Test
+        # Verify that the member was kicked.
         guild = ctx.author.guild
         if member not in guild.members:
             # User was successfully kicked
@@ -397,17 +390,24 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         else:
             await ctx.interaction.edit_original_message(content = "The user was not successfully kicked because of an error. They remain in the server.", embed = None, view = None)
 
-    # Need to find a way to share _mute() between StaffEssential and MemberCommands
-
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unmutes a user immediately."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unmute(self,
-        ctx,
-        member: Option(discord.Member, "The user to unmute.")
-    ):
+                     ctx,
+                     member: Option(discord.Member, "The user to unmute.")
+                    ):
         """Unmutes a user."""
+        # Check caller is staff
+        commandchecks.is_staff_from_ctx(ctx)
+
+        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
+        if role not in member.roles:
+            return await ctx.respond("The user can't be unmuted because they aren't currently muted.")
+
+        # Send confirmation to staff
         original_shown_embed = discord.Embed(
             title = "Unmute Confirmation",
             color = discord.Color.brand_red(),
@@ -420,16 +420,16 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
 
         view = Confirm(ctx.author, "The unmute operation was cancelled. The user remains muted.")
         await ctx.respond("Please confirm that you would like to unmute this user.", view = view, embed = original_shown_embed, ephemeral = True)
-
         await view.wait()
-        role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
+
+        # Handle response
         if view.value:
             try:
                 await member.remove_roles(role)
             except:
                 pass
 
-        # Test
+        # Test user was unmuted
         if role not in member.roles:
             await ctx.interaction.edit_original_message(content = "The user was succesfully unmuted.", embed = None, view = None)
         else:
@@ -439,69 +439,93 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Bans a user from the server."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def ban(self,
-        ctx,
-        member: Option(discord.Member, "The user to ban."),
-        reason: Option(str, "The reason to ban the user for."),
-        ban_length: Option(str, "How long to ban the user for.", choices = [
-            "10 minutes",
-            "30 minutes",
-            "1 hour",
-            "2 hours",
-            "8 hours",
-            "1 day",
-            "4 days",
-            "7 days",
-            "1 month",
-            "1 year",
-            "Indefinitely"
-        ])
-    ):
+                  ctx: ApplicationContext,
+                  member: Option(discord.Member, "The user to ban."),
+                  reason: Option(str, "The reason to ban the user for."),
+                  ban_length: Option(str, "How long to ban the user for.", choices = [
+                      "10 minutes",
+                      "30 minutes",
+                      "1 hour",
+                      "2 hours",
+                      "8 hours",
+                      "1 day",
+                      "4 days",
+                      "7 days",
+                      "1 month",
+                      "1 year",
+                      "Indefinitely"
+                  ]),
+                  quiet: Option(str, "Avoids sending an informative DM to the user upon their ban. Defaults to no (default sends the DM).", choices = ["yes", "no"], default = "no", required = False),
+                  delete_days: Option(int, "The days worth of messages to delete from this user. Defaults to 0.", min_value = 0, max_value = 7, default = 0)
+                 ):
         """Bans a user."""
+        # Check for staff permissions
+        commandchecks.is_staff_from_ctx(ctx)
+
+        # Possible times selectable by user
         times = {
-            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
-            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
-            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
-            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
-            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
-            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
-            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
-            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
-            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
-            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
-            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
         }
+
+        # Generate time statement
         time_statement = None
         if ban_length == "Indefinitely":
             time_statement = f"{member.mention} will never be automatically unbanned."
         else:
             time_statement = f"{member.mention} will be banned until {discord.utils.format_dt(times[ban_length], 'F')}."
 
+        # Create confirmation embed to show to staff member
         original_shown_embed = discord.Embed(
             title = "Ban Confirmation",
             color = discord.Color.brand_red(),
             description = f"""
-            {member.mention} will be banned from the entire server. They will not be able to re-enter the server until the ban is lifted or the time expires.
+            {member.mention} will be banned from the entire server. They will not be able to re-enter the server until the ban is lifted or the time expires. {delete_days} days worth of this users' messages will be deleted upon banning.
 
             {time_statement}
             """
         )
 
+        # Show view to staff member
         view = Confirm(ctx.author, "The ban operation was cancelled. They remain in the server.")
         await ctx.respond("Please confirm that you would like to ban this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
-        message = f"You have been banned from the Scioly.org Discord server for {reason}."
-        await member.send(message)
-
         await view.wait()
+        # If staff member selects yes
         if view.value:
             try:
-                await ctx.guild.ban(member, reason=reason)
+                # If not quiet, generate embed to send to member
+                if quiet == "no":
+                    alert_embed = discord.Embed(
+                        title = "You have been banned from the Scioly.org server.",
+                        color = discord.Color.brand_red(),
+                        description = f"""
+                        You have been {"permanently" if ban_length == "Indefinitely" else "temporarily"} banned from the Scioly.org server, due to the following reason: `{reason}`
+
+                        If you have any concerns about your ban, you may contact a staff member through the Scioly.org website. Please note that repeated violations may result in an IP ban or other further action. Thank you!
+                        """
+                    )
+                    await member.send("Notice from the Scioly.org server:", embed = alert_embed)
+
+                # Ban member
+                await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)
             except:
                 pass
 
         if ban_length != "Indefinitely":
-            await insert("data", "cron", {"date": times[ban_length], "do": f"unban {member.id}"})
+            cron_tasks_cog = self.bot.get_cog('CronTasks')
+            await cron_tasks_cog.schedule_unban(member, times[ban_length])
 
         # Test
         guild = ctx.author.guild
@@ -515,44 +539,43 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Mutes a user."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def mute(self,
-        ctx,
-        member: Option(discord.Member, "The user to mute."),
-        reason: Option(str, "The reason to mute the user."),
-        mute_length: Option(str, "How long to mute the user for.", choices = [
-            "10 minutes",
-            "30 minutes",
-            "1 hour",
-            "2 hours",
-            "8 hours",
-            "1 day",
-            "4 days",
-            "7 days",
-            "1 month",
-            "1 year",
-            "Indefinitely"
-        ])
-    ):
+                   ctx,
+                   member: Option(discord.Member, "The user to mute."),
+                   reason: Option(str, "The reason to mute the user."),
+                   mute_length: Option(str, "How long to mute the user for.", choices = [
+                       "10 minutes",
+                       "30 minutes",
+                       "1 hour",
+                       "2 hours",
+                       "8 hours",
+                       "1 day",
+                       "4 days",
+                       "7 days",
+                       "1 month",
+                       "1 year",
+                       "Indefinitely"
+                   ]),
+                   quiet: Option(str, "Does not DM the user upon mute. Defaults to no.", choices = ["yes", "no"], default = "no")
+                  ):
         """
         Mutes a user.
-
-        :param user: User to be muted.
-        :type user: discord.Member
-        :param *args: The time to mute the user for.
-        :type *args: str
         """
+        commandchecks.is_staff_from_ctx(ctx)
+
         times = {
-            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
-            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
-            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
-            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
-            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
-            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
-            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
-            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
-            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
-            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
-            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
         }
         time_statement = None
         if mute_length == "Indefinitely":
@@ -565,6 +588,11 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             color = discord.Color.brand_red(),
             description = f"""
             {member.mention} will be muted across the entire server. The user will no longer be able to communicate in any channels they can read.
+            {
+                "The user will not be notified upon mute."
+                if quiet == "no" else
+                "The user will be notified upon mute."
+            }
 
             {time_statement}
             """
@@ -573,49 +601,81 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
         view = Confirm(ctx.author, "The mute operation was cancelled. They remain able to communicate.")
         await ctx.respond("Please confirm that you would like to mute this user.", view = view, embed = original_shown_embed, ephemeral = True)
 
-        message = f"You have been muted from the Scioly.org Discord server for {reason}."
-        await member.send(message)
-
         await view.wait()
         role = discord.utils.get(member.guild.roles, name=ROLE_MUTED)
         if view.value:
             try:
+                if quiet == "no":
+                    alert_embed = discord.Embed(
+                        title = "You have been muted in the Scioly.org server.",
+                        color = discord.Color.brand_red(),
+                        description = f"""
+                        You have been {"permanently" if mute_length == "Indefinitely" else "temporarily"} muted from the Scioly.org server, due to the following reason: `{reason}`
+
+                        If you have any concerns about your mute, you may contact a staff member through the Scioly.org website. Please note that repeated violations may result in a ban, IP ban, or other further action. Thank you!
+                        """
+                    )
+                    await member.send("Notice from the Scioly.org server:", embed = alert_embed)
                 await member.add_roles(role)
             except:
                 pass
 
         if mute_length != "Indefinitely":
-            await insert("data", "cron", {"date": times[mute_length], "do": f"unmute {member.id}"})
+            cron_tasks_cog = self.bot.get_cog('CronTasks')
+            await cron_tasks_cog.schedule_unmute(member, times[mute_length])
 
         # Test
         if role in member.roles:
             # User was successfully muted
             await ctx.interaction.edit_original_message(content = "The user was successfully muted.", embed = None, view = None)
-        else:
-            await ctx.interaction.edit_original_message(content = "The user was not successfully muted because of an error. They remain able to communicate.", embed = None, view = None)
 
-    @discord.commands.slash_command(
+    slowmode_group = discord.commands.SlashCommandGroup(
+        "slowmode",
+        "Manages slowmode for a channel.",
         guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Enables slowmode in the current channel, or an alternate channel."
+        permissions = [
+            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
+            discord.commands.CommandPermission(ROLE_VIP, 1, True),
+        ]
     )
-    async def slowmode(self,
-        ctx,
-        mode: Option(str, "How to change the slowmode in the channel.", choices = ["set", "remove"]),
-        delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
-        channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
-    ):
-        true_channel = channel or ctx.channel
-        if mode == "remove":
-            await true_channel.edit(slowmode_delay = 0)
-            await ctx.respond("The slowmode was removed.")
-        elif mode == "set":
-            await true_channel.edit(slowmode_delay = delay)
-            await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
+
+    @slowmode_group.command(
+        name = "set",
+        description = "Sets the slowmode for a particular channel."
+    )
+    async def slowmode_set(self,
+                           ctx,
+                           delay: Option(int, "Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.", required = False, default = 20),
+                           channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
+                          ):
+        commandchecks.is_staff_from_ctx(ctx)
+
+        channel = channel or ctx.channel
+        await channel.edit(slowmode_delay = delay)
+        await ctx.respond(f"Enabled a slowmode delay of {delay} seconds.")
+
+    @slowmode_group.command(
+        name = "remove",
+        description = "Removes the slowmode set on a given channel."
+    )
+    async def slowmode_remove(self,
+                           ctx,
+                           channel: Option(discord.TextChannel, "Optional. The channel to enable the slowmode in. If none, assumed in the current channel.", required = False)
+                          ):
+        """
+        Removes the slowmode set on a particular channel.
+        """
+        commandchecks.is_staff_from_ctx(ctx)
+
+        channel = channel or ctx.channel
+        await channel.edit(slowmode_delay = 0)
+        await ctx.respond(f"Removed the slowmode delay in {channel.mention}.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Allows staff to manipulate the CRON list."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def cron(self, ctx):
         """
         Allows staff to manipulate the CRON list.
@@ -625,7 +685,11 @@ class StaffEssential(StaffCommands, name="StaffEsntl"):
             2. Create relevant action rows.
             3. Perform steps as staff request.
         """
+        commandchecks.is_staff_from_ctx(ctx)
+
         cron_list = await get_cron()
+        if not len(cron_list):
+            return await ctx.respond(f"Unfortunately, there are no items in the CRON list to manage.")
 
         cron_embed = discord.Embed(
             title = "Managing the CRON list",
@@ -649,32 +713,47 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Opens a voice channel clone of a channel."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def vc(self, ctx):
+        commandchecks.is_staff_from_ctx(ctx)
+
         server = ctx.author.guild
-        if ctx.channel.category.name == CATEGORY_TOURNAMENTS:
+        if ctx.channel.category != None and ctx.channel.category.name == CATEGORY_TOURNAMENTS:
+            # Handle for tournament channels
+
             test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
-            if test_vc == None:
+            if not test_vc:
                 # Voice channel needs to be opened
+                await ctx.respond(f"{EMOJI_LOADING} Attempting to open a voice channel...")
                 new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
-                # Make the channel invisible to normal members
+
+                # Make the channel invisible to normal members and give permissions
                 await new_vc.set_permissions(server.default_role, view_channel=False)
-                at = discord.utils.get(server.roles, name=ROLE_AT)
-                for t in TOURNAMENT_INFO:
+                for t in INVITATIONAL_INFO:
                     if ctx.channel.name == t[1]:
                         tourney_role = discord.utils.get(server.roles, name=t[0])
                         await new_vc.set_permissions(tourney_role, view_channel=True)
                         break
+
+                # Give permissions to All Tournaments role
+                at = discord.utils.get(server.roles, name=ROLE_AT)
                 await new_vc.set_permissions(at, view_channel=True)
-                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+
+                return await ctx.interaction.edit_original_message(content = "Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
                 return await ctx.respond("Closed the voice channel.")
-        elif ctx.message.channel.category.name == CATEGORY_STATES:
+
+        elif ctx.channel != None and ctx.channel.category.name == CATEGORY_STATES:
+            # Handle for state channels
+
             test_vc = discord.utils.get(server.voice_channels, name=ctx.channel.name)
-            if test_vc == None:
+            if not test_vc:
                 # Voice channel does not currently exist
+                await ctx.respond(f"{EMOJI_LOADING} Attempting to open a voice channel...")
+
                 if len(ctx.channel.category.channels) == 50:
                     # Too many voice channels in the state category
                     # Let's move one state to the next category
@@ -686,23 +765,36 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         # Success, we found the other category
                         current_cat = ctx.channel.category
                         await current_cat.channels[-1].edit(category = new_cat[1], position = 0)
+
+                # Create new voice channel
                 new_vc = await server.create_voice_channel(ctx.channel.name, category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
+
+                # Give various roles permissions
                 muted_role = discord.utils.get(server.roles, name=ROLE_MUTED)
                 all_states_role = discord.utils.get(server.roles, name=ROLE_ALL_STATES)
                 self_muted_role = discord.utils.get(server.roles, name=ROLE_SELFMUTE)
                 quarantine_role = discord.utils.get(server.roles, name=ROLE_QUARANTINE)
-                state_role_name = await lookup_role(ctx.channel.name.replace("-", " "))
+
+                # Get official state name to give permissions to role
+                state_role_name = ctx.channel.name.replace("-", " ").title()
+                if state_role_name == "California North":
+                    state_role_name = "California (North)"
+                elif state_role_name == "California South":
+                    state_role_name = "California (South)"
+
                 state_role = discord.utils.get(server.roles, name = state_role_name)
+
                 await new_vc.set_permissions(muted_role, connect=False)
                 await new_vc.set_permissions(self_muted_role, connect=False)
                 await new_vc.set_permissions(quarantine_role, connect=False)
                 await new_vc.set_permissions(state_role, view_channel = True, connect=True)
                 await new_vc.set_permissions(all_states_role, view_channel = True, connect=True)
-                current_pos = ctx.channel.position
-                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+
+                return await ctx.interaction.edit_original_message(content = "Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
+                # Voice channel needs to be closed
                 await test_vc.delete()
                 if len(ctx.channel.category.channels) == 49:
                     # If we had to move a channel out of category to make room, move it back
@@ -715,20 +807,28 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         # Success, we found the other category
                         current_cat = ctx.channel.category
                         await new_cat[1].channels[0].edit(category = current_cat, position = 1000)
+
                 return await ctx.respond("Closed the voice channel.")
-        elif ctx.message.channel.name == "games":
+        elif ctx.channel.name == "games":
             # Support for opening a voice channel for #games
+
             test_vc = discord.utils.get(server.voice_channels, name="games")
-            if test_vc == None:
+            if not test_vc:
                 # Voice channel needs to be opened/doesn't exist already
+                await ctx.respond(f"{EMOJI_LOADING} Attempting to open a voice channel...")
+
+                # Create a new voice channel
                 new_vc = await server.create_voice_channel("games", category=ctx.channel.category)
                 await new_vc.edit(sync_permissions=True)
                 await new_vc.set_permissions(server.default_role, view_channel=False)
+
+                # Give out various permissions
                 games_role = discord.utils.get(server.roles, name=ROLE_GAMES)
                 member_role = discord.utils.get(server.roles, name=ROLE_MR)
                 await new_vc.set_permissions(games_role, view_channel=True)
                 await new_vc.set_permissions(member_role, view_channel=False)
-                return await ctx.respond("Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
+
+                return await ctx.interaction.edit_original_message(content = "Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is allowed.**")
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
@@ -740,11 +840,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Finds a user by their ID."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def userfromid(self,
         ctx,
         iden: Option(str, "The ID to lookup.")
     ):
         """Mentions a user with the given ID."""
+        commandchecks.is_staff_from_ctx(ctx)
+
         user = self.bot.get_user(int(iden))
         await ctx.respond(user.mention, ephemeral = True)
 
@@ -752,14 +855,22 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Locks a channel, preventing members from sending messages."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def lock(self, ctx):
         """Locks a channel to Member access."""
+        # Check permissions
+        commandchecks.is_staff_from_ctx(ctx)
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to lock channel...")
+
+        # Get variables
         member = ctx.author
         channel = ctx.channel
 
+        # Check channel category
         if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-            return await ctx.respond("This command is not suitable for this channel because of its category.")
+            return await ctx.interaction.edit_original_message(content = "This command is not suitable for this channel because of its category.")
 
+        # Update permissions
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
         if (channel.category.name == CATEGORY_STATES):
             await ctx.channel.set_permissions(member_role, add_reactions=False, send_messages=False)
@@ -774,22 +885,32 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(admin_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(bot_role, add_reactions=True, send_messages=True, read_messages=True)
-        await ctx.respond("Locked the channel to Member access.")
+
+        # Edit to final message
+        await ctx.interaction.edit_original_message(content = "Locked the channel to Member access.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Unlocks a channel, allowing members to speak after the channel was originally locked."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def unlock(self, ctx):
         """Unlocks a channel to Member access."""
+        # Check permissions
+        commandchecks.is_staff_from_ctx(ctx)
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to unlock channel...")
+
+        # Get variable
         member = ctx.author
         channel = ctx.channel
 
+        # Check channel category
         if (channel.category.name in ["beta", "staff", "Pi-Bot"]):
-            return await ctx.respond("This command is not suitable for this channel because of its category.")
+            return await ctx.interaction.edit_original_message(content = "This command is not suitable for this channel because of its category.")
 
+        # Update permissions
         if (channel.category.name == CATEGORY_SO or channel.category.name == CATEGORY_GENERAL):
-            await ctx.respond("Synced permissions with channel category.")
+            await ctx.interaction.edit_original_message(content = "Synced permissions with channel category.")
             return await channel.edit(sync_permissions=True)
 
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
@@ -806,15 +927,20 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await ctx.channel.set_permissions(gm_role, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
         await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
-        await ctx.respond("Unlocked the channel to Member access. Please check if permissions need to be synced.")
+
+        # Edit to final message
+        await ctx.interaction.edit_original_message(content = "Unlocked the channel to Member access. Please check if permissions need to be synced.")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Runs Pi-Bot's Most Edits Table wiki functionality."
     )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def met(self, ctx):
         """Runs Pi-Bot's Most Edits Table"""
-        msg1 = await ctx.respond("Attemping to run the Most Edits Table.")
+        commandchecks.is_staff_from_ctx(ctx)
+
+        await ctx.respond(f"{EMOJI_LOADING} Generating the Most Edits Table...")
         res = await run_table()
         print(res)
         names = [v['name'] for v in res]
@@ -831,106 +957,68 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         plt.tight_layout()
         plt.savefig("met.png")
         plt.close()
-        await msg1.delete()
-        msg2 = await ctx.send("Generating graph...")
+        await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Generating graph...")
         await asyncio.sleep(3)
-        await msg2.delete()
 
         file = discord.File("met.png", filename="met.png")
-        embed = assemble_embed(
-            title="**Top wiki editors for the past week!**",
-            desc=("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" +
+        embed = discord.Embed(
+            title = "**Top wiki editors for the past week!**",
+            description = ("Check out the past week's top wiki editors! Thank you all for your contributions to the wiki! :heart:\n\n" +
             f"`1st` - **{names[0]}** ({data[0]} edits)\n" +
             f"`2nd` - **{names[1]}** ({data[1]} edits)\n" +
             f"`3rd` - **{names[2]}** ({data[2]} edits)\n" +
             f"`4th` - **{names[3]}** ({data[3]} edits)\n" +
             f"`5th` - **{names[4]}** ({data[4]} edits)"),
-            imageUrl="attachment://met.png",
         )
-        await ctx.send(file=file, embed=embed)
-
-    @commands.command()
-    async def prepembed(self, ctx, channel:discord.TextChannel, *, jsonInput):
-        """Helps to create an embed to be sent to a channel."""
-        jso = json.loads(jsonInput)
-        title = jso['title'] if 'title' in jso else ""
-        desc = jso['description'] if 'description' in jso else ""
-        titleUrl = jso['titleUrl'] if 'titleUrl' in jso else ""
-        hexcolor = jso['hexColor'] if 'hexColor' in jso else "#2E66B6"
-        webcolor = jso['webColor'] if 'webColor' in jso else ""
-        thumbnailUrl = jso['thumbnailUrl'] if 'thumbnailUrl' in jso else ""
-        authorName = jso['authorName'] if 'authorName' in jso else ""
-        authorUrl = jso['authorUrl'] if 'authorUrl' in jso else ""
-        authorIcon = jso['authorIcon'] if 'authorIcon' in jso else ""
-        if 'author' in jso:
-            authorName = ctx.message.author.name
-            authorIcon = ctx.message.author.avatar_url_as(format="jpg")
-        fields = jso['fields'] if 'fields' in jso else ""
-        footerText = jso['footerText'] if 'footerText' in jso else ""
-        footerUrl = jso['footerUrl'] if 'footerUrl' in jso else ""
-        imageUrl = jso['imageUrl'] if 'imageUrl' in jso else ""
-        embed = assemble_embed(
-            title=title,
-            desc=desc,
-            titleUrl=titleUrl,
-            hexcolor=hexcolor,
-            webcolor=webcolor,
-            thumbnailUrl=thumbnailUrl,
-            authorName=authorName,
-            authorUrl=authorUrl,
-            authorIcon=authorIcon,
-            fields=fields,
-            footerText=footerText,
-            footerUrl=footerUrl,
-            imageUrl=imageUrl
-        )
-        await channel.send(embed=embed)
-
-    @discord.commands.slash_command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        description = "Staff command. Archives a tournament channel, preventing members from sending messages."
-    )
-    async def archive(self, ctx):
-        tournament = [t for t in TOURNAMENT_INFO if t[1] == ctx.channel.name]
-        bot_spam = discord.utils.get(ctx.guild.text_channels, name = CHANNEL_BOTSPAM)
-        archive_cat = discord.utils.get(ctx.guild.categories, name = CATEGORY_ARCHIVE)
-        tournament_name, tournament_formal = None, None
-        if len(tournament) > 0:
-            tournament_name = tournament[0][1]
-            tournament_formal = tournament[0][0]
-        tournament_role = discord.utils.get(ctx.guild.roles, name = tournament_formal)
-        all_tourney_role = discord.utils.get(ctx.guild.roles, name = ROLE_AT)
-        embed = assemble_embed(
-            title = 'This channel is now archived.',
-            desc = (f'Thank you all for your discussion around the {tournament_formal}. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n' +
-            f'If you have more questions/comments related to this tournament, you are welcome to bring them up in {ctx.channel.mention}. This channel is now read-only.\n\n' +
-            f'If you would like to no longer view this channel, you are welcome to type `!tournament {tournament_name}` into {bot_spam}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel.'),
-            webcolor='red'
-        )
-        await ctx.channel.set_permissions(tournament_role, send_messages = False, view_channel = True)
-        await ctx.channel.set_permissions(all_tourney_role, send_messages = False, view_channel = True)
-        await ctx.channel.edit(category = archive_cat, position = 1000)
-        await ctx.channel.send(embed = embed)
-        await ctx.channel.respond(content = "The channel is now archived, and members can no longer speak in the channel.", ephemeral = True)
+        embed.set_image(url = "attachment://met.png")
+        await ctx.interaction.edit_original_message(content = f"The Most Edits Table for the week:", file=file, embed=embed)
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Refreshes data from the bot's database."
     )
-    async def refresh(self, ctx):
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def refresh(self,
+                      ctx,
+                      system: Option(str, "The system to refresh.", choices = ["all", "invitationals", "pings"])
+                     ):
         """Refreshes data from the sheet."""
-        await update_tournament_list(ctx.bot)
-        res = await refresh_algorithm()
-        if res == True:
-            await ctx.respond("Successfully refreshed data from sheet.")
-        else:
-            await ctx.respond(":warning: Unsuccessfully refreshed data from sheet.")
+        # Check for staff permissions again
+        commandchecks.is_staff_from_ctx(ctx)
 
-    @discord.commands.command(
+        # Send initial message...
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Refreshing `{system}`...")
+
+        if system in ["all"]:
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Pulling all updated database information...")
+            tasks_cog = self.bot.get_cog("CronTasks")
+            await tasks_cog.pull_prev_info()
+
+        if system in ["invitationals", "all"]:
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Updating the invitationals list.")
+            await update_tournament_list(ctx.bot)
+            await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated the invitationals list.")
+
+        if system in ["pings", "all"]:
+            await ctx.interaction.edit_original_message(content = f"{EMOJI_LOADING} Updating all users' pings.")
+            src.discord.globals.PING_INFO = await get_pings()
+            await ctx.interaction.edit_original_message(content = ":white_check_mark: Updated all users' pings.") 
+
+    change_status_group = discord.commands.SlashCommandGroup(
+        "status",
+        "Updates the bot's status.",
         guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "status",
-        description = "Staff command. Update Pi-Bot's Discord status."
+        permissions = [
+            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
+            discord.commands.CommandPermission(ROLE_VIP, 1, True),
+        ]
     )
+
+    @change_status_group.command(
+        name = "set",
+        description = "Staff command. Sets Pi-Bot's status to a custom tagline."
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
     async def change_status(self,
         ctx,
         activity: Option(str, "The activity the bot will be doing.", choices = ["playing", "listening", "watching"], required = True),
@@ -948,298 +1036,77 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             "1 year",
             ])
         ):
-        if activity == "playing":
-            await self.bot.change_presence(activity = discord.Game(name = message))
-            await ctx.interaction.response.send_message(content = f"The status was updated to: `Playing {message}`.")
-        elif activity == "listening":
-            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.listening, name = message))
-            await ctx.interaction.response.send_message(content = f"The status was updated to: `Listening to {message}`.")
-        elif activity == "watching":
-            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = message))
-            await ctx.interaction.response.send_message(content = f"The status was updated to: `Watching {message}`.")
+        # Check again to make sure caller is staff
+        commandchecks.is_staff_from_ctx(ctx)
 
         # CRON functionality
         times = {
-            "10 minutes": datetime.datetime.now() + datetime.timedelta(minutes=10),
-            "30 minutes": datetime.datetime.now() + datetime.timedelta(minutes=30),
-            "1 hour": datetime.datetime.now() + datetime.timedelta(hours=1),
-            "2 hours": datetime.datetime.now() + datetime.timedelta(hours=2),
-            "4 hours": datetime.datetime.now() + datetime.timedelta(hours=4),
-            "8 hours": datetime.datetime.now() + datetime.timedelta(hours=8),
-            "1 day": datetime.datetime.now() + datetime.timedelta(days=1),
-            "4 days": datetime.datetime.now() + datetime.timedelta(days=4),
-            "7 days": datetime.datetime.now() + datetime.timedelta(days=7),
-            "1 month": datetime.datetime.now() + datetime.timedelta(days=30),
-            "1 year": datetime.datetime.now() + datetime.timedelta(days=365),
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
         }
+        selected_time = times[length]
 
-        await insert("data", "cron", {
-            "type": "REMOVE_STATUS",
-            "time": times[length]
-        })
-
-    @discord.commands.command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "invyadd",
-        description = "Staff command. Adds a new invitational for voting."
-    )
-    async def invitational_add(self,
-        ctx,
-        official_name: Option(str, "The official name of the tournament, such as MIT Invitational.", required = True),
-        channel_name: Option(str, "The name of the Discord channel that will be created, such as 'mit'", required = True),
-        tourney_date: Option(str, "The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.", required = True),
-        status: Option(str, "Determines if the new tournament channel will be sent to voting or added immediately.", choices = ["voting", "add_immediately"], required = True)
-    ):
-        new_tourney_doc = {
-            'official_name': official_name,
-            'channel_name': channel_name,
-            'tourney_date': datetime.datetime.strptime(tourney_date, '%Y-%m-%d'),
-            'aliases': [],
-            'open_days': 10,
-            'closed_days': 30,
-            'voters': [],
-            'status': "open" if status == "add_immediately" else "voting"
-        }
-        await ctx.interaction.response.defer()
-        emoji = None
-        while emoji == None:
-            info_message = await ctx.send("Please send the emoji to use for the tournament. If you would like to use a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf you would like to use a standard emoji, please send a message with only the standard emoji.")
-            emoji_message = await listen_for_response(
-                follow_id = ctx.user.id,
-                timeout = 120,
-            )
-            # If emoji message has file, use this as emoji, otherwise, use default emoji provided
-            if emoji_message == None:
-                await ctx.interaction.response.send_message(content = "No emoji was provided, so the operation was cancelled.")
-                return
-
-            if len(emoji_message.attachments) > 0:
-                # If no attachments provided
-                emoji_attachment = emoji_message.attachments[0]
-                await emoji_message.delete()
-                await info_message.delete()
-                if emoji_attachment.size > 256000:
-                    await ctx.send("Please use an emoji that is less than 256KB.")
-                    continue
-                if emoji_attachment.content_type not in ['image/gif', 'image/jpeg', 'image/png']:
-                    await ctx.send("Please use a file that is a GIF, JPEG, or PNG.")
-                    continue
-                created_emoji = False
-                for guild_id in EMOJI_GUILDS:
-                    guild = self.bot.get_guild(guild_id)
-                    if len(guild.emojis) < guild.emoji_limit:
-                        # The guild can fit more custom emojis
-                        emoji = await guild.create_custom_emoji(name = f"tournament_{channel_name}", image = await emoji_attachment.read(), reason = f"Created by {ctx.interaction.user}.")
-                        created_emoji = True
-                if not created_emoji:
-                    await ctx.interaction.response.send_message(conten = f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds.")
-                    return
-
-            if len(emoji_message.content) > 0:
-                emoji = emoji_message.content
-
-        description = f"""
-            **Official Name:** {official_name}
-            **Channel Name:** `#{channel_name}`
-            **Tournament Date:** {discord.utils.format_dt(new_tourney_doc['tourney_date'], 'D')}
-            **Closes After:** {new_tourney_doc['closed_days']} days (the tournament channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days = new_tourney_doc['closed_days']), 'D')})
-            **Tournament Emoji:** {emoji}
-            """
-
-        if status == "add_immediately":
-            description += "\n**This tournament channel will be opened immediately.** This means that it will require no votes by users to open. This option should generally only be used for tournaments that have a very strong attendance or desire to be added to the server."
-        else:
-            description += "\n**This tournament channel will require a certain number of votes to be opened.** This means that the tournament channel will not immediately be created - rather, users will need to vote on the channel being created before the action is done."
-
-        confirm_embed = discord.Embed(
-            title = f"Add New Invitational",
-            color = discord.Color(0x2E66B6),
-            description = description
-        )
-        view = YesNo()
-        await ctx.interaction.edit_original_message(content = f"Please confirm that you would like to add the following tournament:", embed = confirm_embed, view = view)
-        await view.wait()
-        if view.value:
-            # Staff member responded with "Yes"
-            new_tourney_doc['emoji'] = str(emoji)
-            await insert("data", "invitationals", new_tourney_doc)
-            await ctx.interaction.edit_original_message(content = "The invitational was added successfully.", embed = None, view = None)
-            await update_tournament_list(self.bot, {})
-        else:
-            await ctx.interaction.edit_original_message(content = "The operation was cancelled.", embed = None, view = None)
-
-    @discord.commands.command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "invyapprove",
-        description = "Staff command. Approves a invitational to be fully opened."
-    )
-    async def invitational_approve(self,
-        ctx,
-        short_name: Option(str, "The short name of the invitational, such as 'mit'.", required = True)
-        ):
-        invitationals = await get_invitationals()
-        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
-        if len(found_invitationals) < 1:
-            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with the short name of `{short_name}`.")
-        elif len(found_invitationals) == 1:
-            if found_invitationals[0]["status"] == "open":
-                await ctx.interaction.response.send_message(content = f"The `{short_name}` invitational is already open.")
-            await update("data", "invitationals", found_invitationals[0]["_id"], {"$set": {"status": "open"}})
-            await ctx.interaction.response.send_message(content = f"The status of the `{short_name}` invitational was updated.")
-            await update_tournament_list(self.bot, {})
-
-    @discord.commands.command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "invyedit",
-        description = "Staff command. Edits data about an invitational channel."
-    )
-    async def invitational_edit(self,
-        ctx,
-        short_name: Option(str, "The short name of the invitational you would like to edit, such as 'mit'.", required = True),
-        feature_to_edit: Option(str, "The feature you would like to edit about the invitational.", choices = [
-            "official name",
-            "short name",
-            "emoji",
-            "tournament date"
-        ])
-        ):
-        invitationals = await get_invitationals()
-        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
-        if len(found_invitationals) < 1:
-            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with the short name of `{short_name}`.")
-        elif len(found_invitationals) == 1:
-            invitational = found_invitationals[0]
-            relevant_words = {
-                'official name': "official name",
-                'short name': "short name",
-                'emoji': "emoji",
-                'tournament date': "tournament date"
+        # Change settings
+        await src.discord.globals.update_setting(
+            {
+                'custom_bot_status_text': message,
+                'custom_bot_status_type': activity
             }
-            info_message_text = f"Please send the new {relevant_words[feature_to_edit]} relevant to the tournament."
-            if feature_to_edit == "emoji":
-                info_message_text += "\n\nTo use a custom image as the new emoji for the invitational, please send a file that is no larger than 256KB. If you would like to use a new standard emoji for the invitational, please send only the new standard emoji."
-            elif feature_to_edit == "tournament date":
-                info_message_text += "\n\nTo update the tournament date, please send the date formatted as YYYY-mm-dd, such as `2022-01-12`."
+        )
 
-            await ctx.interaction.response.defer()
-            info_message = await ctx.send(info_message_text)
-            content_message = await listen_for_response(
-                follow_id = ctx.user.id,
-                timeout = 120,
-            )
+        # Delete any relevant documents
+        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
 
-            if content_message != None:
-                rename_dict = {}
-                await content_message.delete()
-                await info_message.delete()
-                if feature_to_edit == "official name":
-                    rename_dict = {
-                        'roles': {
-                            invitational['official_name']: content_message.content
-                        }
-                    }
-                    await update("data", "invitationals", invitational["_id"], {"$set": {"official_name": content_message.content}})
-                    await ctx.interaction.edit_original_message(content = f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**.")
-                elif feature_to_edit == "short name":
-                    rename_dict = {
-                        'channels': {
-                            invitational['channel_name']: content_message.content
-                         }
-                    }
-                    await update("data", "invitationals", invitational["_id"], {"$set": {"channel_name": content_message.content}})
-                    await ctx.interaction.edit_original_message(content = f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**.")
-                elif feature_to_edit == "emoji":
-                    emoji = None
-                    if len(content_message.attachments):
-                        # User provided custom emoji
-                        emoji_attachment = content_message.attachments[0]
-                        if emoji_attachment.size > 256000:
-                            await ctx.interaction.response.send_message("Please use an emoji that is less than 256KB. Operation cancelled.")
-                        if emoji_attachment.content_type not in ['image/gif', 'image/jpeg', 'image/png']:
-                            await ctx.interaction.response.send_message("Please use a file that is a GIF, JPEG, or PNG. Operation cancelled.")
-                        created_emoji = False
-                        for guild_id in EMOJI_GUILDS:
-                            guild = self.bot.get_guild(guild_id)
-                            for emoji in guild.emojis:
-                                if emoji.name == f"tournament_{invitational['channel_name']}":
-                                    await emoji.delete(reason = f"Replaced with alternate emoji by {ctx.interaction.user}.")
-                            if len(guild.emojis) < guild.emoji_limit:
-                                # The guild can fit more custom emojis
-                                emoji = await guild.create_custom_emoji(name = f"tournament_{invitational['channel_name']}", image = await emoji_attachment.read(), reason = f"Created by {ctx.interaction.user}.")
-                                created_emoji = True
-                        if not created_emoji:
-                            await ctx.interaction.edit_original_message(content = f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds.")
-                            return
+        # Insert time length into CRON
+        cron_cog = self.bot.get_cog("CronTasks")
+        await cron_cog.schedule_status_remove(selected_time)
 
-                    else:
-                        # User provided standard emoji
-                        emoji = content_message.content
+        # Update activity
+        status_text = None
+        if activity == "playing":
+            await self.bot.change_presence(activity = discord.Game(name = message))
+            status_text = f"Playing {message}"
+        elif activity == "listening":
+            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.listening, name = message))
+            status_text = f"Listening to {message}"
+        elif activity == "watching":
+            await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = message))
+            status_text = f"Watching {message}"
 
-                    await update("data", "invitationals", invitational["_id"], {"$set": {"emoji": emoji}})
-                    await ctx.interaction.edit_original_message(content = f"The emoji for `{invitational['official_name']}` was updated to: {emoji}.")
-                elif feature_to_edit == "tournament date":
-                    date_str = content_message.content
-                    date_dt = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-                    await update("data", "invitationals", invitational["_id"], {"$set": {"tourney_date": date_dt}})
-                    await ctx.interaction.edit_original_message(content = f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}.")
-                await update_tournament_list(self.bot, rename_dict)
-            else:
-                await ctx.interaction.edit_original_message(content = f"No message was provided. Operation timed out after 120 seconds.")
+        await ctx.interaction.response.send_message(content = f"The status was updated to: `{status_text}`. This status will stay in effect until {discord.utils.format_dt(selected_time, 'F')}.")
 
-    @discord.commands.command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "invyarchive",
-        description = "Staff command. Archives an invitational channel."
+    @change_status_group.command(
+        name = "reset",
+        description = "Staff command. Resets Pi-Bot's status to a custom value."
     )
-    async def invitational_archive(self,
-        ctx,
-        short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
-        ):
-        invitationals = await get_invitationals()
-        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
-        if not len(found_invitationals):
-            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with a short name of {short_name}.")
-        else:
-            invitational = found_invitationals[0]
-            await update("data", "invitationals", invitational["_id"], {"$set": {"status": "archived"}})
-            await ctx.interaction.response.send_message(content = f"The **`{invitational['official_name']}`** is now being archived.")
-            await update_tournament_list(self.bot, {})
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def reset_status(self, ctx):
+        # Reset status
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Attempting to resetting status...")
+        await src.discord.globals.update_setting(
+            {
+                'custom_bot_status_text': None,
+                'custom_bot_status_type': None
+            }
+        )
+        await ctx.interaction.edit_original_message(content = "Reset the bot's status.")
 
-    @discord.commands.command(
-        guild_ids = [SLASH_COMMAND_GUILDS],
-        name = "invydelete",
-        description = "Staff command. Deletes an invitational channel from the server."
-    )
-    async def invitational_delete(
-        self,
-        ctx,
-        short_name: Option(str, "The short name referring to the invitational, such as 'mit'.", required = True)
-    ):
-        invitationals = await get_invitationals()
-        found_invitationals = [i for i in invitationals if i['channel_name'] == short_name]
-        if not len(found_invitationals):
-            await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find an invitational with a short name of {short_name}.")
-        else:
-            invitational = found_invitationals[0]
-            server = self.bot.get_guild(SERVER_ID)
-            ch = discord.utils.get(server.text_channels, name = invitational['channel_name'])
-            r = discord.utils.get(server.roles, name = invitational['official_name'])
-            if ch != None and ch.category.name in [CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS]:
-                await ch.delete()
-            if r != None:
-                await r.delete()
+        # Delete any relevant documents
+        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
 
-            search = re.findall(r'<:.*:\d+>', invitational['emoji'])
-            if len(search):
-                emoji = self.bot.get_emoji(search[0])
-                if emoji != None:
-                    await emoji.delete()
-
-            await delete("data", "invitationals", invitational["_id"])
-            await ctx.interaction.response.send_message(f"Deleted the **`{invitational['official_name']}`**.")
-            await update_tournament_list(self.bot, {})
+        # Reset bot status to regularly update
+        cron_cog = self.bot.get_cog("CronTasks")
+        cron_cog.change_bot_status.restart()
 
 def setup(bot):
     bot.add_cog(StaffEssential(bot))
     bot.add_cog(StaffNonessential(bot))
-    bot.add_cog(LauncherCommands(bot))

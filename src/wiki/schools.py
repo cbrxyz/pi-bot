@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import json
 
-from lists import get_state_list
+from src.lists import get_state_list
 
 SCHOOLS_URL="https://inventory.data.gov/api/3/action/datastore_search?resource_id=102fd9bd-4737-401b-b88f-5c5b0fab94ec&q="
 

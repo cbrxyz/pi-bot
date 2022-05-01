@@ -12,8 +12,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/cron` allows staff to edit/remove tasks from Pi-Bot's CRON system (closes [#379](https://github.com/cbrxyz/pi-bot/issues/379))
 * `/ban` and `/mute` now suggest ban/mute lengths, rather than asking the moderator for their own suggested length
 * The bot can now listen for individual user responses. Helpful for users attempting to interact with application commands in complex ways.
-* `/invyadd`, `/invyapprove`, `/invyedit`, and `/invyarchive` allow staff to manage invitational data
+* `/invitational add`, `/invitational approve`, `/invitational edit`, and `/invitational archive` allow staff to manage invitational data
+* `/invitational season` allows staff to manage the season of each invitational
 * Invitational tournaments can now be archived from any channel
+* `/event add` and `/event remove` allow staff to modify events from the server
+* Event-modifying commands no longer require staff to manually add event roles to the server, instead, roles are automatically generated.
+* `/tagupdate add`, `/tagupdate edit`, and `/tagupdate remove` allow staff to modify tags from the server
+* `/censor add` and `/censor remove` allow staff to modify censor entries from the server
+* `/stealfish` can now occasionally give bear more fish rather than take fish away.
+* `/prepembed` now has an interactive creation tool to create embeds.
+* `/prepembed` now allows for exporting/import embeds.
+* Direct message logs are now more cleanly formatted and use relative dates.
+* Users are now sent a direct message about why their message was deleted after editing it to include a censored term.
+* Staff can now change a user's nickname or kick the user from a innapropriate username report.
+* Edited message logs now include a link to jump to a message.
+* Deleted message logs of non-cached messages now contain an explanation for why more data is not available in the log.
+* Censor cog for handling all message censoring.
+* Logging cog for handling all logging. Logging functionality was moved out of `bot.py`.
+* Spam cog for handling catching caps and spamming.
+* Loading commands now frequently show a loading emoji to signify processing.
+* A `YesNo` view was added for commands that need a final confirmation.
+* A user command was added for confirming users.
+* `/kick` and `/ban` confirm that the correct action took place after completing the desired action.
+* `/kick` and `/ban` can send a message to the user alerting them to the action that just took place.
+* Staff commands now double-check for permissions, once handled by the library, once handled by each command.
+* Staff can now refresh only part of the bot, if desired.
+* Staff can now set a custom bot status for a specified amount of time.
+* CRON handling is now handled by a group of methods, rather than just one method.
+
+#### Embeds
+* Adding/updating embeds is now done through Discord UI, with the help of dedicated classes.
+* Embeds sent previously can now be updated.
+* The limits on specific values in embeds is now validated.
+
+#### Pings
+* Pings now show recent message history in the channel to give context.
+* Ping messages now have a red color, and are formatted differently. The `Click Here` link is now embedded in the embed description.
+* Ping commands now live in a separate slash command group.
+
+#### Reporting
+* Reports are now interactive, often featuring buttons that can be clicked to activate specific actions.
+* Separate views/embeds are now used depending on the report type.
+* When reports are acted upon, messages are sent to `#closed-reports`.
 
 ### Changed
 * The main library is now [pycord](https://github.com/Pycord-Development/pycord).
@@ -22,18 +62,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The default Python runtime was updated to 3.9.7.
 * New tournament channels will not be created if an appropriate tournament channel already exists, just in the archived category
 * Automated data updates are no longer made on a constant basis; rather, data is updated only when changes are needed because of a process
+* The layout of the `/about` embed response was slightly updated.
+* `/pronouns` only allows adding/removing one pronoun role at once.
+* `/forums`, `/obb`, `/gallery`, and `/exchange` were simplified into `/link`.
+* `/info` no longer checks for the user's staff role, and instead only checks the category name of the channel the command was called in.
+* `/wiki` was split into separate commands: `/wikilink`, `/wikisearch`, and `/wikisummary`.
+* Users who are repeatedly spamming/using caps are now warned through direct messages, rather than in public channels.
+* Edited and deleted message logs now use Discord UI relative times instead of displaying times in UTC.
+* README now features slash commands instead of typical commands.
+* Version is now stored in `__init__.py`.
+* Message history in `#welcome` is now gotten newest-first in an effort to conserve resources.
 
 ### Removed
 * The exalt/unexalt commands were removed.
 * The getVariable command was removed.
+* The report command was removed.
 * The nukeuntil command was temporarily removed.
+* The `/graphpage` and `/graphscilympiad` commands were temporarily removed.
+* Users can no longer indefinitely self-mute.
 * Google Sheets is no longer used to store data, and all systems related to storing data in Google Sheets were removed.
 * The forums-interacting aspect of the bot was removed.
 * The ability for staff to mark tournament as "opening soon" was removed. Tournaments are now open from when they are officially added by staff.
 * The wiki stylist was temporarily disabled.
+* `/me` was removed.
+* `/eat` was removed.
+* `/report` was removed.
+* `/list` and `/help` were removed, as users can now see all commands in a list through Discord UI.
+* `/latex`, `/resultstemplate`, and `/school` were temporarily removed.
+* Users will no longer be banned from using `/stealfish`.
+* Edited and deleted message logs no longer show the raw event payload.
+* RegEx pings were removed.
+* Permissions for Launch Helpers were removed.
+* The `assemble_embed` method was removed; instances of its use were replaced with the use of `discord.Embed`.
+* The `auto_report` method was removed. Rather, reporting is now handled by a specific cog.
 
 ### Fixed
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
+* Direct message logs no longer log outgoing messages from the bot.
 
 ## 4.5.19 - 2020-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))

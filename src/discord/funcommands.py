@@ -1,192 +1,270 @@
+import discord
+from discord.ext import commands
+from discord.commands import Option
 import random
 import asyncio
+import aiohttp
+import json
 
-from discord.ext import commands
-
-from commandchecks import not_blacklisted_channel
-from src.discord.utils import sanitize_mention
-from src.discord.globals import CHANNEL_WELCOME, STEALFISH_BAN
-
-import xkcd as xkcd_module # not to interfere with xkcd method
+from src.discord.globals import SLASH_COMMAND_GUILDS
 
 class FunCommands(commands.Cog, name='Fun'):
+
+    fish_count: int
+
     def __init__(self, bot):
         self.bot = bot
-        self.BEAR_ID = 353730886577160203
-        self.BEAR_MESSAGES = [
-            r"*{1} eats {2}* :fork_and_knife:",
-            r"*{1} consumes {2}!* :fork_knife_plate:",
-            r"*{1} thinks that {2} tasted pretty good...* :yum:",
-            r"*{1} thinks that {2} tasted pretty awful...* :face_vomiting:",
-            r"*{1} enjoyed eating {2}!* :yum:",
-            r"*{1} hopes he gets to eat {2} again!* :smile:",
-            r"*{1} thinks that {2} is delicious!* :yum:",
-            r"*{1} likes eating {2} better than fish* :yum:",
-            r"*{1} thinks that {2} was yummy!!* :blush:",
-            r"*{1} is pretty full after eating {2}* :blush:",
-            r"*{1} liked eating {2}* :heart:",
-            r"*{1} isn't cuckoo for Cocoa Puffs, but rather {2}* :zany_face:",
-            r"*{1} wonders when he gets to eat more {2}* :thinking:",
-            r"*{1} has a hot take: {2} tastes pretty bomb* :fire:",
-            r"*{1} can't believe he doesn't eat {2} more often!* :exploding_head:",
-            r"*{1} would be lying to say he didn't like eating {2}* :liar:",
-            r"*{1} would eat {2} at any time of the day!* :candy:",
-            r"*{1} wonders where he can get more of {2}* :spoon:",
-            r"*{1} thinks that {2} tastes out of this world* :alien:",
-        ]
-    
+        self.fish_count = 0
+        print("Initialized Fun cog.")
 
-    async def get_bear_message(self, user):
-        message = random.choice(self.BEAR_MESSAGES)
-        message = message.replace(r"{1}", fr"<@{self.BEAR_ID}>").replace(r"{2}", f"{user}")
-        return message
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Trout slaps yourself or another user!"
+    )
+    async def trout(self,
+                    ctx,
+                    member: Option(discord.Member, "The member to trout slap! If not given, Pi-Bot will trout slap you!", required = False)
+                   ):
+        if not member or member == ctx.author:
+            member = "themselves"
+        else:
+            member = member.mention
 
-    @commands.command(aliases=["eats", "beareats"])
-    async def eat(self, ctx, user):
-        """Allows bear to eat users >:D"""
-        if ctx.author.id == self.BEAR_ID:
-            # author is bearasauras
-            message = await self.get_bear_message(user)
-            await ctx.message.delete()
-            await ctx.send(message)
-        else:
-            await ctx.message.reply("rawr! only bear can eat users!")
-    
-    @commands.command(aliases=["slap", "trouts", "slaps", "troutslaps"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def trout(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. Not so fast!")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} trout slaps themselves!")
-        else:
-            await ctx.send(f"{ctx.message.author.mention} slaps {member} with a giant trout!")
+        await ctx.interaction.response.send_message(f"{ctx.author.mention} slaps {member} with a giant trout!")
         await ctx.send("http://gph.is/1URFXN9")
-    
-    @commands.command(aliases=["givecookie"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def cookie(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} gives themselves a cookie.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives a treat to yourself or another user!"
+    )
+    async def treat(self,
+                    ctx,
+                    type: Option(str, "The type of treat to give!", choices = ["chocolate bar", "cookie", "ice cream", "pizza", "boba", "a slice of cake", "chips and salsa", "brownie", "cotton candy"], required = True),
+                    member: Option(discord.Member, "The member to give the treat to! Defaults to yourself!", required = False)
+                    ):
+        snacks = {
+            'chocolate bar': {
+                'name': 'a chocolate bar',
+                'gifs': [
+                    'http://gph.is/2rt64CX',
+                    'https://media.giphy.com/media/Wrscj8qsDogR4QHx2j/giphy.gif',
+                    'https://media.giphy.com/media/gIqguY2jmB31LZqWip/giphy.gif',
+                    'https://media.giphy.com/media/xUA7aUV3sYqsCkRLa0/giphy.gif',
+                    'https://media.giphy.com/media/gGwL4lMFOdSsGQlJEG/giphy.gif'
+                ]
+            },
+            'ice cream': {
+                'name': 'ice cream',
+                'gifs': [
+                    'http://gph.is/YZLMMs',
+                    'https://media.giphy.com/media/PB5E8c20NXslUuIxna/giphy.gif',
+                    'https://media.giphy.com/media/CqS6nhPTCu6e5v2R03/giphy.gif',
+                    'https://media.giphy.com/media/GB91uLrgyuul2/giphy.gif',
+                    'https://media.giphy.com/media/uUs14eCA2SBgs/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/26uf7yJapo82e48yA/giphy.gif',
+                ]
+            },
+            'cookie': {
+                'name': 'a cookie',
+                'gifs': [
+                    'http://gph.is/1UOaITh',
+                    'https://media.giphy.com/media/59Ve1fnBdol8c/giphy.gif',
+                    'https://media.giphy.com/media/JIPEUnwfxjtT0OapJb/giphy.gif',
+                    'https://media.giphy.com/media/26FeXTOe2R9kfpObC/giphy.gif',
+                    'https://media.giphy.com/media/EKUvB9uFnm2Xe/giphy.gif',
+                    'https://media.giphy.com/media/38a2gPetE4RuE/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/c7maSqDI7j2ww/giphy.gif',
+                ]
+            },
+            'pizza': {
+                'name': 'pizza',
+                'gifs': [
+                    'https://media.giphy.com/media/3osxYoufeOGOA7xiX6/giphy.gif',
+                    'https://media.giphy.com/media/1108D2tVaUN3eo/giphy.gif',
+                    'https://media.giphy.com/media/QR7ci2sbhrkzxAuMHH/giphy.gif',
+                    'https://media.giphy.com/media/hmzAcor7gBsbK/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/aCKMaeduKfFXG/giphy.gif'
+                ]
+            },
+            'boba': {
+                'name': 'boba',
+                'gifs': [
+                    'https://media.giphy.com/media/7SZzZO5EG1S6QLJeUL/giphy.gif',
+                    'https://media.giphy.com/media/r6P5BC5b4SS2Y/giphy.gif',
+                    'https://media.giphy.com/media/cRLPmyXQhtRXnRXfDX/giphy.gif',
+                    'https://media.giphy.com/media/h8CD39vtPVoMEoqZZ3/giphy.gif',
+                    'https://media.giphy.com/media/Y4VNo2dIdW8bpDgRXt/giphy.gif'
+                ]
+            },
+            'a slice of cake': {
+                'name': 'a slice of cake',
+                'gifs': [
+                    'https://media.giphy.com/media/He4wudo59enf2/giphy.gif',
+                    'https://media.giphy.com/media/l0Iy4ppWvwQ4SXPxK/giphy.gif',
+                    'https://media.giphy.com/media/zBU43ZvUVj37a/giphy.gif',
+                    'https://media.giphy.com/media/wPamPmbGkWkQE/giphy.gif',
+                    'https://media.giphy.com/media/JMfzwxEIbd6zC/giphy.gif'
+                ]
+            },
+            'chips and salsa': {
+                'name': 'chips and salsa, I suppose',
+                'gifs': [
+                    'https://media.giphy.com/media/xThuWwvZWJ4NOB6j6w/giphy.gif',
+                    'https://media.giphy.com/media/wZOF08rE9knDTYsY4G/giphy.gif',
+                    'https://media.giphy.com/media/1O3nlwRXcOJYLv1Neh/giphy.gif',
+                    'https://media.giphy.com/media/YrN8O2eGl2f5GucpEf/giphy.gif'
+                ]
+            },
+            'brownie': {
+                'name': 'a brownie',
+                'gifs': [
+                    'https://media.giphy.com/media/BkWHoSRB6gR2M/giphy.gif',
+                    'https://media.giphy.com/media/abOlz9ygIm9Es/giphy.gif',
+                    'https://media.giphy.com/media/l0MYEU0YyoTEpTDby/giphy-downsized-large.gif',
+                    'https://media.giphy.com/media/VdQ8b54TJZ9kXClaSw/giphy.gif',
+                    'https://media.giphy.com/media/ziuCU2H0DdtGoZdJu3/giphy.gif'
+                ]
+            },
+            'cotton candy': {
+                'name': 'cotton candy',
+                'gifs': [
+                    'https://media.giphy.com/media/1X7A3s673cLWovCQCE/giphy.gif',
+                    'https://media.giphy.com/media/dXKH2jCT9tINyVWlUp/giphy.gif',
+                    'https://media.giphy.com/media/V83Khg0lCKyOc/giphy.gif',
+                    'https://media.giphy.com/media/ZcVI712Fcol3EeLltH/giphy-downsized-large.gif'
+                ]
+            }
+        }
+        if not member or member == ctx.author:
+            member = "themselves"
         else:
-            await ctx.send(f"{ctx.message.author.mention} gives {member} a cookie!")
-        await ctx.send("http://gph.is/1UOaITh")
-    
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def treat(self, ctx):
-        await ctx.send("You give bernard one treat!")
-        await ctx.send("http://gph.is/11nJAH5")
-    
-    @commands.command(aliases=["givehershey", "hershey"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def hersheybar(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} gives themselves a Hershey bar.")
-        else:
-            await ctx.send(f"{ctx.message.author.mention} gives {member} a Hershey bar!")
-        await ctx.send("http://gph.is/2rt64CX")
-    
-    @commands.command(aliases=["giveicecream"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def icecream(self, ctx, member:str=False):
-        if await sanitize_mention(member) == False:
-            return await ctx.send("Woah... looks like you're trying to be a little sneaky with what you're telling me to do. You can't ping roles or everyone.")
-        if member == False:
-            await ctx.send(f"{ctx.message.author.mention} gives themselves some ice cream.")
-        else:
-            await ctx.send(f"{ctx.message.author.mention} gives {member} ice cream!")
-        await ctx.send("http://gph.is/YZLMMs")
-    
-    @commands.command(aliases=["feedbear"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+            member = member.mention
+
+        await ctx.interaction.response.send_message(f"{ctx.author.mention} gives {member} {snacks[type]['name']}!")
+        await ctx.send(random.choice(snacks[type]['gifs']))
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gives some fish to bear!"
+    )
     async def fish(self, ctx):
         """Gives a fish to bear."""
-        global fish_now
         r = random.random()
-        if len(str(fish_now)) > 1500:
-            fish_now = round(pow(fish_now, 0.5))
-            if fish_now == 69: fish_now = 70
-            return await ctx.send("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
+
+        if len(str(self.fish_count)) > 1000000:
+            self.fish_count = round(pow(self.fish_count, 0.5))
+            if self.fish_count == 69: self.fish_count = 70
+            return await ctx.interaction.response.send_message("Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted.")
+
         if r > 0.9:
-            fish_now += 10
-            if fish_now == 69: fish_now = 70
-            return await ctx.send(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {fish_now} fish!")
-        if r > 0.1:
-            fish_now += 1
-            if fish_now == 69: 
-                fish_now = 70
-                return await ctx.send(f"You feed bear two fish. Bear now has {fish_now} fish!")
+            self.fish_count += 10
+            if self.fish_count == 69: self.fish_count = 70
+            return await ctx.interaction.response.send_message(f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {self.fish_count} fish!")
+
+        elif r > 0.1:
+            self.fish_count += 1
+            if self.fish_count == 69:
+                self.fish_count = 70
+                return await ctx.interaction.response.send_message(f"You feed bear two fish. Bear now has {self.fish_count} fish!")
             else:
-                return await ctx.send(f"You feed bear one fish. Bear now has {fish_now} fish!")
-        if r > 0.02:
-            fish_now += 0
-            return await ctx.send(f"You can't find any fish... and thus can't feed bear. Bear still has {fish_now} fish.")
+                return await ctx.interaction.response.send_message(f"You feed bear one fish. Bear now has {self.fish_count} fish!")
+
+        elif r > 0.02:
+            self.fish_count += 0
+            return await ctx.interaction.response.send_message(f"You can't find any fish... and thus can't feed bear. Bear still has {self.fish_count} fish.")
+
         else:
-            fish_now = round(pow(fish_now, 0.5))
-            if fish_now == 69: fish_now = 70
-            return await ctx.send(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {fish_now} fish. \n:sob:\n:sob:\n:sob:")
-    
-    @commands.command(aliases=["badbear"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+            self.fish_count = round(pow(self.fish_count, 0.5))
+            if self.fish_count == 69: self.fish_count = 70
+            return await ctx.interaction.response.send_message(f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {self.fish_count} fish. \n:sob:\n:sob:\n:sob:")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Steals some fish from bear!"
+    )
     async def stealfish(self, ctx):
-        global fish_now
-        member = ctx.message.author
         r = random.random()
-        if member.id in STEALFISH_BAN:
-            return await ctx.send("Hey! You've been banned from stealing fish for now.")
+
         if r >= 0.75:
             ratio = r - 0.5
-            fish_now = round(fish_now * (1 - ratio))
+            self.fish_count = round(self.fish_count * (1 - ratio))
             per = round(ratio * 100)
-            return await ctx.send(f"You stole {per}% of bear's fish!")
-        if r >= 0.416:
-            parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-            STEALFISH_BAN.append(member.id)
-            CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-            return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 hour!")
-        if r >= 0.25:
-            parsed = dateparser.parse("1 day", settings={"PREFER_DATES_FROM": "future"})
-            STEALFISH_BAN.append(member.id)
-            CRON_LIST.append({"date": parsed, "do": f"unstealfishban {member.id}"})
-            return await ctx.send(f"Sorry {member.mention}, but it looks like you're going to be banned from using this command for 1 day!")
+            return await ctx.interaction.response.send_message(f"You stole {per}% of bear's fish!")
+
+        elif r >= 0.416:
+            self.fish_count = round(self.fish_count * 0.99)
+            return await ctx.interaction.response.send_message(f"You stole just 1% of bear's fish!")
+
+        elif r >= 0.25:
+            ratio = r + 0.75
+            self.fish_count = round(self.fish_count * ratio)
+            per = round(ratio * 100) - 100
+            return await ctx.interaction.response.send_message(f"Uhh... something went wrong! You gave bear another {per}% of his fish!")
+
         if r >= 0.01:
-            return await ctx.send("Hmm, nothing happened. *crickets*")
-        else:
-            STEALFISH_BAN.append(member.id)
-            return await ctx.send("You are banned from using `!stealfish` until the next version of Pi-Bot is released.")
-    
-    @commands.command(aliases=["doggobomb"])
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def dogbomb(self, ctx, member:str=False):
+            return await ctx.interaction.response.send_message("Hmm, nothing happened. *crickets*")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Dog bombs another user!"
+    )
+    async def dogbomb(self,
+                      ctx,
+                      member: Option(discord.Member, "The member to dog bomb!", required = True)
+                     ):
         """Dog bombs someone!"""
-        if member == False:
-            return await ctx.send("Tell me who you want to dog bomb!! :dog:")
-        doggo = await get_doggo()
+        session = aiohttp.ClientSession()
+        page = await session.get(f"https://dog.ceo/api/breeds/image/random")
+        await session.close()
+        if page.status > 400:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a doggo to bomb with...")
+        text = await page.content.read()
+        text = text.decode('utf-8')
+        jso = json.loads(text)
+
+        doggo = jso['message']
+        if member == ctx.author:
+            await ctx.interaction.response.send_message(f"{member.mention} dog bombed themselves!!")
+        else:
+            await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} dog bombed you!!")
         await ctx.send(doggo)
-        await ctx.send(f"{member}, <@{ctx.message.author.id}> dog bombed you!!")
-    
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def shibabomb(self, ctx, member:str=False):
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Shiba bombs another user!"
+    )
+    async def shibabomb(self,
+                        ctx,
+                        member: Option(discord.Member, "The member to shiba bomb!", required = True)
+                       ):
         """Shiba bombs a user!"""
-        if member == False:
-            return await ctx.send("Tell me who you want to shiba bomb!! :dog:")
-        doggo = await get_shiba()
+        session = aiohttp.ClientSession()
+        page = await session.get(f"https://dog.ceo/api/breed/shiba/images/random")
+        await session.close()
+        if page.status > 400:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a shiba to bomb with...")
+        text = await page.content.read()
+        text = text.decode('utf-8')
+        jso = json.loads(text)
+
+        doggo = jso['message']
+        if member == ctx.author:
+            await ctx.interaction.response.send_message(f"{member.mention} shiba bombed themselves!!")
+        else:
+            await ctx.interaction.response.send_message(f"{member.mention}, {ctx.author.mention} shiba bombed you!!")
         await ctx.send(doggo)
-        await ctx.send(f"{member}, <@{ctx.message.author.id}> shiba bombed you!!")
-    
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Rolls the magic 8 ball..."
+    )
     async def magic8ball(self, ctx):
-        msg = await ctx.send("Swishing the magic 8 ball...")
-        await ctx.channel.trigger_typing()
-        await asyncio.sleep(3)
-        await msg.delete()
+        await ctx.interaction.response.send_message("Swishing the magic 8 ball...")
+        await asyncio.sleep(1)
+        await ctx.interaction.edit_original_message(content="Swishing the magic 8 ball..")
+        await asyncio.sleep(1)
+        await ctx.interaction.edit_original_message(content="Swishing the magic 8 ball.")
+        await asyncio.sleep(1)
         sayings = [
             "Yes.",
             "Ask again later.",
@@ -209,19 +287,29 @@ class FunCommands(commands.Cog, name='Fun'):
             "Definitely no."
         ]
         response = random.choice(sayings)
-        await ctx.message.reply(f"**{response}**")
-        
-    @commands.command()
-    @not_blacklisted_channel(blacklist=[CHANNEL_WELCOME])
-    async def xkcd(self, ctx, num = None):
-        max_num = await xkcd_module.get_max()
+        await ctx.interaction.edit_original_message(content = f"**{response}**")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gets an xkcd comic!"
+    )
+    async def xkcd(self,
+                   ctx,
+                   num: Option(int, "The number of the xkcd comic to get. If not provided, gets a random comic.", required = False)
+                  ):
+        session = aiohttp.ClientSession()
+        res = await session.get("https://xkcd.com/info.0.json")
+        text = await res.text()
+        await session.close()
+        json_obj = json.loads(text)
+        max_num = json_obj['num']
+
         if num == None:
-            rand = random.randrange(1, int(max_num))
-            return await xkcd(ctx, str(rand))
-        if num.isdigit() and 1 <= int(num) <= int(max_num):
-            return await ctx.send(f"https://xkcd.com/{num}")
+            num = random.randrange(1, max_num)
+        if 1 <= num <= max_num:
+            return await ctx.interaction.response.send_message(f"https://xkcd.com/{num}")
         else:
-            return await ctx.send("Invalid attempted number for xkcd.")
+            return await ctx.interaction.response.send_message("Invalid attempted number for xkcd.")
 
 def setup(bot):
     bot.add_cog(FunCommands(bot))

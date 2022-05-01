@@ -11,12 +11,17 @@ client: motor.motor_asyncio.AsyncIOMotorClient
 
 async def setup():
     global client
-    client = motor.motor_asyncio.AsyncIOMotorClient(os.getenv('MONGO_URL'))
+    client = motor.motor_asyncio.AsyncIOMotorClient(os.getenv('MONGO_URL'), tz_aware = True)
 
 async def delete(db_name, collection_name, iden):
     global client
     collection = client[db_name][collection_name]
     await collection.delete_one({"_id": iden})
+
+async def delete_by(db_name, collection_name, dict):
+    global client
+    collection = client[db_name][collection_name]
+    await collection.delete_many(dict)
 
 async def get_entire_collection(db_name, collection_name, return_one = False):
     global client

@@ -1,209 +1,207 @@
 import discord
+import aiohttp
+import re
+import datetime
+from discord.commands import Option
 import random
 import wikipedia as wikip
 from discord.ext import commands
-from src.discord.globals import TOURNAMENT_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, CHANNEL_REPORTS, REPORTS, EVENT_INFO, ROLE_LH, ROLE_MR
-from embed import assemble_embed
-from src.discord.utils import harvest_id
+import src.discord.globals
+from src.discord.globals import CHANNEL_TOURNAMENTS, CHANNEL_ROLES, CHANNEL_UNSELFMUTE, ROLE_SELFMUTE, INVITATIONAL_INFO, ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY, PI_BOT_IDS, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_ALUMNI, EMOJI_FAST_REVERSE, EMOJI_FAST_FORWARD, EMOJI_LEFT_ARROW, EMOJI_RIGHT_ARROW, ROLE_GAMES, CHANNEL_GAMES, RULES, CATEGORY_STAFF, SERVER_ID, EVENT_INFO, ROLE_LH, ROLE_MR, TAGS, SLASH_COMMAND_GUILDS
+from src.discord.views import YesNo
 from src.wiki.wiki import get_page_tables
 from src.wiki.scilympiad import make_results_template, get_points
 from src.wiki.schools import get_school_listing
-from commands import get_list, get_quick_list, get_help
-from lists import get_state_list
+from src.mongo.mongo import insert
+from src.lists import get_state_list
 from src.discord.utils import lookup_role
-from src.discord.mute import _mute
-from commandchecks import is_staff
+from __init__ import __version__
+from commandchecks import is_staff, is_staff_from_ctx
 from commanderrors import SelfMuteCommandStaffInvoke
 
 from typing import Type
 from src.discord.tournaments import update_tournament_list
-from src.discord.utils import auto_report
-from info import get_about
 from src.wiki.wiki import implement_command
 from aioify import aioify
 
-class MemberCommands(commands.Cog, name='Member'):
+class MemberCommands(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
         self.aiowikip = aioify(obj=wikip)
-        print("Member commands loaded")
+        print("Initialized MemberCommands cog.")
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        pass
-
-    @commands.command(aliases=["man"])
-    async def help(self, ctx, command:str=None):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Looking for help? Try this!"
+    )
+    async def help(self,
+                   ctx
+                  ):
         """Allows a user to request help for a command."""
-        if command == None:
-            embed = assemble_embed(
-                title="Looking for help?",
-                desc=("Hey there, I'm a resident bot of Scioly.org!\n\n" +
-                "On Discord, you can send me commands using `!` before the command name, and I will process it to help you! " +
-                "For example, `!states`, `!events`, and `!fish` are all valid commands that can be used!\n\n" +
-                "If you want to see some commands that you can use on me, just type `!list`! " +
-                "If you need more help, please feel free to reach out to a staff member!")
-            )
-            return await ctx.send(embed=embed)
-        hlp = await get_help(ctx, command)
-        await ctx.send(embed=hlp)
+        server = self.bot.get_guild(SERVER_ID)
+        invitationals_channel = discord.utils.get(server.text_channels, name = CHANNEL_TOURNAMENTS)
+        roles_channel = discord.utils.get(server.text_channels, name = CHANNEL_ROLES)
 
-    @commands.command()
-    async def pronouns(self, ctx, *args):
+        # Type checking
+        assert isinstance(invitationals_channel, discord.TextChannel)
+        assert isinstance(roles_channel, discord.TextChannel)
+
+        help_embed = discord.Embed(
+            title = "Looking for help?",
+            color = discord.Color(0x2E66B6),
+            description = f"""
+            Hey there, I'm Scioly.org's resident bot, and I'm here to assist with all of your needs.
+
+            To interact with me, use _slash commands_ by typing `/` and the name of the command into the text bar below. You can also use the dropdowns in the {invitationals_channel.mention} and {roles_channel.mention} channels to assign yourself roles!
+
+            If you're looking for more help, feel free to ask other members (including our helpful staff members) for more information.
+            """
+        )
+
+        return await ctx.interaction.response.send_message(embed = help_embed)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles your pronoun roles."
+    )
+    async def pronouns(self,
+                       ctx,
+                       pronouns: Option(str, "The pronoun to add/remove from your account.", choices = [ROLE_PRONOUN_HE, ROLE_PRONOUN_SHE, ROLE_PRONOUN_THEY], required = True)
+                      ):
         """Assigns or removes pronoun roles from a user."""
-        member = ctx.message.author
-        if len(args) < 1:
-            await ctx.send(f"{member.mention}, please specify a pronoun to add/remove. Current options include `!pronouns he`, `!pronouns she`, and `!pronouns they`.")
-        he_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_HE)
-        she_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_SHE)
-        they_role = discord.utils.get(member.guild.roles, name=ROLE_PRONOUN_THEY)
-        for arg in args:
-            if arg.lower() in ["he", "him", "his", "he / him / his"]:
-                if he_role in member.roles:
-                    await ctx.send("Oh, looks like you already have the He / Him / His role. Removing it.")
-                    await member.remove_roles(he_role)
-                else:
-                    await member.add_roles(he_role)
-                    await ctx.send("Added the He / Him / His role.")
-            elif arg.lower() in ["she", "her", "hers", "she / her / hers"]:
-                if she_role in member.roles:
-                    await ctx.send("Oh, looks like you already have the She / Her / Hers role. Removing it.")
-                    await member.remove_roles(she_role)
-                else:
-                    await member.add_roles(she_role)
-                    await ctx.send("Added the She / Her / Hers role.")
-            elif arg.lower() in ["they", "them", "their", "they / them / their"]:
-                if they_role in member.roles:
-                    await ctx.send("Oh, looks like you already have the They / Them / Theirs role. Removing it.")
-                    await member.remove_roles(they_role)
-                else:
-                    await member.add_roles(they_role)
-                    await ctx.send("Added the They / Them / Theirs role.")
-            elif arg.lower() in ["remove", "clear", "delete", "nuke"]:
-                await member.remove_roles(he_role, she_role, they_role)
-                return await ctx.send("Alrighty, your pronouns have been removed.")
-            elif arg.lower() in ["help", "what"]:
-                return await ctx.send("For help with pronouns, please use `!help pronouns`.")
-            else:
-                return await ctx.send(f"Sorry, I don't recognize the `{arg}` pronoun. The pronoun roles we currently have are:\n" +
-                "> `!pronouns he  ` (which gives you *He / Him / His*)\n" +
-                "> `!pronouns she ` (which gives you *She / Her / Hers*)\n" +
-                "> `!pronouns they` (which gives you *They / Them / Theirs*)\n" +
-                "To remove pronouns, use `!pronouns remove`.\n" +
-                "Feel free to request alternate pronouns, by opening a report, or reaching out a staff member.")
-
-    # Never understood why this exists when there's the built in /me
-    @commands.command()
-    async def me(self, ctx, *args):
-        """Replaces the good ol' /me"""
-        await ctx.message.delete()
-        if len(args) < 1:
-            return await ctx.send(f"*{ctx.message.author.mention} " + "is cool!*")
+        member = ctx.author
+        pronoun_role = discord.utils.get(member.guild.roles, name=pronouns)
+        if pronoun_role in member.roles:
+            await member.remove_roles(pronoun_role)
+            await ctx.interaction.response.send_message(content = f"Removed your `{pronouns}` role.")
         else:
-            await ctx.send(f"*{ctx.message.author.mention} " + " ".join(arg for arg in args) + "*")
+            await member.add_roles(pronoun_role)
+            await ctx.interaction.response.send_message(content = f"Added the `{pronouns}` role to your profile.")
 
-    @commands.command()
-    async def profile(self, ctx, name:str=False):
-        if name == False:
-            member = ctx.message.author
-            name = member.nick
-            if name == None:
-                name = member.name
-        elif name.find("<@") != -1:
-            iden = await harvest_id(name)
-            member = ctx.message.author.guild.get_member(int(iden))
-            name = member.nick
-            if name == None:
-                name = member.name
-        embed = assemble_embed(
-            title=f"Scioly.org Information for {name}",
-            desc=(f"[`Forums`](https://scioly.org/forums/memberlist.php?mode=viewprofile&un={name}) | [`Wiki`](https://scioly.org/wiki/index.php?title=User:{name})"),
-            hexcolor="#2E66B6"
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gets the profile information for a username."
+    )
+    async def profile(self,
+                      ctx,
+                      username: Option(str, "The username to get information about. Defaults to your nickname/username.", required = False)
+                     ):
+        if username == None:
+            username = ctx.author.nick or ctx.author.name
+
+        session = aiohttp.ClientSession()
+        page = await session.get(f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}")
+        await session.close()
+        if page.status > 400:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a user by the username of `{username}`.")
+        text = await page.content.read()
+        text = text.decode('utf-8')
+
+        description = ""
+        total_posts_matches = re.search(r"(?:<dt>Total posts:<\/dt>\s+<dd>)(\d+)", text, re.MULTILINE)
+        if total_posts_matches == None:
+            return await ctx.interaction.response.send_message(content = f"Sorry, I couldn't find a user by the username of `{username}`.")
+        else:
+            description += f"**Total Posts:** `{total_posts_matches.group(1)} posts`\n"
+
+        has_thanked_matches = re.search(r"Has thanked: <a.*?>(\d+)", text, re.MULTILINE)
+        description += f"**Has Thanked:** `{has_thanked_matches.group(1)} times`\n"
+
+        been_thanked_matches = re.search(r"Been(?:&nbsp;)?thanked: <a.*?>(\d+)", text, re.MULTILINE)
+        description += f"**Been Thanked:** `{been_thanked_matches.group(1)} times`\n"
+
+        date_regexes = [
+            {"name": "Joined", "regex": r"<dt>Joined:</dt>\s+<dd>(.*?)</dd>"},
+            {"name": "Last Active", "regex": r"<dt>Last active:</dt>\s+<dd>(.*?)</dd>"},
+        ]
+        for pattern in date_regexes:
+            try:
+                matches = re.search(pattern["regex"], text, re.MULTILINE)
+                raw_dt_string = matches.group(1)
+                raw_dt_string = raw_dt_string.replace("st", "")
+                raw_dt_string = raw_dt_string.replace("nd", "")
+                raw_dt_string = raw_dt_string.replace("rd", "")
+                raw_dt_string = raw_dt_string.replace("th", "")
+
+                raw_dt = datetime.datetime.strptime(raw_dt_string, "%B %d, %Y, %I:%M %p")
+                description += f"**{pattern['name']}:** {discord.utils.format_dt(raw_dt, 'R')}\n"
+            except:
+                # Occurs if the time can't be parsed/found
+                pass
+
+        for i in range(1, 7):
+            stars_matches = re.search(rf"<img src=\"./images/ranks/stars{i}\.gif\"", text, re.MULTILINE)
+            if stars_matches != None:
+                description += f"\n**Stars:** {i * ':star:'}"
+                break
+            exalts_matches = re.search(rf"<img src=\"./images/ranks/exalt{i}\.gif\"", text, re.MULTILINE)
+            if exalts_matches != None:
+                description += f"\n**Stars:** {4 * ':star:'}\n" # All exalts have 4 stars
+                description += f"**Medals:** {i * ':medal:'}"
+                break
+
+        profile_embed = discord.Embed(
+            title = f"`{username}`",
+            color = discord.Color(0x2E66B6),
+            description = description
         )
-        await ctx.send(embed=embed)
 
-    @commands.command()
-    async def latex(self, ctx, *args):
-        new_args = " ".join(args)
-        print(new_args)
-        new_args = new_args.replace(" ", r"&space;")
-        print(new_args)
-        await ctx.send(r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}" + new_args + "}")
+        avatar_matches = re.search(r"<img class=\"avatar\" src=\"(.*?)\"", text, re.MULTILINE)
+        if avatar_matches != None:
+            profile_embed.set_thumbnail(url = "https://scioly.org/forums" + avatar_matches.group(1)[1:])
 
-    @commands.command(aliases=["membercount"])
+        await ctx.interaction.response.send_message(embed = profile_embed)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns the number of members in the server."
+    )
     async def count(self, ctx):
-        guild = ctx.message.author.guild
-        await ctx.send(f"Currently, there are `{len(guild.members)}` members in the server.")
+        guild = ctx.author.guild
+        await ctx.interaction.response.send_message(content = f"Currently, there are `{len(guild.members)}` members in the server.")
 
-    @commands.command()
-    async def resultstemplate(self, ctx, url):
-        if url.find("scilympiad.com") == -1:
-            return await ctx.send("The URL must be a Scilympiad results link.")
-        await ctx.send("**Warning:** Because Scilympiad is constantly evolving, this command may break. Please preview the template on the wiki before saving! If this command breaks, please DM pepperonipi or open an issue on GitHub. Thanks!")
-        res = await make_results_template(url)
-        with open("resultstemplate.txt", "w+") as t:
-            t.write(res)
-        file = discord.File("resultstemplate.txt", filename="resultstemplate.txt")
-        await ctx.send(file=file)
-
-    @commands.command()
-    async def school(self, ctx, title, state):
-        lists = await get_school_listing(title, state)
-        fields = []
-        if len(lists) > 20:
-            return await ctx.send(f"Woah! Your query returned `{len(lists)}` schools, which is too much to send at once. Try narrowing your query!")
-        for l in lists:
-            fields.append({'name': l['name'], 'value': f"```{l['wikicode']}```", 'inline': "False"})
-        embed = assemble_embed(
-            title="School Data",
-            desc=f"Your query for `{title}` in `{state}` returned `{len(lists)}` results. Thanks for contribtuing to the wiki!",
-            fields=fields,
-            hexcolor="#2E66B6"
-        )
-        await ctx.send(embed=embed)
-
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles the Alumni role."
+    )
     async def alumni(self, ctx):
         """Removes or adds the alumni role from a user."""
-        member = ctx.message.author
-        div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
-        div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
-        div_c_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
-        await member.remove_roles(div_a_role, div_b_role, div_c_role)
-        role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
-        if role in member.roles:
-            await member.remove_roles(role)
-            await ctx.send("Removed your alumni status.")
-        else:
-            await member.add_roles(role)
-            await ctx.send(f"Added the alumni role, and removed all other division roles.")
+        await self._assign_div(ctx, "Alumni")
+        await ctx.interaction.response.send_message(content = "Assigned you the Alumni role, and removed all other divison/alumni roles.")
 
-    @commands.command(aliases=["div"])
-    async def division(self, ctx, div):
-        if div.lower() == "a":
-            res = await self.__assign_div(ctx, "Division A")
-            await ctx.send("Assigned you the Division A role, and removed all other divison/alumni roles.")
-        elif div.lower() == "b":
-            res = await self.__assign_div(ctx, "Division B")
-            await ctx.send("Assigned you the Division B role, and removed all other divison/alumni roles.")
-        elif div.lower() == "c":
-            res = await self.__assign_div(ctx, "Division C")
-            await ctx.send("Assigned you the Division C role, and removed all other divison/alumni roles.")
-        elif div.lower() == "d":
-            await ctx.send("This server does not have a Division D role. Instead, use the `!alumni` command!")
-        elif div.lower() in ["remove", "clear", "none", "x"]:
-            member = ctx.message.author
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles division roles for the user."
+    )
+    async def division(self,
+        ctx,
+        div: Option(str, "The division to assign the user with.", choices = ["Division A", "Division B", "Division C", "Alumni", "None"], required = True)
+        ):
+        if div == "Division A":
+            await self._assign_div(ctx, "Division A")
+            await ctx.interaction.response.send_message(content = "Assigned you the Division A role, and removed all other divison/alumni roles.")
+        elif div == "Division B":
+            await self._assign_div(ctx, "Division B")
+            await ctx.interaction.response.send_message(content = "Assigned you the Division B role, and removed all other divison/alumni roles.")
+        elif div == "Division C":
+            await self._assign_div(ctx, "Division C")
+            await ctx.interaction.response.send_message(content = "Assigned you the Division C role, and removed all other divison/alumni roles.")
+        elif div == "Alumni":
+            await self._assign_div(ctx, "Alumni")
+            await ctx.interaction.response.send_message(content = "Assigned you the Alumni role, and removed all other divison/alumni roles.")
+        elif div == "None":
+            member = ctx.author
             div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
             div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
             div_c_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_C)
-            await member.remove_roles(div_a_role, div_b_role, div_c_role)
-            await ctx.send("Removed all of your division/alumni roles.")
-        else:
-            return await ctx.send("Sorry, I don't seem to see that division. Try `!division c` to assign the Division C role, or `!division d` to assign the Division D role.")
+            alumni_role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
+            await member.remove_roles(div_a_role, div_b_role, div_c_role, alumni_role)
+            await ctx.interaction.response.send_message(content = "Removed all of your division/alumni roles.")
 
-    async def __assign_div(self, ctx, div):
+    async def _assign_div(self, ctx, div):
         """Assigns a user a div"""
-        member = ctx.message.author
+        member = ctx.author
         role = discord.utils.get(member.guild.roles, name=div)
         div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
         div_b_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_B)
@@ -213,60 +211,42 @@ class MemberCommands(commands.Cog, name='Member'):
         await member.add_roles(role)
         return True
 
-    @commands.command()
-    async def list(self, ctx, cmd:str=False):
-        """Lists all of the commands a user may access."""
-        if cmd == False: # for quick list of commands
-            ls = await get_quick_list(ctx)
-            await ctx.send(embed=ls)
-        if cmd == "all" or cmd == "commands":
-            ls = await get_list(ctx.message.author, 1)
-            sent_list = await ctx.send(embed=ls)
-            await sent_list.add_reaction(EMOJI_FAST_REVERSE)
-            await sent_list.add_reaction(EMOJI_LEFT_ARROW)
-            await sent_list.add_reaction(EMOJI_RIGHT_ARROW)
-            await sent_list.add_reaction(EMOJI_FAST_FORWARD)
-        elif cmd == "states":
-            states_list = await get_state_list()
-            list = assemble_embed(
-                title="List of all states",
-                desc="\n".join([f"`{state}`" for state in states_list])
-            )
-            await ctx.send(embed=list)
-        elif cmd == "events":
-            events_list = [r['eventName'] for r in EVENT_INFO]
-            list = assemble_embed(
-                title="List of all events",
-                desc="\n".join([f"`{name}`" for name in events_list])
-            )
-            await ctx.send(embed=list)
-
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles the visibility of the #games channel."
+    )
     async def games(self, ctx):
         """Removes or adds someone to the games channel."""
-        games_channel = discord.utils.get(ctx.message.author.guild.text_channels, name=CHANNEL_GAMES)
-        member = ctx.message.author
+        games_channel = discord.utils.get(ctx.author.guild.text_channels, name=CHANNEL_GAMES)
+        member = ctx.author
         role = discord.utils.get(member.guild.roles, name=ROLE_GAMES)
+
+        # Type checking
+        assert isinstance(games_channel, discord.TextChannel)
+
         if role in member.roles:
             await member.remove_roles(role)
-            await ctx.send("Removed you from the games club... feel free to come back anytime!")
+            await ctx.interaction.response.send_message(content = "Removed you from the games club... feel free to come back anytime!")
             await games_channel.send(f"{member.mention} left the party.")
         else:
             await member.add_roles(role)
-            await ctx.send(f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:")
+            await ctx.interaction.response.send_message(content = f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:")
             await games_channel.send(f"Please welcome {member.mention} to the party!!")
 
-    @commands.command(aliases=["state"])
-    async def states(self, ctx, *args):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles the visibility of state roles and channels."
+    )
+    async def states(self,
+                     ctx,
+                     states: Option(str, "The states to toggle. For example 'Missouri, Iowa, South Dakota'.", required = True)
+                    ):
         """Assigns someone with specific states."""
-        new_args = [str(arg).lower() for arg in args]
-
-        # Fix commas as possible separator
-        if len(new_args) == 1:
-            new_args = new_args[0].split(",")
+        new_args = states.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
+        new_args = [arg.strip() for arg in new_args]
 
-        member = ctx.message.author
+        member = ctx.author
         states = await get_state_list()
         states = [s[:s.rfind(" (")] for s in states]
         triple_word_states = [s for s in states if len(s.split(" ")) > 2]
@@ -274,12 +254,10 @@ class MemberCommands(commands.Cog, name='Member'):
         removed_roles = []
         added_roles = []
         for term in ["california", "ca", "cali"]:
-            if term in [arg.lower() for arg in args]:
-                return await ctx.send("Which California, North or South? Try `!state norcal` or `!state socal`.")
-        if len(new_args) < 1:
-            return await ctx.send("Sorry, but you need to specify a state (or multiple states) to add/remove.")
-        elif len(new_args) > 10:
-            return await ctx.send("Sorry, you are attempting to add/remove too many states at once.")
+            if term in [arg.lower() for arg in new_args]:
+                return await ctx.interaction.response.send_message("Which California, North or South? Try `/state norcal` or `/state socal`.")
+        if len(new_args) > 10:
+            return await ctx.interaction.response.send_message("Sorry, you are attempting to add/remove too many states at once.")
         for string in ["South", "North"]:
             california_list = [f"California ({string})", f"California-{string}", f"California {string}", f"{string}ern California", f"{string} California", f"{string} Cali", f"Cali {string}", f"{string} CA", f"CA {string}"]
             if string == "North":
@@ -332,7 +310,7 @@ class MemberCommands(commands.Cog, name='Member'):
         for arg in new_args:
             role_name = await lookup_role(arg)
             if role_name == False:
-                return await ctx.send(f"Sorry, the {arg} state could not be found. Try again.")
+                return await ctx.interaction.response.send_message(f"Sorry, the `{arg}` state could not be found. Try again.")
             role = discord.utils.get(member.guild.roles, name=role_name)
             if role in member.roles:
                 await member.remove_roles(role)
@@ -346,154 +324,223 @@ class MemberCommands(commands.Cog, name='Member'):
             state_res = "Removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
         else:
             state_res = "Added states " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", and removed states " + (' '.join([f'`{arg}`' for arg in removed_roles])) + "."
-        await ctx.send(state_res)
+        await ctx.interaction.response.send_message(state_res)
 
-    def is_not_staff(exception: Type[commands.CommandError], message: str):
-        async def predicate(ctx):
-            if not is_staff():
-                return True
-            raise exception(message)
-        return commands.check(predicate)
-
-    @commands.command()
-    @is_not_staff(SelfMuteCommandStaffInvoke, "A staff member attempted to invoke selfmute.")
-    async def selfmute(self, ctx, *args):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Mutes yourself."
+    )
+    async def selfmute(self,
+                       ctx,
+                       mute_length: Option(str, "How long to mute yourself for.", choices = [
+                           "10 minutes",
+                           "30 minutes",
+                           "1 hour",
+                           "2 hours",
+                           "4 hours",
+                           "8 hours",
+                           "1 day",
+                           "4 days",
+                           "7 days",
+                           "1 month",
+                           "1 year"
+                       ], required = True)
+                      ):
         """
         Self mutes the user that invokes the command.
-
-        :param *args: The time to mute the user for.
-        :type *args: str
         """
-        user = ctx.message.author
+        if is_staff_from_ctx(ctx, no_raise = True):
+            return await ctx.interaction.response.send_message("Staff members can't self mute! Sorry!")
 
-        time = " ".join(args)
-        await _mute(ctx, user, time, self=True)
+        member = ctx.author
 
-    async def cog_command_error(self, ctx, error):
-        if isinstance(error, SelfMuteCommandStaffInvoke):
-            return await ctx.send("Staff members can't self mute.")
+        times = {
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
+        }
+        selected_time = times[mute_length]
 
-    @commands.command(aliases=["tc", "tourney", "tournaments"])
-    async def tournament(self, ctx, *args):
-        member = ctx.message.author
-        new_args = list(args)
-        ignore_terms = ["invitational", "invy", "tournament", "regional", "invite"]
-        for term in ignore_terms:
-            if term in new_args:
-                new_args.remove(term)
-                await ctx.send(f"Ignoring `{term}` because it is too broad of a term. *(If you need help with this command, please type `!help tournament`)*")
-        if len(args) == 0:
-            return await ctx.send("Please specify the tournaments you would like to be added/removed from!")
-        for arg in new_args:
-            # Stop users from possibly adding the channel hash in front of arg
-            arg = arg.replace("#", "")
-            arg = arg.lower()
-            found = False
-            if arg == "all":
-                role = discord.utils.get(member.guild.roles, name=ROLE_AT)
-                if role in member.roles:
-                    await ctx.send(f"Removed your `All Tournaments` role.")
-                    await member.remove_roles(role)
-                else:
-                    await ctx.send(f"Added your `All Tournaments` role.")
-                    await member.add_roles(role)
-                continue
-            for t in TOURNAMENT_INFO:
-                if arg == t[1]:
-                    found = True
-                    role = discord.utils.get(member.guild.roles, name=t[0])
-                    if role == None:
-                        return await ctx.send(f"Apologies! The `{t[0]}` channel is currently not available.")
-                    if role in member.roles:
-                        await ctx.send(f"Removed you from the `{t[0]}` channel.")
-                        await member.remove_roles(role)
-                    else:
-                        await ctx.send(f"Added you to the `{t[0]}` channel.")
-                        await member.add_roles(role)
-                    break
-            if not found:
-                uid = member.id
-                found2 = False
-                votes = 1
-                # for t in REQUESTED_TOURNAMENTS: TODO Fix this for v5
-                for t in range(0, 1):
-                    if arg == t['iden']:
-                        found2 = True
-                        if uid in t['users']:
-                            return await ctx.send("Sorry, but you can only vote once for a specific tournament!")
-                        t['count'] += 1
-                        t['users'].append(uid)
-                        votes = t['count']
-                        break
-                if not found2:
-                    await auto_report(ctx.bot, "New Tournament Channel Requested", "orange", f"User ID {uid} requested tournament channel `#{arg}`.\n\nTo add this channel to the voting list for the first time, use `!tla {arg} {uid}`.\nIf the channel has already been requested in the list and this was a user mistake, use `!tla [actual name] {uid}`.")
-                    return await ctx.send(f"Made request for a `#{arg}` channel. Please note your submission may not instantly appear.")
-                await ctx.send(f"Added a vote for `{arg}`. There " + ("are" if votes != 1 else "is") + f" now `{votes}` " + (f"votes" if votes != 1 else f"vote") + " for this channel.")
-                await update_tournament_list(ctx.bot, {})
+        original_shown_embed = discord.Embed(
+            title = "Mute Confirmation",
+            color = discord.Color.brand_red(),
+            description = f"""
+            You will be muted across the entire server. You will no longer be able to communicate in any channels you can read until {discord.utils.format_dt(selected_time)}.
+            """
+        )
 
-    @commands.command(aliases=["what"])
+        view = YesNo()
+        await ctx.interaction.response.send_message(content = "Please confirm that you would like to mute yourself.", view = view, embed = original_shown_embed, ephemeral = True)
+
+        await view.wait()
+        if view.value:
+            try:
+                role = discord.utils.get(member.guild.roles, name=ROLE_SELFMUTE)
+                unselfmute_channel = discord.utils.get(member.guild.text_channels, name = CHANNEL_UNSELFMUTE)
+                await member.add_roles(role)
+                await insert("data", "cron",
+                    {
+                        "type": "UNSELFMUTE",
+                        "user": member.id,
+                        "time": times[mute_length],
+                        "tag": str(member)
+                    }
+                )
+                return await ctx.interaction.edit_original_message(content = f"You have been muted. You may use the button in the {unselfmute_channel} channel to unmute.", embed = None, view = None)
+            except:
+                pass
+
+        return await ctx.interaction.edit_original_message(content = f"The operation was cancelled, and you can still speak throughout the server.", embed = None, view = None)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Requests a new invitational channel! Note: This request will be sent to staff for approval."
+    )
+    async def request(
+                      self,
+                      ctx,
+                      invitational: Option(str, "The official name of the invitational you would like to add.", required = True)
+                     ):
+        reporter_cog = self.bot.get_cog("Reporter")
+        await reporter_cog.create_invitational_request_report(ctx.author, invitational)
+        await ctx.interaction.response.send_message(f"Thanks for the request. Staff will review your request to add an invitational channel for `{invitational}`. In the meantime, please do not make additional requests.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns information about the bot and server."
+    )
     async def about(self, ctx):
         """Prints information about the bot."""
-        await ctx.send(get_about())
+        repo = "https://github.com/cbrxyz/pi-bot"
+        wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
+        forums_link = "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
+        avatar_url = self.bot.user.display_avatar.url
 
-    @commands.command(aliases=["server", "link", "invitelink"])
+        embed = discord.Embed(
+            title = f"**Pi-Bot {__version__}**",
+            color = discord.Color(0xF86D5F),
+            description = f"""
+            Hey there! I'm Pi-Bot, and I help to manage the Scioly.org forums, wiki, and chat. You'll often see me around this Discord server to help users get roles and information about Science Olympiad.
+
+            I'm developed by the community. If you'd like to find more about development, you can find more by visiting the links below.
+            """
+        )
+        embed.add_field(name = "Code Repository", value = repo, inline = False)
+        embed.add_field(name = "Wiki Page", value = wiki_link, inline = False)
+        embed.add_field(name = "Forums Page", value = forums_link, inline = False)
+        embed.set_thumbnail(url = avatar_url)
+
+        await ctx.interaction.response.send_message(embed = embed)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns the Discord server invite."
+    )
     async def invite(self, ctx):
-        await ctx.send("https://discord.gg/C9PGV6h")
+        await ctx.interaction.response.send_message("https://discord.gg/C9PGV6h")
 
-    @commands.command()
-    async def forums(self, ctx):
-        await ctx.send("<https://scioly.org/forums>")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns a link to the Scioly.org forums."
+    )
+    async def link(self,
+                   ctx,
+                   destination: Option(str, "The area of the site to link to.", choices = ["forums", "exchange", "gallery", "obb", "wiki", "tests"], required = True)
+                  ):
+        if destination == "forums":
+            await ctx.interaction.response.send_message("<https://scioly.org/forums>")
+        elif destination == "wiki":
+            await ctx.interaction.response.send_message("<https://scioly.org/wiki>")
+        elif destination == "tests":
+            await ctx.interaction.response.send_message("<https://scioly.org/tests>")
+        elif destination == "exchange":
+            await ctx.interaction.response.send_message("<https://scioly.org/tests>")
+        elif destination == "gallery":
+            await ctx.interaction.response.send_message("<https://scioly.org/gallery>")
+        elif destination == "obb":
+            await ctx.interaction.response.send_message("<https://scioly.org/obb>")
 
-    @commands.command()
-    async def obb(self, ctx):
-        await ctx.send("<https://scioly.org/obb>")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns a random number, inclusively."
+    )
+    async def random(self,
+                     ctx,
+                     minimum: Option(int, "The minimum number to choose from. Defaults to 0.", required = False, default = 0),
+                     maximum: Option(int, "The maximum number to choose from. Defaults to 10.", required = False, default = 10),
+                    ):
+        if minimum > maximum:
+            maximum, minimum = minimum, maximum
 
-    @commands.command(aliases=["tests", "testexchange"])
-    async def exchange(self, ctx):
-        await ctx.send("<https://scioly.org/tests>")
+        num = random.randrange(minimum, maximum + 1)
+        await ctx.interaction.response.send_message(f"Random number between `{minimum}` and `{maximum}`: `{num}`")
 
-    @commands.command()
-    async def gallery(self, ctx):
-        await ctx.send("<https://scioly.org/gallery>")
-
-    @commands.command(aliases=["random"])
-    async def rand(self, ctx, a=1, b=10):
-        r = random.randrange(a, b + 1)
-        await ctx.send(f"Random number between `{a}` and `{b}`: `{r}`")
-
-    @commands.command()
-    async def rule(self, ctx, num):
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns information about a given rule."
+    )
+    async def rule(self,
+                   ctx,
+                   rule: Option(str, "The rule to cite.", choices = [
+                       "Rule #1: Treat all with respect.",
+                       "Rule #2: No profanity/innapropriateness.",
+                       "Rule #3: Treat delicate subjects carefully.",
+                       "Rule #4: Do not spam or flood.",
+                       "Rule #5: Avoid excessive pinging.",
+                       "Rule #6: Avoid excessive caps.",
+                       "Rule #7: No doxxing/name-dropping.",
+                       "Rule #8: No witch-hunting.",
+                       "Rule #9: No impersonating.",
+                       "Rule #10: Do not use alts.",
+                       "Rule #11: Do not violate SOINC copyrights.",
+                       "Rule #12: No advertising.",
+                       "Rule #13: Use good judgement."
+                   ])
+                  ):
         """Gets a specified rule."""
-        if not num.isdigit() or int(num) < 1 or int(num) > 13:
-            # If the rule number is not actually a number
-            return await ctx.send("Please use a valid rule number, from 1 through 13. (Ex: `!rule 7`)")
+        num = re.findall(r'Rule #(\d+)', rule)
+        num = int(num[0])
         rule = RULES[int(num) - 1]
-        return await ctx.send(f"**Rule {num}:**\n> {rule}")
+        return await ctx.interaction.response.send_message(f"**Rule {num}:**\n> {rule}")
 
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Information about gaining the @Coach role."
+    )
     async def coach(self, ctx):
         """Gives an account the coach role."""
-        await ctx.send("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.")
+        await ctx.interaction.response.send_message("If you would like to apply for the `Coach` role, please fill out the form here: <https://forms.gle/UBKpWgqCr9Hjw9sa6>.", ephemeral = True)
 
-    @commands.command()
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Information about the current server."
+    )
     async def info(self, ctx):
         """Gets information about the Discord server."""
-        server = ctx.message.guild
+        server = ctx.guild
         name = server.name
         owner = server.owner
-        creation_date = server.created_at
+        creation_date = discord.utils.format_dt(server.created_at, 'R')
         emoji_count = len(server.emojis)
-        icon = server.icon_url_as(format=None, static_format='jpeg')
-        animated_icon = server.is_icon_animated()
+        icon = server.icon.url
+        animated_icon = server.icon.is_animated()
         iden = server.id
-        banner = server.banner_url
+        banner = server.banner.url if server.banner != None else "None"
         desc = server.description
         mfa_level = server.mfa_level
         verification_level = server.verification_level
         content_filter = server.explicit_content_filter
         default_notifs = server.default_notifications
         features = server.features
-        splash = server.splash_url
+        splash = server.splash.url if server.splash != None else "None"
         premium_level = server.premium_tier
         boosts = server.premium_subscription_count
         channel_count = len(server.channels)
@@ -514,17 +561,15 @@ class MemberCommands(commands.Cog, name='Member'):
             # convert user objects to mentions
             boosters[i] = b.mention
         boosters = ", ".join(boosters)
-        print(boosters)
         role_count = len(server.roles)
         member_count = len(server.members)
         max_members = server.max_members
-        discovery_splash_url = server.discovery_splash_url
+        discovery_splash_url = server.discovery_splash.url if server.discovery_splash != None else "None"
         member_percentage = round(member_count/max_members * 100, 3)
         emoji_percentage = round(emoji_count/emoji_limit * 100, 3)
         channel_percentage = round(channel_count/500 * 100, 3)
         role_percenatege = round(role_count/250 * 100, 3)
 
-        staff_member = await is_staff()
         fields = [
                 {
                     "name": "Basic Information",
@@ -547,7 +592,7 @@ class MemberCommands(commands.Cog, name='Member'):
                     "inline": False
                 }
             ]
-        if staff_member and ctx.channel.category.name == CATEGORY_STAFF:
+        if ctx.channel.category.name == CATEGORY_STAFF:
             fields.extend(
                 [{
                     "name": "Staff Information",
@@ -586,152 +631,127 @@ class MemberCommands(commands.Cog, name='Member'):
                     "inline": False
                 }
             ])
-        embed = assemble_embed(
+
+        embed = discord.Embed(
             title=f"Information for `{name}`",
-            desc=f"**Description:** {desc}",
-            thumbnailUrl=icon,
-            fields=fields
+            description=f"**Description:** {desc}",
         )
-        await ctx.send(embed=embed)
+        embed.set_thumbnail(url = icon)
+        for field in fields:
+            embed.add_field(**field)
 
-    @commands.command(aliases=["r"])
-    async def report(self, ctx, *args):
-        """Creates a report that is sent to staff members."""
-        server = ctx.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(server.text_channels, name=CHANNEL_REPORTS)
-        message = args[0]
-        if len(args) > 1:
-            message = ' '.join(args)
-        poster = str(ctx.message.author)
-        embed = assemble_embed(
-            title=f"Report Received (using `!report`)",
-            webcolor="red",
-            authorName = poster,
-            authorIcon = ctx.message.author.avatar_url_as(format="jpg"),
-            fields = [{
-                "name": "Message",
-                "value": message,
-                "inline": False
-            }]
-        )
-        message = await reports_channel.send(embed=embed)
-        REPORTS.append(message.id)
-        await message.add_reaction("\U00002705")
-        await message.add_reaction("\U0000274C")
-        await ctx.send("Thanks, report created.")
+        await ctx.interaction.response.send_message(embed=embed)
 
-    # TODO: NOT TESTED
-    @commands.command()
-    async def wiki(self, ctx, command:str=False, *args):
-        # Check to make sure not too much at once
-        if not command:
-            return await ctx.send("<https://scioly.org/wiki>")
-        if len(args) > 7:
-            return await ctx.send("Slow down there buster. Please keep the command to 12 or less arguments at once.")
-        multiple = False
-        for arg in args:
-            if arg[:1] == "-":
-                multiple = arg.lower() == "-multiple"
-        if command in ["summary"]:
-            if multiple:
-                for arg in [arg for arg in args if arg[:1] != "-"]:
-                    text = await implement_command("summary", arg)
-                    if text == False:
-                        await ctx.send(f"The `{arg}` page does not exist!")
-                    else:
-                        await ctx.send(" ".join(text))
-            else:
-                string_sum = " ".join([arg for arg in args if arg[:1] != "-"])
-                text = await implement_command("summary", string_sum)
-                if text == False:
-                    await ctx.send(f"The `{arg}` page does not exist!")
-                else:
-                    await ctx.send(" ".join(text))
-        elif command in ["search"]:
-            if multiple:
-                return await ctx.send("Ope! No multiple searches at once yet!")
-            searches = await implement_command("search", " ".join([arg for arg in args]))
-            await ctx.send("\n".join([f"`{s}`" for s in searches]))
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Returns a summary of a wiki page."
+    )
+    async def wikisummary(
+                          self,
+                          ctx,
+                          page: Option(str, "The name of the page to return a summary about. Correct caps must be used.", required = True)
+                         ):
+        command = await implement_command("summary", page)
+        if command == False:
+            await ctx.interaction.response.send_message(f"Unfortunately, the `{page}` page does not exist.")
         else:
-            # Assume link
-            if multiple:
-                new_args = [command] + list(args)
-                for arg in [arg for arg in new_args if arg[:1] != "-"]:
-                    url = await implement_command("link", arg)
-                    if url == False:
-                        await ctx.send(f"The `{arg}` page does not exist!")
-                    await ctx.send(f"<{self.wiki_url_fix(url)}>")
-            else:
-                string_sum = " ".join([arg for arg in args if arg[:1] != "-"])
-                if len(args) > 0 and command.rstrip() != "link":
-                    string_sum = f"{command} {string_sum}"
-                elif command.rstrip() != "link":
-                    string_sum = command
-                url = await implement_command("link", string_sum)
-                if url == False:
-                    await ctx.send(f"The `{string_sum}` page does not exist!")
-                else:
-                    await ctx.send(f"<{self.wiki_url_fix(url)}>")
+            await ctx.interaction.response.send_message(" ".join(command))
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Searches the wiki for a particular page."
+    )
+    async def wikisearch(
+                         self,
+                         ctx,
+                         term: Option(str, "The term to search for across the wiki.", required = True)
+                        ):
+        command = await implement_command("search", term)
+        if len(command):
+            await ctx.interaction.response.send_message("\n".join([f"`{search}`" for search in command]))
+        else:
+            await ctx.interaction.response.send_message(f"No pages matching `{term}` were found.")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Links to a particular wiki page."
+    )
+    async def wikilink(
+                       self,
+                       ctx,
+                       page: Option(str, "The wiki page to link to. Correct caps must be used.", required = True)
+                      ):
+        command = await implement_command("link", page)
+        if command == False:
+            await ctx.interaction.response.send_message(f"The `{page}` page does not yet exist.")
+        else:
+            await ctx.interaction.response.send_message(f"<{self.wiki_url_fix(command)}>")
 
     def wiki_url_fix(self, url):
         return url.replace("%3A", ":").replace(r"%2F","/")
 
-    @commands.command(aliases=["wp"])
-    async def wikipedia(self, ctx, request:str=False, *args):
-        term = " ".join(args)
-        if request == False:
-            return await ctx.send("You must specifiy a command and keyword, such as `!wikipedia search \"Science Olympiad\"`")
-        if request == "search":
-            return await ctx.send("\n".join([f"`{result}`" for result in self.aiowikip.search(term, results=5)]))
-        elif request == "summary":
-            try:
-                term = term.title()
-                page = await self.aiowikip.page(term)
-                return await ctx.send(self.aiowikip.summary(term, sentences=3) + f"\n\nRead more on Wikipedia here: <{page.url}>!")
-            except wikip.exceptions.DisambiguationError as e:
-                return await ctx.send(f"Sorry, the `{term}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
-            except wikip.exceptions.PageError as e:
-                return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-        else:
-            try:
-                term = f"{request} {term}".strip()
-                term = term.title()
-                page = await self.aiowikip.page(term)
-                return await ctx.send(f"Sure, here's the link: <{page.url}>")
-            except wikip.exceptions.PageError as e:
-                return await ctx.send(f"Sorry, but the `{term}` page doesn't exist! Try another term!")
-            except wikip.exceptions.DisambiguationError as e:
-                return await ctx.send(f"Sorry, but the `{term}` page is a disambiguation page. Please try again!")
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Searches for information on Wikipedia, the free encyclopedia!"
+    )
+    async def wikipedia(self,
+                        ctx,
+                        command: Option(str, "The command to execute.", choices = ["search", "summary", "link"], required = True),
+                        request: Option(str, "The request to execute the command upon. What to search or summarize, etc.", required = True)
+                       ):
+        if command == "search":
+            return await ctx.interaction.response.send_message("\n".join([f"`{result}`" for result in self.aiowikip.search(request, results=5)]))
 
-    @commands.command(aliases=["event"])
-    async def events(self, ctx, *args):
+        elif command == "summary":
+            try:
+                page = await self.aiowikip.page(request)
+                return await ctx.interaction.response.send_message(self.aiowikip.summary(request, sentences=3) + f"\n\nRead more on Wikipedia here: <{page.url}>!")
+            except wikip.exceptions.DisambiguationError as e:
+                return await ctx.interaction.response.send_message(f"Sorry, the `{request}` term could refer to multiple pages, try again using one of these terms:" + "\n".join([f"`{o}`" for o in e.options]))
+            except wikip.exceptions.PageError as e:
+                return await ctx.interaction.response.send_message(f"Sorry, but the `{request}` page doesn't exist! Try another term!")
+
+        elif command == "link":
+            try:
+                page = await self.aiowikip.page(request)
+                return await ctx.interaction.response.send_message(f"Sure, here's the link: <{page.url}>")
+            except wikip.exceptions.PageError as e:
+                return await ctx.interaction.response.send_message(f"Sorry, but the `{request}` page doesn't exist! Try another term!")
+            except wikip.exceptions.DisambiguationError as e:
+                return await ctx.interaction.response.send_message(f"Sorry, but the `{request}` page is a disambiguation page. Please try again!")
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Toggles event roles."
+    )
+    async def events(self,
+                     ctx,
+                     events: Option(str, "The events to toggle. For example, 'anatomy, astro, wq'.")
+                    ):
         """Adds or removes event roles from a user."""
-        if len(args) < 1:
-            return await ctx.send("You need to specify at least one event to add/remove!")
-        elif len(args) > 10:
-            return await ctx.send("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
-        member = ctx.message.author
-        new_args = [str(arg).lower() for arg in args]
+        if len(events) > 100:
+            return await ctx.interaction.response.send_message("Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands.")
+        member = ctx.author
 
         # Fix commas as possible separator
-        if len(new_args) == 1:
-            new_args = new_args[0].split(",")
+        new_args = events.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
+        new_args = [arg.strip() for arg in new_args]
 
-        event_info = EVENT_INFO
+        event_info = src.discord.globals.EVENT_INFO
         event_names = []
         removed_roles = []
         added_roles = []
         could_not_handle = []
         multi_word_events = []
 
-        if type(EVENT_INFO) == int:
+        if type(event_info) == int:
             # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few seconds later. This lets the user know this.
-            return await ctx.send("Apologies... refreshing data currently. Try again in a few seconds.")
+            return await ctx.interaction.response.send_message("Apologies... refreshing data currently. Try again in a few seconds.")
 
         for i in range(7, 1, -1):
             # Supports adding 7-word to 2-word long events
-            multi_word_events += [e['eventName'] for e in event_info if len(e['eventName'].split(" ")) == i]
+            multi_word_events += [e['name'] for e in event_info if len(e['name'].split(" ")) == i]
             for event in multi_word_events:
                 words = event.split(" ")
                 all_here = 0
@@ -747,16 +767,18 @@ class MemberCommands(commands.Cog, name='Member'):
                         added_roles.append(event)
                     for word in words:
                         new_args.remove(word.lower())
+
         for arg in new_args:
             found_event = False
             for event in event_info:
-                aliases = [abbr.lower() for abbr in event['event_abbreviations']]
-                if arg.lower() in aliases or arg.lower() == event['eventName'].lower():
-                    event_names.append(event['eventName'])
+                aliases = [alias.lower() for alias in event['aliases']]
+                if arg.lower() in aliases or arg.lower() == event['name'].lower():
+                    event_names.append(event['name'])
                     found_event = True
                     break
             if not found_event:
                 could_not_handle.append(arg)
+
         for event in event_names:
             role = discord.utils.get(member.guild.roles, name=event)
             if role in member.roles:
@@ -765,86 +787,41 @@ class MemberCommands(commands.Cog, name='Member'):
             else:
                 await member.add_roles(role)
                 added_roles.append(event)
+
         if len(added_roles) > 0 and len(removed_roles) == 0:
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         elif len(removed_roles) > 0 and len(added_roles) == 0:
             event_res = "Removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
         else:
             event_res = "Added events " + (' '.join([f'`{arg}`' for arg in added_roles])) + ", " + ("and " if not len(could_not_handle) else "") + "removed events " + (' '.join([f'`{arg}`' for arg in removed_roles])) + ((", and could not handle: " + " ".join([f"`{arg}`" for arg in could_not_handle])) if len(could_not_handle) else "") + "."
-        await ctx.send(event_res)
 
-    @commands.command(aliases=["tags", "t"])
-    async def tag(self, ctx, name):
-        member = ctx.message.author
-        if len(TAGS) == 0:
-            return await ctx.send("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
-        staff = is_staff()
+        await ctx.interaction.response.send_message(event_res)
+
+    @discord.commands.slash_command(
+        guild_ids = [SLASH_COMMAND_GUILDS],
+        description = "Gets a tag."
+    )
+    async def tag(self,
+                  ctx,
+                  tag_name: Option(str, "The name of the tag to get.", required = True)
+                 ):
+        member = ctx.author
+
+        if not len(src.discord.globals.TAGS):
+            return await ctx.interaction.response.send_message("Apologies, tags do not appear to be working at the moment. Please try again in one minute.")
+
+        staff = is_staff_from_ctx(ctx, no_raise = True)
         lh_role = discord.utils.get(member.guild.roles, name=ROLE_LH)
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        for t in TAGS:
-            if t['name'] == name:
-                if staff or (t['launch_helpers'] and lh_role in member.roles) or (t['members'] and member_role in member.roles):
-                    await ctx.message.delete()
-                    return await ctx.send(t['text'])
+
+        for t in src.discord.globals.TAGS:
+            if t['name'] == tag_name:
+                if staff or (t['permissions']['launch_helpers'] and lh_role in member.roles) or (t['permissions']['members'] and member_role in member.roles):
+                    return await ctx.interaction.response.send_message(content = t['output'])
                 else:
-                    return await ctx.send("Unfortunately, you do not have the permissions for this tag.")
-        return await ctx.send("Tag not found.")
+                    return await ctx.interaction.response.send_message(content = "Unfortunately, you do not have the permissions for this tag.")
 
-    @commands.command()
-    async def graphpage(self, ctx, title, temp_format, table_index, div, place_col=0):
-        temp = temp_format.lower() in ["y", "yes", "true"]
-        await ctx.send(
-            "*Inputs read:*\n" +
-            f"Page title: `{title}`\n" +
-            f"Template: `{temp}`\n" +
-            f"Table index (staring at 0): `{table_index}`\n" +
-            f"Division: `{div}`\n" +
-            (f"Column with point values: `{place_col}`" if not temp else "")
-        )
-        points = []
-        table_index = int(table_index)
-        place_col = int(place_col)
-        if temp:
-            template = await get_page_tables(title, True)
-            template = [t for t in template if t.normal_name() == "State results box"]
-            template = template[table_index]
-            ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]) # Thanks https://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712
-            for i in range(100):
-                if template.has_arg(ordinal(i) + "_points"):
-                    points.append(template.get_arg(ordinal(i) + "_points").value.replace("\n", ""))
-        else:
-            tables = await get_page_tables(title, False)
-            tables = tables[table_index]
-            data = tables.data()
-            points = [r[place_col] for r in data]
-            del points[0]
-        points = [int(p) for p in points]
-        await _graph(points, title + " - Division " + div, title + "Div" + div + ".svg")
-        with open(title + "Div" + div + ".svg") as f:
-            pic = discord.File(f)
-            await ctx.send(file=pic)
-        return await ctx.send("Attempted to graph.")
-
-    @commands.command()
-    async def graphscilympiad(self, ctx, url, title):
-        points = await get_points(url)
-        await _graph(points, title, "graph1.svg")
-        with open("graph1.svg") as f:
-            pic = discord.File(f)
-            await ctx.send(file=pic)
-        return await ctx.send("Attempted to graph.")
-
-async def _graph(points, graph_title, title):
-    plt.plot(range(1, len(points) + 1), points, marker='o', color='#2E66B6')
-    z = np.polyfit(range(1, len(points) + 1), points, 1)
-    p = np.poly1d(z)
-    plt.plot(range(1, len(points) + 1), p(range(1, len(points) + 1)), "--", color='#CCCCCC')
-    plt.xlabel("Place")
-    plt.ylabel("Points")
-    plt.title(graph_title)
-    plt.savefig(title)
-    plt.close()
-    await asyncio.sleep(2)
+        return await ctx.interaction.response.send_message("Tag not found.")
 
 def setup(bot):
     bot.add_cog(MemberCommands(bot))

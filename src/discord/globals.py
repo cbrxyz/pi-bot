@@ -24,8 +24,6 @@ PI_BOT_IDS = [
     743254543952904197,
     637519324072116247
 ]
-RULES_CHANNEL_ID = 737087680269123606
-WELCOME_CHANNEL_ID = 743253216921387088
 DISCORD_INVITE_ENDINGS = ["9Z5zKtV", "C9PGV6h", "s4kBmas", "ftPTxhC", "gh3aXbq", "skGQXd4", "RnkqUbK", "scioly"]
 SLASH_COMMAND_GUILDS = int(os.getenv('SLASH_COMMAND_GUILDS'))
 EMOJI_GUILDS = [int(iden) for iden in [os.getenv('EMOJI_GUILDS')]]
@@ -67,9 +65,11 @@ CHANNEL_LEAVE = "member-leave"
 CHANNEL_DELETEDM = "deleted-messages"
 CHANNEL_EDITEDM = "edited-messages"
 CHANNEL_REPORTS = "reports"
+CHANNEL_CLOSED_REPORTS = "closed-reports"
 CHANNEL_JOIN = "join-logs"
 CHANNEL_UNSELFMUTE = "un-self-mute"
 CHANNEL_COMPETITIONS = "competitions"
+CHANNEL_ROLES = "roles"
 
 # Categories
 CATEGORY_TOURNAMENTS = "invitationals"
@@ -86,6 +86,7 @@ EMOJI_RIGHT_ARROW = "\U000027A1"
 EMOJI_FAST_FORWARD = "\U000023E9"
 EMOJI_UNSELFMUTE = "click_to_unmute"
 EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
+EMOJI_LOADING = "<a:loading:909706909404237834>"
 
 # Rules
 RULES = [
@@ -108,25 +109,19 @@ RULES = [
 # VARIABLES
 ##############
 fish_now = 0
-can_post = False
-do_hourly_sync = False
-CENSORED_WORDS = []
-CENSORED_EMOJIS = []
-EVENT_INFO = 0
-REPORTS = []
+CENSOR = {}
+EVENT_INFO = []
 PING_INFO = []
-RECENT_MESSAGES = []
-STEALFISH_BAN = []
-TOURNAMENT_INFO = []
+INVITATIONAL_INFO = []
+REPORTS = []
 TAGS = []
-STOPNUKE = datetime.datetime.utcnow()  # Was a bool, not is a datetime
-CRON_LIST = []
 CURRENT_WIKI_PAGE = None
 
 SETTINGS = {
     '_id': None,
     'custom_bot_status_type': None,
-    'custom_bot_status_text': None
+    'custom_bot_status_text': None,
+    'invitational_season': None
 }
 
 async def update_setting(values):

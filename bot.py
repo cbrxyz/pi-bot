@@ -1,27 +1,20 @@
 import discord
-import os
 import traceback
 import re
-import time
 import asyncio
 import uuid
-import datetime
-import dateparser
-import numpy as np
 
-from discord import channel
 from discord.ext import commands
+from discord.commands import permissions
+from discord import RawReactionActionEvent
 
-from src.discord.utils import auto_report
-from src.mongo.mongo import get_censor
-from embed import assemble_embed
-from commands import get_list
 from commanderrors import CommandNotAllowedInChannel
 
 ##############
 # SERVER VARIABLES
 ##############
 
+import src.discord.globals
 from src.discord.globals import *
 
 ##############
@@ -47,7 +40,6 @@ bot.remove_command("help")
 ##############
 # ASYNC WRAPPERS
 ##############
-# aiowikip = aioify(obj=wikip)
 
 ##############
 # FUNCTIONS
@@ -58,68 +50,55 @@ async def on_ready():
     """Called when the bot is enabled and ready to be run."""
     print(f'{bot.user} has connected!')
 
-# async def get_words():
-#     """Gets the censor list"""
-#     global CENSORED_WORDS
-#     CENSORED_WORDS = get_censor()
-
 @bot.event
 async def on_message_edit(before, after):
-    if (datetime.datetime.now() - after.created_at).total_seconds() < 2:
-        # no need to log edit events for messages just created
+    # Do not trigger the message edit event for newly-created messages
+    if (discord.utils.utcnow() - after.created_at).total_seconds() < 2:
         return
+
+    # Log edit event
     print('Message from {0.author} edited to: {0.content}, from: {1.content}'.format(after, before))
-    for word in CENSORED_WORDS:
-        if len(re.findall(fr"\b({word})\b", after.content, re.I)):
-            print(f"Censoring message by {after.author} because of the word: `{word}`")
-            await after.delete()
-    for word in CENSORED_EMOJIS:
-        if len(re.findall(fr"{word}", after.content)):
-            print(f"Censoring message by {after.author} because of the emoji: `{word}`")
-            await after.delete()
-    if not any(ending for ending in DISCORD_INVITE_ENDINGS if ending in after.content) and (len(re.findall("discord.gg", after.content, re.I)) > 0 or len(re.findall("discord.com/invite", after.content, re.I)) > 0):
-        print(f"Censoring message by {after.author} because of the it mentioned a Discord invite link.")
+
+    # Stop the event here for DM's (no need to censor, as author is the only one who can see them)
+    if isinstance(after.channel, discord.DMChannel):
+        return
+
+    # Stop here for messages from Pi-Bot (no need to do anything else)
+    if after.author.id in PI_BOT_IDS or after.author == bot:
+        return
+
+    # Delete messages that contain censored words
+    censor_cog = bot.get_cog("Censor")
+    censor_found = censor_cog.censor_needed(after.content)
+    if censor_found:
         await after.delete()
+        await after.author.send("You recently edited a message, but it **contained a censored word**! Therefore, I unfortunately had to delete it. In the future, please do not edit innapropriate words into your messages, and they will not be deleted.")
+
+    # Delete messages that have Discord invite links in them
+    discord_invite_found = censor_cog.discord_invite_censor_needed(after.content)
+    if discord_invite_found:
+        await after.delete()
+        await after.author.send("You recently edited a message, but it **contained a link to another Discord server**! Therefore, I unfortunately had to delete it. In the future, please do not edit Discord invite links into your messages and they will not be deleted.")
 
 async def send_to_dm_log(message):
-    server = bot.get_guild(SERVER_ID)
-    dmChannel = discord.utils.get(server.text_channels, name=CHANNEL_DMLOG)
-    embed = assemble_embed(
-        title=":speech_balloon: New DM",
-        fields=[
-            {
-                    "name": "Author",
-                    "value": message.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": message.id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Content",
-                    "value": message.content if len(message.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
+    """
+    Sends a direct message object to the staff log channel.
+    """
+    # Get the relevant objects
+    guild = bot.get_guild(SERVER_ID)
+    dm_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
+
+    # Create an embed containing the direct message info and send it to the log channel
+    message_embed = discord.Embed(
+        title = ":speech_balloon: Incoming Direct Message to Pi-Bot",
+        description = message.content if len(message.content) > 0 else "This message contained no content.",
+        color = discord.Color.brand_green()
     )
-    await dmChannel.send(embed=embed)
+    message_embed.add_field(name = "Author", value = message.author.mention, inline = True)
+    message_embed.add_field(name = "Message ID", value = message.id, inline = True)
+    message_embed.add_field(name = "Sent", value = discord.utils.format_dt(message.created_at, 'R'), inline = True)
+    message_embed.add_field(name = "Attachments", value = " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None", inline = True)
+    await dm_channel.send(embed = message_embed)
 
 listeners = {}
 async def listen_for_response(
@@ -150,119 +129,58 @@ async def listen_for_response(
 
 @bot.event
 async def on_message(message):
-    if message.author.id in PI_BOT_IDS: return
+    # Nothing needs to be done to the bot's own messages
+    if message.author.id in PI_BOT_IDS or message.author == bot:
+        return
 
+    # If user is being listened to, return their message
     for listener in listeners.items():
         if message.author.id == listener[1]['follow_id']:
             listeners[listener[0]]['message'] = message
 
-    # Log DMs (might put this into cog idk this just needs to run b4 the censor)
-    if type(message.channel) == discord.DMChannel:
+    # Log incoming direct messages
+    if type(message.channel) == discord.DMChannel and message.author not in PI_BOT_IDS and message.author != bot:
         await send_to_dm_log(message)
+        print(f"Message from {message.author} through DM's: {message.content}")
     else:
         # Print to output
         if not (message.author.id in PI_BOT_IDS and message.channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]):
             # avoid sending logs for messages in log channels
             print(f'Message from {message.author} in #{message.channel}: {message.content}')
 
-    censor = bot.get_cog("Censor")
-    if censor != None: # only case where this occurs if the cog is disabled
+    # Check if the message contains a censored word/emoji
+    is_private = any([isinstance(message.channel, discord_class) for discord_class in [discord.DMChannel, discord.GroupChannel]])
+    if message.content and not is_private:
+        censor = bot.get_cog("Censor")
         await censor.on_message(message)
 
-    # SPAM TESTING (should prob put in its own cog cuz its not essential for censor or commands)
-    #  if spamming commands, we should just issue a command cooldown (2-5s makes sense)
-    global RECENT_MESSAGES
-    caps = False
-    u = sum(1 for c in message.content if c.isupper())
-    l = sum(1 for c in message.content if c.islower())
-    if u > (l + 3): caps = True
-    RECENT_MESSAGES = [{"author": message.author.id,"content": message.content.lower(), "caps": caps}] + RECENT_MESSAGES[:20]
-    # Spam checker
-    if RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 6:
-        muted_role = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
-        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-        CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
-        await message.author.add_roles(muted_role)
-        await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await auto_report(bot, "User was auto-muted (spam)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated spamming.")
-    elif RECENT_MESSAGES.count({"author": message.author.id, "content": message.content.lower()}) >= 3:
-        await message.channel.send(f"{message.author.mention}, please watch the spam. You will be muted if you do not stop.")
-    # Caps checker
-    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 8 and caps:
-        muted_role = discord.utils.get(message.author.guild.roles, name=ROLE_MUTED)
-        parsed = dateparser.parse("1 hour", settings={"PREFER_DATES_FROM": "future"})
-        CRON_LIST.append({"date": parsed, "do": f"unmute {message.author.id}"})
-        await message.author.add_roles(muted_role)
-        await message.channel.send(f"Successfully muted {message.author.mention} for 1 hour.")
-        await auto_report(bot, "User was auto-muted (caps)", "red", f"A user ({str(message.author)}) was auto muted in {message.channel.mention} because of repeated caps.")
-    elif sum(1 for m in RECENT_MESSAGES if m['author'] == message.author.id and m['caps']) > 3 and caps:
-        await message.channel.send(f"{message.author.mention}, please watch the caps, or else I will lay down the mute hammer!")
-
-    if re.match(r'\s*[!"#$%&\'()*+,\-./:;<=>?@[\]^_`{|}~]', message.content.lstrip()[1:]) == None: # A bit messy, but gets it done
-        await bot.process_commands(message)
-
-@bot.event
-async def on_raw_reaction_add(payload):
-    if payload.user_id not in PI_BOT_IDS:
-        guild = bot.get_guild(payload.guild_id)
-        reports_channel = discord.utils.get(guild.text_channels, name=CHANNEL_REPORTS)
-        if payload.emoji.name == EMOJI_UNSELFMUTE:
-            guild = bot.get_guild(payload.guild_id)
-            self_muted_role = discord.utils.get(guild.roles, name=ROLE_SELFMUTE)
-            un_self_mute_channel = discord.utils.get(guild.text_channels, name=CHANNEL_UNSELFMUTE)
-            member = payload.member
-            message = await un_self_mute_channel.fetch_message(payload.message_id)
-            if self_muted_role in member.roles:
-                await member.remove_roles(self_muted_role)
-            await message.clear_reactions()
-            await message.add_reaction(EMOJI_FULL_UNSELFMUTE)
-            for obj in CRON_LIST[:]:
-                if obj['do'] == f'unmute {payload.user_id}':
-                    CRON_LIST.remove(obj)
-        if payload.message_id in REPORTS:
-            messageObj = await reports_channel.fetch_message(payload.message_id)
-            if payload.emoji.name == "\U0000274C": # :x:
-                print("Report cleared with no action.")
-                await messageObj.delete()
-            if payload.emoji.name == "\U00002705": # :white_check_mark:
-                print("Report handled.")
-                await messageObj.delete()
-            return
-
-@bot.event
-async def on_reaction_add(reaction, user):
-    msg = reaction.message
-    if len(msg.embeds) > 0:
-        if msg.embeds[0].title.startswith("List of Commands") and user.id not in PI_BOT_IDS:
-            currentPage = int(re.findall(r'(\d+)(?=\/)', msg.embeds[0].title)[0])
-            print(currentPage)
-            ls = False
-            if reaction.emoji == EMOJI_FAST_REVERSE:
-                ls = await get_list(user, 1)
-            elif reaction.emoji == EMOJI_LEFT_ARROW:
-                ls = await get_list(user, currentPage - 1)
-            elif reaction.emoji == EMOJI_RIGHT_ARROW:
-                ls = await get_list(user, currentPage + 1)
-            elif reaction.emoji == EMOJI_FAST_FORWARD:
-                ls = await get_list(user, 100)
-            if ls != False:
-                await reaction.message.edit(embed=ls)
-            await reaction.remove(user)
+        # Check to see if the message contains repeated content or has too many caps
+        spam = bot.get_cog("SpamManager")
+        await spam.store_and_validate(message)
 
 @bot.event
 async def on_member_join(member):
-    role = discord.utils.get(member.guild.roles, name=ROLE_UC)
-    join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
-    await member.add_roles(role)
+    # Give new user confirmed role
+    unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+    await member.add_roles(unconfirmed_role)
+
+    # Check to see if user's name is innapropriate
     name = member.name
-    for word in CENSORED_WORDS:
-        if len(re.findall(fr"\b({word})\b", name, re.I)):
-            await auto_report(bot, "Innapropriate Username Detected", "red", f"A new member ({str(member)}) has joined the server, and I have detected that their username is innapropriate.")
+    censor_cog = bot.get_cog('Censor')
+    if censor_cog.censor_needed(name):
+        # If name contains a censored link
+        reporter_cog = bot.get_cog('Reporter')
+        await reporter_cog.create_innapropriate_username_report(member, member.name)
+
+    # Send welcome message to the welcoming channel
+    join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
     await join_channel.send(f"{member.mention}, welcome to the Scioly.org Discord Server! " +
     "You can add roles here, using the commands shown at the top of this channel. " +
     "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP." +
     "\n\n" +
     "**Please add roles by typing the commands above into the text box, and if you have a question, please type it here. After adding roles, a moderator will give you access to the rest of the server to chat with other members!**")
+
+    # Send fun alert message on every 100 members who join
     member_count = len(member.guild.members)
     lounge_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LOUNGE)
     if member_count % 100 == 0:
@@ -270,246 +188,82 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_remove(member):
+    # Post a leaving info message
     leave_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
     unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+
     if unconfirmed_role in member.roles:
         unconfirmed_statement = "Unconfirmed: :white_check_mark:"
     else:
         unconfirmed_statement = "Unconfirmed: :x:"
+
     joined_at = f"Joined at: `{str(member.joined_at)}`"
+
     if member.nick != None:
         await leave_channel.send(f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmed_statement}\n{joined_at}")
     else:
         await leave_channel.send(f"**{member}** has left the server (or was removed).\n{unconfirmed_statement}\n{joined_at}")
+
+    # Delete any messages the user left in the welcoming channel
     welcome_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
-    # when user leaves, determine if they are mentioned in any messages in #welcome, delete if so
-    async for message in welcome_channel.history(oldest_first=True):
+    async for message in welcome_channel.history():
         if not message.pinned:
-            if member in message.mentions:
+            if member in message.mentions or member == message.author:
                 await message.delete()
 
 @bot.event
 async def on_member_update(before, after):
-    if after.nick == None: return
-    for word in CENSORED_WORDS:
-        if len(re.findall(fr"\b({word})\b", after.nick, re.I)):
-            await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(after)}) has updated their nickname to **{after.nick}**, which the censor caught as innapropriate.")
+    # Notify staff if the user updated their name to include an innapropriate name
+    if after.nick == None: return # No need to check if user does not have a new nickname set
+
+    # Get the Censor cog
+    censor_cog = bot.get_cog("Censor")
+    censor_found = censor_cog.censor_needed(after.nick)
+    if censor_found:
+        # If name contains a censored link
+        reporter_cog = bot.get_cog('Reporter')
+        await reporter_cog.create_innapropriate_username_report(after, after.nick)
 
 @bot.event
 async def on_user_update(before, after):
-    for word in CENSORED_WORDS:
-        if len(re.findall(fr"\b({word})\b", after.name, re.I)):
-            await auto_report(bot, "Innapropriate Username Detected", "red", f"A member ({str(member)}) has updated their nickname to **{after.name}**, which the censor caught as innapropriate.")
+    # Get the Censor cog and see if user's new username is offending censor
+    censor_cog = bot.get_cog("Censor")
+    censor_found = censor_cog.censor_needed(after.name)
+    if censor_found:
+        # If name contains a censored link
+        reporter_cog = bot.get_cog('Reporter')
+        await reporter_cog.create_innapropriate_username_report(after, after.name)
 
 @bot.event
 async def on_raw_message_edit(payload):
-    channel = bot.get_channel(payload.channel_id)
-    guild = bot.get_guild(SERVER_ID) if channel.type == discord.ChannelType.private else channel.guild
-    edited_channel = discord.utils.get(guild.text_channels, name=CHANNEL_EDITEDM)
-    if channel.type != discord.ChannelType.private and channel.name in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]:
-        return
-    try:
-        message = payload.cached_message
-        if (datetime.datetime.now() - message.created_at).total_seconds() < 2:
-            # no need to log events because message was created
-            return
-        message_now = await channel.fetch_message(message.id)
-        channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
-        embed = assemble_embed(
-            title=":pencil: Edited Message",
-            fields=[
-                {
-                    "name": "Author",
-                    "value": message.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Channel",
-                    "value": channel_name,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": message.id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Edited At (UTC)",
-                    "value": message_now.edited_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Past Content",
-                    "value": message.content[:1024] if len(message.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "New Content",
-                    "value": message_now.content[:1024] if len(message_now.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds]) if len(message.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
-        )
-        await edited_channel.send(embed=embed)
-    except Exception as e:
-        message_now = await channel.fetch_message(payload.message_id)
-        embed = assemble_embed(
-            title=":pencil: Edited Message",
-            fields=[
-                {
-                    "name": "Channel",
-                    "value": bot.get_channel(payload.channel_id).mention,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": payload.message_id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Author",
-                    "value": message_now.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message_now.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Edited At (UTC)",
-                    "value": message_now.edited_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "New Content",
-                    "value": message_now.content[:1024] if len(message_now.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Raw Payload",
-                    "value": str(payload.data)[:1024] if len(payload.data) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Current Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message_now.attachments]) if len(message_now.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Current Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message_now.embeds])[:1024] if len(message_now.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
-        )
-        await edited_channel.send(embed=embed)
+    # Get the logger cog and log edited message
+    logger_cog = bot.get_cog("Logger")
+    await logger_cog.log_edit_message_payload(payload)
 
 @bot.event
 async def on_raw_message_delete(payload):
-    channel = bot.get_channel(payload.channel_id)
-    guild = bot.get_guild(SERVER_ID) if channel.type == discord.ChannelType.private else channel.guild
-    if channel.type != discord.ChannelType.private and channel.name in [CHANNEL_REPORTS, CHANNEL_DELETEDM]:
-        print("Ignoring deletion event because of the channel it's from.")
-        return
-    deleted_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DELETEDM)
-    try:
-        message = payload.cached_message
-        channel_name = f"{message.author.mention}'s DM" if channel.type == discord.ChannelType.private else message.channel.mention
-        embed = assemble_embed(
-            title=":fire: Deleted Message",
-            fields=[
-                {
-                    "name": "Author",
-                    "value": message.author,
-                    "inline": "True"
-                },
-                {
-                    "name": "Channel",
-                    "value": channel_name,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": message.id,
-                    "inline": "True"
-                },
-                {
-                    "name": "Created At (UTC)",
-                    "value": message.created_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Edited At (UTC)",
-                    "value": message.edited_at,
-                    "inline": "True"
-                },
-                {
-                    "name": "Attachments",
-                    "value": " | ".join([f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]) if len(message.attachments) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Content",
-                    "value": str(message.content)[:1024] if len(message.content) > 0 else "None",
-                    "inline": "False"
-                },
-                {
-                    "name": "Embed",
-                    "value": "\n".join([str(e.to_dict()) for e in message.embeds])[:1024] if len(message.embeds) > 0 else "None",
-                    "inline": "False"
-                }
-            ]
-        )
-        await deleted_channel.send(embed=embed)
-    except Exception as e:
-        print(e)
-        embed = assemble_embed(
-            title=":fire: Deleted Message",
-            fields=[
-                {
-                    "name": "Channel",
-                    "value": bot.get_channel(payload.channel_id).mention,
-                    "inline": "True"
-                },
-                {
-                    "name": "Message ID",
-                    "value": payload.message_id,
-                    "inline": "True"
-                }
-            ]
-        )
-        await deleted_channel.send(embed=embed)
+    # Get the logger cog and log deleted message
+    logger_cog = bot.get_cog("Logger")
+    await logger_cog.log_delete_message_payload(payload)
+
+@bot.event
+async def on_raw_reaction_add(payload: RawReactionActionEvent):
+    """
+    Handles reaction add events. Currently just used to suppress offensive emojis.
+    """
+    if str(payload.emoji) in src.discord.globals.CENSOR['emojis']:
+        channel = bot.get_channel(payload.channel_id)
+        assert isinstance(channel, discord.TextChannel)
+        partial_message = channel.get_partial_message(payload.message_id)
+        assert isinstance(partial_message, discord.PartialMessage)
+        await partial_message.clear_reaction(payload.emoji)
 
 @bot.event
 async def on_command_error(ctx, error):
     print("Command Error:")
     print(error)
 
-    # Okay, a bit sketch, but it works.
-    # The idea is this: we want this global error handler to handle all errors
-    #  that come in here. The outputs here are refered to as the default response.
-    # Now, specific commands might have their own error handling which might
-    #  handle certain errors differently. In such cases, we don't want this global
-    #  handler to run.
-    # We use `__slots__` in ctx to achieve this. There we can store a bit/bool flag
-    #  to signal whether we handled the error in a local or cog level handler.
-
+    # If a cog has a separate error handler, don't also run the global error handler
     if (ctx.command.has_error_handler() or ctx.cog.has_error_handler()) and ctx.__slots__ == True:
         return
 
@@ -590,10 +344,21 @@ async def on_error(event, *args, **kwargs):
 bot.load_extension("src.discord.censor")
 bot.load_extension("src.discord.ping")
 bot.load_extension("src.discord.staffcommands")
+bot.load_extension("src.discord.staff.invitationals")
+bot.load_extension("src.discord.staff.censor")
+bot.load_extension("src.discord.staff.tags")
+bot.load_extension("src.discord.staff.events")
+bot.load_extension("src.discord.embed")
 bot.load_extension("src.discord.membercommands")
 bot.load_extension("src.discord.devtools")
 bot.load_extension("src.discord.funcommands")
 bot.load_extension("src.discord.tasks")
+bot.load_extension("src.discord.spam")
+bot.load_extension("src.discord.reporter")
+bot.load_extension("src.discord.logger")
+
+# Use old HTTP version
+discord.http.API_VERSION = 9
 
 if dev_mode:
     bot.run(DEV_TOKEN)
