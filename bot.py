@@ -5,6 +5,7 @@ import asyncio
 import uuid
 
 from discord.ext import commands
+from discord.commands import permissions
 from discord import RawReactionActionEvent
 
 from commanderrors import CommandNotAllowedInChannel

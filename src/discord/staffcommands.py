@@ -206,6 +206,36 @@ class StaffEssential(StaffCommands):
     def __init__(self, bot):
         super().__init__(bot)
 
+    async def _confirm_core(self, ctx: discord.ApplicationContext, channel: discord.TextChannel, member: discord.Member) -> bool:
+        """
+        Core method responsible for confirming users. Called by /confirm and the
+        'Confirm User' user command.
+
+        Args:
+            ctx (discord.ApplicationContext): The context relevant to confirming
+              the user.
+            channel (discord.TextChannel): The #welcome channel.
+            member (discord.Member): The member to confirm.
+
+        Returns:
+            bool: Whether the member was succesfully confirmed.
+        """
+        if member.bot:
+            await ctx.interaction.edit_original_message(content = ":x: You can't confirm a bot!")
+            return False
+
+        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
+
+        if role2 in member.roles:
+            await ctx.interaction.edit_original_message(content = ":x: This user is already confirmed.")
+            return False
+
+        await member.remove_roles(role1)
+        await member.add_roles(role2)
+        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
+        return True
+
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
         description = "Staff command. Confirms a user, giving them access to the server."
@@ -220,13 +250,28 @@ class StaffEssential(StaffCommands):
         if channel.name != CHANNEL_WELCOME:
             return await ctx.interaction.response.send_message("Sorry! Please confirm the member in the welcoming channel!", ephemeral = True)
 
+        # Confirm member
         await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Switching roles and cleaning up messages...")
-        role1 = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
-        await member.remove_roles(role1)
-        await member.add_roles(role2)
-        await channel.purge(check=lambda m: ((m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned) or (m.author == member and not m.embeds) or (member in m.mentions))) # Assuming first message is pinned (usually is in several cases)
-        await ctx.interaction.edit_original_message(content = f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:")
+        response = await self._confirm_core(ctx, channel, member)
+
+        # Sends confirmation message
+        if response:
+            await ctx.interaction.edit_original_message(content = f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:")
+
+    @discord.user_command(
+        name = "Confirm User",
+        guild_ids = [SLASH_COMMAND_GUILDS]
+    )
+    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id = SERVER_ID)
+    async def confirm_user(self, ctx, member: discord.Member):
+        # Confirm member
+        channel = discord.utils.get(member.guild.text_channels, name = CHANNEL_WELCOME)
+        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Switching roles and cleaning up messages...", ephemeral = True)
+        response = await self._confirm_core(ctx, channel, member)
+
+        # Send confirmation message
+        if response:
+            await ctx.interaction.edit_original_message(content = f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other channels and send messages in them. :tada:")
 
     @discord.commands.slash_command(
         guild_ids = [SLASH_COMMAND_GUILDS],
