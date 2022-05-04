@@ -1,21 +1,19 @@
-import discord
-import traceback
-import re
 import asyncio
+import traceback
 import uuid
 
-from discord.ext import commands
-from discord.commands import permissions
-from discord import RawReactionActionEvent
-
+import discord
+import src.discord.globals
 from commanderrors import CommandNotAllowedInChannel
+from discord import RawReactionActionEvent, ApplicationContext
+from discord.ext import commands
+from src.discord.globals import *
+from typing import Optional, Dict, Any
 
 ##############
 # SERVER VARIABLES
 ##############
 
-import src.discord.globals
-from src.discord.globals import *
 
 ##############
 # DEV MODE CONFIG
@@ -47,13 +45,28 @@ bot.remove_command("help")
 
 
 @bot.event
-async def on_ready():
-    """Called when the bot is enabled and ready to be run."""
+async def on_ready() -> None:
+    """
+    Called when the bot is enabled and ready to be run. Prints a message to the console
+    alerting the developer that the bot is functional.
+    """
     print(f"{bot.user} has connected!")
 
 
 @bot.event
-async def on_message_edit(before, after):
+async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
+    """
+    Event handler for messsage editing. For all edited messages that were not just created,
+    the message is logged to stdout. Direct messages and messages from bots are not checked.
+
+    Checks for a variety of things, including:
+        * Whether the message needs to be censored.
+        * Whether Discord invite links need to be removed from the message.
+
+    Args:
+        before (discord.Message): The message before it was edited.
+        after (discord.Message): The message after it was edited.
+    """
     # Do not trigger the message edit event for newly-created messages
     if (discord.utils.utcnow() - after.created_at).total_seconds() < 2:
         return
@@ -91,13 +104,17 @@ async def on_message_edit(before, after):
         )
 
 
-async def send_to_dm_log(message):
+async def send_to_dm_log(message: discord.Message) -> None:
     """
-    Sends a direct message object to the staff log channel.
+    Logs an incoming direct message to the dm-log channel. Creates an embed with
+    the message content and sends it to the channel.
     """
     # Get the relevant objects
     guild = bot.get_guild(SERVER_ID)
+    assert isinstance(guild, discord.Guild)
+
     dm_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
+    assert isinstance(dm_channel, discord.TextChannel)
 
     # Create an embed containing the direct message info and send it to the log channel
     message_embed = discord.Embed(
@@ -124,18 +141,24 @@ async def send_to_dm_log(message):
     await dm_channel.send(embed=message_embed)
 
 
-listeners = {}
+listeners: Dict[str, Dict[str, Any]] = {}
 
 
-async def listen_for_response(follow_id: int, timeout: int):
+async def listen_for_response(
+    follow_id: int, timeout: int
+) -> Optional[discord.Message]:
     """
     Creates a global listener for a message from a user.
 
-    :param follow_id: the user ID to create the listener for
-    :param timeout: the amount of time to wait before returning None, assuming the user abandoned the operation
+    Args:
+        follow_id (int): The user ID to create the listener for
+        timeout (int): The number of seconds to wait before returning None,
+          and assuming the user abandoned the operation.
 
-    :return: the found message or None
+    Returns:
+        Optional[discord.Message]: The found message or None.
     """
+    # TODO Use native asyncio methods instead of checking each second
     my_id = str(uuid.uuid4())
     listeners[my_id] = {"follow_id": follow_id, "timeout": timeout, "message": None}
     count = timeout
@@ -148,9 +171,19 @@ async def listen_for_response(follow_id: int, timeout: int):
 
 
 @bot.event
-async def on_message(message):
+async def on_message(message: discord.Message) -> None:
+    """
+    Event handler to handle sent messages. No action is completed for bots.
+
+    Does multiple actions:
+        * Checks to see if the bot is waiting for the user to respond to an interaction
+          with text.
+        * Logs incoming DMs
+        * Prints noticeable messages to stdout
+        * Checks if the message needs to be censored
+    """
     # Nothing needs to be done to the bot's own messages
-    if message.author.id in PI_BOT_IDS or message.author == bot:
+    if message.author.bot:
         return
 
     # If user is being listened to, return their message
@@ -158,18 +191,16 @@ async def on_message(message):
         if message.author.id == listener[1]["follow_id"]:
             listeners[listener[0]]["message"] = message
 
-    # Log incoming direct messages
-    if (
-        type(message.channel) == discord.DMChannel
-        and message.author not in PI_BOT_IDS
-        and message.author != bot
-    ):
+    # Log incoming direct messages that aren't from bots
+    if isinstance(message.channel, discord.DMChannel) and message.author != bot:
         await send_to_dm_log(message)
         print(f"Message from {message.author} through DM's: {message.content}")
+
     else:
         # Print to output
         if not (
             message.author.id in PI_BOT_IDS
+            and isinstance(message.channel, discord.TextChannel)
             and message.channel.name
             in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
         ):
@@ -195,10 +226,21 @@ async def on_message(message):
 
 
 @bot.event
-async def on_member_join(member):
+async def on_member_join(member: discord.Member) -> None:
+    """
+    Handles new members joining the server.
+
+    Does multiple actions:
+        * Checks the member's display name to see if an innapropriate username report
+          needs to be filed.
+        * Sends a welcome message to the welcome channel.
+        * Sends a message to the lounge channel if the member joining causes the
+          member count to be divisible by 100.
+    """
     # Give new user confirmed role
     unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
-    await member.add_roles(unconfirmed_role)
+    assert isinstance(unconfirmed_role, discord.Role)
+    await member.add_roles(unconfirmed_role)  # type: ignore
 
     # Check to see if user's name is innapropriate
     name = member.name
@@ -210,6 +252,7 @@ async def on_member_join(member):
 
     # Send welcome message to the welcoming channel
     join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
+    assert isinstance(join_channel, discord.TextChannel)
     await join_channel.send(
         f"{member.mention}, welcome to the Scioly.org Discord Server! "
         + "You can add roles here, using the commands shown at the top of this channel. "
@@ -221,6 +264,7 @@ async def on_member_join(member):
     # Send fun alert message on every 100 members who join
     member_count = len(member.guild.members)
     lounge_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LOUNGE)
+    assert isinstance(lounge_channel, discord.TextChannel)
     if member_count % 100 == 0:
         await lounge_channel.send(
             f"Wow! There are now `{member_count}` members in the server!"
@@ -228,9 +272,20 @@ async def on_member_join(member):
 
 
 @bot.event
-async def on_member_remove(member):
+async def on_member_remove(member: discord.Member) -> None:
+    """
+    Handles events regarding members leaving the server.
+
+    Does multiple actions:
+        * Posts a message to the channel which stores member leave logs.
+        * Deletes all of the user's history in the welcome channel.
+
+    Args:
+        member (discord.Member): The member who left.
+    """
     # Post a leaving info message
     leave_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
+    assert isinstance(leave_channel, discord.TextChannel)
     unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
 
     if unconfirmed_role in member.roles:
@@ -253,6 +308,7 @@ async def on_member_remove(member):
     welcome_channel = discord.utils.get(
         member.guild.text_channels, name=CHANNEL_WELCOME
     )
+    assert isinstance(welcome_channel, discord.TextChannel)
     async for message in welcome_channel.history():
         if not message.pinned:
             if member in message.mentions or member == message.author:
@@ -260,7 +316,17 @@ async def on_member_remove(member):
 
 
 @bot.event
-async def on_member_update(before, after):
+async def on_member_update(_: discord.Member, after: discord.Member) -> None:
+    """
+    Handles members updating information about their profiles in the server.
+
+    Currently, this only checks to see if the member updated their username to include
+    an inappropriate term, in which case, an inappropriate username report is filed.
+
+    Args:
+        _ (discord.Member): The member before updating their profile.
+        after (discord.Member): The member after updating their profile.
+    """
     # Notify staff if the user updated their name to include an innapropriate name
     if after.nick == None:
         return  # No need to check if user does not have a new nickname set
@@ -275,7 +341,17 @@ async def on_member_update(before, after):
 
 
 @bot.event
-async def on_user_update(before, after):
+async def on_user_update(_: discord.User, after: discord.User) -> None:
+    """
+    Handles users updating information about themselves.
+
+    Currently, this only checks the user's display name, and files an innapropriate
+    username report if necessary.
+
+    Args:
+        _ (discord.Member): The member before updating their profile.
+        after (discord.Member): The member after updating their profile.
+    """
     # Get the Censor cog and see if user's new username is offending censor
     censor_cog = bot.get_cog("Censor")
     censor_found = censor_cog.censor_needed(after.name)
@@ -286,34 +362,61 @@ async def on_user_update(before, after):
 
 
 @bot.event
-async def on_raw_message_edit(payload):
+async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent) -> None:
+    """
+    Handles the raw payloads of messages being updated. This method is used
+    to catch all message edit events, including those in which the bot can't see.
+
+    Currently, this method is only responsible for logging information about the payload
+    into a human-readable format.
+
+    Args:
+        payload (discord.RawMessageUpdateEvent): The message payload.
+    """
     # Get the logger cog and log edited message
     logger_cog = bot.get_cog("Logger")
     await logger_cog.log_edit_message_payload(payload)
 
 
 @bot.event
-async def on_raw_message_delete(payload):
+async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent) -> None:
+    """
+    Handles the raw payloads of messages being deleted. This method is used to
+    catch all instances of messages being deleted.
+
+    Currently, this method is only responsible for logging the delete events into
+    a human readable format.
+
+    Args:
+        payload (discord.RawMessageDeleteEvent): The raw message payload.
+    """
     # Get the logger cog and log deleted message
     logger_cog = bot.get_cog("Logger")
     await logger_cog.log_delete_message_payload(payload)
 
 
 @bot.event
-async def on_raw_reaction_add(payload: RawReactionActionEvent):
+async def on_raw_reaction_add(payload: RawReactionActionEvent) -> None:
     """
     Handles reaction add events. Currently just used to suppress offensive emojis.
+
+    Args:
+        payload (discord.RawReactionActionEvent): The raw payload.
     """
     if str(payload.emoji) in src.discord.globals.CENSOR["emojis"]:
         channel = bot.get_channel(payload.channel_id)
         assert isinstance(channel, discord.TextChannel)
         partial_message = channel.get_partial_message(payload.message_id)
         assert isinstance(partial_message, discord.PartialMessage)
-        await partial_message.clear_reaction(payload.emoji)
+        await partial_message.clear_reaction(payload.emoji)  # type: ignore
 
 
 @bot.event
-async def on_command_error(ctx, error):
+async def on_command_error(ctx: ApplicationContext, error) -> Optional[discord.Message]:
+    """
+    Global command error handler. Handles errors which weren't handled anywhere else.
+    Helps to let users know why an error may have occurred.
+    """
     print("Command Error:")
     print(error)
 
@@ -321,7 +424,7 @@ async def on_command_error(ctx, error):
     if (
         ctx.command.has_error_handler() or ctx.cog.has_error_handler()
     ) and ctx.__slots__ == True:
-        return
+        return None
 
     # Argument parsing errors
     if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(
@@ -430,11 +533,15 @@ async def on_command_error(ctx, error):
     # Overall errors
     if isinstance(error, discord.ext.commands.CommandError):
         return await ctx.send("Oops, there was a command error. Try again.")
-    return
+    return None
 
 
 @bot.event
-async def on_error(event, *args, **kwargs):
+async def on_error(_):
+    """
+    Handles all bot-related errors. Logs the traceback to stdout so developers
+    are aware of the issue.
+    """
     print("Code Error:")
     print(traceback.format_exc())
 
