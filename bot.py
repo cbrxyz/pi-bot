@@ -10,6 +10,8 @@ from discord.ext import commands
 from src.discord.globals import *
 from typing import Optional, Dict, Any
 
+__version__ = '5.0.0'
+
 ##############
 # SERVER VARIABLES
 ##############
