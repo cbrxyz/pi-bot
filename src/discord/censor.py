@@ -4,7 +4,6 @@ import re
 
 import src.discord.globals
 from src.discord.globals import DISCORD_INVITE_ENDINGS, CHANNEL_SUPPORT, CATEGORY_STAFF
-from commandchecks import is_author_staff
 
 
 class Censor(commands.Cog):
