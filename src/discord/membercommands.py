@@ -43,8 +43,8 @@ from src.wiki.schools import get_school_listing
 from src.mongo.mongo import insert
 from src.lists import get_state_list
 from src.discord.utils import lookup_role
-from __init__ import __version__
-from commandchecks import is_staff, is_staff_from_ctx
+from bot import __version__
+from commandchecks import is_staff_from_ctx
 from commanderrors import SelfMuteCommandStaffInvoke
 
 from typing import Type
