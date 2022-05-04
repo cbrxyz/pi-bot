@@ -13,7 +13,6 @@ from discord.ext.commands.errors import NotOwner
 from discord.commands.context import ApplicationContext
 from discord.types.embed import EmbedField
 import commandchecks
-from commandchecks import is_staff, is_launcher
 
 import dateparser
 import pytz
@@ -149,10 +148,6 @@ class Nuke(discord.ui.View):
 class StaffCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    # overriding check function
-    async def cog_check(self, ctx):
-        return is_staff()
 
 
 class CronConfirm(discord.ui.View):
