@@ -1,15 +1,19 @@
-import discord
-from discord.ext import commands
-from discord.commands import Option
-import random
 import asyncio
-import aiohttp
 import json
+import random
 
+import aiohttp
 from src.discord.globals import SLASH_COMMAND_GUILDS
+
+import discord
+from discord.commands import Option
+from discord.ext import commands
 
 
 class FunCommands(commands.Cog, name="Fun"):
+    """
+    Cog for holding fun, non-important commands.
+    """
 
     fish_count: int
 
@@ -31,6 +35,13 @@ class FunCommands(commands.Cog, name="Fun"):
             required=False,
         ),
     ):
+        """
+        Command which displays a trout-slapping gif and related message.
+
+        Args:
+            member (discord.Option[discord.Member]): The optional member to include
+              in the message. If not provided, assumed to be the caller.
+        """
         if not member or member == ctx.author:
             member = "themselves"
         else:
@@ -70,6 +81,14 @@ class FunCommands(commands.Cog, name="Fun"):
             required=False,
         ),
     ):
+        """
+        Command which displays a snack gif and related message.
+
+        Args:
+            type (discord.Option[str]): The type of snack to include in the gif/message.
+            member (discord.Option[discord.Member]): The optional member to include
+              in the message. If not provided, assumed to be the caller.
+        """
         snacks = {
             "chocolate bar": {
                 "name": "a chocolate bar",
@@ -177,7 +196,10 @@ class FunCommands(commands.Cog, name="Fun"):
         guild_ids=[SLASH_COMMAND_GUILDS], description="Gives some fish to bear!"
     )
     async def fish(self, ctx):
-        """Gives a fish to bear."""
+        """
+        Command which changes bear's fish count. May add or subtract from the total,
+        depending on what the random value in the method resolves to.
+        """
         r = random.random()
 
         if len(str(self.fish_count)) > 1000000:
@@ -226,6 +248,9 @@ class FunCommands(commands.Cog, name="Fun"):
         guild_ids=[SLASH_COMMAND_GUILDS], description="Steals some fish from bear!"
     )
     async def stealfish(self, ctx):
+        """
+        Command which removes from bear's fish count.
+        """
         r = random.random()
 
         if r >= 0.75:
@@ -263,7 +288,12 @@ class FunCommands(commands.Cog, name="Fun"):
         ctx,
         member: Option(discord.Member, "The member to dog bomb!", required=True),
     ):
-        """Dog bombs someone!"""
+        """
+        Displays a random dog gif and related message.
+
+        Args:
+            member (discord.Option[discord.Member]): The member to ping in the message.
+        """
         session = aiohttp.ClientSession()
         page = await session.get(f"https://dog.ceo/api/breeds/image/random")
         await session.close()
@@ -294,7 +324,12 @@ class FunCommands(commands.Cog, name="Fun"):
         ctx,
         member: Option(discord.Member, "The member to shiba bomb!", required=True),
     ):
-        """Shiba bombs a user!"""
+        """
+        Displays a random shiba gif and related message.
+
+        Args:
+            member (discord.Option[discord.Member]): The member to ping in the message.
+        """
         session = aiohttp.ClientSession()
         page = await session.get(f"https://dog.ceo/api/breed/shiba/images/random")
         await session.close()
@@ -321,6 +356,9 @@ class FunCommands(commands.Cog, name="Fun"):
         guild_ids=[SLASH_COMMAND_GUILDS], description="Rolls the magic 8 ball..."
     )
     async def magic8ball(self, ctx):
+        """
+        Calls the magic 8 ball.
+        """
         await ctx.interaction.response.send_message("Swishing the magic 8 ball...")
         await asyncio.sleep(1)
         await ctx.interaction.edit_original_message(
@@ -367,6 +405,9 @@ class FunCommands(commands.Cog, name="Fun"):
             required=False,
         ),
     ):
+        """
+        Gets a specific (or random if num is not provided) xkcd comic.
+        """
         session = aiohttp.ClientSession()
         res = await session.get("https://xkcd.com/info.0.json")
         text = await res.text()
