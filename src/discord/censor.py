@@ -1,33 +1,29 @@
-import re
+from __future__ import annotations
 
-import src.discord.globals
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_SUPPORT,
-                                 DISCORD_INVITE_ENDINGS)
+import re
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
 
+import src.discord.globals
+from src.discord.globals import CATEGORY_STAFF, CHANNEL_SUPPORT, DISCORD_INVITE_ENDINGS
+
+if TYPE_CHECKING:
+    from bot import PiBot
+
 
 class Censor(commands.Cog):
-    """
-    Cog responsible for censoring all messages. Currently, the cog checks for innapropriate
-    words and Discord invite links.
-    """
-
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Censor cog.")
 
     async def on_message(self, message: discord.Message) -> None:
         """
         Will censor the message. Will replace any flags in content with "<censored>".
-        This method is called from the global on_message method in bot.py, it is not
-        a registered event handler.
-
-        Args:
-            message (discord.Message): The message being checked. message.context 
-              will be modified if censor gets triggered if and only if the 
-              author is not a staff member.
+        :param message: The message being checked. message.context will be modified
+            if censor gets triggered if and only if the author is not a staff member.
+        :type message: discord.Message
         """
         # Type checking - Assume messages come from a text channel where the author is a member of the server
         assert isinstance(message.channel, discord.TextChannel)
@@ -35,8 +31,8 @@ class Censor(commands.Cog):
 
         # Do not act on messages in staff channels
         if (
-            message.channel.category != None
-            and message.channel.category.name == CATEGORY_STAFF
+                message.channel.category is not None
+                and message.channel.category.name == CATEGORY_STAFF
         ):
             return
 
@@ -62,16 +58,13 @@ class Censor(commands.Cog):
             )
             assert isinstance(support_channel, discord.TextChannel)
             await message.channel.send(
-                f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have questions, please ask in {support_channel.mention}.*"
+                f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have "
+                f"questions, please ask in {support_channel.mention}.* "
             )
 
     def censor_needed(self, content: str) -> bool:
         """
         Determines whether the message has content that needs to be censored.
-
-        Args:
-            content (str): The message content which is checked to see if a an 
-              innapropriate word censor is needed.
         """
         for word in src.discord.globals.CENSOR["words"]:
             if len(re.findall(rf"\b({word})\b", content, re.I)):
@@ -83,37 +76,20 @@ class Censor(commands.Cog):
 
     def discord_invite_censor_needed(self, content: str) -> bool:
         """
-        Determines whether the Discord invite link censor is needed. In other 
-        words, whether this content contains a Discord invite link.
-
-        Args:
-            content (str): The message content to check.
-
-        Returns:
-            bool: Whether the discord invite censor method is needed to remove
-              Discord invite links.
+        Determines whether the Discord invite link censor is needed. In other words, whether this content contains a
+        Discord invite link.
         """
         if not any(
-            ending for ending in DISCORD_INVITE_ENDINGS if ending in content
+                ending for ending in DISCORD_INVITE_ENDINGS if ending in content
         ) and (
-            len(re.findall("discord.gg", content, re.I)) > 0
-            or len(re.findall("discord.com/invite", content, re.I)) > 0
+                len(re.findall("discord.gg", content, re.I)) > 0
+                or len(re.findall("discord.com/invite", content, re.I)) > 0
         ):
             return True
         return False
 
     async def __censor(self, message: discord.Message):
-        """
-        Method responsible for creating the new replacement webhook and sending it
-        to the appropriate channel. After this is completed, the original message
-        content is replaced with the updated content.
-
-        This method should only be called when the message needs to be censored, as
-        each execution of the method will establish a new webhook.
-
-        Args:
-            message (discord.Message): The message to censor.
-        """
+        """Constructs Pi-Bot's censor."""
         # Type checking
         assert isinstance(message.channel, discord.TextChannel)
         assert isinstance(message.author, discord.Member)
@@ -134,9 +110,6 @@ class Censor(commands.Cog):
 
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
-
-        # Send the webhook and immediately delete it so that the list of webhooks
-        # does not grow into an enormous list.
         await wh.send(
             content,
             username=f"{author} (auto-censor)",
@@ -146,8 +119,8 @@ class Censor(commands.Cog):
         await wh.delete()
 
         # Replace content with censored content for other cogs
-        message.content = content  # apply to message to not propogate censored words to other things like commands
+        message.content = content  # apply to message to not propagate censored words to other things like commands
 
 
-def setup(bot):
-    bot.add_cog(Censor(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(Censor(bot))
