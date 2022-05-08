@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import asyncio
+import json
+import random
 from typing import Literal, TYPE_CHECKING
+
 import discord
 from discord import app_commands
 from discord.ext import commands
-import random
-import asyncio
-import json
 
 from src.discord.globals import SLASH_COMMAND_GUILDS
 
