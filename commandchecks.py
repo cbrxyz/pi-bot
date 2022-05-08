@@ -13,19 +13,19 @@ async def is_bear(ctx) -> bool:
         bool: Whether the check is valid.
     """
     return (
-        ctx.message.author.id == 353730886577160203
-        or ctx.message.author.id == 715048392408956950
+            ctx.message.author.id == 353730886577160203
+            or ctx.message.author.id == 715048392408956950
     )
 
 
 def is_staff_from_ctx(
-    ctx: Union[commands.Context, discord.ApplicationContext], no_raise=False
+        ctx: Union[commands.Context, discord.Interaction], no_raise=False
 ) -> bool:
     """
     Checks to see whether the user is a staff member from the provided context.
 
     Args:
-        ctx (Union[discord.ext.commands.Context, discord.ApplicationContext]):
+        ctx (Union[discord.ext.commands.Context, discord.Interaction]):
           The relevant context to use for checking.
         no_raise (bool): Whether to raise an exception if the user is not a staff
           member.
@@ -38,11 +38,11 @@ def is_staff_from_ctx(
         bool: Whether the check passed.
     """
     guild = ctx.guild
-    member = ctx.author
+    member = ctx.author if isinstance(ctx, commands.Context) else ctx.user
     staff_role = discord.utils.get(guild.roles, name=ROLE_STAFF)
     vip_role = discord.utils.get(guild.roles, name=ROLE_VIP)
     if any(r in [staff_role, vip_role] for r in member.roles):
         return True
     if no_raise:
         return False  # Option for evading default behavior of raising error
-    raise commands.MissingAnyRole([staff_role, vip_role])
+    raise commands.MissingAnyRole([str(staff_role), str(vip_role)])
