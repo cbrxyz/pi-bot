@@ -42,7 +42,7 @@ class SpamManager(commands.Cog):
 
     async def check_for_repetition(self, message: discord.Message) -> None:
         """
-        Checks to see if the message has been repeated often recently, and takes action if action is needed.
+        Checks to see if the message has often been repeated recently, and takes action if action is needed.
         """
         # Type checking
         assert isinstance(message.author, discord.Member)
