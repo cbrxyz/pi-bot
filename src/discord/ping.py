@@ -1,25 +1,31 @@
-import discord
-import datetime
-from discord.ext import commands
-from discord.commands import Option
-import re
-import src.discord.globals
-from src.discord.globals import PING_INFO, CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
+from __future__ import annotations
 
+import datetime
+import re
+from typing import TYPE_CHECKING, Union
+
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+import src.discord.globals
+from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
 from src.mongo.mongo import insert, update
 
+if TYPE_CHECKING:
+    from bot import PiBot
 
-class PingManager(commands.Cog):
 
+class PingManager(commands.GroupCog, name="ping"):
     recent_messages = {}
 
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         self.recent_messages = {}
         print("Initialized Ping cog.")
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         # Do not ping for messages in a private channel
         if message.channel.type == discord.ChannelType.private:
             return
@@ -46,10 +52,10 @@ class PingManager(commands.Cog):
             self.recent_messages[message.channel.id].append(message)
             if len(self.recent_messages[message.channel.id]) > 5:
                 self.recent_messages[message.channel.id] = self.recent_messages[
-                    message.channel.id
-                ][
-                    1:
-                ]  # Cut off the message from the longest time ago if there are too many messages stored
+                                                               message.channel.id
+                                                           ][
+                                                           1:
+                                                           ]  # Cut off the message from the longest time ago if there are too many messages stored
 
         # Send a ping alert to the relevant users
         for user in src.discord.globals.PING_INFO:
@@ -84,7 +90,7 @@ class PingManager(commands.Cog):
                 user_obj = self.bot.get_user(user["user_id"])
                 await self.send_ping_pm(user_obj, message, ping_count)
 
-    def format_text(self, text: str, length: int, user: discord.User) -> str:
+    def format_text(self, text: str, length: int, user: Union[discord.Member, discord.User]) -> str:
         """
         Highlights ping expressions in the message and shorten long messages with an ellipsis.
         """
@@ -119,12 +125,12 @@ class PingManager(commands.Cog):
         for _, messages in self.recent_messages.items():
             for message in messages[:]:
                 if (discord.utils.utcnow() - message.created_at) > datetime.timedelta(
-                    hours=3
+                        hours=3
                 ):
                     messages.remove(message)
 
     async def send_ping_pm(
-        self, user: discord.User, message: discord.Message, ping_count: int
+            self, user: discord.User, message: discord.Message, ping_count: int
     ) -> None:
         """
         Sends a direct message to the user about a message containing a relevant ping expression.
@@ -140,19 +146,19 @@ class PingManager(commands.Cog):
             description = "**Several of your pings were mentioned by a user in the Scioly.org Discord server!**"
 
         description = (
-            description
-            + "\n\n"
-            + "\n".join(
-                [
-                    f"{message.author.mention}: {self.format_text(message.content, 100, user)}"
-                    for message in self.recent_messages[message.channel.id]
-                ]
-            )
+                description
+                + "\n\n"
+                + "\n".join(
+            [
+                f"{message.author.mention}: {self.format_text(message.content, 100, user)}"
+                for message in self.recent_messages[message.channel.id]
+            ]
+        )
         )
         description = (
-            description
-            + "\n\n"
-            + f"Come check out the conversation! [Click here]({message.jump_url}) to be teleported to the message!"
+                description
+                + "\n\n"
+                + f"Come check out the conversation! [Click here]({message.jump_url}) to be teleported to the message!"
         )
         embed = discord.Embed(
             title=":bellhop: Ping Alert!",
@@ -162,55 +168,51 @@ class PingManager(commands.Cog):
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
         embed.set_footer(
-            text=f"If you don't want this ping anymore, use /pingremove in the Scioly.org Discord server!"
+            text=f"If you don't want this ping anymore, use /ping remove in the Scioly.org Discord server!"
         )
 
         # Send the user an alert message
         await user.send(embed=embed)
 
-    ping_group = discord.commands.SlashCommandGroup(
-        "ping",
-        "Manage your pings.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
-        permissions=[discord.commands.CommandPermission("Member", 1, True)],
-    )
-
-    @ping_group.command(description="Toggles 'Do Not Disturb' mode.")
-    async def dnd(self, ctx):
+    @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
+    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    async def dnd(self, interaction: discord.Interaction):
         user = [
-            u for u in src.discord.globals.PING_INFO if u["user_id"] == ctx.author.id
+            u for u in src.discord.globals.PING_INFO if u["user_id"] == interaction.user.id
         ]
 
         if len(user):
             user = user[0]
             if "dnd" not in user:
                 user["dnd"] = True
-                return await ctx.interaction.response.send_message(
+                return await interaction.response.send_message(
                     "Enabled DND mode for pings."
                 )
-            elif user["dnd"] == True:
+            elif user["dnd"]:
                 user["dnd"] = False
-                return await ctx.interaction.response.send_message(
+                return await interaction.response.send_message(
                     "Disabled DND mode for pings."
                 )
             else:
                 user["dnd"] = True
-                return await ctx.interaction.response.send_message(
+                return await interaction.response.send_message(
                     "Enabled DND mode for pings."
                 )
         else:
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 "You can't enter DND mode without any pings!"
             )
 
-    @ping_group.command(name="add", description="Adds a new ping to notify you about.")
+    @app_commands.command(name="add", description="Adds a new ping to notify you about.")
+    @app_commands.describe(word="The new word to add a ping for.")
+    @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def pingadd(
-        self, ctx, word: Option(str, "The new word to add a ping for.", required=True)
+            self, interaction: discord.Interaction, word: str
     ):
         # Check to see if author in ping info already
-        member = ctx.author
+        member = interaction.user
         if any(
-            [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
+                [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
         ):
             # User already has an object in the PING_INFO dictionary
             user = next(
@@ -221,11 +223,11 @@ class PingManager(commands.Cog):
             try:
                 re.findall(word, "test phrase")
             except:
-                return await ctx.interaction.response.send_message(
+                return await interaction.response.send_message(
                     f"Ignoring adding the `{word}` ping because it uses illegal characters."
                 )
             if f"({word})" in pings or f"\\b({word})\\b" in pings or word in pings:
-                return await ctx.interaction.response.send_message(
+                return await interaction.response.send_message(
                     f"Ignoring adding the `{word}` ping because you already have a ping currently set as that."
                 )
             else:
@@ -249,19 +251,23 @@ class PingManager(commands.Cog):
             }
             src.discord.globals.PING_INFO.append(new_user_dict)
             await insert("data", "pings", new_user_dict)
-        return await ctx.interaction.response.send_message(
-            f'Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may result in you being temporarily disallowed from using or receiving pings.'
+        return await interaction.response.send_message(
+            f'Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be '
+            f'responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may '
+            f'result in you being temporarily disallowed from using or receiving pings. '
         )
 
-    @ping_group.command(
+    @app_commands.command(
         name="test", description="Tests your pings on an example message."
     )
+    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.describe(test="The phrase to test your pings against.")
     async def pingtest(
-        self,
-        ctx,
-        test: Option(str, "The phrase to test your pings against.", required=True),
+            self,
+            interaction: discord.Interaction,
+            test: str
     ):
-        member = ctx.author
+        member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
             None,
@@ -286,23 +292,24 @@ class PingManager(commands.Cog):
                     matched = True
 
         if not matched:
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 f"`{test}` matched `0` pings."
             )
         else:
-            return await ctx.interaction.response.send_message(response)
+            return await interaction.response.send_message(response)
 
-    @ping_group.command(name="list", description="Lists all of your registered pings.")
-    async def pinglist(self, ctx):
-        member = ctx.author
+    @app_commands.command(name="list", description="Lists all of your registered pings.")
+    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    async def pinglist(self, interaction: discord.Interaction):
+        member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
             None,
         )
 
         # User has no pings
-        if user == None or len(user["word_pings"] + user["regex_pings"]) == 0:
-            return await ctx.interaction.response.send_message(
+        if user is None or len(user["word_pings"] + user["regex_pings"]) == 0:
+            return await interaction.response.send_message(
                 "You have no registered pings."
             )
 
@@ -318,30 +325,28 @@ class PingManager(commands.Cog):
                 )
             if not len(response):
                 response = "You have no registered pings."
-            await ctx.interaction.response.send_message(response)
+            await interaction.response.send_message(response)
 
-    @ping_group.command(
+    @app_commands.command(
         name="remove", description="Removes a ping from your list of registered pings."
     )
+    @app_commands.describe(word="The word to remove a ping for. Or use 'all' to remove all pings.")
+    @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def pingremove(
-        self,
-        ctx,
-        word: Option(
-            str,
-            "The word to remove a ping for. Or use 'all' to remove all pings.",
-            required=True,
-        ),
+            self,
+            interaction: discord.Interaction,
+            word: str
     ):
         # Get the user's info
-        member = ctx.author
+        member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
             None,
         )
 
         # The user has no pings
-        if user == None or len(user["word_pings"] + user["regex_pings"]) == 0:
-            return await ctx.interaction.response.send_message(
+        if user is None or len(user["word_pings"] + user["regex_pings"]) == 0:
+            return await interaction.response.send_message(
                 "You have no registered pings."
             )
 
@@ -355,7 +360,7 @@ class PingManager(commands.Cog):
                 user["_id"],
                 {"$pull": {"word_pings": {}, "regex_pings": {}}},
             )
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 "I removed all of your pings."
             )
 
@@ -363,7 +368,7 @@ class PingManager(commands.Cog):
         if word in user["word_pings"]:
             user["word_pings"].remove(word)
             await update("data", "pings", user["_id"], {"$pull": {"word_pings": word}})
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 f"I removed the `{word}` ping you were referencing."
             )
 
@@ -371,7 +376,7 @@ class PingManager(commands.Cog):
         elif word in user["regex_pings"]:
             user["regex_pings"].remove(word)
             await update("data", "pings", user["_id"], {"$pull": {"regex_pings": word}})
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 f"I removed the `{word}` RegEx ping you were referencing."
             )
 
@@ -384,7 +389,7 @@ class PingManager(commands.Cog):
                 user["_id"],
                 {"$pull": {"word_pings": f"\\e({word})\\b"}},
             )
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 f"I removed the `{word}` ping you were referencing."
             )
 
@@ -394,15 +399,16 @@ class PingManager(commands.Cog):
             await update(
                 "data", "pings", user["_id"], {"$pull": {"word_pings": f"({word})"}}
             )
-            return await ctx.interaction.response.send_message(
+            return await interaction.response.send_message(
                 f"I removed the `{word}` RegEx ping you were referencing."
             )
 
         else:
-            return await ctx.interaction.response.send_message(
-                f"I can't find the **`{word}`** ping you are referencing, sorry. Try another ping, or see all of your pings with `/pinglist`."
+            return await interaction.response.send_message(
+                f"I can't find the **`{word}`** ping you are referencing, sorry. Try another ping, or see all of your "
+                f"pings with `/ping list`. "
             )
 
 
-def setup(bot):
-    bot.add_cog(PingManager(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(PingManager(bot))
