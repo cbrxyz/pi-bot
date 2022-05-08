@@ -1,23 +1,21 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
 import discord
+from discord.ext import commands
+
 import src.discord.globals
-from src.discord.globals import (
-    INVITATIONAL_INFO,
-    SERVER_ID,
-    CHANNEL_TOURNAMENTS,
-    CATEGORY_TOURNAMENTS,
-    CATEGORY_ARCHIVE,
-    CHANNEL_BOTSPAM,
-    CHANNEL_SUPPORT,
-    ROLE_GM,
-    ROLE_AD,
-    ROLE_AT,
-    CHANNEL_COMPETITIONS,
-)
+from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS, CHANNEL_BOTSPAM, CHANNEL_COMPETITIONS,
+                                 CHANNEL_SUPPORT, CHANNEL_TOURNAMENTS, ROLE_AD, ROLE_AT, ROLE_GM, SERVER_ID)
 from src.mongo.mongo import get_invitationals, update_many
+
+if TYPE_CHECKING:
+    from bot import PiBot
+    from .reporter import Reporter
 
 
 class Tournament:
-
     official_name: str
     voters: list
 
@@ -44,7 +42,7 @@ class AllTournamentsView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Toggle All Tournaments", style=discord.ButtonStyle.gray)
-    async def toggle(self, _: discord.ui.Button, interaction: discord.Interaction):
+    async def toggle(self, interaction: discord.Interaction, _: discord.ui.Button):
         # Get the relevant member asking to toggle all tournaments
         member = interaction.user
         guild = interaction.guild
@@ -69,7 +67,7 @@ class AllTournamentsView(discord.ui.View):
 
 
 class TournamentDropdown(discord.ui.Select):
-    def __init__(self, month_tournaments, bot, voting=False):
+    def __init__(self, month_tournaments, bot: PiBot, voting=False):
 
         final_options = []
         for tourney in month_tournaments:
@@ -166,7 +164,7 @@ class TournamentDropdownView(discord.ui.View):
         self.add_item(TournamentDropdown(month_tournaments, bot, voting=self.voting))
 
 
-async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
+async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
     """
     Update the list of invitationals in #invitationals.
 
@@ -212,7 +210,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
     if "channels" in rename_dict:
         for item in rename_dict["channels"].items():
             channel = discord.utils.get(server.text_channels, name=item[0])
-            if channel != None:
+            if channel is not None:
                 # If old-named channel exists, then rename
                 await channel.edit(name=item[1])
 
@@ -220,7 +218,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
     if "roles" in rename_dict:
         for item in rename_dict["roles"].items():
             role = discord.utils.get(server.roles, name=item[0])
-            if role != None:
+            if role is not None:
                 # If old-named role exists, then rename
                 await role.edit(name=item[1])
 
@@ -259,9 +257,9 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
                 embed = discord.Embed(
                     title="This channel is now archived.",
                     description=(
-                        f"Thank you all for your discussion around the **{t.official_name}**. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n"
-                        + f"If you have more questions/comments related to this tournament, you are welcome to bring them up in {competitions_channel.mention}. This channel is now read-only.\n\n"
-                        + f"If you would like to no longer view this channel, you are welcome to remove the role using the dropdowns in {tourney_channel.mention}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel."
+                            f"Thank you all for your discussion around the **{t.official_name}**. Now that we are well past the tournament date, we are going to close this channel to help keep tournament discussions relevant and on-topic.\n\n"
+                            + f"If you have more questions/comments related to this tournament, you are welcome to bring them up in {competitions_channel.mention}. This channel is now read-only.\n\n"
+                            + f"If you would like to no longer view this channel, you are welcome to remove the role using the dropdowns in {tourney_channel.mention}, and the channel will disappear for you. Members with the `All Tournaments` role will continue to see the channel."
                     ),
                     color=discord.Color.brand_red(),
                 )
@@ -285,7 +283,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             if day_diff < -after_days:
                 # If past tournament date, now out of range - make warning report to archive
                 if channel_category.name != CATEGORY_ARCHIVE:
-                    reporter_cog = bot.get_cog("Reporter")
+                    reporter_cog: Union[commands.Cog, Reporter] = bot.get_cog("Reporter")
                     await reporter_cog.create_invitational_archive_report(
                         t, channel, role
                     )
@@ -293,8 +291,8 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             # Fix channel attributes in case changed/broken
             to_change = {}
             if (
-                channel.topic
-                != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}."
+                    channel.topic
+                    != f"{t.emoji} - Discussion around the {t.official_name} occurring on {tourney_date_str}."
             ):
                 to_change[
                     "topic"
@@ -311,8 +309,8 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             # Fix permissions in case the channel was previously archived
             tourney_role_perms = channel.permissions_for(role)
             if (
-                not tourney_role_perms.read_messages
-                or not tourney_role_perms.send_messages
+                    not tourney_role_perms.read_messages
+                    or not tourney_role_perms.send_messages
             ):
                 await channel.set_permissions(
                     role, send_messages=True, read_messages=True
@@ -320,14 +318,14 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
 
             all_tourney_role_perms = channel.permissions_for(all_tournaments_role)
             if (
-                not all_tourney_role_perms.read_messages
-                or not all_tourney_role_perms.send_messages
+                    not all_tourney_role_perms.read_messages
+                    or not all_tourney_role_perms.send_messages
             ):
                 await channel.set_permissions(
                     all_tournaments_role, send_messages=True, read_messages=True
                 )
 
-        elif channel == None and t.status == "open":
+        elif channel is None and t.status == "open":
             # If tournament needs to be created
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(
@@ -378,8 +376,8 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             t
             for t in invitationals
             if t.tourney_date.month == month["number"]
-            and t.tourney_date.year == month["year"]
-            and t.status == "open"
+               and t.tourney_date.year == month["year"]
+               and t.status == "open"
         ]
         if len(month_tournaments) > 0:
             await tourney_channel.send(
