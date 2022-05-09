@@ -4,7 +4,7 @@ import asyncio
 
 import aiohttp
 import uuid
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
 from commandchecks import *
 from src.discord.globals import *
@@ -29,7 +29,7 @@ class PiBot(commands.Bot):
             help_command=None
         )
         self.http.API_VERSION = 9
-        self.listeners_ = {}  # name differentiation between internal _listeners attribute
+        self.listeners_: Dict[str, Dict[str, Any]] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.0.0"
 
     async def setup_hook(self) -> None:
