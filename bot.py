@@ -30,7 +30,7 @@ class PiBot(commands.Bot):
         )
         self.http.API_VERSION = 9
         self.listeners_ = {}  # name differentiation between internal _listeners attribute
-        self.__version__ = "5.0.0"
+        self.__version__ = "v5.0.0"
 
     async def setup_hook(self) -> None:
         extensions = (
