@@ -6,9 +6,9 @@ import aiohttp
 import uuid
 from typing import Optional, TYPE_CHECKING, Union
 
-
 from commandchecks import *
 from src.discord.globals import *
+from src.mongo import mongo
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
@@ -33,6 +33,8 @@ class PiBot(commands.Bot):
         self.__version__ = "v5.0.0"
 
     async def setup_hook(self) -> None:
+        await mongo.setup()  # initialize MongoDB
+
         extensions = (
             "src.discord.censor",
             "src.discord.ping",
