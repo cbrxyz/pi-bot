@@ -4,7 +4,7 @@ import asyncio
 
 import aiohttp
 import uuid
-from typing import TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 
 from commandchecks import *
@@ -114,7 +114,7 @@ class PiBot(commands.Bot):
         await self.session.close()
         await super().close()
 
-    async def listen_for_response(self, follow_id: int, timeout: int):
+    async def listen_for_response(self, follow_id: int, timeout: int) -> Optional[discord.Message]:
         """
         Creates a global listener for a message from a user.
         :param follow_id: the user ID to create the listener for

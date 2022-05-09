@@ -1,80 +1,59 @@
-import re
-import discord
+from __future__ import annotations
+
 import datetime
-from discord.commands import slash_command
+import re
+from typing import Literal, TYPE_CHECKING, Union
 
+import discord
+from discord import app_commands
 from discord.ext import commands
-from discord.commands import Option, permissions
-from discord.commands.context import ApplicationContext
+
 import commandchecks
-
 import src.discord.globals
-from src.discord.globals import (
-    SLASH_COMMAND_GUILDS,
-    CATEGORY_ARCHIVE,
-    EMOJI_GUILDS,
-    EMOJI_LOADING,
-    CATEGORY_TOURNAMENTS,
-    SERVER_ID,
-    ROLE_STAFF,
-    ROLE_VIP,
-)
-from bot import listen_for_response
-
-from src.mongo.mongo import get_invitationals, insert, update, delete
-
-from src.discord.views import YesNo
-
+from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS, EMOJI_GUILDS, EMOJI_LOADING, ROLE_STAFF,
+                                 ROLE_VIP, SERVER_ID, SLASH_COMMAND_GUILDS)
 from src.discord.tournaments import update_tournament_list
+from src.discord.views import YesNo
+from src.mongo.mongo import delete, get_invitationals, insert, update
+
+if TYPE_CHECKING:
+    from bot import PiBot
+    from src.discord.tasks import CronTasks
 
 
 class StaffInvitational(commands.Cog):
-    def __init__(self, bot: discord.Bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Invitationals cog.")
 
-    invitational_status_group = discord.commands.SlashCommandGroup(
-        "invitational",
-        "Updates the bot's invitational system.",
+    invitational_status_group = app_commands.Group(
+        name="invitational",
+        description="Updates the bot's invitational system.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        permissions=[
-            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
-            discord.commands.CommandPermission(ROLE_VIP, 1, True),
-        ],
+        default_permissions=discord.Permissions(manage_channels=True)
     )
 
     @invitational_status_group.command(
         name="add",
         description="Staff command. Adds a new invitational for voting.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        official_name="The official name of the tournament, such as MIT Invitational.",
+        channel_name="The name of the Discord channel that will be created, such as 'mit'",
+        tourney_date="The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.",
+        status="Determines if the new tournament channel will be sent to voting or added immediately."
+    )
     async def invitational_add(
-        self,
-        ctx: ApplicationContext,
-        official_name: Option(
-            str,
-            "The official name of the tournament, such as MIT Invitational.",
-            required=True,
-        ),
-        channel_name: Option(
-            str,
-            "The name of the Discord channel that will be created, such as 'mit'",
-            required=True,
-        ),
-        tourney_date: Option(
-            str,
-            "The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.",
-            required=True,
-        ),
-        status: Option(
-            str,
-            "Determines if the new tournament channel will be sent to voting or added immediately.",
-            choices=["voting", "add_immediately"],
-            required=True,
-        ),
+            self,
+            interaction: discord.Interaction,
+            official_name: str,
+            channel_name: str,
+            tourney_date: str,
+            status: Literal["voting", "add_immediately"],
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Create tournament doc
         new_tourney_doc = {
@@ -89,25 +68,27 @@ class StaffInvitational(commands.Cog):
         }
 
         # Send default message
-        await ctx.interaction.response.send_message(f"{EMOJI_LOADING} Loading...")
+        await interaction.response.send_message(f"{EMOJI_LOADING} Loading...")
 
         # Attempt to get tournament emoji
         emoji = None
-        while emoji == None:
+        while emoji is None:
             # Send info message
-            await ctx.interaction.edit_original_message(
-                content=f"{EMOJI_LOADING}\nPlease send the emoji to use for the tournament. If you would like to use a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf you would like to use a standard emoji, please send a message with only the standard emoji."
+            await interaction.edit_original_message(
+                content=f"{EMOJI_LOADING}\nPlease send the emoji to use for the tournament. If you would like to use "
+                        f"a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf "
+                        f"you would like to use a standard emoji, please send a message with only the standard emoji. "
             )
 
             # Get user response
-            emoji_message = await listen_for_response(
-                follow_id=ctx.user.id,
+            emoji_message: discord.Message = await self.bot.listen_for_response(
+                follow_id=interaction.user.id,
                 timeout=120,
             )
 
             # If emoji message has file, use this as emoji, otherwise, use default emoji provided
-            if emoji_message == None:
-                return await ctx.interaction.edit_original_message(
+            if not emoji_message:
+                return await interaction.edit_original_message(
                     content="No emoji was provided after 2 minutes, so the operation was cancelled."
                 )
 
@@ -119,7 +100,7 @@ class StaffInvitational(commands.Cog):
 
                 # Check for attachment size
                 if emoji_attachment.size > 256000:
-                    size_message = await ctx.send(
+                    size_message = await interaction.channel.send(
                         "Please use an emoji that is less than 256KB."
                     )
                     await size_message.delete(delay=15)
@@ -131,7 +112,7 @@ class StaffInvitational(commands.Cog):
                     "image/jpeg",
                     "image/png",
                 ]:
-                    type_message = await ctx.send(
+                    type_message = await interaction.channel.send(
                         "Please use a file that is a GIF, JPEG, or PNG."
                     )
                     await type_message.delete(delay=15)
@@ -149,18 +130,19 @@ class StaffInvitational(commands.Cog):
                         emoji = await guild.create_custom_emoji(
                             name=f"tournament_{channel_name}",
                             image=await emoji_attachment.read(),
-                            reason=f"Created by {ctx.interaction.user}.",
+                            reason=f"Created by {interaction.user}.",
                         )
                         created_emoji = True
-                        emoji_creation_message = await ctx.send(
+                        emoji_creation_message = await interaction.channel.send(
                             f"Created {emoji} (`{str(emoji)}`) emoji in guild `{guild_id}`. (Guild {i + 1}/{len(EMOJI_GUILDS)})"
                         )
                         await emoji_creation_message.delete(delay=10)
                         break
 
                 if not created_emoji:
-                    await ctx.interaction.edit_original_message(
-                        conten=f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds."
+                    await interaction.edit_original_message(
+                        content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot administrator "
+                                f"will need to add more emoji guilds. "
                     )
                     return
 
@@ -173,15 +155,19 @@ class StaffInvitational(commands.Cog):
             **Official Name:** {official_name}
             **Channel Name:** `#{channel_name}`
             **Tournament Date:** {discord.utils.format_dt(new_tourney_doc['tourney_date'], 'D')}
-            **Closes After:** {new_tourney_doc['closed_days']} days (the tournament channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days = new_tourney_doc['closed_days']), 'D')})
+            **Closes After:** {new_tourney_doc['closed_days']} days (the tournament channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days=new_tourney_doc['closed_days']), 'D')})
             **Tournament Emoji:** {emoji}
             """
 
         # Update tournament with status
         if status == "add_immediately":
-            description += "\n**This tournament channel will be opened immediately.** This means that it will require no votes by users to open. This option should generally only be used for tournaments that have a very strong attendance or desire to be added to the server."
+            description += "\n**This tournament channel will be opened immediately.** This means that it will require " \
+                           "no votes by users to open. This option should generally only be used for tournaments that " \
+                           "have a very strong attendance or desire to be added to the server. "
         else:
-            description += "\n**This tournament channel will require a certain number of votes to be opened.** This means that the tournament channel will not immediately be created - rather, users will need to vote on the channel being created before the action is done."
+            description += "\n**This tournament channel will require a certain number of votes to be opened.** This " \
+                           "means that the tournament channel will not immediately be created - rather, users will " \
+                           "need to vote on the channel being created before the action is done. "
 
         # Final Embed class
         confirm_embed = discord.Embed(
@@ -192,7 +178,7 @@ class StaffInvitational(commands.Cog):
 
         # Use Yes/No view for final confirmation
         view = YesNo()
-        await ctx.interaction.edit_original_message(
+        await interaction.edit_original_message(
             content=f"Please confirm that you would like to add the following tournament:",
             embed=confirm_embed,
             view=view,
@@ -202,14 +188,14 @@ class StaffInvitational(commands.Cog):
             # Staff member responded with "Yes"
             new_tourney_doc["emoji"] = str(emoji)
             await insert("data", "invitationals", new_tourney_doc)
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content="The invitational was added successfully! The tournament list will now be refreshed.",
                 embed=None,
                 view=None,
             )
             await update_tournament_list(self.bot, {})
         else:
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content="The operation was cancelled.", embed=None, view=None
             )
 
@@ -217,19 +203,18 @@ class StaffInvitational(commands.Cog):
         name="approve",
         description="Staff command. Approves a invitational to be fully opened.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(short_name="The short name of the invitational, such as 'mit'.")
     async def invitational_approve(
-        self,
-        ctx: ApplicationContext,
-        short_name: Option(
-            str, "The short name of the invitational, such as 'mit'.", required=True
-        ),
+            self,
+            interaction: discord.Interaction,
+            short_name: str
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Sending message about operation started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to approve..."
         )
 
@@ -240,7 +225,7 @@ class StaffInvitational(commands.Cog):
 
         # If invitational is not found
         if len(found_invitationals) < 1:
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`."
             )
 
@@ -249,7 +234,7 @@ class StaffInvitational(commands.Cog):
 
             # Check to see if invitational is already open
             if found_invitationals[0]["status"] == "open":
-                await ctx.interaction.edit_original_message(
+                await interaction.edit_original_message(
                     content=f"The `{short_name}` invitational is already open."
                 )
 
@@ -260,7 +245,7 @@ class StaffInvitational(commands.Cog):
                 found_invitationals[0]["_id"],
                 {"$set": {"status": "open"}},
             )
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"The status of the `{short_name}` invitational was updated."
             )
 
@@ -268,34 +253,31 @@ class StaffInvitational(commands.Cog):
             await update_tournament_list(self.bot, {})
 
         else:
-            await ctx.interaction.edit_original_message(
-                content="I found more than one invitational with a matching name. Contact an administrator - something is wrong."
+            await interaction.edit_original_message(
+                content="I found more than one invitational with a matching name. Contact an administrator - "
+                        "something is wrong. "
             )
 
     @invitational_status_group.command(
         name="edit",
         description="Staff command. Edits data about an invitational channel.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        short_name="The short name of the invitational you would like to edit, such as 'mit'.",
+        feature_to_edit="The feature you would like to edit about the invitational."
+    )
     async def invitational_edit(
-        self,
-        ctx,
-        short_name: Option(
-            str,
-            "The short name of the invitational you would like to edit, such as 'mit'.",
-            required=True,
-        ),
-        feature_to_edit: Option(
-            str,
-            "The feature you would like to edit about the invitational.",
-            choices=["official name", "short name", "emoji", "tournament date"],
-        ),
+            self,
+            interaction: discord.Interaction,
+            short_name: str,
+            feature_to_edit: Literal["official name", "short name", "emoji", "tournament date"],
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Send notice that process has started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to edit invitational..."
         )
 
@@ -307,7 +289,7 @@ class StaffInvitational(commands.Cog):
 
         # If no invitational was found
         if len(found_invitationals) < 1:
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`."
             )
 
@@ -318,19 +300,22 @@ class StaffInvitational(commands.Cog):
             # Send notice to user about editing invitational
             info_message_text = f"{EMOJI_LOADING} Please send the new {feature_to_edit} relevant to the tournament."
             if feature_to_edit == "emoji":
-                info_message_text += "\n\nTo use a custom image as the new emoji for the invitational, please send a file that is no larger than 256KB. If you would like to use a new standard emoji for the invitational, please send only the new standard emoji."
+                info_message_text += "\n\nTo use a custom image as the new emoji for the invitational, please send a " \
+                                     "file that is no larger than 256KB. If you would like to use a new standard " \
+                                     "emoji for the invitational, please send only the new standard emoji. "
             elif feature_to_edit == "tournament date":
-                info_message_text += "\n\nTo update the tournament date, please send the date formatted as YYYY-mm-dd, such as `2022-01-12`."
-            await ctx.interaction.edit_original_message(content=info_message_text)
+                info_message_text += "\n\nTo update the tournament date, please send the date formatted as " \
+                                     "YYYY-mm-dd, such as `2022-01-12`. "
+            await interaction.edit_original_message(content=info_message_text)
 
             # Ask user for the new content!
-            content_message = await listen_for_response(
-                follow_id=ctx.user.id,
+            content_message = await self.bot.listen_for_response(
+                follow_id=interaction.user.id,
                 timeout=120,
             )
 
             # If a message was found
-            if content_message != None:
+            if content_message:
                 rename_dict = {}
                 await content_message.delete()
 
@@ -349,7 +334,7 @@ class StaffInvitational(commands.Cog):
                         invitational["_id"],
                         {"$set": {"official_name": content_message.content}},
                     )
-                    await ctx.interaction.edit_original_message(
+                    await interaction.edit_original_message(
                         content=f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**."
                     )
 
@@ -368,7 +353,7 @@ class StaffInvitational(commands.Cog):
                         invitational["_id"],
                         {"$set": {"channel_name": content_message.content}},
                     )
-                    await ctx.interaction.edit_original_message(
+                    await interaction.edit_original_message(
                         content=f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**."
                     )
 
@@ -380,7 +365,7 @@ class StaffInvitational(commands.Cog):
                         # User provided custom emoji
                         emoji_attachment = content_message.attachments[0]
                         if emoji_attachment.size > 256000:
-                            await ctx.interaction.edit_original_message(
+                            await interaction.edit_original_message(
                                 content="Please use an emoji that is less than 256KB. Operation cancelled."
                             )
 
@@ -390,7 +375,7 @@ class StaffInvitational(commands.Cog):
                             "image/jpeg",
                             "image/png",
                         ]:
-                            await ctx.interaction.edit_original_message(
+                            await interaction.edit_original_message(
                                 content="Please use a file that is a GIF, JPEG, or PNG. Operation cancelled."
                             )
 
@@ -400,27 +385,28 @@ class StaffInvitational(commands.Cog):
                             guild = self.bot.get_guild(guild_id)
                             for emoji in guild.emojis:
                                 if (
-                                    emoji.name
-                                    == f"tournament_{invitational['channel_name']}"
+                                        emoji.name
+                                        == f"tournament_{invitational['channel_name']}"
                                 ):
                                     await emoji.delete(
-                                        reason=f"Replaced with alternate emoji by {ctx.interaction.user}."
+                                        reason=f"Replaced with alternate emoji by {interaction.user}."
                                     )
                             if (
-                                len(guild.emojis) < guild.emoji_limit
-                                and not created_emoji
+                                    len(guild.emojis) < guild.emoji_limit
+                                    and not created_emoji
                             ):
                                 # The guild can fit more custom emojis
                                 emoji = await guild.create_custom_emoji(
                                     name=f"tournament_{invitational['channel_name']}",
                                     image=await emoji_attachment.read(),
-                                    reason=f"Created by {ctx.interaction.user}.",
+                                    reason=f"Created by {interaction.user}.",
                                 )
                                 created_emoji = True
 
                         if not created_emoji:
-                            return await ctx.interaction.edit_original_message(
-                                content=f"Sorry {ctx.interaction.user}! The emoji guilds are currently full; a bot administrator will need to add more emoji guilds."
+                            return await interaction.edit_original_message(
+                                content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot "
+                                        f"administrator will need to add more emoji guilds. "
                             )
 
                     # User provided standard emoji
@@ -436,7 +422,7 @@ class StaffInvitational(commands.Cog):
                     )
 
                     # Send confirmation message
-                    await ctx.interaction.edit_original_message(
+                    await interaction.edit_original_message(
                         content=f"The emoji for `{invitational['official_name']}` was updated to: {emoji}."
                     )
 
@@ -453,12 +439,12 @@ class StaffInvitational(commands.Cog):
                         {"$set": {"tourney_date": date_dt}},
                     )
                     # and send user confirmation
-                    await ctx.interaction.edit_original_message(
+                    await interaction.edit_original_message(
                         content=f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}."
                     )
                 await update_tournament_list(self.bot, rename_dict)
             else:
-                await ctx.interaction.edit_original_message(
+                await interaction.edit_original_message(
                     content=f"No message was provided. Operation timed out after 120 seconds."
                 )
 
@@ -466,21 +452,20 @@ class StaffInvitational(commands.Cog):
         name="archive",
         description="Staff command. Archives an invitational channel.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        short_name="The short name referring to the invitational, such as 'mit'."
+    )
     async def invitational_archive(
-        self,
-        ctx: ApplicationContext,
-        short_name: Option(
-            str,
-            "The short name referring to the invitational, such as 'mit'.",
-            required=True,
-        ),
+            self,
+            interaction: discord.Interaction,
+            short_name: str
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Let staff know process has started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to archive the `{short_name}` invitational..."
         )
 
@@ -489,7 +474,7 @@ class StaffInvitational(commands.Cog):
             i for i in invitationals if i["channel_name"] == short_name
         ]
         if not len(found_invitationals):
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
 
@@ -503,7 +488,7 @@ class StaffInvitational(commands.Cog):
             invitational["_id"],
             {"$set": {"status": "archived"}},
         )
-        await ctx.interaction.edit_original_message(
+        await interaction.edit_original_message(
             content=f"The **`{invitational['official_name']}`** is now being archived."
         )
         await update_tournament_list(self.bot, {})
@@ -512,21 +497,20 @@ class StaffInvitational(commands.Cog):
         name="delete",
         description="Staff command. Deletes an invitational channel from the server.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        short_name="The short name referring to the invitational, such as 'mit'."
+    )
     async def invitational_delete(
-        self,
-        ctx: ApplicationContext,
-        short_name: Option(
-            str,
-            "The short name referring to the invitational, such as 'mit'.",
-            required=True,
-        ),
+            self,
+            interaction: discord.Interaction,
+            short_name: str
     ):
         # Check for staff permissions again
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Let staff know process started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to delete the `{short_name}` invitational..."
         )
 
@@ -537,7 +521,7 @@ class StaffInvitational(commands.Cog):
         ]
 
         if not len(found_invitationals):
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
 
@@ -554,28 +538,25 @@ class StaffInvitational(commands.Cog):
 
             # Delete the channel and role
             if (
-                ch != None
-                and ch.category != None
-                and ch.category.name
-                in [
-                    CATEGORY_ARCHIVE,
-                    CATEGORY_TOURNAMENTS,
-                ]
+                    ch and ch.category and ch.category.name in [
+                CATEGORY_ARCHIVE,
+                CATEGORY_TOURNAMENTS,
+            ]
             ):
                 await ch.delete()
-            if r != None:
+            if r:
                 await r.delete()
 
             # Delete the invitational emoji
             search = re.findall(r"<:.*:\d+>", invitational["emoji"])
             if len(search):
                 emoji = self.bot.get_emoji(search[0])
-                if emoji != None:
+                if emoji:
                     await emoji.delete()
 
             # Delete from the DB
             await delete("data", "invitationals", invitational["_id"])
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"Deleted the **`{invitational['official_name']}`**."
             )
 
@@ -586,13 +567,13 @@ class StaffInvitational(commands.Cog):
         name="season",
         description="Staff command. Changes the invitational season, meant to be run once per year.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
-    async def invitational_season(self, ctx: ApplicationContext):
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    async def invitational_season(self, interaction: discord.Interaction):
         # Check for staff permissions again
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Let staff know process started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to run command..."
         )
 
@@ -614,7 +595,7 @@ class StaffInvitational(commands.Cog):
 
         # Use Yes/No view for final confirmation
         view = YesNo()
-        await ctx.interaction.edit_original_message(
+        await interaction.edit_original_message(
             content=f"Please confirm that you would like to update the invitational season:",
             embed=confirm_embed,
             view=view,
@@ -622,7 +603,7 @@ class StaffInvitational(commands.Cog):
         await view.wait()
         if view.value:
             # Let staff member know of success
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content=f"{EMOJI_LOADING} Attempting to update the invitational year and refresh tournament list...",
                 view=None,
                 embed=None,
@@ -630,7 +611,7 @@ class StaffInvitational(commands.Cog):
 
             # Actually update season
             src.discord.globals.SETTINGS["invitational_season"] += 1
-            tasks_cog = self.bot.get_cog("CronTasks")
+            tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
             await tasks_cog.update_setting(
                 "invitational_season",
                 src.discord.globals.SETTINGS["invitational_season"] + 1,
@@ -640,14 +621,14 @@ class StaffInvitational(commands.Cog):
             await update_tournament_list(self.bot, {})
 
             # Send message to staff
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content="The operation succeeded, and the tournament list was refreshed."
             )
         else:
-            await ctx.interaction.edit_original_message(
+            await interaction.edit_original_message(
                 content="The operation was cancelled.", view=None, embed=None
             )
 
 
-def setup(bot):
-    bot.add_cog(StaffInvitational(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(StaffInvitational(bot))
