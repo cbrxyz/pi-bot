@@ -15,8 +15,12 @@ if TYPE_CHECKING:
     from bot import PiBot
 
 import commandchecks
-from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
-                                 SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SLASH_COMMAND_GUILDS,
+)
 
 
 class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):

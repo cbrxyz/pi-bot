@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 import discord
 import src.discord.globals
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_SUPPORT,
-                                 DISCORD_INVITE_ENDINGS)
+from src.discord.globals import CATEGORY_STAFF, CHANNEL_SUPPORT, DISCORD_INVITE_ENDINGS
 
 if TYPE_CHECKING:
     from bot import PiBot

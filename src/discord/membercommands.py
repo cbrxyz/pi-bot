@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import random
 import re
-from typing import Literal, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import wikipedia as wikip
 from aioify import aioify
@@ -13,16 +13,27 @@ import src.discord.globals
 from commandchecks import is_staff_from_ctx
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_GAMES, CHANNEL_ROLES,
-                                 CHANNEL_TOURNAMENTS, CHANNEL_UNSELFMUTE,
-                                 ROLE_ALUMNI, ROLE_DIV_A, ROLE_DIV_B,
-                                 ROLE_DIV_C, ROLE_GAMES, ROLE_LH, ROLE_MR,
-                                 ROLE_SELFMUTE, RULES, SERVER_ID,
-                                 SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_STAFF,
+    CHANNEL_GAMES,
+    CHANNEL_ROLES,
+    CHANNEL_TOURNAMENTS,
+    CHANNEL_UNSELFMUTE,
+    ROLE_ALUMNI,
+    ROLE_DIV_A,
+    ROLE_DIV_B,
+    ROLE_DIV_C,
+    ROLE_GAMES,
+    ROLE_LH,
+    ROLE_MR,
+    ROLE_SELFMUTE,
+    RULES,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.utils import lookup_role
 from src.discord.views import YesNo
 from src.lists import get_state_list
-from src.mongo.mongo import insert
 from src.wiki.wiki import implement_command
 
 if TYPE_CHECKING:
@@ -456,7 +467,7 @@ class MemberCommands(commands.Cog):
                     member.guild.text_channels, name=CHANNEL_UNSELFMUTE
                 )
                 await member.add_roles(role)
-                await insert(
+                await self.bot.mongo_database.insert(
                     "data",
                     "cron",
                     {
@@ -982,6 +993,7 @@ class MemberCommands(commands.Cog):
                     )
 
         return await interaction.response.send_message("Tag not found.")
+
 
 async def setup(bot: PiBot):
     await bot.add_cog(MemberCommands(bot))

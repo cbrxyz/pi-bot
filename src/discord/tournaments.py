@@ -5,11 +5,18 @@ from typing import TYPE_CHECKING, Union
 import discord
 import src.discord.globals
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS,
-                                 CHANNEL_BOTSPAM, CHANNEL_COMPETITIONS,
-                                 CHANNEL_SUPPORT, CHANNEL_TOURNAMENTS, ROLE_AD,
-                                 ROLE_AT, ROLE_GM, SERVER_ID)
-from src.mongo.mongo import get_invitationals, update_many
+from src.discord.globals import (
+    CATEGORY_ARCHIVE,
+    CATEGORY_TOURNAMENTS,
+    CHANNEL_BOTSPAM,
+    CHANNEL_COMPETITIONS,
+    CHANNEL_SUPPORT,
+    CHANNEL_TOURNAMENTS,
+    ROLE_AD,
+    ROLE_AT,
+    ROLE_GM,
+    SERVER_ID,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -140,7 +147,7 @@ class TournamentDropdown(discord.ui.Select):
             if len(need_to_update) > 0:
                 # Some docs need to be updated
                 docs_to_update = [t._properties for t in need_to_update]
-                await update_many(
+                await self.bot.mongo_database.update_many(
                     "data",
                     "invitationals",
                     docs_to_update,
@@ -173,7 +180,7 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
     :param rename_dict: A dictionary containing renames of channels and roles that need to be completed.
     """
     # Fetch invitationals
-    invitationals = await get_invitationals()
+    invitationals = await bot.mongo_database.get_invitationals()
     invitationals = [Tournament(t) for t in invitationals]
     invitationals.sort(key=lambda t: t.official_name)
 

@@ -9,12 +9,18 @@ import discord
 import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS,
-                                 EMOJI_GUILDS, EMOJI_LOADING, ROLE_STAFF,
-                                 ROLE_VIP, SERVER_ID, SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_ARCHIVE,
+    CATEGORY_TOURNAMENTS,
+    EMOJI_GUILDS,
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.tournaments import update_tournament_list
 from src.discord.views import YesNo
-from src.mongo.mongo import delete, get_invitationals, insert, update
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -191,7 +197,9 @@ class StaffInvitational(commands.Cog):
         if view.value:
             # Staff member responded with "Yes"
             new_tourney_doc["emoji"] = str(emoji)
-            await insert("data", "invitationals", new_tourney_doc)
+            await self.bot.mongo_database.insert(
+                "data", "invitationals", new_tourney_doc
+            )
             await interaction.edit_original_message(
                 content="The invitational was added successfully! The tournament list will now be refreshed.",
                 embed=None,
@@ -222,7 +230,7 @@ class StaffInvitational(commands.Cog):
             f"{EMOJI_LOADING} Attempting to approve..."
         )
 
-        invitationals = await get_invitationals()
+        invitationals = await self.bot.mongo_database.get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
@@ -288,7 +296,7 @@ class StaffInvitational(commands.Cog):
         )
 
         # Attempt to find invitational
-        invitationals = await get_invitationals()
+        invitationals = await self.bot.mongo_database.get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
@@ -357,7 +365,7 @@ class StaffInvitational(commands.Cog):
                         }
                     }
                     # and update the DB
-                    await update(
+                    await self.bot.mongo_database.update(
                         "data",
                         "invitationals",
                         invitational["_id"],
@@ -424,7 +432,7 @@ class StaffInvitational(commands.Cog):
                         emoji = content_message.content
 
                     # Update the DB with info
-                    await update(
+                    await self.bot.mongo_database.update(
                         "data",
                         "invitationals",
                         invitational["_id"],
@@ -442,7 +450,7 @@ class StaffInvitational(commands.Cog):
                     date_str = content_message.content
                     date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
                     # and update DB
-                    await update(
+                    await self.bot.mongo_database.update(
                         "data",
                         "invitationals",
                         invitational["_id"],
@@ -477,7 +485,7 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to archive the `{short_name}` invitational..."
         )
 
-        invitationals = await get_invitationals()
+        invitationals = await self.bot.mongo_database.get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
@@ -490,7 +498,7 @@ class StaffInvitational(commands.Cog):
         invitational = found_invitationals[0]
 
         # Update the database and tournament list
-        await update(
+        await self.bot.mongo_database.update(
             "data",
             "invitationals",
             invitational["_id"],
@@ -521,7 +529,7 @@ class StaffInvitational(commands.Cog):
         )
 
         # Attempt to find invitational
-        invitationals = await get_invitationals()
+        invitationals = await self.bot.mongo_database.get_invitationals()
         found_invitationals = [
             i for i in invitationals if i["channel_name"] == short_name
         ]
@@ -564,7 +572,9 @@ class StaffInvitational(commands.Cog):
                     await emoji.delete()
 
             # Delete from the DB
-            await delete("data", "invitationals", invitational["_id"])
+            await self.bot.mongo_database.delete(
+                "data", "invitationals", invitational["_id"]
+            )
             await interaction.edit_original_message(
                 content=f"Deleted the **`{invitational['official_name']}`**."
             )

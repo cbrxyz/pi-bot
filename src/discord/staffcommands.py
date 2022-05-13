@@ -12,16 +12,33 @@ import discord
 import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_GENERAL, CATEGORY_SO,
-                                 CATEGORY_STATES, CATEGORY_TOURNAMENTS,
-                                 CHANNEL_WELCOME, EMOJI_LOADING,
-                                 INVITATIONAL_INFO, PI_BOT_IDS, ROLE_AD,
-                                 ROLE_ALL_STATES, ROLE_AT, ROLE_BT, ROLE_GAMES,
-                                 ROLE_GM, ROLE_MR, ROLE_MUTED, ROLE_QUARANTINE,
-                                 ROLE_SELFMUTE, ROLE_STAFF, ROLE_UC, ROLE_VIP,
-                                 ROLE_WM, SERVER_ID, SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_GENERAL,
+    CATEGORY_SO,
+    CATEGORY_STATES,
+    CATEGORY_TOURNAMENTS,
+    CHANNEL_WELCOME,
+    EMOJI_LOADING,
+    INVITATIONAL_INFO,
+    PI_BOT_IDS,
+    ROLE_AD,
+    ROLE_ALL_STATES,
+    ROLE_AT,
+    ROLE_BT,
+    ROLE_GAMES,
+    ROLE_GM,
+    ROLE_MR,
+    ROLE_MUTED,
+    ROLE_QUARANTINE,
+    ROLE_SELFMUTE,
+    ROLE_STAFF,
+    ROLE_UC,
+    ROLE_VIP,
+    ROLE_WM,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import delete_by, get_cron, get_pings, remove_doc
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -160,7 +177,7 @@ class CronConfirm(discord.ui.View):
     async def remove_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await remove_doc("data", "cron", self.doc["_id"])
+        await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
         await interaction.response.edit_message(
             content="Awesome! I successfully removed the action from the CRON list.",
             view=None,
@@ -187,7 +204,7 @@ class CronConfirm(discord.ui.View):
                     return await interaction.edit_original_message(
                         content="Uh oh! The operation was not successful - the user remains banned."
                     )
-            await remove_doc("data", "cron", self.doc["_id"])
+            await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
             return await interaction.edit_original_message(
                 content="The operation was verified - the user can now rejoin the server."
             )
@@ -211,7 +228,9 @@ class CronConfirm(discord.ui.View):
                     view=None,
                 )
                 if role not in member.roles:
-                    await remove_doc("data", "cron", self.doc["_id"])
+                    await self.bot.mongo_database.remove_doc(
+                        "data", "cron", self.doc["_id"]
+                    )
                     return await interaction.edit_original_message(
                         content="The operation was verified - the user can now speak in the server again."
                     )
@@ -291,8 +310,7 @@ class StaffEssential(StaffCommands):
             SlowMode(bot)
         )  # Manually add the slowmode group to this cog
         self.confirm_ctx_menu = app_commands.ContextMenu(
-            name = "Confirm User",
-            callback = self.confirm_user
+            name="Confirm User", callback=self.confirm_user
         )
         self.bot.tree.add_command(self.confirm_ctx_menu)
 
@@ -374,7 +392,9 @@ class StaffEssential(StaffCommands):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def confirm_user(self, interaction: discord.Interaction, member: discord.Member):
+    async def confirm_user(
+        self, interaction: discord.Interaction, member: discord.Member
+    ):
         # Confirm member
         channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
         await interaction.response.send_message(
@@ -849,7 +869,7 @@ class StaffEssential(StaffCommands):
         """
         commandchecks.is_staff_from_ctx(interaction)
 
-        cron_list = await get_cron()
+        cron_list = await self.bot.mongo_database.get_cron()
         if not len(cron_list):
             return await interaction.response.send_message(
                 f"Unfortunately, there are no items in the CRON list to manage."
@@ -922,7 +942,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content="Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is "
-                            "allowed.** "
+                    "allowed.** "
                 )
             else:
                 # Voice channel needs to be closed
@@ -995,7 +1015,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content="Created a voice channel. **Please remember to follow the rules! "
-                            "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1044,7 +1064,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content="Created a voice channel. **Please remember to follow the rules! "
-                            "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1291,7 +1311,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await interaction.edit_original_message(
                 content=f"{EMOJI_LOADING} Updating all users' pings."
             )
-            src.discord.globals.PING_INFO = await get_pings()
+            src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
             await interaction.edit_original_message(
                 content=":white_check_mark: Updated all users' pings."
             )
@@ -1353,11 +1373,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         # Change settings
         await src.discord.globals.update_setting(
-            {"custom_bot_status_text": message, "custom_bot_status_type": activity}
+            {"custom_bot_status_text": message, "custom_bot_status_type": activity},
+            self.bot,
         )
 
         # Delete any relevant documents
-        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
+        await self.bot.mongo_database.delete_by(
+            "data", "cron", {"type": "REMOVE_STATUS"}
+        )
 
         # Insert time length into CRON
         cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
@@ -1399,12 +1422,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             f"{EMOJI_LOADING} Attempting to resetting status..."
         )
         await src.discord.globals.update_setting(
-            {"custom_bot_status_text": None, "custom_bot_status_type": None}
+            {"custom_bot_status_text": None, "custom_bot_status_type": None}, self.bot
         )
         await interaction.edit_original_message(content="Reset the bot's status.")
 
         # Delete any relevant documents
-        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
+        await self.bot.mongo_database.delete_by(
+            "data", "cron", {"type": "REMOVE_STATUS"}
+        )
 
         # Reset bot status to regularly update
         cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")

@@ -8,9 +8,13 @@ import discord
 import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
-                                 SERVER_ID, SLASH_COMMAND_GUILDS)
-from src.mongo.mongo import delete, insert
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -65,7 +69,7 @@ class StaffEvents(commands.Cog):
 
         # Add dict into events container
         src.discord.globals.EVENT_INFO.append(new_dict)
-        await insert("data", "events", new_dict)
+        await self.bot.mongo_database.insert("data", "events", new_dict)
 
         # Create role on server
         server = self.bot.get_guild(SERVER_ID)
@@ -134,7 +138,7 @@ class StaffEvents(commands.Cog):
             0
         ]
         src.discord.globals.EVENT_INFO.remove(event)
-        await delete("data", "events", event["_id"])
+        await self.bot.mongo_database.delete("data", "events", event["_id"])
 
         # Notify staff member of completion
         if delete_role == "yes":

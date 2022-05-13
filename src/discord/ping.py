@@ -9,7 +9,6 @@ import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
-from src.mongo.mongo import insert, update
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -241,7 +240,7 @@ class PingManager(commands.GroupCog, name="ping"):
                     if doc["user_id"] == member.id
                 ][0]
                 relevant_doc["word_pings"].append(word)
-                await update(
+                await self.bot.mongo_database.update(
                     "data", "pings", user["_id"], {"$push": {"word_pings": word}}
                 )
         else:
@@ -253,7 +252,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 "dnd": False,
             }
             src.discord.globals.PING_INFO.append(new_user_dict)
-            await insert("data", "pings", new_user_dict)
+            await self.bot.mongo_database.insert("data", "pings", new_user_dict)
         return await interaction.response.send_message(
             f"Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be "
             f'responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may '
@@ -353,7 +352,7 @@ class PingManager(commands.GroupCog, name="ping"):
         if word == "all":
             user["word_pings"] = []
             user["regex_pings"] = []
-            await update(
+            await self.bot.mongo_database.update(
                 "data",
                 "pings",
                 user["_id"],
@@ -366,7 +365,9 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a word ping
         if word in user["word_pings"]:
             user["word_pings"].remove(word)
-            await update("data", "pings", user["_id"], {"$pull": {"word_pings": word}})
+            await self.bot.mongo_database.update(
+                "data", "pings", user["_id"], {"$pull": {"word_pings": word}}
+            )
             return await interaction.response.send_message(
                 f"I removed the `{word}` ping you were referencing."
             )
@@ -374,7 +375,9 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a regex ping
         elif word in user["regex_pings"]:
             user["regex_pings"].remove(word)
-            await update("data", "pings", user["_id"], {"$pull": {"regex_pings": word}})
+            await self.bot.mongo_database.update(
+                "data", "pings", user["_id"], {"$pull": {"regex_pings": word}}
+            )
             return await interaction.response.send_message(
                 f"I removed the `{word}` RegEx ping you were referencing."
             )
@@ -382,7 +385,7 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a word ping with extra formatting
         elif f"\\b({word})\\b" in user["word_pings"]:
             user["word_pings"].remove(f"\\e({word})\\b")
-            await update(
+            await self.bot.mongo_database.update(
                 "data",
                 "pings",
                 user["_id"],
@@ -395,7 +398,7 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a word ping with alternate extra formatting
         elif f"({word})" in user["word_pings"]:
             user["word_pings"].remove(f"({word})")
-            await update(
+            await self.bot.mongo_database.update(
                 "data", "pings", user["_id"], {"$pull": {"word_pings": f"({word})"}}
             )
             return await interaction.response.send_message(

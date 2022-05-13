@@ -22,7 +22,7 @@ from src.discord.globals import (
     TOKEN,
     dev_mode,
 )
-from src.mongo import mongo
+from src.mongo.mongo import MongoDatabase
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
@@ -38,6 +38,7 @@ class PiBot(commands.Bot):
     """
 
     session: Optional[aiohttp.ClientSession]
+    mongo_database: MongoDatabase
 
     def __init__(self):
         super().__init__(
@@ -51,14 +52,13 @@ class PiBot(commands.Bot):
         ] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.0.0"
         self.session = None
+        self.mongo_database = MongoDatabase(self)
 
     async def setup_hook(self) -> None:
         """
         Called when the bot is being setup. Currently sets up a connection to the
         database and initializes all extensions.
         """
-        await mongo.setup()  # initialize MongoDB
-
         extensions = (
             "src.discord.censor",
             "src.discord.ping",
@@ -79,8 +79,8 @@ class PiBot(commands.Bot):
         for extension in extensions:
             try:
                 await self.load_extension(extension)
-            except commands.ExtensionError:
-                print(f"Failed to load extension {extension}.")
+            except commands.ExtensionError as e:
+                print(f"Failed to load extension {extension}: {e}")
 
     async def on_ready(self) -> None:
         """
