@@ -1,27 +1,15 @@
+"""
+Stores various checks for specific commands, including priveleged commands.
+"""
 from typing import Union
 
 import discord
-from commanderrors import CommandNotAllowedInChannel
 from discord.ext import commands
-from src.discord.globals import (ROLE_AD, ROLE_LH, ROLE_STAFF, ROLE_VIP,
-                                 SERVER_ID)
-
-
-async def is_bear(ctx) -> bool:
-    """
-    Checks to see if the user is bear, or pepperonipi (for debugging purposes).
-
-    Returns:
-        bool: Whether the check is valid.
-    """
-    return (
-        ctx.message.author.id == 353730886577160203
-        or ctx.message.author.id == 715048392408956950
-    )
+from src.discord.globals import ROLE_STAFF, ROLE_VIP
 
 
 def is_staff_from_ctx(
-    ctx: Union[commands.Context, discord.Interaction], no_raise=False
+    ctx: Union[commands.Context, discord.Interaction], no_raise: bool = False
 ) -> bool:
     """
     Checks to see whether the user is a staff member from the provided context.
@@ -41,10 +29,23 @@ def is_staff_from_ctx(
     """
     guild = ctx.guild
     member = ctx.author if isinstance(ctx, commands.Context) else ctx.user
+    assert isinstance(guild, discord.Guild)
+
     staff_role = discord.utils.get(guild.roles, name=ROLE_STAFF)
     vip_role = discord.utils.get(guild.roles, name=ROLE_VIP)
+    assert isinstance(staff_role, discord.Role)
+    assert isinstance(vip_role, discord.Role)
+
+    if isinstance(member, discord.User):
+        member = guild.get_member(member.id)
+        assert isinstance(
+            member, discord.Member
+        )  # If this fails, user isn't in server anyways
+
     if any(r in [staff_role, vip_role] for r in member.roles):
         return True
+
     if no_raise:
         return False  # Option for evading default behavior of raising error
+
     raise commands.MissingAnyRole([str(staff_role), str(vip_role)])

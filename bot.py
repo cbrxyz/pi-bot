@@ -1,3 +1,7 @@
+"""
+Serves as the initial file to launch the bot. Loads all needed extensions and maintains
+core functionality.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -6,8 +10,18 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
 
-from commandchecks import *
-from src.discord.globals import *
+import discord
+from discord.ext import commands
+from src.discord.globals import (
+    BOT_PREFIX,
+    CHANNEL_DELETEDM,
+    CHANNEL_DMLOG,
+    CHANNEL_EDITEDM,
+    DEV_TOKEN,
+    PI_BOT_IDS,
+    TOKEN,
+    dev_mode,
+)
 from src.mongo import mongo
 
 if TYPE_CHECKING:
@@ -15,12 +29,16 @@ if TYPE_CHECKING:
     from src.discord.logger import Logger
     from src.discord.spam import SpamManager
 
-intents = discord.Intents.default()
-intents.members = True
-intents.message_content = True
+intents = discord.Intents.all()
 
 
 class PiBot(commands.Bot):
+    """
+    The bot itself. Controls all functionality needed for core operations.
+    """
+
+    session: Optional[aiohttp.ClientSession]
+
     def __init__(self):
         super().__init__(
             command_prefix=BOT_PREFIX,
@@ -28,13 +46,17 @@ class PiBot(commands.Bot):
             intents=intents,
             help_command=None,
         )
-        self.http.API_VERSION = 9
         self.listeners_: Dict[
             str, Dict[str, Any]
         ] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.0.0"
+        self.session = None
 
     async def setup_hook(self) -> None:
+        """
+        Called when the bot is being setup. Currently sets up a connection to the
+        database and initializes all extensions.
+        """
         await mongo.setup()  # initialize MongoDB
 
         extensions = (
@@ -58,10 +80,12 @@ class PiBot(commands.Bot):
             try:
                 await self.load_extension(extension)
             except commands.ExtensionError:
-                print(f"Failed to load extension {extension}")
+                print(f"Failed to load extension {extension}.")
 
     async def on_ready(self) -> None:
-        """Called when the bot is enabled and ready to be run."""
+        """
+        Called when the bot is enabled and ready to be run.
+        """
         print(f"{self.user} has connected!")
 
     async def on_message(self, message: discord.Message) -> None:
@@ -72,11 +96,11 @@ class PiBot(commands.Bot):
         # If user is being listened to, return their message
         for listener in self.listeners_.items():
             if message.author.id == listener[1]["follow_id"]:
-                self.listeners_[listener[0]]["message"] = message
+                listener[1]["message"] = message
 
         # Log incoming direct messages
         if (
-            type(message.channel) == discord.DMChannel
+            isinstance(message.channel, discord.DMChannel)
             and message.author not in PI_BOT_IDS
             and message.author != bot
         ):
@@ -97,10 +121,10 @@ class PiBot(commands.Bot):
 
         # Check if the message contains a censored word/emoji
         is_private = any(
-            [
+            (
                 isinstance(message.channel, discord_class)
                 for discord_class in [discord.DMChannel, discord.GroupChannel]
-            ]
+            )
         )
         if message.content and not is_private:
             censor: Union[commands.Cog, Censor] = bot.get_cog("Censor")
@@ -123,9 +147,14 @@ class PiBot(commands.Bot):
     ) -> Optional[discord.Message]:
         """
         Creates a global listener for a message from a user.
-        :param follow_id: the user ID to create the listener for
-        :param timeout: the amount of time to wait before returning None, assuming the user abandoned the operation
-        :return: the found message or None
+
+        Args:
+            follow_id: the user ID to create the listener for
+            timeout: the amount of time to wait before returning None, assuming
+                the user abandoned the operation
+
+        Returns:
+            the found message or None
         """
         my_id = str(uuid.uuid4())
         self.listeners_[my_id] = {
@@ -146,6 +175,12 @@ bot = PiBot()
 
 
 async def main(token: str):
+    """
+    Main event loop for the bot.
+
+    Args:
+        token (str): The bot token.
+    """
     async with bot:
         await bot.start(token=token)
 
