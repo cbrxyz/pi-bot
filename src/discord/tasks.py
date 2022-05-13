@@ -1,32 +1,30 @@
-import discord
-import random
-import datetime
-from discord.ext import commands, tasks
-import src.discord.globals
-from typing import Any
+from __future__ import annotations
 
+import datetime
+import random
+from typing import TYPE_CHECKING, Any, Union
+
+import discord
+import src.discord.globals
+from discord.ext import commands, tasks
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import (
-    get_cron,
-    get_pings,
-    get_censor,
-    get_settings,
-    get_reports,
-    get_tags,
-    get_events,
-    insert,
-    update,
-    delete,
-)
+from src.mongo.mongo import (delete, get_censor, get_cron, get_events,
+                             get_pings, get_reports, get_settings, get_tags,
+                             insert, update)
+
+if TYPE_CHECKING:
+    from bot import PiBot
+
+    from .reporter import Reporter
 
 
 class CronTasks(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Tasks cog.")
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         try:
             await self.pull_prev_info()
         except Exception as e:
@@ -70,7 +68,9 @@ class CronTasks(commands.Cog):
         """
         await delete("data", "cron", doc_id)
 
-    async def schedule_unban(self, user: discord.User, time: datetime.datetime) -> None:
+    async def schedule_unban(
+        self, user: Union[discord.Member, discord.User], time: datetime.datetime
+    ) -> None:
         """
         Schedules for a particular Discord user to be unbanned at a particular time.
         """
@@ -78,7 +78,7 @@ class CronTasks(commands.Cog):
         await self.add_to_cron(item_dict)
 
     async def schedule_unmute(
-        self, user: discord.User, time: datetime.datetime
+        self, user: Union[discord.Member, discord.User], time: datetime.datetime
     ) -> None:
         """
         Schedules for a particular Discord user to be unmuted at a particular time.
@@ -87,7 +87,7 @@ class CronTasks(commands.Cog):
         await self.add_to_cron(item_dict)
 
     async def schedule_unselfmute(
-        self, user: discord.User, time: datetime.datetime
+        self, user: Union[discord.Member, discord.User], time: datetime.datetime
     ) -> None:
         """
         Schedules for a particular Discord user to be un-selfmuted at a particular time.
@@ -148,7 +148,7 @@ class CronTasks(commands.Cog):
                 and m.joined_at.date() == discord.utils.utcnow().date()
             ]
         )
-        left_messages = await left_channel.history(limit=200).flatten()
+        left_messages = [c async for c in left_channel.history(limit=200)]
         left_today = len(
             [
                 m
@@ -185,7 +185,9 @@ class CronTasks(commands.Cog):
                         reporter_cog = self.bot.get_cog("Reporter")
                         await reporter_cog.create_cron_task_report(task)
                 except Exception as _:
-                    reporter_cog = self.bot.get_cog("Reporter")
+                    reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog(
+                        "Reporter"
+                    )
                     await reporter_cog.create_cron_task_report(task)
 
     async def cron_handle_unban(self, task: dict):
@@ -194,7 +196,7 @@ class CronTasks(commands.Cog):
         """
         # Get the necessary resources
         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-        reporter_cog = self.bot.get_cog("Reporter")
+        reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
 
         # Type checking
         assert isinstance(server, discord.Guild)
@@ -225,7 +227,7 @@ class CronTasks(commands.Cog):
         """
         # Get the necessary resources
         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-        reporter_cog = self.bot.get_cog("Reporter")
+        reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
         muted_role = discord.utils.get(
             server.roles, name=src.discord.globals.ROLE_MUTED
         )
@@ -328,5 +330,5 @@ class CronTasks(commands.Cog):
         print("Changed the bot's status.")
 
 
-def setup(bot):
-    bot.add_cog(CronTasks(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(CronTasks(bot))

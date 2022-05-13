@@ -1,71 +1,65 @@
-import discord
+from __future__ import annotations
+
 import re
-from discord.commands import slash_command
+from typing import TYPE_CHECKING, Literal
 
-from discord.ext import commands
-from discord.commands import Option, permissions
 import commandchecks
-
+import discord
 import src.discord.globals
+from discord import app_commands
+from discord.ext import commands
+from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
+                                 SERVER_ID, SLASH_COMMAND_GUILDS)
+from src.mongo.mongo import delete, insert
 
-from src.discord.globals import (
-    SLASH_COMMAND_GUILDS,
-    EMOJI_LOADING,
-    SERVER_ID,
-    ROLE_STAFF,
-    ROLE_VIP,
-)
-
-from src.mongo.mongo import insert, delete
+if TYPE_CHECKING:
+    from bot import PiBot
 
 
 class StaffEvents(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized staff events cog.")
 
-    event_commands_group = discord.commands.SlashCommandGroup(
-        "event",
-        "Updates the bot's list of events.",
+    event_commands_group = app_commands.Group(
+        name="event",
+        description="Updates the bot's list of events.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        permissions=[
-            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
-            discord.commands.CommandPermission(ROLE_VIP, 1, True),
-        ],
+        default_permissions=discord.Permissions(manage_roles=True),
     )
 
     @event_commands_group.command(
         name="add", description="Staff command. Adds a new event."
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        event_name="The name of the new event.",
+        event_aliases="The aliases for the new event. Format as 'alias1, alias2'.",
+    )
     async def event_add(
         self,
-        ctx,
-        event_name: Option(str, "The name of the new event.", required=True),
-        event_aliases: Option(
-            str,
-            "The aliases for the new event. Format as 'alias1, alias2'.",
-            required=False,
-        ),
+        interaction: discord.Interaction,
+        event_name: str,
+        event_aliases: str = None,
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Send user notice that process has begun
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to add `{event_name}` as a new event..."
         )
 
         # Check to see if event has already been added.
         if event_name in [e["name"] for e in src.discord.globals.EVENT_INFO]:
-            return await ctx.interaction.edit_original_message(
+            return await interaction.edit_original_message(
                 content=f"The `{event_name}` event has already been added."
             )
 
         # Construct dictionary to represent event; will be stored in database
         # and local storage
         aliases_array = []
-        if event_aliases != None:
+        if event_aliases:
             aliases_array = re.findall(r"\w+", event_aliases)
         new_dict = {"name": event_name, "aliases": aliases_array}
 
@@ -78,11 +72,11 @@ class StaffEvents(commands.Cog):
         await server.create_role(
             name=event_name,
             color=discord.Color(0x82A3D3),
-            reason=f"Created by {str(ctx.author)} using /eventadd with Pi-Bot.",
+            reason=f"Created by {str(interaction.user)} using /eventadd with Pi-Bot.",
         )
 
         # Notify user of process completion
-        await ctx.interaction.edit_original_message(
+        await interaction.edit_original_message(
             content=f"The `{event_name}` event was added."
         )
 
@@ -90,24 +84,22 @@ class StaffEvents(commands.Cog):
         name="remove",
         description="Removes an event's availability and optionally, its role from all users.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        event_name="The name of the event to remove.",
+        delete_role="Whether to delete the event role from all users. 'no' allows role to remain.",
+    )
     async def event_remove(
         self,
-        ctx,
-        event_name: Option(str, "The name of the event to remove.", required=True),
-        delete_role: Option(
-            str,
-            "Whether to delete the event role from all users. 'no' allows role to remain.",
-            choices=["no", "yes"],
-            default="no",
-            required=True,
-        ),
+        interaction: discord.Interaction,
+        event_name: str,
+        delete_role: Literal["no", "yes"] = "no",
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Send user notice that process has begun
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to remove the `{event_name}` event..."
         )
 
@@ -120,9 +112,9 @@ class StaffEvents(commands.Cog):
         server = self.bot.get_guild(SERVER_ID)
         potential_role = discord.utils.get(server.roles, name=event_name)
 
-        if event_not_in_list and potential_role == None:
+        if event_not_in_list and potential_role:
             # If no event in list and no role exists on server
-            return await ctx.interaction.edit_original_message(
+            return await interaction.edit_original_message(
                 content=f"The `{event_name}` event does not exist."
             )
 
@@ -133,7 +125,7 @@ class StaffEvents(commands.Cog):
             assert isinstance(role, discord.Role)
             await role.delete()
             if event_not_in_list:
-                return await ctx.interaction.edit_original_message(
+                return await interaction.edit_original_message(
                     content=f"The `{event_name}` role was completely deleted from the server. All members with the role no longer have it."
                 )
 
@@ -146,14 +138,17 @@ class StaffEvents(commands.Cog):
 
         # Notify staff member of completion
         if delete_role == "yes":
-            await ctx.interaction.edit_original_message(
-                content=f"The `{event_name}` event was deleted entirely. The role has been removed from all users, and can not be added to new users."
+            await interaction.edit_original_message(
+                content=f"The `{event_name}` event was deleted entirely. The role has been removed from all users, "
+                f"and can not be added to new users. "
             )
         else:
-            await ctx.interaction.edit_original_message(
-                content=f"The `{event_name}` event was deleted partially. Users who have the role currently will keep it, but new members can not access the role.\n\nTo delete the role entirely, re-run the command with `delete_role = yes`."
+            await interaction.edit_original_message(
+                content=f"The `{event_name}` event was deleted partially. Users who have the role currently will keep "
+                f"it, but new members can not access the role.\n\nTo delete the role entirely, re-run the "
+                f"command with `delete_role = yes`. "
             )
 
 
-def setup(bot):
-    bot.add_cog(StaffEvents(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(StaffEvents(bot))

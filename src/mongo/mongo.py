@@ -1,8 +1,8 @@
-import os
-import asyncio
-import motor.motor_asyncio  # MongoDB AsyncIO driver
-from bson.objectid import ObjectId
+from __future__ import annotations
 
+import os
+
+import motor.motor_asyncio  # MongoDB AsyncIO driver
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -95,8 +95,3 @@ async def remove_doc(db_name, collection_name, doc_id):
     global client
     collection = client[db_name][collection_name]
     await collection.delete_one({"_id": doc_id})
-
-
-event_loop = asyncio.get_event_loop()
-# asyncio.ensure_future(setup(), loop = event_loop)
-event_loop.run_until_complete(setup())

@@ -1,14 +1,16 @@
-import wikitextparser as wtp
-from dotenv import load_dotenv, find_dotenv
 import os
 
+import wikitextparser as wtp
+from dotenv import find_dotenv, load_dotenv
+
 load_dotenv(find_dotenv())
-import pywikibot
 import asyncio
+
+import pywikibot
 from aioify import aioify
 
-from src.wiki.wiki import all_pages, set_page_text
 from src.discord.globals import CURRENT_WIKI_PAGE
+from src.wiki.wiki import all_pages, set_page_text
 
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 

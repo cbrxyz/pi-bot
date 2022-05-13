@@ -1,23 +1,16 @@
-import discord
+from __future__ import annotations
+
 import datetime
 import json
+from typing import TYPE_CHECKING, Union
+
+import discord
 from discord.ext import commands
-from discord.flags import MemberCacheFlags
-import src.discord.globals
-from src.discord.globals import (
-    CENSOR,
-    DISCORD_INVITE_ENDINGS,
-    CHANNEL_SUPPORT,
-    PI_BOT_IDS,
-    ROLE_MUTED,
-    SERVER_ID,
-    CHANNEL_CLOSED_REPORTS,
-)
-import re
-
-from typing import Union
-
+from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
+
+if TYPE_CHECKING:
+    from bot import PiBot
 
 """
 Relevant views.
@@ -27,7 +20,6 @@ Relevant views.
 class IgnoreButton(discord.ui.Button):
     """
     A button to mark the report as ignored.
-
     This causes the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated
     """
 
@@ -51,11 +43,13 @@ class IgnoreButton(discord.ui.Button):
         )
         if isinstance(self.view, InnapropriateUsername):
             await closed_reports.send(
-                f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, but the report was ignored."
+                f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} had the "
+                f"inappropriate username `{self.view.offending_username}`, but the report was ignored. "
             )
         elif isinstance(self.view, InvitationalRequest):
             await closed_reports.send(
-                f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} requested adding a invitational channel for `{self.view.invitational_name}`, but the report was ignored."
+                f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} requested adding "
+                f"a invitational channel for `{self.view.invitational_name}`, but the report was ignored. "
             )
 
         # Update the report database
@@ -82,7 +76,7 @@ class CompletedButton(discord.ui.Button):
         await interaction.message.delete()
 
         # Send an informational message about the report being updated
-        closed_reports = discord.utils.get(
+        closed_reports: discord.TextChannel = discord.utils.get(
             interaction.guild.text_channels, name="closed-reports"
         )
         await closed_reports.send(
@@ -93,10 +87,9 @@ class CompletedButton(discord.ui.Button):
         # TODO
 
 
-class ChangeInnapropriateUsername(discord.ui.Button):
+class ChangeInappropriateUsername(discord.ui.Button):
     """
     A button that changes the username of a user.
-
     This caues the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated.
     """
 
@@ -254,7 +247,7 @@ class InnapropriateUsername(discord.ui.View):
 
         # Add relevant buttons
         super().add_item(IgnoreButton(self))
-        super().add_item(ChangeInnapropriateUsername(self))
+        super().add_item(ChangeInappropriateUsername(self))
         super().add_item(KickUserButton(self))
 
 
@@ -301,32 +294,35 @@ class InvitationalArchive(discord.ui.View):
 
 
 class Reporter(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Reporter cog.")
 
     async def create_staff_message(self, embed: discord.Embed):
-        guild = self.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(guild.text_channels, name="reports")
+        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
         await reports_channel.send(embed=embed)
 
-    async def create_innapropriate_username_report(
+    async def create_inappropriate_username_report(
         self, member: Union[discord.Member, discord.User], offending_username: str
     ):
-        guild = self.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(guild.text_channels, name="reports")
+        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Turn User into Member - if not possible, ignore the report, as no action needs to be taken
         member = guild.get_member(member.id)
-        if member == None:
+        if member is None:
             return
 
         # Assemble relevant embed
         embed = discord.Embed(
-            title="Innapropriate Username Detected",
+            title="Inappropriate Username Detected",
             color=discord.Color.brand_red(),
             description=f"""{member.mention} was found to have the offending username: `{offending_username}`.
-
             You can take some action by using the buttons below.
             """,
         )
@@ -335,8 +331,10 @@ class Reporter(commands.Cog):
         )
 
     async def create_cron_task_report(self, task: dict):
-        guild = self.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(guild.text_channels, name="reports")
+        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Serialize values
         task["_id"] = str(task["_id"])  # ObjectID is not serializable by default
@@ -362,17 +360,17 @@ class Reporter(commands.Cog):
     async def create_invitational_request_report(
         self, user: discord.Member, invitational_name: str
     ):
-        guild = self.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(guild.text_channels, name="reports")
+        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Assemble the embed
         embed = discord.Embed(
             title="New Invitational Channel Request",
             description=f"""
             {user.mention} has requested adding a new invitational channel for: `{invitational_name}`.
-
             If this report is unhelpful (the invitational already exists, the report is spam), then please ignore this report.
-
             To proceed with adding the invitational channel, please use the `/invyadd` command.
             """,
             color=discord.Color.yellow(),
@@ -387,14 +385,15 @@ class Reporter(commands.Cog):
         channel: discord.TextChannel,
         role: discord.Role,
     ):
-        guild = self.bot.get_guild(SERVER_ID)
-        reports_channel = discord.utils.get(guild.text_channels, name="reports")
+        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         embed = discord.Embed(
             title="Invitational Channel Suggested to be Archived",
             description=f"""
             The `{tournament_obj.official_name}` occurred on {discord.utils.format_dt(tournament_obj.tourney_date, 'D')}. Because it has been {tournament_obj.closed_days} days since that date, the tournament channel should potentially be archived.
-
             Archiving tournaments helps to prevent spam in tournament channels where competitors may be looking for updates. If tournamnet events are still occurring (such as waiting on results or event notifications), consider extending this warning.
             """,
             color=discord.Color.orange(),
@@ -409,7 +408,6 @@ class Reporter(commands.Cog):
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically unbanned through CRON.
-
         :param user: The user to make the auto notice about.
         :param is_present: Whether the user was present in the server when the unbanning occurred.
         """
@@ -436,11 +434,10 @@ class Reporter(commands.Cog):
             )
 
     async def create_cron_unmute_auto_notice(
-        self, user: discord.User, is_present: bool
+        self, user: Union[discord.Member, discord.User], is_present: bool
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically unmuted through CRON.
-
         :param user: The user to make the auto notice about.
         :param is_present: Whether the user was present in the server when the unmuting occurred.
         """
@@ -455,13 +452,16 @@ class Reporter(commands.Cog):
 
         if is_present:
             await closed_reports_channel.send(
-                f"**User was automatically unmuted by CRON.** A previous timed mute set on {user.mention} expired, therefore CRON unmuted the user. The user is now free to communicate in the server."
+                f"**User was automatically unmuted by CRON.** A previous timed mute set on {user.mention} expired, "
+                f"therefore CRON unmuted the user. The user is now free to communicate in the server."
             )
         elif not is_present:
             await closed_reports_channel.send(
-                f"**Attempt to automatically unmute user by CRON.** A previous timed mute on {str(user)} expired, and therefore, CRON attempted to unmute the user. However, because the user is no longer present in the server, no unmute could occur."
+                f"**Attempt to automatically unmute user by CRON.** A previous timed mute on {str(user)} expired, "
+                f"and therefore, CRON attempted to unmute the user. "
+                f"However, because the user is no longer present in the server, no unmute could occur."
             )
 
 
-def setup(bot):
-    bot.add_cog(Reporter(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(Reporter(bot))

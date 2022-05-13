@@ -1,7 +1,16 @@
-import discord
+from __future__ import annotations
+
 import datetime
+from typing import TYPE_CHECKING, Union
+
+import discord
 from discord.ext import commands
 from src.discord.globals import ROLE_MUTED, SERVER_ID
+
+if TYPE_CHECKING:
+    from bot import PiBot
+    from src.discord.reporter import Reporter
+    from src.discord.tasks import CronTasks
 
 
 class SpamManager(commands.Cog):
@@ -14,7 +23,7 @@ class SpamManager(commands.Cog):
     mute_limit = 6  # The number of messages that can be sent containing the same content before a mute is issued
     warning_limit = 3  # The number of messages that can be sent containing caps or the same content before a warning is issued to the offending user
 
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         self.recent_messages = []
 
@@ -32,7 +41,7 @@ class SpamManager(commands.Cog):
 
     async def check_for_repetition(self, message: discord.Message) -> None:
         """
-        Checks to see if the message has been repeated often recently, and takes action if action is needed.
+        Checks to see if the message has often been repeated recently, and takes action if action is needed.
         """
         # Type checking
         assert isinstance(message.author, discord.Member)
@@ -64,7 +73,7 @@ class SpamManager(commands.Cog):
                 No further action needs to be taken. To teleport to the issue, please [click here]({info_message.jump_url}). Please know that the offending messages may have been deleted by the author or staff.
                 """,
             )
-            reporter_cog = self.bot.get_cog("Reporter")
+            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
             await reporter_cog.create_staff_message(staff_embed_message)
         elif matching_messages_count >= self.warning_limit:
             await message.author.send(
@@ -106,7 +115,7 @@ class SpamManager(commands.Cog):
                 No further action needs to be taken. To teleport to the issue, please [click here]({info_message.jump_url}). Please know that the offending messages may have been deleted by the author or staff.
                 """,
             )
-            reporter_cog = self.bot.get_cog("Reporter")
+            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
             await reporter_cog.create_staff_message(staff_embed_message)
         elif caps_messages_count >= self.warning_limit and self.has_caps(message):
             await message.author.send(
@@ -117,14 +126,14 @@ class SpamManager(commands.Cog):
         """
         Mutes the user and schedules an unmute for an hour later in CRON.
         """
-        guild = self.bot.get_guild(SERVER_ID)
+        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         muted_role = discord.utils.get(guild.roles, name=ROLE_MUTED)
         unmute_time = discord.utils.utcnow() + datetime.timedelta(hours=1)
 
         # Type checking
         assert isinstance(muted_role, discord.Role)
 
-        cron_cog = self.bot.get_cog("CronTasks")
+        cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
         await cron_cog.schedule_unmute(member, unmute_time)
         await member.add_roles(muted_role)
 
@@ -146,5 +155,5 @@ class SpamManager(commands.Cog):
         await self.check_for_caps(message)
 
 
-def setup(bot):
-    bot.add_cog(SpamManager(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(SpamManager(bot))

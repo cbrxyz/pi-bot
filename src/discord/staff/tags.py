@@ -1,87 +1,76 @@
-import discord
-import re
+from __future__ import annotations
 
-from discord.ext import commands
-from discord.commands import Option, permissions, ApplicationContext
+from typing import TYPE_CHECKING, Literal
+
 import commandchecks
-
-from bot import listen_for_response
-
+import discord
 import src.discord.globals
-from src.discord.globals import (
-    EMOJI_LOADING,
-    SLASH_COMMAND_GUILDS,
-    SERVER_ID,
-    ROLE_STAFF,
-    ROLE_VIP,
-)
+from discord import app_commands
+from discord.ext import commands
+from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
+                                 SLASH_COMMAND_GUILDS)
+from src.mongo.mongo import delete, insert, update
 
-from src.mongo.mongo import insert, update, delete
+if TYPE_CHECKING:
+    from bot import PiBot
 
 
 class StaffTags(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized staff tags cog.")
 
-    tag_commands_group = discord.commands.SlashCommandGroup(
-        "tagupdate",
-        "Updates the bot's tag list.",
+    tag_commands_group = app_commands.Group(
+        name="tagupdate",
+        description="Updates the bot's tag list.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        permissions=[
-            discord.commands.CommandPermission(ROLE_STAFF, 1, True),
-            discord.commands.CommandPermission(ROLE_VIP, 1, True),
-        ],
+        default_permissions=discord.Permissions(manage_messages=True),
     )
 
     @tag_commands_group.command(
         name="add",
         description="Staff command. Adds a new tag.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        tag_name="The name of the tag to add.",
+        launch_helpers="Whether launch helpers can use this tag. Defaults to yes.",
+        members="Whether all members can use this tag. Defaults to yes.",
+    )
     async def tag_add(
         self,
-        ctx: ApplicationContext,
-        tag_name: Option(str, "The name of the tag to add.", required=True),
-        launch_helpers: Option(
-            str,
-            "Whether launch helpers can use this tag. Defaults to yes.",
-            choices=["yes", "no"],
-            default="yes",
-        ),
-        members: Option(
-            str,
-            "Whether all members can use this tag. Defaults to yes.",
-            choices=["yes", "no"],
-            default="yes",
-        ),
+        interaction: discord.Interaction,
+        tag_name: str,
+        launch_helpers: Literal["yes", "no"] = "yes",
+        members: Literal["yes", "no"] = "yes",
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Notify user that process has started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to add the `{tag_name}` tag..."
         )
 
         # Check if tag has already been added
         if tag_name in [t["name"] for t in src.discord.globals.TAGS]:
-            return await ctx.interaction.edit_original_message(
+            return await interaction.edit_original_message(
                 content=f"The `{tag_name}` tag has already been added. To edit this tag, please use `/tagedit` instead."
             )
 
         # Send directions to caller
-        await ctx.interaction.edit_original_message(
-            content=f"{EMOJI_LOADING} Please send the new text for the tag. You can use formatting and newlines. All text sent in your next message will be included in the tag."
+        await interaction.edit_original_message(
+            content=f"{EMOJI_LOADING} Please send the new text for the tag. You can use formatting and newlines. All "
+            f"text sent in your next message will be included in the tag. "
         )
-        content_message = await listen_for_response(
-            follow_id=ctx.user.id,
+        content_message = await self.bot.listen_for_response(
+            follow_id=interaction.user.id,
             timeout=120,
         )
 
         # If user does not respond, alert them
-        if content_message == None:
-            return await ctx.interaction.edit_original_message(
+        if not content_message:
+            return await interaction.edit_original_message(
                 content="No message was found within 2 minutes. Operation cancelled."
             )
 
@@ -103,7 +92,7 @@ class StaffTags(commands.Cog):
         # Add tag to logs
         src.discord.globals.TAGS.append(new_dict)
         await insert("data", "tags", new_dict)
-        await ctx.interaction.edit_original_message(
+        await interaction.edit_original_message(
             content=f"The `{tag_name}` tag was added!"
         )
 
@@ -111,35 +100,30 @@ class StaffTags(commands.Cog):
         name="edit",
         description="Staff command. Edits an existing tag.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        tag_name="The tag name to edit the text of.",
+        launch_helpers="Whether launch helpers can use. Defaults to 'do not change'.",
+        members="Whether all members can use this tag. Defaults to 'do not change'.",
+    )
     async def tag_edit(
         self,
-        ctx,
-        tag_name: Option(str, "The tag name to edit the text of.", required=True),
-        launch_helpers: Option(
-            str,
-            "Whether launch helpers can use. Defaults to 'do not change'.",
-            choices=["yes", "no", "do not change"],
-            default="do not change",
-        ),
-        members: Option(
-            str,
-            "Whether all members can use this tag. Defaults to 'do not change'.",
-            choices=["yes", "no", "do not change"],
-            default="do not change",
-        ),
+        interaction: discord.Interaction,
+        tag_name: str,
+        launch_helpers: Literal["yes", "no", "do not change"] = "do not change",
+        members: Literal["yes", "no", "do not change"] = "do not change",
     ):
         # Check for staff permissions
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Notify user that process has started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to update the `{tag_name}` tag..."
         )
 
         # Check that tag exists.
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
-            return await ctx.interaction.edit_original_message(
+            return await interaction.edit_original_message(
                 content=f"No tag with name `{tag_name}` could be found."
             )
 
@@ -147,20 +131,20 @@ class StaffTags(commands.Cog):
         tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
 
         # Send info message about updating tag
-        info_message = await ctx.interaction.edit_original_message(
+        info_message = await interaction.edit_original_message(
             content=f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag['output']}\n----------\n"
             + "Please send the new text for the tag below:"
         )
 
         # Listen for user response
-        content_message = await listen_for_response(
-            follow_id=ctx.user.id,
+        content_message = await self.bot.listen_for_response(
+            follow_id=interaction.user.id,
             timeout=120,
         )
 
         # If user did not respond
-        if content_message == None:
-            await ctx.interaction.edit_original_message(
+        if not content_message:
+            await interaction.edit_original_message(
                 content="No message was found within 2 minutes. Operation cancelled."
             )
             return
@@ -191,7 +175,7 @@ class StaffTags(commands.Cog):
 
         # Update tag
         await update("data", "tags", tag["_id"], {"$set": update_dict})
-        await ctx.interaction.edit_original_message(
+        await interaction.edit_original_message(
             content=f"The `{tag_name}` tag was updated."
         )
 
@@ -199,23 +183,24 @@ class StaffTags(commands.Cog):
         name="remove",
         description="Staff command. Removes a tag completely.",
     )
-    @permissions.has_any_role(ROLE_STAFF, ROLE_VIP, guild_id=SERVER_ID)
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(tag_name="The name of the tag to remove.")
     async def tag_remove(
         self,
-        ctx,
-        tag_name: Option(str, "The name of the tag to remove.", required=True),
+        interaction: discord.Interaction,
+        tag_name: str,
     ):
         # Check for staff permissions again
-        commandchecks.is_staff_from_ctx(ctx)
+        commandchecks.is_staff_from_ctx(interaction)
 
         # Notify user that process has started
-        await ctx.interaction.response.send_message(
+        await interaction.response.send_message(
             content=f"{EMOJI_LOADING} Attempting to delete the `{tag_name}` tag..."
         )
 
         # If tag does not exist
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
-            return await ctx.interaction.edit_original_message(
+            return await interaction.edit_original_message(
                 content=f"No tag with the name of `{tag_name}` was found."
             )
 
@@ -227,10 +212,10 @@ class StaffTags(commands.Cog):
         await delete("data", "tags", tag["_id"])
 
         # Send confirmation message
-        return await ctx.interaction.edit_original_message(
+        return await interaction.edit_original_message(
             content=f"The `{tag_name}` tag was deleted."
         )
 
 
-def setup(bot):
-    bot.add_cog(StaffTags(bot))
+async def setup(bot: PiBot):
+    await bot.add_cog(StaffTags(bot))
