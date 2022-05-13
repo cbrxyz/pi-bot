@@ -3,12 +3,11 @@ from __future__ import annotations
 import asyncio
 import json
 import random
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-
 from src.discord.globals import SLASH_COMMAND_GUILDS
 
 if TYPE_CHECKING:

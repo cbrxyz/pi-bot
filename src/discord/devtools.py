@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import discord
 from discord import app_commands
 from discord.ext import commands
-
 from src.discord.globals import SLASH_COMMAND_GUILDS
 
 if TYPE_CHECKING:

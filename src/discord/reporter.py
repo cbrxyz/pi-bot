@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import discord
 from discord.ext import commands
-
 from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
 

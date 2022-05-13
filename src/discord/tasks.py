@@ -2,28 +2,19 @@ from __future__ import annotations
 
 import datetime
 import random
-from typing import Any, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import discord
-from discord.ext import commands, tasks
-
 import src.discord.globals
+from discord.ext import commands, tasks
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import (
-    delete,
-    get_censor,
-    get_cron,
-    get_events,
-    get_pings,
-    get_reports,
-    get_settings,
-    get_tags,
-    insert,
-    update,
-)
+from src.mongo.mongo import (delete, get_censor, get_cron, get_events,
+                             get_pings, get_reports, get_settings, get_tags,
+                             insert, update)
 
 if TYPE_CHECKING:
     from bot import PiBot
+
     from .reporter import Reporter
 
 

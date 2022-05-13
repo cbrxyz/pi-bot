@@ -1,13 +1,13 @@
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
-import re
-import os
-import pywikibot
 import asyncio
-import wikitextparser as wtp
+import os
+import re
 
+import pywikibot
+import wikitextparser as wtp
 from aioify import aioify
 
 aiopwb = aioify(obj=pywikibot, name="aiopwb")

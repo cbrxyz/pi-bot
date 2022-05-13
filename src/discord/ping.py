@@ -5,10 +5,9 @@ import re
 from typing import TYPE_CHECKING, Union
 
 import discord
+import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-
-import src.discord.globals
 from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
 from src.mongo.mongo import insert, update
 

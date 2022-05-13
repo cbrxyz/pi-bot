@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Union
 
 import discord
 from discord.ext import commands
-
 from src.discord.globals import ROLE_MUTED, SERVER_ID
 
 if TYPE_CHECKING:

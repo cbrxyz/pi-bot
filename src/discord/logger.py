@@ -4,21 +4,12 @@ import traceback
 from typing import TYPE_CHECKING, Union
 
 import discord
-from discord.ext import commands
-
 from commanderrors import CommandNotAllowedInChannel
-from src.discord.globals import (
-    CENSOR,
-    CHANNEL_DELETEDM,
-    CHANNEL_DMLOG,
-    CHANNEL_EDITEDM,
-    CHANNEL_LEAVE,
-    CHANNEL_LOUNGE,
-    CHANNEL_WELCOME,
-    PI_BOT_IDS,
-    ROLE_UC,
-    SERVER_ID,
-)
+from discord.ext import commands
+from src.discord.globals import (CENSOR, CHANNEL_DELETEDM, CHANNEL_DMLOG,
+                                 CHANNEL_EDITEDM, CHANNEL_LEAVE,
+                                 CHANNEL_LOUNGE, CHANNEL_WELCOME, PI_BOT_IDS,
+                                 ROLE_UC, SERVER_ID)
 
 if TYPE_CHECKING:
     from bot import PiBot

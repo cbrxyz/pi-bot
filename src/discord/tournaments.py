@@ -3,25 +3,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union
 
 import discord
-from discord.ext import commands
-
 import src.discord.globals
-from src.discord.globals import (
-    CATEGORY_ARCHIVE,
-    CATEGORY_TOURNAMENTS,
-    CHANNEL_BOTSPAM,
-    CHANNEL_COMPETITIONS,
-    CHANNEL_SUPPORT,
-    CHANNEL_TOURNAMENTS,
-    ROLE_AD,
-    ROLE_AT,
-    ROLE_GM,
-    SERVER_ID,
-)
+from discord.ext import commands
+from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS,
+                                 CHANNEL_BOTSPAM, CHANNEL_COMPETITIONS,
+                                 CHANNEL_SUPPORT, CHANNEL_TOURNAMENTS, ROLE_AD,
+                                 ROLE_AT, ROLE_GM, SERVER_ID)
 from src.mongo.mongo import get_invitationals, update_many
 
 if TYPE_CHECKING:
     from bot import PiBot
+
     from .reporter import Reporter
 
 

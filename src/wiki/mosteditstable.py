@@ -1,16 +1,17 @@
 # Imports
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
-import pywikibot
-import time
 import asyncio
-import wikitextparser as wtp
-from pywikibot import pagegenerators
-from datetime import date
+import time
 from collections import Counter
+from datetime import date
+
+import pywikibot
+import wikitextparser as wtp
 from aioify import aioify
+from pywikibot import pagegenerators
 
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 

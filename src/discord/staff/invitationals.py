@@ -2,24 +2,16 @@ from __future__ import annotations
 
 import datetime
 import re
-from typing import Literal, TYPE_CHECKING, Union
-
-import discord
-from discord import app_commands
-from discord.ext import commands
+from typing import TYPE_CHECKING, Literal, Union
 
 import commandchecks
+import discord
 import src.discord.globals
-from src.discord.globals import (
-    CATEGORY_ARCHIVE,
-    CATEGORY_TOURNAMENTS,
-    EMOJI_GUILDS,
-    EMOJI_LOADING,
-    ROLE_STAFF,
-    ROLE_VIP,
-    SERVER_ID,
-    SLASH_COMMAND_GUILDS,
-)
+from discord import app_commands
+from discord.ext import commands
+from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS,
+                                 EMOJI_GUILDS, EMOJI_LOADING, ROLE_STAFF,
+                                 ROLE_VIP, SERVER_ID, SLASH_COMMAND_GUILDS)
 from src.discord.tournaments import update_tournament_list
 from src.discord.views import YesNo
 from src.mongo.mongo import delete, get_invitationals, insert, update

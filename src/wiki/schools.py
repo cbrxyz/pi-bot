@@ -1,6 +1,7 @@
-import aiohttp
 import asyncio
 import json
+
+import aiohttp
 
 from src.lists import get_state_list
 

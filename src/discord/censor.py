@@ -4,10 +4,10 @@ import re
 from typing import TYPE_CHECKING
 
 import discord
-from discord.ext import commands
-
 import src.discord.globals
-from src.discord.globals import CATEGORY_STAFF, CHANNEL_SUPPORT, DISCORD_INVITE_ENDINGS
+from discord.ext import commands
+from src.discord.globals import (CATEGORY_STAFF, CHANNEL_SUPPORT,
+                                 DISCORD_INVITE_ENDINGS)
 
 if TYPE_CHECKING:
     from bot import PiBot

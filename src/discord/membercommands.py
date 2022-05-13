@@ -5,32 +5,20 @@ import random
 import re
 from typing import Literal, TYPE_CHECKING, Union
 
-import discord
 import wikipedia as wikip
 from aioify import aioify
-from discord import app_commands
-from discord.ext import commands
 
+import discord
 import src.discord.globals
 from commandchecks import is_staff_from_ctx
-from src.discord.globals import (
-    CATEGORY_STAFF,
-    CHANNEL_GAMES,
-    CHANNEL_ROLES,
-    CHANNEL_TOURNAMENTS,
-    CHANNEL_UNSELFMUTE,
-    ROLE_ALUMNI,
-    ROLE_DIV_A,
-    ROLE_DIV_B,
-    ROLE_DIV_C,
-    ROLE_GAMES,
-    ROLE_LH,
-    ROLE_MR,
-    ROLE_SELFMUTE,
-    RULES,
-    SERVER_ID,
-    SLASH_COMMAND_GUILDS,
-)
+from discord import app_commands
+from discord.ext import commands
+from src.discord.globals import (CATEGORY_STAFF, CHANNEL_GAMES, CHANNEL_ROLES,
+                                 CHANNEL_TOURNAMENTS, CHANNEL_UNSELFMUTE,
+                                 ROLE_ALUMNI, ROLE_DIV_A, ROLE_DIV_B,
+                                 ROLE_DIV_C, ROLE_GAMES, ROLE_LH, ROLE_MR,
+                                 ROLE_SELFMUTE, RULES, SERVER_ID,
+                                 SLASH_COMMAND_GUILDS)
 from src.discord.utils import lookup_role
 from src.discord.views import YesNo
 from src.lists import get_state_list
@@ -39,6 +27,7 @@ from src.wiki.wiki import implement_command
 
 if TYPE_CHECKING:
     from bot import PiBot
+
     from .reporter import Reporter
 
 

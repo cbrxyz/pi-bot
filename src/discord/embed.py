@@ -5,21 +5,18 @@ import json
 import re
 from typing import TYPE_CHECKING
 
-import discord
 import webcolors
+
+import discord
 from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
     from bot import PiBot
 
-from src.discord.globals import (
-    SLASH_COMMAND_GUILDS,
-    ROLE_STAFF,
-    ROLE_VIP,
-    EMOJI_LOADING,
-)
 import commandchecks
+from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
+                                 SLASH_COMMAND_GUILDS)
 
 
 class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):

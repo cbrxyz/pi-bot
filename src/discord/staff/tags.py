@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-from typing import Literal, TYPE_CHECKING
-
-import discord
-from discord import app_commands
-from discord.ext import commands
+from typing import TYPE_CHECKING, Literal
 
 import commandchecks
+import discord
 import src.discord.globals
-from src.discord.globals import (
-    EMOJI_LOADING,
-    ROLE_STAFF,
-    ROLE_VIP,
-    SLASH_COMMAND_GUILDS,
-)
+from discord import app_commands
+from discord.ext import commands
+from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
+                                 SLASH_COMMAND_GUILDS)
 from src.mongo.mongo import delete, insert, update
 
 if TYPE_CHECKING:

@@ -3,47 +3,30 @@ from __future__ import annotations
 import asyncio
 import datetime
 import re
-from typing import Literal, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Literal, Union
 
-import discord
 import matplotlib.pyplot as plt
-from discord import app_commands
-from discord.ext import commands
 
 import commandchecks
+import discord
 import src.discord.globals
-from src.discord.globals import (
-    CATEGORY_GENERAL,
-    CATEGORY_SO,
-    CATEGORY_STATES,
-    CATEGORY_TOURNAMENTS,
-    CHANNEL_WELCOME,
-    EMOJI_LOADING,
-    INVITATIONAL_INFO,
-    PI_BOT_IDS,
-    ROLE_AD,
-    ROLE_ALL_STATES,
-    ROLE_AT,
-    ROLE_BT,
-    ROLE_GAMES,
-    ROLE_GM,
-    ROLE_MR,
-    ROLE_MUTED,
-    ROLE_QUARANTINE,
-    ROLE_SELFMUTE,
-    ROLE_STAFF,
-    ROLE_UC,
-    ROLE_VIP,
-    ROLE_WM,
-    SERVER_ID,
-    SLASH_COMMAND_GUILDS,
-)
+from discord import app_commands
+from discord.ext import commands
+from src.discord.globals import (CATEGORY_GENERAL, CATEGORY_SO,
+                                 CATEGORY_STATES, CATEGORY_TOURNAMENTS,
+                                 CHANNEL_WELCOME, EMOJI_LOADING,
+                                 INVITATIONAL_INFO, PI_BOT_IDS, ROLE_AD,
+                                 ROLE_ALL_STATES, ROLE_AT, ROLE_BT, ROLE_GAMES,
+                                 ROLE_GM, ROLE_MR, ROLE_MUTED, ROLE_QUARANTINE,
+                                 ROLE_SELFMUTE, ROLE_STAFF, ROLE_UC, ROLE_VIP,
+                                 ROLE_WM, SERVER_ID, SLASH_COMMAND_GUILDS)
 from src.discord.tournaments import update_tournament_list
 from src.mongo.mongo import delete_by, get_cron, get_pings, remove_doc
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
     from bot import PiBot
+
     from .tasks import CronTasks
 
 

@@ -1,8 +1,10 @@
+from typing import Union
+
 import discord
 from commanderrors import CommandNotAllowedInChannel
 from discord.ext import commands
-from src.discord.globals import ROLE_AD, ROLE_LH, ROLE_STAFF, ROLE_VIP, SERVER_ID
-from typing import Union
+from src.discord.globals import (ROLE_AD, ROLE_LH, ROLE_STAFF, ROLE_VIP,
+                                 SERVER_ID)
 
 
 async def is_bear(ctx) -> bool:

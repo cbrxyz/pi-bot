@@ -1,6 +1,7 @@
-import os
-from dotenv import load_dotenv
 import datetime
+import os
+
+from dotenv import load_dotenv
 
 from src.mongo.mongo import update
 

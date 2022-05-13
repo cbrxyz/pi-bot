@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
-import uuid
-from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
 from commandchecks import *
 from src.discord.globals import *
@@ -12,8 +12,8 @@ from src.mongo import mongo
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
-    from src.discord.spam import SpamManager
     from src.discord.logger import Logger
+    from src.discord.spam import SpamManager
 
 intents = discord.Intents.default()
 intents.members = True
