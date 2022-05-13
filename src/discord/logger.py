@@ -7,8 +7,18 @@ import discord
 from discord.ext import commands
 
 from commanderrors import CommandNotAllowedInChannel
-from src.discord.globals import (CENSOR, CHANNEL_DELETEDM, CHANNEL_DMLOG, CHANNEL_EDITEDM, CHANNEL_LEAVE,
-                                 CHANNEL_LOUNGE, CHANNEL_WELCOME, PI_BOT_IDS, ROLE_UC, SERVER_ID)
+from src.discord.globals import (
+    CENSOR,
+    CHANNEL_DELETEDM,
+    CHANNEL_DMLOG,
+    CHANNEL_EDITEDM,
+    CHANNEL_LEAVE,
+    CHANNEL_LOUNGE,
+    CHANNEL_WELCOME,
+    PI_BOT_IDS,
+    ROLE_UC,
+    SERVER_ID,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -69,7 +79,9 @@ class Logger(commands.Cog):
         """
         # Get the relevant objects
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        dm_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
+        dm_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name=CHANNEL_DMLOG
+        )
 
         # Create an embed containing the direct message info and send it to the log channel
         message_embed = discord.Embed(
@@ -79,10 +91,14 @@ class Logger(commands.Cog):
             else "This message contained no content.",
             color=discord.Color.brand_green(),
         )
-        message_embed.add_field(name="Author", value=message.author.mention, inline=True)
+        message_embed.add_field(
+            name="Author", value=message.author.mention, inline=True
+        )
         message_embed.add_field(name="Message ID", value=message.id, inline=True)
         message_embed.add_field(
-            name="Sent", value=discord.utils.format_dt(message.created_at, "R"), inline=True
+            name="Sent",
+            value=discord.utils.format_dt(message.created_at, "R"),
+            inline=True,
         )
         message_embed.add_field(
             name="Attachments",
@@ -110,7 +126,9 @@ class Logger(commands.Cog):
             await reporter_cog.create_inappropriate_username_report(member, member.name)
 
         # Send welcome message to the welcoming channel
-        join_channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
+        join_channel = discord.utils.get(
+            member.guild.text_channels, name=CHANNEL_WELCOME
+        )
         await join_channel.send(
             f"{member.mention}, welcome to the Scioly.org Discord Server! "
             "You can add roles here, using the commands shown at the top of this channel. "
@@ -124,7 +142,9 @@ class Logger(commands.Cog):
 
         # Send fun alert message on every 100 members who join
         member_count = len(member.guild.members)
-        lounge_channel: discord.TextChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LOUNGE)
+        lounge_channel: discord.TextChannel = discord.utils.get(
+            member.guild.text_channels, name=CHANNEL_LOUNGE
+        )
         if member_count % 100 == 0:
             await lounge_channel.send(
                 f"Wow! There are now `{member_count}` members in the server!"
@@ -133,8 +153,12 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         # Post a leaving info message
-        leave_channel: discord.TextChannel = discord.utils.get(member.guild.text_channels, name=CHANNEL_LEAVE)
-        unconfirmed_role: discord.Role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        leave_channel: discord.TextChannel = discord.utils.get(
+            member.guild.text_channels, name=CHANNEL_LEAVE
+        )
+        unconfirmed_role: discord.Role = discord.utils.get(
+            member.guild.roles, name=ROLE_UC
+        )
 
         if unconfirmed_role in member.roles:
             unconfirmed_statement = "Unconfirmed: :white_check_mark:"
@@ -210,19 +234,21 @@ class Logger(commands.Cog):
             await partial_message.clear_reaction(payload.emoji)
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def on_command_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ):
         print("Command Error:")
         print(error)
 
         # If a cog has a separate error handler, don't also run the global error handler
         if (
-                ctx.command.has_error_handler() or ctx.cog.has_error_handler()
+            ctx.command.has_error_handler() or ctx.cog.has_error_handler()
         ) and True == ctx.__slots__:
             return
 
         # Argument parsing errors
         if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(
-                error, discord.ext.commands.InvalidEndOfQuotedStringError
+            error, discord.ext.commands.InvalidEndOfQuotedStringError
         ):
             return await ctx.send(
                 "Sorry, it appears that your quotation marks are misaligned, and I can't read your query."
@@ -242,7 +268,7 @@ class Logger(commands.Cog):
         if isinstance(error, discord.ext.commands.TooManyArguments):
             return await ctx.send("Woahhh!! Too many arguments for this command!")
         if isinstance(error, discord.ext.commands.BadArgument) or isinstance(
-                error, discord.ext.commands.BadUnionArgument
+            error, discord.ext.commands.BadUnionArgument
         ):
             return await ctx.send(
                 "Sorry, I'm having trouble reading one of the arguments you just used. Try again!"
@@ -264,17 +290,19 @@ class Logger(commands.Cog):
                 "Oof. You have to be the bot's master to run that command!"
             )
         if isinstance(error, discord.ext.commands.MissingPermissions) or isinstance(
-                error, discord.ext.commands.BotMissingPermissions
+            error, discord.ext.commands.BotMissingPermissions
         ):
-            return await ctx.send("Er, you don't have the permissions to run this command.")
+            return await ctx.send(
+                "Er, you don't have the permissions to run this command."
+            )
         if isinstance(error, discord.ext.commands.MissingRole) or isinstance(
-                error, discord.ext.commands.BotMissingRole
+            error, discord.ext.commands.BotMissingRole
         ):
             return await ctx.send(
                 "Oh no... you don't have the required role to run this command."
             )
         if isinstance(error, discord.ext.commands.MissingAnyRole) or isinstance(
-                error, discord.ext.commands.BotMissingAnyRole
+            error, discord.ext.commands.BotMissingAnyRole
         ):
             return await ctx.send(
                 "Oh no... you don't have the required role to run this command."
@@ -345,7 +373,9 @@ class Logger(commands.Cog):
             if channel.type == discord.ChannelType.private
             else channel.guild
         )
-        edited_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name=CHANNEL_EDITEDM)
+        edited_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name=CHANNEL_EDITEDM
+        )
 
         # Ignore payloads for events in logging channels (which would cause recursion)
         if channel.type != discord.ChannelType.private and channel.name in [
@@ -481,8 +511,8 @@ class Logger(commands.Cog):
                 {
                     "name": "Current Embed",
                     "value": "\n".join([str(e.to_dict()) for e in message_now.embeds])[
-                             :1024
-                             ]
+                        :1024
+                    ]
                     if len(message_now.embeds) > 0
                     else "None",
                     "inline": "False",
@@ -506,7 +536,9 @@ class Logger(commands.Cog):
             if channel.type == discord.ChannelType.private
             else channel.guild
         )
-        deleted_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name=CHANNEL_DELETEDM)
+        deleted_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name=CHANNEL_DELETEDM
+        )
 
         # Do not send a log for messages deleted out of the deleted messages channel (could cause a possible bot recursion)
         if channel.type != discord.ChannelType.private and channel.name in [
@@ -564,8 +596,8 @@ class Logger(commands.Cog):
                 {
                     "name": "Embed",
                     "value": "\n".join([str(e.to_dict()) for e in message.embeds])[
-                             :1024
-                             ]
+                        :1024
+                    ]
                     if len(message.embeds) > 0
                     else "None",
                     "inline": "False",

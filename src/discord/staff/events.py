@@ -9,7 +9,13 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
-from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP, SERVER_ID, SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.mongo.mongo import delete, insert
 
 if TYPE_CHECKING:
@@ -25,7 +31,7 @@ class StaffEvents(commands.Cog):
         name="event",
         description="Updates the bot's list of events.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        default_permissions=discord.Permissions(manage_roles=True)
+        default_permissions=discord.Permissions(manage_roles=True),
     )
 
     @event_commands_group.command(
@@ -34,13 +40,13 @@ class StaffEvents(commands.Cog):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
         event_name="The name of the new event.",
-        event_aliases="The aliases for the new event. Format as 'alias1, alias2'."
+        event_aliases="The aliases for the new event. Format as 'alias1, alias2'.",
     )
     async def event_add(
         self,
         interaction: discord.Interaction,
         event_name: str,
-        event_aliases: str = None
+        event_aliases: str = None,
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -87,13 +93,13 @@ class StaffEvents(commands.Cog):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
         event_name="The name of the event to remove.",
-        delete_role="Whether to delete the event role from all users. 'no' allows role to remain."
+        delete_role="Whether to delete the event role from all users. 'no' allows role to remain.",
     )
     async def event_remove(
         self,
         interaction: discord.Interaction,
         event_name: str,
-        delete_role: Literal["no", "yes"] = "no"
+        delete_role: Literal["no", "yes"] = "no",
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -140,13 +146,13 @@ class StaffEvents(commands.Cog):
         if delete_role == "yes":
             await interaction.edit_original_message(
                 content=f"The `{event_name}` event was deleted entirely. The role has been removed from all users, "
-                        f"and can not be added to new users. "
+                f"and can not be added to new users. "
             )
         else:
             await interaction.edit_original_message(
                 content=f"The `{event_name}` event was deleted partially. Users who have the role currently will keep "
-                        f"it, but new members can not access the role.\n\nTo delete the role entirely, re-run the "
-                        f"command with `delete_role = yes`. "
+                f"it, but new members can not access the role.\n\nTo delete the role entirely, re-run the "
+                f"command with `delete_role = yes`. "
             )
 
 

@@ -10,8 +10,16 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
-from src.discord.globals import (CATEGORY_ARCHIVE, CATEGORY_TOURNAMENTS, EMOJI_GUILDS, EMOJI_LOADING, ROLE_STAFF,
-                                 ROLE_VIP, SERVER_ID, SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_ARCHIVE,
+    CATEGORY_TOURNAMENTS,
+    EMOJI_GUILDS,
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.tournaments import update_tournament_list
 from src.discord.views import YesNo
 from src.mongo.mongo import delete, get_invitationals, insert, update
@@ -30,7 +38,7 @@ class StaffInvitational(commands.Cog):
         name="invitational",
         description="Updates the bot's invitational system.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        default_permissions=discord.Permissions(manage_channels=True)
+        default_permissions=discord.Permissions(manage_channels=True),
     )
 
     @invitational_status_group.command(
@@ -42,15 +50,15 @@ class StaffInvitational(commands.Cog):
         official_name="The official name of the tournament, such as MIT Invitational.",
         channel_name="The name of the Discord channel that will be created, such as 'mit'",
         tourney_date="The date of the tournament, formatted as YYYY-mm-dd, such as 2022-01-06.",
-        status="Determines if the new tournament channel will be sent to voting or added immediately."
+        status="Determines if the new tournament channel will be sent to voting or added immediately.",
     )
     async def invitational_add(
-            self,
-            interaction: discord.Interaction,
-            official_name: str,
-            channel_name: str,
-            tourney_date: str,
-            status: Literal["voting", "add_immediately"],
+        self,
+        interaction: discord.Interaction,
+        official_name: str,
+        channel_name: str,
+        tourney_date: str,
+        status: Literal["voting", "add_immediately"],
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -76,8 +84,8 @@ class StaffInvitational(commands.Cog):
             # Send info message
             await interaction.edit_original_message(
                 content=f"{EMOJI_LOADING}\nPlease send the emoji to use for the tournament. If you would like to use "
-                        f"a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf "
-                        f"you would like to use a standard emoji, please send a message with only the standard emoji. "
+                f"a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf "
+                f"you would like to use a standard emoji, please send a message with only the standard emoji. "
             )
 
             # Get user response
@@ -142,7 +150,7 @@ class StaffInvitational(commands.Cog):
                 if not created_emoji:
                     await interaction.edit_original_message(
                         content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot administrator "
-                                f"will need to add more emoji guilds. "
+                        f"will need to add more emoji guilds. "
                     )
                     return
 
@@ -161,13 +169,17 @@ class StaffInvitational(commands.Cog):
 
         # Update tournament with status
         if status == "add_immediately":
-            description += "\n**This tournament channel will be opened immediately.** This means that it will require " \
-                           "no votes by users to open. This option should generally only be used for tournaments that " \
-                           "have a very strong attendance or desire to be added to the server. "
+            description += (
+                "\n**This tournament channel will be opened immediately.** This means that it will require "
+                "no votes by users to open. This option should generally only be used for tournaments that "
+                "have a very strong attendance or desire to be added to the server. "
+            )
         else:
-            description += "\n**This tournament channel will require a certain number of votes to be opened.** This " \
-                           "means that the tournament channel will not immediately be created - rather, users will " \
-                           "need to vote on the channel being created before the action is done. "
+            description += (
+                "\n**This tournament channel will require a certain number of votes to be opened.** This "
+                "means that the tournament channel will not immediately be created - rather, users will "
+                "need to vote on the channel being created before the action is done. "
+            )
 
         # Final Embed class
         confirm_embed = discord.Embed(
@@ -204,11 +216,11 @@ class StaffInvitational(commands.Cog):
         description="Staff command. Approves a invitational to be fully opened.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.describe(short_name="The short name of the invitational, such as 'mit'.")
+    @app_commands.describe(
+        short_name="The short name of the invitational, such as 'mit'."
+    )
     async def invitational_approve(
-            self,
-            interaction: discord.Interaction,
-            short_name: str
+        self, interaction: discord.Interaction, short_name: str
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -255,7 +267,7 @@ class StaffInvitational(commands.Cog):
         else:
             await interaction.edit_original_message(
                 content="I found more than one invitational with a matching name. Contact an administrator - "
-                        "something is wrong. "
+                "something is wrong. "
             )
 
     @invitational_status_group.command(
@@ -265,13 +277,15 @@ class StaffInvitational(commands.Cog):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
         short_name="The short name of the invitational you would like to edit, such as 'mit'.",
-        feature_to_edit="The feature you would like to edit about the invitational."
+        feature_to_edit="The feature you would like to edit about the invitational.",
     )
     async def invitational_edit(
-            self,
-            interaction: discord.Interaction,
-            short_name: str,
-            feature_to_edit: Literal["official name", "short name", "emoji", "tournament date"],
+        self,
+        interaction: discord.Interaction,
+        short_name: str,
+        feature_to_edit: Literal[
+            "official name", "short name", "emoji", "tournament date"
+        ],
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -300,12 +314,16 @@ class StaffInvitational(commands.Cog):
             # Send notice to user about editing invitational
             info_message_text = f"{EMOJI_LOADING} Please send the new {feature_to_edit} relevant to the tournament."
             if feature_to_edit == "emoji":
-                info_message_text += "\n\nTo use a custom image as the new emoji for the invitational, please send a " \
-                                     "file that is no larger than 256KB. If you would like to use a new standard " \
-                                     "emoji for the invitational, please send only the new standard emoji. "
+                info_message_text += (
+                    "\n\nTo use a custom image as the new emoji for the invitational, please send a "
+                    "file that is no larger than 256KB. If you would like to use a new standard "
+                    "emoji for the invitational, please send only the new standard emoji. "
+                )
             elif feature_to_edit == "tournament date":
-                info_message_text += "\n\nTo update the tournament date, please send the date formatted as " \
-                                     "YYYY-mm-dd, such as `2022-01-12`. "
+                info_message_text += (
+                    "\n\nTo update the tournament date, please send the date formatted as "
+                    "YYYY-mm-dd, such as `2022-01-12`. "
+                )
             await interaction.edit_original_message(content=info_message_text)
 
             # Ask user for the new content!
@@ -385,15 +403,15 @@ class StaffInvitational(commands.Cog):
                             guild = self.bot.get_guild(guild_id)
                             for emoji in guild.emojis:
                                 if (
-                                        emoji.name
-                                        == f"tournament_{invitational['channel_name']}"
+                                    emoji.name
+                                    == f"tournament_{invitational['channel_name']}"
                                 ):
                                     await emoji.delete(
                                         reason=f"Replaced with alternate emoji by {interaction.user}."
                                     )
                             if (
-                                    len(guild.emojis) < guild.emoji_limit
-                                    and not created_emoji
+                                len(guild.emojis) < guild.emoji_limit
+                                and not created_emoji
                             ):
                                 # The guild can fit more custom emojis
                                 emoji = await guild.create_custom_emoji(
@@ -406,7 +424,7 @@ class StaffInvitational(commands.Cog):
                         if not created_emoji:
                             return await interaction.edit_original_message(
                                 content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot "
-                                        f"administrator will need to add more emoji guilds. "
+                                f"administrator will need to add more emoji guilds. "
                             )
 
                     # User provided standard emoji
@@ -457,9 +475,7 @@ class StaffInvitational(commands.Cog):
         short_name="The short name referring to the invitational, such as 'mit'."
     )
     async def invitational_archive(
-            self,
-            interaction: discord.Interaction,
-            short_name: str
+        self, interaction: discord.Interaction, short_name: str
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -502,9 +518,7 @@ class StaffInvitational(commands.Cog):
         short_name="The short name referring to the invitational, such as 'mit'."
     )
     async def invitational_delete(
-            self,
-            interaction: discord.Interaction,
-            short_name: str
+        self, interaction: discord.Interaction, short_name: str
     ):
         # Check for staff permissions again
         commandchecks.is_staff_from_ctx(interaction)
@@ -538,10 +552,13 @@ class StaffInvitational(commands.Cog):
 
             # Delete the channel and role
             if (
-                    ch and ch.category and ch.category.name in [
-                CATEGORY_ARCHIVE,
-                CATEGORY_TOURNAMENTS,
-            ]
+                ch
+                and ch.category
+                and ch.category.name
+                in [
+                    CATEGORY_ARCHIVE,
+                    CATEGORY_TOURNAMENTS,
+                ]
             ):
                 await ch.delete()
             if r:

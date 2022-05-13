@@ -31,8 +31,8 @@ class Censor(commands.Cog):
 
         # Do not act on messages in staff channels
         if (
-                message.channel.category is not None
-                and message.channel.category.name == CATEGORY_STAFF
+            message.channel.category is not None
+            and message.channel.category.name == CATEGORY_STAFF
         ):
             return
 
@@ -80,10 +80,10 @@ class Censor(commands.Cog):
         Discord invite link.
         """
         if not any(
-                ending for ending in DISCORD_INVITE_ENDINGS if ending in content
+            ending for ending in DISCORD_INVITE_ENDINGS if ending in content
         ) and (
-                len(re.findall("discord.gg", content, re.I)) > 0
-                or len(re.findall("discord.com/invite", content, re.I)) > 0
+            len(re.findall("discord.gg", content, re.I)) > 0
+            or len(re.findall("discord.com/invite", content, re.I)) > 0
         ):
             return True
         return False

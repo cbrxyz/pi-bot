@@ -7,7 +7,7 @@ from typing import Union, TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from src.discord.globals import (CHANNEL_CLOSED_REPORTS, SERVER_ID)
+from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
 
 if TYPE_CHECKING:
@@ -301,14 +301,18 @@ class Reporter(commands.Cog):
 
     async def create_staff_message(self, embed: discord.Embed):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
         await reports_channel.send(embed=embed)
 
     async def create_inappropriate_username_report(
         self, member: Union[discord.Member, discord.User], offending_username: str
     ):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Turn User into Member - if not possible, ignore the report, as no action needs to be taken
         member = guild.get_member(member.id)
@@ -329,7 +333,9 @@ class Reporter(commands.Cog):
 
     async def create_cron_task_report(self, task: dict):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Serialize values
         task["_id"] = str(task["_id"])  # ObjectID is not serializable by default
@@ -356,7 +362,9 @@ class Reporter(commands.Cog):
         self, user: discord.Member, invitational_name: str
     ):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Assemble the embed
         embed = discord.Embed(
@@ -379,7 +387,9 @@ class Reporter(commands.Cog):
         role: discord.Role,
     ):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         embed = discord.Embed(
             title="Invitational Channel Suggested to be Archived",

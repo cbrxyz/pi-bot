@@ -26,10 +26,12 @@ class PiBot(commands.Bot):
             command_prefix=BOT_PREFIX,
             case_insensitive=True,
             intents=intents,
-            help_command=None
+            help_command=None,
         )
         self.http.API_VERSION = 9
-        self.listeners_: Dict[str, Dict[str, Any]] = {}  # name differentiation between internal _listeners attribute
+        self.listeners_: Dict[
+            str, Dict[str, Any]
+        ] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.0.0"
 
     async def setup_hook(self) -> None:
@@ -50,7 +52,7 @@ class PiBot(commands.Bot):
             "src.discord.tasks",
             "src.discord.spam",
             "src.discord.reporter",
-            "src.discord.logger"
+            "src.discord.logger",
         )
         for extension in extensions:
             try:
@@ -74,9 +76,9 @@ class PiBot(commands.Bot):
 
         # Log incoming direct messages
         if (
-                type(message.channel) == discord.DMChannel
-                and message.author not in PI_BOT_IDS
-                and message.author != bot
+            type(message.channel) == discord.DMChannel
+            and message.author not in PI_BOT_IDS
+            and message.author != bot
         ):
             logger_cog: Union[commands.Cog, Logger] = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
@@ -84,9 +86,9 @@ class PiBot(commands.Bot):
         else:
             # Print to output
             if not (
-                    message.author.id in PI_BOT_IDS
-                    and message.channel.name
-                    in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
+                message.author.id in PI_BOT_IDS
+                and message.channel.name
+                in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
             ):
                 # avoid sending logs for messages in log channels
                 print(
@@ -116,7 +118,9 @@ class PiBot(commands.Bot):
         await self.session.close()
         await super().close()
 
-    async def listen_for_response(self, follow_id: int, timeout: int) -> Optional[discord.Message]:
+    async def listen_for_response(
+        self, follow_id: int, timeout: int
+    ) -> Optional[discord.Message]:
         """
         Creates a global listener for a message from a user.
         :param follow_id: the user ID to create the listener for
@@ -124,7 +128,11 @@ class PiBot(commands.Bot):
         :return: the found message or None
         """
         my_id = str(uuid.uuid4())
-        self.listeners_[my_id] = {"follow_id": follow_id, "timeout": timeout, "message": None}
+        self.listeners_[my_id] = {
+            "follow_id": follow_id,
+            "timeout": timeout,
+            "message": None,
+        }
         count = timeout
         while count > 0:
             await asyncio.sleep(1)

@@ -24,13 +24,11 @@ class FunCommands(commands.Cog, name="Fun"):
         print("Initialized Fun cog.")
 
     @app_commands.command(description="Trout slaps yourself or another user!")
-    @app_commands.describe(member="The member to trout slap! If not given, Pi-Bot will trout slap you!")
+    @app_commands.describe(
+        member="The member to trout slap! If not given, Pi-Bot will trout slap you!"
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def trout(
-            self,
-            interaction: discord.Interaction,
-            member: discord.Member
-    ):
+    async def trout(self, interaction: discord.Interaction, member: discord.Member):
         if not member or member == interaction.user:
             member = "themselves"
         else:
@@ -42,23 +40,25 @@ class FunCommands(commands.Cog, name="Fun"):
         await interaction.channel.send("http://gph.is/1URFXN9")
 
     @app_commands.command(description="Gives a treat to yourself or another user!")
-    @app_commands.describe(member="The member to give the treat to! Defaults to yourself!")
+    @app_commands.describe(
+        member="The member to give the treat to! Defaults to yourself!"
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def treat(
-            self,
-            interaction: discord.Interaction,
-            type: Literal[
-                "chocolate bar",
-                "cookie",
-                "ice cream",
-                "pizza",
-                "boba",
-                "a slice of cake",
-                "chips and salsa",
-                "brownie",
-                "cotton candy",
-            ],
-            member: discord.Member = None
+        self,
+        interaction: discord.Interaction,
+        type: Literal[
+            "chocolate bar",
+            "cookie",
+            "ice cream",
+            "pizza",
+            "boba",
+            "a slice of cake",
+            "chips and salsa",
+            "brownie",
+            "cotton candy",
+        ],
+        member: discord.Member = None,
     ):
         snacks = {
             "chocolate bar": {
@@ -248,9 +248,9 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(member="The member to dog bomb!")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def dogbomb(
-            self,
-            interaction: discord.Interaction,
-            member: discord.Member,
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
     ):
         """Dog bombs someone!"""
         async with self.bot.session as session:
@@ -277,11 +277,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.command(description="Shiba bombs another user!")
     @app_commands.describe(member="The member to shiba bomb!")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def shibabomb(
-            self,
-            interaction: discord.Interaction,
-            member: discord.Member
-    ):
+    async def shibabomb(self, interaction: discord.Interaction, member: discord.Member):
         """Shiba bombs a user!"""
         async with self.bot.session as session:
             page = await session.get(f"https://dog.ceo/api/breed/shiba/images/random")
@@ -309,13 +305,9 @@ class FunCommands(commands.Cog, name="Fun"):
     async def magic8ball(self, interaction: discord.Interaction):
         await interaction.response.send_message("Swishing the magic 8 ball...")
         await asyncio.sleep(1)
-        await interaction.edit_original_message(
-            content="Swishing the magic 8 ball.."
-        )
+        await interaction.edit_original_message(content="Swishing the magic 8 ball..")
         await asyncio.sleep(1)
-        await interaction.edit_original_message(
-            content="Swishing the magic 8 ball."
-        )
+        await interaction.edit_original_message(content="Swishing the magic 8 ball.")
         await asyncio.sleep(1)
         sayings = [
             "Yes.",
@@ -342,13 +334,11 @@ class FunCommands(commands.Cog, name="Fun"):
         await interaction.edit_original_message(content=f"**{response}**")
 
     @app_commands.command(description="Gets an xkcd comic!")
-    @app_commands.describe(num="The number of the xkcd comic to get. If not provided, gets a random comic.")
+    @app_commands.describe(
+        num="The number of the xkcd comic to get. If not provided, gets a random comic."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def xkcd(
-            self,
-            interaction: discord.Interaction,
-            num: int = None
-    ):
+    async def xkcd(self, interaction: discord.Interaction, num: int = None):
         async with self.bot.session as session:
             res = await session.get("https://xkcd.com/info.0.json")
         text = await res.text()
@@ -358,9 +348,7 @@ class FunCommands(commands.Cog, name="Fun"):
         if num is None:
             num = random.randrange(1, max_num)
         if 1 <= num <= max_num:
-            return await interaction.response.send_message(
-                f"https://xkcd.com/{num}"
-            )
+            return await interaction.response.send_message(f"https://xkcd.com/{num}")
         else:
             return await interaction.response.send_message(
                 "Invalid attempted number for xkcd."

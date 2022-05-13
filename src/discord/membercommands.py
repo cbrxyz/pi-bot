@@ -13,10 +13,24 @@ from discord.ext import commands
 
 import src.discord.globals
 from commandchecks import is_staff_from_ctx
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_GAMES, CHANNEL_ROLES, CHANNEL_TOURNAMENTS, CHANNEL_UNSELFMUTE,
-                                 ROLE_ALUMNI, ROLE_DIV_A, ROLE_DIV_B, ROLE_DIV_C, ROLE_GAMES, ROLE_LH, ROLE_MR,
-                                 ROLE_SELFMUTE, RULES, SERVER_ID,
-                                 SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_STAFF,
+    CHANNEL_GAMES,
+    CHANNEL_ROLES,
+    CHANNEL_TOURNAMENTS,
+    CHANNEL_UNSELFMUTE,
+    ROLE_ALUMNI,
+    ROLE_DIV_A,
+    ROLE_DIV_B,
+    ROLE_DIV_C,
+    ROLE_GAMES,
+    ROLE_LH,
+    ROLE_MR,
+    ROLE_SELFMUTE,
+    RULES,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.utils import lookup_role
 from src.discord.views import YesNo
 from src.lists import get_state_list
@@ -66,10 +80,9 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(pronouns="The pronoun to add/remove from your account.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def pronouns(
-            self,
-            interaction: discord.Interaction,
-            pronouns: Literal['He / Him / His', 'She / Her / Hers', 'They / Them / Theirs'],
-
+        self,
+        interaction: discord.Interaction,
+        pronouns: Literal["He / Him / His", "She / Her / Hers", "They / Them / Theirs"],
     ):
         """Assigns or removes pronoun roles from a user."""
         member = interaction.user
@@ -86,13 +99,11 @@ class MemberCommands(commands.Cog):
             )
 
     @app_commands.command(description="Gets the profile information for a username.")
-    @app_commands.describe(username="The username to get information about. Defaults to your nickname/username.")
+    @app_commands.describe(
+        username="The username to get information about. Defaults to your nickname/username."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def profile(
-            self,
-            interaction: discord.Interaction,
-            username: str = None
-    ):
+    async def profile(self, interaction: discord.Interaction, username: str = None):
         if username is None:
             username = interaction.user.nick or interaction.user.name
 
@@ -202,9 +213,9 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(div="The division to assign the user with.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def division(
-            self,
-            interaction: discord.Interaction,
-            div: Literal["Division A", "Division B", "Division C", "Alumni", "None"],
+        self,
+        interaction: discord.Interaction,
+        div: Literal["Division A", "Division B", "Division C", "Alumni", "None"],
     ):
         if div != "None":
             await self._assign_div(interaction, div)
@@ -223,9 +234,9 @@ class MemberCommands(commands.Cog):
             )
 
     async def _assign_div(
-            self,
-            interaction: discord.Interaction,
-            div: Literal["Division A", "Division B", "Division C", "Alumni"]
+        self,
+        interaction: discord.Interaction,
+        div: Literal["Division A", "Division B", "Division C", "Alumni"],
     ) -> discord.Role:
         """Assigns a user a div"""
         member = interaction.user
@@ -264,14 +275,14 @@ class MemberCommands(commands.Cog):
             )
             await games_channel.send(f"Please welcome {member.mention} to the party!!")
 
-    @app_commands.command(description="Toggles the visibility of state roles and channels.")
-    @app_commands.describe(states="The states to toggle. For example 'Missouri, Iowa, South Dakota'.")
+    @app_commands.command(
+        description="Toggles the visibility of state roles and channels."
+    )
+    @app_commands.describe(
+        states="The states to toggle. For example 'Missouri, Iowa, South Dakota'."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def states(
-            self,
-            interaction: discord.Interaction,
-            states: str
-    ):
+    async def states(self, interaction: discord.Interaction, states: str):
         """Assigns someone with specific states."""
         new_args = states.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
@@ -369,21 +380,21 @@ class MemberCommands(commands.Cog):
                 added_roles.append(role_name)
         if len(added_roles) > 0 and len(removed_roles) == 0:
             state_res = (
-                    "Added states " + (" ".join([f"`{arg}`" for arg in added_roles])) + "."
+                "Added states " + (" ".join([f"`{arg}`" for arg in added_roles])) + "."
             )
         elif len(removed_roles) > 0 and len(added_roles) == 0:
             state_res = (
-                    "Removed states "
-                    + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                    + "."
+                "Removed states "
+                + (" ".join([f"`{arg}`" for arg in removed_roles]))
+                + "."
             )
         else:
             state_res = (
-                    "Added states "
-                    + (" ".join([f"`{arg}`" for arg in added_roles]))
-                    + ", and removed states "
-                    + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                    + "."
+                "Added states "
+                + (" ".join([f"`{arg}`" for arg in added_roles]))
+                + ", and removed states "
+                + (" ".join([f"`{arg}`" for arg in removed_roles]))
+                + "."
             )
         await interaction.response.send_message(state_res)
 
@@ -391,21 +402,21 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(mute_length="How long to mute yourself for.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def selfmute(
-            self,
-            interaction: discord.Interaction,
-            mute_length: Literal[
-                "10 minutes",
-                "30 minutes",
-                "1 hour",
-                "2 hours",
-                "4 hours",
-                "8 hours",
-                "1 day",
-                "4 days",
-                "7 days",
-                "1 month",
-                "1 year",
-            ]
+        self,
+        interaction: discord.Interaction,
+        mute_length: Literal[
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "4 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+        ],
     ):
         """
         Self mutes the user that invokes the command.
@@ -483,15 +494,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(
         description="Requests a new invitational channel! Note: This request will be sent to staff for approval."
     )
-    @app_commands.describe(invitational="The official name of the invitational you would like to add.")
+    @app_commands.describe(
+        invitational="The official name of the invitational you would like to add."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def request(
-            self,
-            interaction: discord.Interaction,
-            invitational: str
-    ):
+    async def request(self, interaction: discord.Interaction, invitational: str):
         reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
-        await reporter_cog.create_invitational_request_report(interaction.user, invitational)
+        await reporter_cog.create_invitational_request_report(
+            interaction.user, invitational
+        )
         await interaction.response.send_message(
             f"Thanks for the request. Staff will review your request to add an invitational channel for `{invitational}`. In the meantime, please do not make additional requests."
         )
@@ -528,13 +539,15 @@ class MemberCommands(commands.Cog):
     async def invite(self, interaction: discord.Interaction):
         await interaction.response.send_message("https://discord.gg/C9PGV6h")
 
-    @app_commands.command(description="Returns a link to the Scioly.org forums.", )
+    @app_commands.command(
+        description="Returns a link to the Scioly.org forums.",
+    )
     @app_commands.describe(destination="The area of the site to link to.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def link(
-            self,
-            interaction: discord.Interaction,
-            destination: Literal["forums", "exchange", "gallery", "obb", "wiki", "tests"],
+        self,
+        interaction: discord.Interaction,
+        destination: Literal["forums", "exchange", "gallery", "obb", "wiki", "tests"],
     ):
         destination_dict = {
             "forums": "forums",
@@ -542,21 +555,23 @@ class MemberCommands(commands.Cog):
             "tests": "tests",
             "exchange": "tests",
             "gallery": "gallery",
-            "obb": "obb"
+            "obb": "obb",
         }
-        await interaction.response.send_message(f"<https://scioly.org/{destination_dict[destination]}>")
+        await interaction.response.send_message(
+            f"<https://scioly.org/{destination_dict[destination]}>"
+        )
 
     @app_commands.command(description="Returns a random number, inclusively.")
     @app_commands.describe(
         minimum="The minimum number to choose from. Defaults to 0.",
-        maximum="The maximum number to choose from. Defaults to 10."
+        maximum="The maximum number to choose from. Defaults to 10.",
     )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def random(
-            self,
-            interaction: discord.Interaction,
-            minimum: int = 0,
-            maximum: int = 10,
+        self,
+        interaction: discord.Interaction,
+        minimum: int = 0,
+        maximum: int = 10,
     ):
         if minimum > maximum:
             maximum, minimum = minimum, maximum
@@ -570,23 +585,23 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(rule="The rule to cite.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def rule(
-            self,
-            interaction: discord.Interaction,
-            rule: Literal[
-                "Rule #1: Treat all with respect.",
-                "Rule #2: No profanity/inappropriateness.",
-                "Rule #3: Treat delicate subjects carefully.",
-                "Rule #4: Do not spam or flood.",
-                "Rule #5: Avoid excessive pinging.",
-                "Rule #6: Avoid excessive caps.",
-                "Rule #7: No doxxing/name-dropping.",
-                "Rule #8: No witch-hunting.",
-                "Rule #9: No impersonating.",
-                "Rule #10: Do not use alts.",
-                "Rule #11: Do not violate SOINC copyrights.",
-                "Rule #12: No advertising.",
-                "Rule #13: Use good judgement.",
-            ],
+        self,
+        interaction: discord.Interaction,
+        rule: Literal[
+            "Rule #1: Treat all with respect.",
+            "Rule #2: No profanity/inappropriateness.",
+            "Rule #3: Treat delicate subjects carefully.",
+            "Rule #4: Do not spam or flood.",
+            "Rule #5: Avoid excessive pinging.",
+            "Rule #6: Avoid excessive caps.",
+            "Rule #7: No doxxing/name-dropping.",
+            "Rule #8: No witch-hunting.",
+            "Rule #9: No impersonating.",
+            "Rule #10: Do not use alts.",
+            "Rule #11: Do not violate SOINC copyrights.",
+            "Rule #12: No advertising.",
+            "Rule #13: Use good judgement.",
+        ],
     ):
         """Gets a specified rule."""
         num = re.findall(r"Rule #(\d+)", rule)
@@ -658,20 +673,20 @@ class MemberCommands(commands.Cog):
             {
                 "name": "Basic Information",
                 "value": (
-                        f"**Creation Date:** {creation_date}\n"
-                        + f"**ID:** {iden}\n"
-                        + f"**Animated Icon:** {animated_icon}\n"
-                        + f"**Banner URL:** {banner}\n"
-                        + f"**Splash URL:** {splash}\n"
-                        + f"**Discovery Splash URL:** {discovery_splash_url}"
+                    f"**Creation Date:** {creation_date}\n"
+                    + f"**ID:** {iden}\n"
+                    + f"**Animated Icon:** {animated_icon}\n"
+                    + f"**Banner URL:** {banner}\n"
+                    + f"**Splash URL:** {splash}\n"
+                    + f"**Discovery Splash URL:** {discovery_splash_url}"
                 ),
                 "inline": False,
             },
             {
                 "name": "Nitro Information",
                 "value": (
-                        f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n"
-                        + f"**Boosters:** {boosters}"
+                    f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n"
+                    + f"**Boosters:** {boosters}"
                 ),
                 "inline": False,
             },
@@ -682,36 +697,36 @@ class MemberCommands(commands.Cog):
                     {
                         "name": "Staff Information",
                         "value": (
-                                f"**Owner:** {owner}\n"
-                                + f"**MFA Level:** {mfa_level}\n"
-                                + f"**Verification Level:** {verification_level}\n"
-                                + f"**Content Filter:** {content_filter}\n"
-                                + f"**Default Notifications:** {default_notifs}\n"
-                                + f"**Features:** {features}\n"
-                                + f"**Bitrate Limit:** {bitrate_limit}\n"
-                                + f"**Filesize Limit:** {filesize_limit} MB"
+                            f"**Owner:** {owner}\n"
+                            + f"**MFA Level:** {mfa_level}\n"
+                            + f"**Verification Level:** {verification_level}\n"
+                            + f"**Content Filter:** {content_filter}\n"
+                            + f"**Default Notifications:** {default_notifs}\n"
+                            + f"**Features:** {features}\n"
+                            + f"**Bitrate Limit:** {bitrate_limit}\n"
+                            + f"**Filesize Limit:** {filesize_limit} MB"
                         ),
                         "inline": False,
                     },
                     {
                         "name": "Channels",
                         "value": (
-                                f"**Public Updates Channel:** {public_updates_channel}\n"
-                                + f"**System Channel:** {system_channel}\n"
-                                + f"**Rules Channel:** {rules_channel}\n"
-                                + f"**Text Channel Count:** {text_channel_count}\n"
-                                + f"**Voice Channel Count:** {voice_channel_count}\n"
-                                + f"**Category Count:** {category_count}\n"
+                            f"**Public Updates Channel:** {public_updates_channel}\n"
+                            + f"**System Channel:** {system_channel}\n"
+                            + f"**Rules Channel:** {rules_channel}\n"
+                            + f"**Text Channel Count:** {text_channel_count}\n"
+                            + f"**Voice Channel Count:** {voice_channel_count}\n"
+                            + f"**Category Count:** {category_count}\n"
                         ),
                         "inline": False,
                     },
                     {
                         "name": "Limits",
                         "value": (
-                                f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n"
-                                + f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n"
-                                + f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n"
-                                + f"**Roles:** *{role_percentage}%* ({role_count}/250 roles)"
+                            f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n"
+                            + f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n"
+                            + f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n"
+                            + f"**Roles:** *{role_percentage}%* ({role_count}/250 roles)"
                         ),
                         "inline": False,
                     },
@@ -729,13 +744,11 @@ class MemberCommands(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(description="Returns a summary of a wiki page.")
-    @app_commands.describe(page="The name of the page to return a summary about. Correct caps must be used.")
+    @app_commands.describe(
+        page="The name of the page to return a summary about. Correct caps must be used."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def wikisummary(
-            self,
-            interaction: discord.Interaction,
-            page: str
-    ):
+    async def wikisummary(self, interaction: discord.Interaction, page: str):
         command = await implement_command("summary", page)
         if not command:
             await interaction.response.send_message(
@@ -747,11 +760,7 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Searches the wiki for a particular page.")
     @app_commands.describe(term="The term to search for across the wiki.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def wikisearch(
-            self,
-            interaction: discord.Interaction,
-            term: str
-    ):
+    async def wikisearch(self, interaction: discord.Interaction, term: str):
         command = await implement_command("search", term)
         if len(command):
             await interaction.response.send_message(
@@ -765,35 +774,31 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Links to a particular wiki page.")
     @app_commands.describe(page="The wiki page to link to. Correct caps must be used.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def wikilink(
-            self,
-            interaction: discord.Interaction,
-            page: str
-    ):
+    async def wikilink(self, interaction: discord.Interaction, page: str):
         command = await implement_command("link", page)
         if not command:
             await interaction.response.send_message(
                 f"The `{page}` page does not yet exist."
             )
         else:
-            await interaction.response.send_message(
-                f"<{self.wiki_url_fix(command)}>"
-            )
+            await interaction.response.send_message(f"<{self.wiki_url_fix(command)}>")
 
     def wiki_url_fix(self, url):
         return url.replace("%3A", ":").replace(r"%2F", "/")
 
-    @app_commands.command(description="Searches for information on Wikipedia, the free encyclopedia!")
+    @app_commands.command(
+        description="Searches for information on Wikipedia, the free encyclopedia!"
+    )
     @app_commands.describe(
         command="The command to execute.",
-        request="The request to execute the command upon. What to search or summarize, etc."
+        request="The request to execute the command upon. What to search or summarize, etc.",
     )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def wikipedia(
-            self,
-            interaction: discord.Interaction,
-            command: Literal["search", "summary", "link"],
-            request: str
+        self,
+        interaction: discord.Interaction,
+        command: Literal["search", "summary", "link"],
+        request: str,
     ):
         if command == "search":
             return await interaction.response.send_message(
@@ -838,13 +843,11 @@ class MemberCommands(commands.Cog):
                 )
 
     @app_commands.command(description="Toggles event roles.")
-    @app_commands.describe(events="The events to toggle. For example, 'anatomy, astro, wq'.")
+    @app_commands.describe(
+        events="The events to toggle. For example, 'anatomy, astro, wq'."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def events(
-            self,
-            interaction: discord.Interaction,
-            events: str
-    ):
+    async def events(self, interaction: discord.Interaction, events: str):
         """Adds or removes event roles from a user."""
         if len(events) > 100:
             return await interaction.response.send_message(
@@ -914,49 +917,49 @@ class MemberCommands(commands.Cog):
 
         if len(added_roles) > 0 and len(removed_roles) == 0:
             event_res = (
-                    "Added events "
-                    + (" ".join([f"`{arg}`" for arg in added_roles]))
-                    + (
-                        (
-                                ", and could not handle: "
-                                + " ".join([f"`{arg}`" for arg in could_not_handle])
-                        )
-                        if len(could_not_handle)
-                        else ""
+                "Added events "
+                + (" ".join([f"`{arg}`" for arg in added_roles]))
+                + (
+                    (
+                        ", and could not handle: "
+                        + " ".join([f"`{arg}`" for arg in could_not_handle])
                     )
-                    + "."
+                    if len(could_not_handle)
+                    else ""
+                )
+                + "."
             )
         elif len(removed_roles) > 0 and len(added_roles) == 0:
             event_res = (
-                    "Removed events "
-                    + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                    + (
-                        (
-                                ", and could not handle: "
-                                + " ".join([f"`{arg}`" for arg in could_not_handle])
-                        )
-                        if len(could_not_handle)
-                        else ""
+                "Removed events "
+                + (" ".join([f"`{arg}`" for arg in removed_roles]))
+                + (
+                    (
+                        ", and could not handle: "
+                        + " ".join([f"`{arg}`" for arg in could_not_handle])
                     )
-                    + "."
+                    if len(could_not_handle)
+                    else ""
+                )
+                + "."
             )
         else:
             event_res = (
-                    "Added events "
-                    + (" ".join([f"`{arg}`" for arg in added_roles]))
-                    + ", "
-                    + ("and " if not len(could_not_handle) else "")
-                    + "removed events "
-                    + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                    + (
-                        (
-                                ", and could not handle: "
-                                + " ".join([f"`{arg}`" for arg in could_not_handle])
-                        )
-                        if len(could_not_handle)
-                        else ""
+                "Added events "
+                + (" ".join([f"`{arg}`" for arg in added_roles]))
+                + ", "
+                + ("and " if not len(could_not_handle) else "")
+                + "removed events "
+                + (" ".join([f"`{arg}`" for arg in removed_roles]))
+                + (
+                    (
+                        ", and could not handle: "
+                        + " ".join([f"`{arg}`" for arg in could_not_handle])
                     )
-                    + "."
+                    if len(could_not_handle)
+                    else ""
+                )
+                + "."
             )
 
         await interaction.response.send_message(event_res)
@@ -964,9 +967,7 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def tag(
-            self, interaction: discord.Interaction, tag_name: str
-    ):
+    async def tag(self, interaction: discord.Interaction, tag_name: str):
         member = interaction.user
 
         if not len(src.discord.globals.TAGS):
@@ -981,20 +982,17 @@ class MemberCommands(commands.Cog):
         for t in src.discord.globals.TAGS:
             if t["name"] == tag_name:
                 if (
-                        staff
-                        or (t["permissions"]["launch_helpers"] and lh_role in member.roles)
-                        or (t["permissions"]["members"] and member_role in member.roles)
+                    staff
+                    or (t["permissions"]["launch_helpers"] and lh_role in member.roles)
+                    or (t["permissions"]["members"] and member_role in member.roles)
                 ):
-                    return await interaction.response.send_message(
-                        content=t["output"]
-                    )
+                    return await interaction.response.send_message(content=t["output"])
                 else:
                     return await interaction.response.send_message(
                         content="Unfortunately, you do not have the permissions for this tag."
                     )
 
         return await interaction.response.send_message("Tag not found.")
-
 
 async def setup(bot: PiBot):
     await bot.add_cog(MemberCommands(bot))

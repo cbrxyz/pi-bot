@@ -13,13 +13,13 @@ async def is_bear(ctx) -> bool:
         bool: Whether the check is valid.
     """
     return (
-            ctx.message.author.id == 353730886577160203
-            or ctx.message.author.id == 715048392408956950
+        ctx.message.author.id == 353730886577160203
+        or ctx.message.author.id == 715048392408956950
     )
 
 
 def is_staff_from_ctx(
-        ctx: Union[commands.Context, discord.Interaction], no_raise=False
+    ctx: Union[commands.Context, discord.Interaction], no_raise=False
 ) -> bool:
     """
     Checks to see whether the user is a staff member from the provided context.

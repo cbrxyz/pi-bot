@@ -24,12 +24,7 @@ import commandchecks
 
 class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
     def __init__(
-            self,
-            view: 'EmbedFieldManagerView',
-            bot: PiBot,
-            name,
-            raw_name,
-            status
+        self, view: "EmbedFieldManagerView", bot: PiBot, name, raw_name, status
     ):
         self.field_manager_view = view
         self.name = name
@@ -50,8 +45,8 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
 
         if self.raw_name == "complete":
             if not (
-                    "name" in self.field_manager_view.field
-                    and "value" in self.field_manager_view.field
+                "name" in self.field_manager_view.field
+                and "value" in self.field_manager_view.field
             ):
                 help_message = await self.field_manager_view.channel.send(
                     "This field can not yet be completed, because you haven't defined both the field name and value."
@@ -141,16 +136,22 @@ class EmbedFieldManagerView(discord.ui.View):
             self.field = fields[index]
 
         if "name" in self.field:
-            self.add_item(EmbedFieldManagerButton(self, self.bot, "Name", "name", status="edit"))
+            self.add_item(
+                EmbedFieldManagerButton(self, self.bot, "Name", "name", status="edit")
+            )
         else:
-            self.add_item(EmbedFieldManagerButton(self, self.bot, "Name", "name", status="add"))
+            self.add_item(
+                EmbedFieldManagerButton(self, self.bot, "Name", "name", status="add")
+            )
 
         if "value" in self.field:
             self.add_item(
                 EmbedFieldManagerButton(self, self.bot, "Value", "value", status="edit")
             )
         else:
-            self.add_item(EmbedFieldManagerButton(self, self.bot, "Value", "value", status="add"))
+            self.add_item(
+                EmbedFieldManagerButton(self, self.bot, "Value", "value", status="add")
+            )
 
         if "inline" not in self.field:
             self.field["inline"] = False
@@ -165,24 +166,26 @@ class EmbedFieldManagerView(discord.ui.View):
             )
         )
         self.add_item(
-            EmbedFieldManagerButton(self, self.bot, "Complete", "complete", status="complete")
+            EmbedFieldManagerButton(
+                self, self.bot, "Complete", "complete", status="complete"
+            )
         )
 
 
 class EmbedButton(discord.ui.Button["EmbedView"]):
     def __init__(
-            self,
-            view: 'EmbedView',
-            bot: PiBot,
-            text: str,
-            style: discord.ButtonStyle,
-            row: int,
-            update_value,
-            help_message=""
+        self,
+        view: "EmbedView",
+        bot: PiBot,
+        text: str,
+        style: discord.ButtonStyle,
+        row: int,
+        update_value,
+        help_message="",
     ):
         super().__init__(label=text, style=style, row=row)
         self.bot = bot
-        self.embed_view: 'EmbedView' = view
+        self.embed_view: "EmbedView" = view
         self.update_value = update_value
         self.help_message = help_message
 
@@ -206,10 +209,10 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             return
 
         if self.update_value in ["author_icon", "author_url"] and not any(
-                [
-                    value in self.embed_view.embed_dict
-                    for value in ["author_name", "authorName"]
-                ]
+            [
+                value in self.embed_view.embed_dict
+                for value in ["author_name", "authorName"]
+            ]
         ):
             help_message = await self.embed_view.channel.send(
                 "You can not set the author URL/icon without first setting the author name."
@@ -228,8 +231,8 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
 
         if self.update_value == "add_field":
             if (
-                    "fields" in self.embed_view.embed_dict
-                    and len(self.embed_view.embed_dict["fields"]) == 25
+                "fields" in self.embed_view.embed_dict
+                and len(self.embed_view.embed_dict["fields"]) == 25
             ):
                 help_message = await self.embed_view.channel.send(
                     "You can't have more than 25 embed fields! Don't be so selfish, keeping all of the embed fields "
@@ -248,7 +251,7 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         if self.update_value in ["edit_field", "remove_field"]:
             # Check to see if any fields actually exist
             if "fields" not in self.embed_view.embed_dict or not len(
-                    self.embed_view.embed_dict["fields"]
+                self.embed_view.embed_dict["fields"]
             ):
                 await self.embed_view.channel.send(
                     "It appears no fields exist in the embed currently."
@@ -338,7 +341,7 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
                 return
 
         if self.update_value == "color" and not len(
-                re.findall(r"#[0-9a-f]{6}", response_message.content.lower())
+            re.findall(r"#[0-9a-f]{6}", response_message.content.lower())
         ):
             help_message = await self.embed_view.channel.send(
                 f"The color you provide must be a hex code. For example, `#abbb02` or `#222ddd`."
@@ -433,11 +436,11 @@ class EmbedView(discord.ui.View):
         ]
         for association in associations:
             if len(
-                    [
-                        dict_value
-                        for dict_value in association["dict_values"]
-                        if dict_value in embed_dict
-                    ]
+                [
+                    dict_value
+                    for dict_value in association["dict_values"]
+                    if dict_value in embed_dict
+                ]
             ):
                 button = EmbedButton(
                     self,
@@ -463,29 +466,46 @@ class EmbedView(discord.ui.View):
 
         # Field operations
         self.add_item(
-            EmbedButton(self, self.bot, "Add Field", discord.ButtonStyle.green, 3, "add_field")
-        )
-        self.add_item(
-            EmbedButton(self, self.bot, "Edit Fields", discord.ButtonStyle.gray, 3, "edit_field")
+            EmbedButton(
+                self, self.bot, "Add Field", discord.ButtonStyle.green, 3, "add_field"
+            )
         )
         self.add_item(
             EmbedButton(
-                self, self.bot, "Remove Field", discord.ButtonStyle.danger, 3, "remove_field"
+                self, self.bot, "Edit Fields", discord.ButtonStyle.gray, 3, "edit_field"
+            )
+        )
+        self.add_item(
+            EmbedButton(
+                self,
+                self.bot,
+                "Remove Field",
+                discord.ButtonStyle.danger,
+                3,
+                "remove_field",
             )
         )
 
         # Add complete operation
         self.add_item(
-            EmbedButton(self, self.bot, "Complete", discord.ButtonStyle.green, 4, "complete")
+            EmbedButton(
+                self, self.bot, "Complete", discord.ButtonStyle.green, 4, "complete"
+            )
         )
         self.add_item(
-            EmbedButton(self, self.bot, "Abort", discord.ButtonStyle.danger, 4, "cancel")
+            EmbedButton(
+                self, self.bot, "Abort", discord.ButtonStyle.danger, 4, "cancel"
+            )
         )
         self.add_item(
-            EmbedButton(self, self.bot, "Import", discord.ButtonStyle.blurple, 4, "import")
+            EmbedButton(
+                self, self.bot, "Import", discord.ButtonStyle.blurple, 4, "import"
+            )
         )
         self.add_item(
-            EmbedButton(self, self.bot, "Export", discord.ButtonStyle.blurple, 4, "export")
+            EmbedButton(
+                self, self.bot, "Export", discord.ButtonStyle.blurple, 4, "export"
+            )
         )
 
 
@@ -611,19 +631,21 @@ class EmbedCommands(commands.Cog):
         self.bot = bot
         print("Initialized embed cog.")
 
-    @app_commands.command(description="Staff command. Assembles an embed in a particular channel.")
+    @app_commands.command(
+        description="Staff command. Assembles an embed in a particular channel."
+    )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(
         channel="The channel to send the message to. If editing an embed, the message's channel.",
-        message_id="The ID of the message to edit the embed of."
+        message_id="The ID of the message to edit the embed of.",
     )
     @app_commands.default_permissions(manage_messages=True)
     async def prepembed(
-            self,
-            interaction: discord.Interaction,
-            channel: discord.TextChannel,
-            message_id: str = None
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        message_id: str = None,
     ):
         """Helps to create an embed to be sent to a channel."""
         # Check for staff permissions
@@ -683,7 +705,7 @@ class EmbedCommands(commands.Cog):
 
                 elif isinstance(view, EmbedView):
                     if any(
-                            key in view.embed_update for key in ["add_field", "edit_field"]
+                        key in view.embed_update for key in ["add_field", "edit_field"]
                     ):
                         # Switch to field manager mode
                         embed_field_manager = True
@@ -716,9 +738,9 @@ class EmbedCommands(commands.Cog):
                             return
 
                         if (
-                                not len(file_message.attachments)
-                                or file_message.attachments[0].content_type
-                                != "application/json"
+                            not len(file_message.attachments)
+                            or file_message.attachments[0].content_type
+                            != "application/json"
                         ):
                             await interaction.edit_original_message(
                                 content="I couldn't find a `.json` attachment on your message. Opertion aborted."
@@ -731,7 +753,9 @@ class EmbedCommands(commands.Cog):
 
                         if "author" in jso:
                             jso["author_name"] = interaction.user.name
-                            jso["author_icon"] = interaction.user.avatar_url_as(format="jpg")
+                            jso["author_icon"] = interaction.user.avatar_url_as(
+                                format="jpg"
+                            )
 
                         embed_dict = jso
 
@@ -742,7 +766,7 @@ class EmbedCommands(commands.Cog):
 
                         await interaction.edit_original_message(
                             content="Here is the exported embed! The embed creator will return in approximately 15 "
-                                    "seconds.",
+                            "seconds.",
                             embed=None,
                             view=None,
                         )
@@ -766,15 +790,15 @@ class EmbedCommands(commands.Cog):
                     ]
                     for removal in easy_removes:
                         if (
-                                removal in view.embed_update
-                                and view.embed_update[removal] == "remove"
+                            removal in view.embed_update
+                            and view.embed_update[removal] == "remove"
                         ):
                             del embed_dict[removal]
                             removed = True
 
                     if (
-                            "author_name" in view.embed_update
-                            and view.embed_update["author_name"] == "remove"
+                        "author_name" in view.embed_update
+                        and view.embed_update["author_name"] == "remove"
                     ):
                         del embed_dict["author_name"]
                         del embed_dict["author_url"]
@@ -782,8 +806,8 @@ class EmbedCommands(commands.Cog):
                         removed = True
 
                     if not removed and not any(
-                            key in view.embed_update
-                            for key in ["add_field", "edit_field", "import", "export"]
+                        key in view.embed_update
+                        for key in ["add_field", "edit_field", "import", "export"]
                     ):
                         # If just removed, don't actually set the value to 'remove'
                         # Or, if attempting to add/edit fields
@@ -793,7 +817,7 @@ class EmbedCommands(commands.Cog):
                 if view.stopped_status == "failed":
                     await interaction.edit_original_message(
                         content="An error has occurred. You may not have responded to my query in 2 minutes, or your "
-                                "message may not have been formatted correctly. Operation cancelled.",
+                        "message may not have been formatted correctly. Operation cancelled.",
                         embed=None,
                         view=None,
                     )

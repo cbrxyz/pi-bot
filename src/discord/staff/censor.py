@@ -8,7 +8,12 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
-from src.discord.globals import EMOJI_LOADING, ROLE_STAFF, ROLE_VIP, SLASH_COMMAND_GUILDS
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SLASH_COMMAND_GUILDS,
+)
 from src.mongo.mongo import update
 
 if TYPE_CHECKING:
@@ -19,12 +24,12 @@ class StaffCensor(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized staff censor cog.")
-        
+
     censor_group = app_commands.Group(
         name="censor",
         description="Controls Pi-Bot's censor.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        default_permissions=discord.Permissions(manage_messages=True)
+        default_permissions=discord.Permissions(manage_messages=True),
     )
 
     @censor_group.command(
@@ -33,13 +38,13 @@ class StaffCensor(commands.Cog):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
         censor_type="Whether to add a new word or emoji to the list.",
-        phrase="The new word or emoji to add. For a new word, type the word. For a new emoji, send the emoji."
+        phrase="The new word or emoji to add. For a new word, type the word. For a new emoji, send the emoji.",
     )
     async def censor_add(
         self,
         interaction: discord.Interaction,
         censor_type: Literal["word", "emoji"],
-        phrase: str
+        phrase: str,
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -92,13 +97,13 @@ class StaffCensor(commands.Cog):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
         censor_type="Whether to remove a word or emoji.",
-        phrase="The word or emoji to remove from the censor list."
+        phrase="The word or emoji to remove from the censor list.",
     )
     async def censor_remove(
         self,
         interaction: discord.Interaction,
         censor_type: Literal["word", "emoji"],
-        phrase: str
+        phrase: str,
     ):
         # Check for staff permissions again
         commandchecks.is_staff_from_ctx(interaction)

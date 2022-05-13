@@ -25,9 +25,7 @@ class DevCommands(commands.Cog):
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(channel="The channel to get the ID of.")
     async def getchannelid(
-            self,
-            interaction: discord.Interaction,
-            channel: discord.TextChannel = None
+        self, interaction: discord.Interaction, channel: discord.TextChannel = None
     ):
         """
         Gets the channel ID of the requested channel. If no channel is explicitly
@@ -40,16 +38,12 @@ class DevCommands(commands.Cog):
             # If no channel was specified, assume the user is referring to the current channel
             channel = interaction.channel
 
-        await interaction.response.send_message(
-            f"{channel.mention}: `{channel.id}`"
-        )
+        await interaction.response.send_message(f"{channel.mention}: `{channel.id}`")
 
     @app_commands.command(description="Returns the ID ")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(emoji="The emoji to get the ID of.")
-    async def getemojiid(
-            self, interaction: discord.Interaction, emoji: str
-    ):
+    async def getemojiid(self, interaction: discord.Interaction, emoji: str):
         """
         Gets the ID of the given emoji.
 
@@ -62,9 +56,9 @@ class DevCommands(commands.Cog):
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(name="The name of the role to get the ID of.")
     async def getroleid(
-            self,
-            interaction: discord.Interaction,
-            name: str,
+        self,
+        interaction: discord.Interaction,
+        name: str,
     ):
         """
         Get the ID of the given role name.
@@ -74,9 +68,7 @@ class DevCommands(commands.Cog):
         """
         role = discord.utils.get(interaction.guild.roles, name=name)
         if role is not None:
-            await interaction.response.send_message(
-                f"{str(role)}: `{role.mention}`"
-            )
+            await interaction.response.send_message(f"{str(role)}: `{role.mention}`")
         else:
             await interaction.response.send_message(
                 f"No role named `{name}` was found."
@@ -86,9 +78,7 @@ class DevCommands(commands.Cog):
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(member="The member to get the ID of.")
     async def getuserid(
-            self,
-            interaction: discord.Interaction,
-            member: discord.Member = None
+        self, interaction: discord.Interaction, member: discord.Member = None
     ):
         """
         Gets the member ID of the author or another member.

@@ -9,8 +9,18 @@ from discord.ext import commands, tasks
 
 import src.discord.globals
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import (delete, get_censor, get_cron, get_events, get_pings, get_reports, get_settings, get_tags,
-                             insert, update)
+from src.mongo.mongo import (
+    delete,
+    get_censor,
+    get_cron,
+    get_events,
+    get_pings,
+    get_reports,
+    get_settings,
+    get_tags,
+    insert,
+    update,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -67,7 +77,9 @@ class CronTasks(commands.Cog):
         """
         await delete("data", "cron", doc_id)
 
-    async def schedule_unban(self, user: Union[discord.Member, discord.User], time: datetime.datetime) -> None:
+    async def schedule_unban(
+        self, user: Union[discord.Member, discord.User], time: datetime.datetime
+    ) -> None:
         """
         Schedules for a particular Discord user to be unbanned at a particular time.
         """
@@ -182,7 +194,9 @@ class CronTasks(commands.Cog):
                         reporter_cog = self.bot.get_cog("Reporter")
                         await reporter_cog.create_cron_task_report(task)
                 except Exception as _:
-                    reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
+                    reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog(
+                        "Reporter"
+                    )
                     await reporter_cog.create_cron_task_report(task)
 
     async def cron_handle_unban(self, task: dict):

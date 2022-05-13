@@ -12,12 +12,34 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
-from src.discord.globals import CATEGORY_GENERAL, CATEGORY_SO, CATEGORY_STATES, CATEGORY_TOURNAMENTS, CHANNEL_WELCOME, \
-    EMOJI_LOADING, INVITATIONAL_INFO, PI_BOT_IDS, ROLE_AD, ROLE_ALL_STATES, ROLE_AT, ROLE_BT, ROLE_GAMES, ROLE_GM, \
-    ROLE_MR, ROLE_MUTED, ROLE_QUARANTINE, ROLE_SELFMUTE, ROLE_STAFF, ROLE_UC, ROLE_VIP, ROLE_WM, SERVER_ID, \
-    SLASH_COMMAND_GUILDS
+from src.discord.globals import (
+    CATEGORY_GENERAL,
+    CATEGORY_SO,
+    CATEGORY_STATES,
+    CATEGORY_TOURNAMENTS,
+    CHANNEL_WELCOME,
+    EMOJI_LOADING,
+    INVITATIONAL_INFO,
+    PI_BOT_IDS,
+    ROLE_AD,
+    ROLE_ALL_STATES,
+    ROLE_AT,
+    ROLE_BT,
+    ROLE_GAMES,
+    ROLE_GM,
+    ROLE_MR,
+    ROLE_MUTED,
+    ROLE_QUARANTINE,
+    ROLE_SELFMUTE,
+    ROLE_STAFF,
+    ROLE_UC,
+    ROLE_VIP,
+    ROLE_WM,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import (delete_by, get_cron, get_pings, remove_doc)
+from src.mongo.mongo import delete_by, get_cron, get_pings, remove_doc
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -32,7 +54,7 @@ class SlowMode(app_commands.Group):
             name="slowmode",
             description="Manages slowmode for a channel.",
             default_permissions=discord.Permissions(manage_channels=True),
-            guild_ids=[SLASH_COMMAND_GUILDS]
+            guild_ids=[SLASH_COMMAND_GUILDS],
         )
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -43,19 +65,18 @@ class SlowMode(app_commands.Group):
     )
     @app_commands.describe(
         delay="Optional. How long the slowmode delay should be, in seconds. If none, assumed to be 20 seconds.",
-        channel="Optional. The channel to enable the slowmode in. If none, assumed in the current channel."
+        channel="Optional. The channel to enable the slowmode in. If none, assumed in the current channel.",
     )
     async def slowmode_set(
-            self,
-            interaction,
-            delay: int = 20,
-            channel: discord.TextChannel = None
+        self, interaction, delay: int = 20, channel: discord.TextChannel = None
     ):
         commandchecks.is_staff_from_ctx(interaction)
 
         channel = channel or interaction.channel
         await channel.edit(slowmode_delay=delay)
-        await interaction.response.send_message(f"Enabled a slowmode delay of {delay} seconds.")
+        await interaction.response.send_message(
+            f"Enabled a slowmode delay of {delay} seconds."
+        )
 
     @app_commands.command(
         name="remove", description="Removes the slowmode set on a given channel."
@@ -64,9 +85,7 @@ class SlowMode(app_commands.Group):
         channel="Optional. The channel to enable the slowmode in. If none, assumed in the current channel."
     )
     async def slowmode_remove(
-            self,
-            interaction: discord.Interaction,
-            channel: discord.TextChannel = None
+        self, interaction: discord.Interaction, channel: discord.TextChannel = None
     ):
         """
         Removes the slowmode set on a particular channel.
@@ -75,7 +94,9 @@ class SlowMode(app_commands.Group):
 
         channel = channel or interaction.channel
         await channel.edit(slowmode_delay=0)
-        await interaction.response.send_message(f"Removed the slowmode delay in {channel.mention}.")
+        await interaction.response.send_message(
+            f"Removed the slowmode delay in {channel.mention}."
+        )
 
 
 class Confirm(discord.ui.View):
@@ -87,7 +108,7 @@ class Confirm(discord.ui.View):
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.red)
     async def confirm(
-            self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         if interaction.user == self.author:
             await interaction.response.edit_message(
@@ -117,7 +138,7 @@ class Confirm(discord.ui.View):
             )
 
 
-class NukeStopButton(discord.ui.Button['Nuke']):
+class NukeStopButton(discord.ui.Button["Nuke"]):
     def __init__(self, nuke):
         super().__init__(label="ABORT", style=discord.ButtonStyle.danger)
         self.nuke = nuke
@@ -154,7 +175,7 @@ class CronConfirm(discord.ui.View):
 
     @discord.ui.button(label="Remove", style=discord.ButtonStyle.danger)
     async def remove_button(
-            self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         await remove_doc("data", "cron", self.doc["_id"])
         await interaction.response.edit_message(
@@ -164,7 +185,7 @@ class CronConfirm(discord.ui.View):
 
     @discord.ui.button(label="Complete Now", style=discord.ButtonStyle.green)
     async def complete_button(
-            self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         server = self.bot.get_guild(SERVER_ID)
         if self.doc["type"] == "UNBAN":
@@ -193,7 +214,7 @@ class CronConfirm(discord.ui.View):
             if member is None:
                 return await interaction.response.edit_message(
                     content="The user is no longer in the server, so I was not able to unmute them. The task remains "
-                            "in the CRON list in case the user rejoins the server.",
+                    "in the CRON list in case the user rejoins the server.",
                     view=None,
                 )
             else:
@@ -283,13 +304,15 @@ class CronView(discord.ui.View):
 class StaffEssential(StaffCommands):
     def __init__(self, bot: PiBot):
         super().__init__(bot)
-        self.__cog_app_commands__.append(SlowMode(bot))  # Manually add the slowmode group to this cog
+        self.__cog_app_commands__.append(
+            SlowMode(bot)
+        )  # Manually add the slowmode group to this cog
 
     async def _confirm_core(
-            self,
-            interaction: discord.Interaction,
-            channel: discord.TextChannel,
-            member: discord.Member,
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        member: discord.Member,
     ) -> bool:
         """
         Core method responsible for confirming users. Called by /confirm and the
@@ -323,9 +346,9 @@ class StaffEssential(StaffCommands):
         await member.add_roles(role2)
         await channel.purge(
             check=lambda m: (
-                    (m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned)
-                    or (m.author == member and not m.embeds)
-                    or (member in m.mentions)
+                (m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned)
+                or (m.author == member and not m.embeds)
+                or (member in m.mentions)
             )
         )  # Assuming first message is pinned (usually is in several cases)
         return True
@@ -337,9 +360,7 @@ class StaffEssential(StaffCommands):
     @app_commands.default_permissions(manage_roles=True)
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(member="The member to confirm.")
-    async def confirm(
-            self, interaction: discord.Interaction, member: discord.Member
-    ):
+    async def confirm(self, interaction: discord.Interaction, member: discord.Member):
         """Allows a staff member to confirm a user."""
         channel = interaction.channel
         if channel.name != CHANNEL_WELCOME:
@@ -359,7 +380,7 @@ class StaffEssential(StaffCommands):
         if response:
             await interaction.edit_original_message(
                 content=f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other "
-                        f"channels and send messages in them. :tada: "
+                f"channels and send messages in them. :tada: "
             )
 
     @app_commands.context_menu(name="Confirm User")
@@ -379,7 +400,7 @@ class StaffEssential(StaffCommands):
         if response:
             await interaction.edit_original_message(
                 content=f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other "
-                        f"channels and send messages in them. :tada: "
+                f"channels and send messages in them. :tada: "
             )
 
     @app_commands.command(
@@ -389,11 +410,7 @@ class StaffEssential(StaffCommands):
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.describe(count="The amount of messages to nuke.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def nuke(
-            self,
-            interaction,
-            count: app_commands.Range[int, 1, 100]
-    ):
+    async def nuke(self, interaction, count: app_commands.Range[int, 1, 100]):
         """
         Nukes (deletes) a specified amount of messages in a channel.
         """
@@ -433,9 +450,7 @@ class StaffEssential(StaffCommands):
         original_shown_embed.description = f"""
         Now nuking {count} messages from the channel...
         """
-        await interaction.edit_original_message(
-            embed=original_shown_embed, view=None
-        )
+        await interaction.edit_original_message(embed=original_shown_embed, view=None)
 
         def nuke_check(msg: discord.Message):
             return not len(msg.components) and not msg.pinned
@@ -450,14 +465,14 @@ class StaffEssential(StaffCommands):
     @app_commands.describe(
         member="The user to kick from the server.",
         reason="The reason to kick the member for.",
-        quiet="Whether to DM the user that they have been kicked. Defaults to no."
+        quiet="Whether to DM the user that they have been kicked. Defaults to no.",
     )
     async def kick(
-            self,
-            interaction,
-            member: discord.Member,
-            reason: str,
-            quiet: Literal["yes", "no"] = "no"
+        self,
+        interaction,
+        member: discord.Member,
+        reason: str,
+        quiet: Literal["yes", "no"] = "no",
     ):
         """Kicks a member for the specified reason."""
         # Verify the caller is a staff member.
@@ -557,7 +572,8 @@ class StaffEssential(StaffCommands):
         )
 
         view = Confirm(
-            interaction.user, "The unmute operation was cancelled. The user remains muted."
+            interaction.user,
+            "The unmute operation was cancelled. The user remains muted.",
         )
         await interaction.response.send_message(
             "Please confirm that you would like to unmute this user.",
@@ -582,7 +598,7 @@ class StaffEssential(StaffCommands):
         else:
             await interaction.edit_original_message(
                 content="The user was not unmuted because of an error. They remain muted. Please contact a bot "
-                        "developer about this issue.",
+                "developer about this issue.",
                 embed=None,
                 view=None,
             )
@@ -598,28 +614,28 @@ class StaffEssential(StaffCommands):
         reason="The reason to ban the user for.",
         ban_length="How long to ban the user for.",
         quiet="Avoids sending an informative DM to the user upon their ban. Defaults to no (default sends the DM).",
-        delete_days="The days worth of messages to delete from this user. Defaults to 0."
+        delete_days="The days worth of messages to delete from this user. Defaults to 0.",
     )
     async def ban(
-            self,
-            interaction: discord.Interaction,
-            member: discord.Member,
-            reason: str,
-            ban_length: Literal[
-                "10 minutes",
-                "30 minutes",
-                "1 hour",
-                "2 hours",
-                "8 hours",
-                "1 day",
-                "4 days",
-                "7 days",
-                "1 month",
-                "1 year",
-                "Indefinitely",
-            ],
-            quiet: Literal["yes", "no"] = "no",
-            delete_days: app_commands.Range[int, 0, 7] = 0
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        reason: str,
+        ban_length: Literal[
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+            "Indefinitely",
+        ],
+        quiet: Literal["yes", "no"] = "no",
+        delete_days: app_commands.Range[int, 0, 7] = 0,
     ):
         """Bans a user."""
         # Check for staff permissions
@@ -660,7 +676,8 @@ class StaffEssential(StaffCommands):
 
         # Show view to staff member
         view = Confirm(
-            interaction.user, "The ban operation was cancelled. They remain in the server."
+            interaction.user,
+            "The ban operation was cancelled. They remain in the server.",
         )
         await interaction.response.send_message(
             "Please confirm that you would like to ban this user.",
@@ -696,7 +713,9 @@ class StaffEssential(StaffCommands):
                 pass
 
         if ban_length != "Indefinitely":
-            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog(
+                "CronTasks"
+            )
             await cron_tasks_cog.schedule_unban(member, times[ban_length])
 
         # Test
@@ -721,27 +740,27 @@ class StaffEssential(StaffCommands):
         member="The user to mute.",
         reason="The reason to mute the user.",
         mute_length="How long to mute the user for.",
-        quiet="Does not DM the user upon mute. Defaults to no."
+        quiet="Does not DM the user upon mute. Defaults to no.",
     )
     async def mute(
-            self,
-            interaction,
-            member: discord.Member,
-            reason: str,
-            mute_length: Literal[
-                "10 minutes",
-                "30 minutes",
-                "1 hour",
-                "2 hours",
-                "8 hours",
-                "1 day",
-                "4 days",
-                "7 days",
-                "1 month",
-                "1 year",
-                "Indefinitely",
-            ],
-            quiet: Literal["yes", "no"] = "no",
+        self,
+        interaction,
+        member: discord.Member,
+        reason: str,
+        mute_length: Literal[
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+            "Indefinitely",
+        ],
+        quiet: Literal["yes", "no"] = "no",
     ):
         """
         Mutes a user.
@@ -814,7 +833,9 @@ class StaffEssential(StaffCommands):
                 pass
 
         if mute_length != "Indefinitely":
-            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog(
+                "CronTasks"
+            )
             await cron_tasks_cog.schedule_unmute(member, times[mute_length])
 
         # Test
@@ -882,12 +903,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         server = interaction.user.guild
         if (
-                interaction.channel.category
-                and interaction.channel.category.name == CATEGORY_TOURNAMENTS
+            interaction.channel.category
+            and interaction.channel.category.name == CATEGORY_TOURNAMENTS
         ):
             # Handle for tournament channels
 
-            test_vc = discord.utils.get(server.voice_channels, name=interaction.channel.name)
+            test_vc = discord.utils.get(
+                server.voice_channels, name=interaction.channel.name
+            )
             if not test_vc:
                 # Voice channel needs to be opened
                 await interaction.response.send_message(
@@ -917,12 +940,18 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
-                return await interaction.response.send_message("Closed the voice channel.")
+                return await interaction.response.send_message(
+                    "Closed the voice channel."
+                )
 
-        elif interaction.channel and interaction.channel.category.name == CATEGORY_STATES:
+        elif (
+            interaction.channel and interaction.channel.category.name == CATEGORY_STATES
+        ):
             # Handle for state channels
 
-            test_vc = discord.utils.get(server.voice_channels, name=interaction.channel.name)
+            test_vc = discord.utils.get(
+                server.voice_channels, name=interaction.channel.name
+            )
             if not test_vc:
                 # Voice channel does not currently exist
                 await interaction.response.send_message(
@@ -1000,7 +1029,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                             category=current_cat, position=1000
                         )
 
-                return await interaction.response.send_message("Closed the voice channel.")
+                return await interaction.response.send_message(
+                    "Closed the voice channel."
+                )
         elif interaction.channel.name == "games":
             # Support for opening a voice channel for #games
 
@@ -1031,7 +1062,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             else:
                 # Voice channel needs to be closed
                 await test_vc.delete()
-                return await interaction.response.send_message("Closed the voice channel.")
+                return await interaction.response.send_message(
+                    "Closed the voice channel."
+                )
         else:
             return await interaction.response.send_message(
                 "Apologies... voice channels can currently be opened for tournament channels and the games channel."
@@ -1136,8 +1169,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         # Update permissions
         if (
-                channel.category.name == CATEGORY_SO
-                or channel.category.name == CATEGORY_GENERAL
+            channel.category.name == CATEGORY_SO
+            or channel.category.name == CATEGORY_GENERAL
         ):
             await interaction.edit_original_message(
                 content="Synced permissions with channel category."
@@ -1186,7 +1219,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         """Runs Pi-Bot's Most Edits Table"""
         commandchecks.is_staff_from_ctx(interaction)
 
-        await interaction.response.send_message(f"{EMOJI_LOADING} Generating the Most Edits Table...")
+        await interaction.response.send_message(
+            f"{EMOJI_LOADING} Generating the Most Edits Table..."
+        )
         res = await run_table()
         print(res)
         names = [v["name"] for v in res]
@@ -1212,18 +1247,20 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         embed = discord.Embed(
             title="**Top wiki editors for the past week!**",
             description=(
-                    "Check out the past week's top wiki editors! "
-                    "Thank you all for your contributions to the wiki! :heart:\n\n"
-                    + f"`1st` - **{names[0]}** ({data[0]} edits)\n"
-                    + f"`2nd` - **{names[1]}** ({data[1]} edits)\n"
-                    + f"`3rd` - **{names[2]}** ({data[2]} edits)\n"
-                    + f"`4th` - **{names[3]}** ({data[3]} edits)\n"
-                    + f"`5th` - **{names[4]}** ({data[4]} edits)"
+                "Check out the past week's top wiki editors! "
+                "Thank you all for your contributions to the wiki! :heart:\n\n"
+                + f"`1st` - **{names[0]}** ({data[0]} edits)\n"
+                + f"`2nd` - **{names[1]}** ({data[1]} edits)\n"
+                + f"`3rd` - **{names[2]}** ({data[2]} edits)\n"
+                + f"`4th` - **{names[3]}** ({data[3]} edits)\n"
+                + f"`5th` - **{names[4]}** ({data[4]} edits)"
             ),
         )
         embed.set_image(url="attachment://met.png")
         await interaction.edit_original_message(
-            content=f"The Most Edits Table for the week:", attachments=[file], embed=embed
+            content=f"The Most Edits Table for the week:",
+            attachments=[file],
+            embed=embed,
         )
 
     @app_commands.command(
@@ -1234,9 +1271,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(system="The system to refresh.")
     async def refresh(
-            self,
-            interaction: discord.Interaction,
-            system: Literal["all", "invitationals", "pings"]
+        self,
+        interaction: discord.Interaction,
+        system: Literal["all", "invitationals", "pings"],
     ):
         """Refreshes data from the sheet."""
         # Check for staff permissions again
@@ -1276,7 +1313,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         name="status",
         description="Updates the bot's status.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        default_permissions=discord.Permissions(manage_webhooks=True)
+        default_permissions=discord.Permissions(manage_webhooks=True),
     )
 
     @change_status_group.command(
@@ -1286,27 +1323,27 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     @app_commands.describe(
         activity="The activity the bot will be doing.",
         message="The message to display after the activity type in the bot's status, shown as bold text.",
-        length="How long the status should remain before being auto-updated to a recurring status."
+        length="How long the status should remain before being auto-updated to a recurring status.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_webhooks=True)
     async def change_status(
-            self,
-            interaction: discord.Interaction,
-            activity: Literal["playing", "listening", "watching"],
-            message: str,
-            length: Literal[
-                    "10 minutes",
-                    "30 minutes",
-                    "1 hour",
-                    "2 hours",
-                    "8 hours",
-                    "1 day",
-                    "4 days",
-                    "7 days",
-                    "1 month",
-                    "1 year",
-                ],
+        self,
+        interaction: discord.Interaction,
+        activity: Literal["playing", "listening", "watching"],
+        message: str,
+        length: Literal[
+            "10 minutes",
+            "30 minutes",
+            "1 hour",
+            "2 hours",
+            "8 hours",
+            "1 day",
+            "4 days",
+            "7 days",
+            "1 month",
+            "1 year",
+        ],
     ):
         # Check again to make sure caller is staff
         commandchecks.is_staff_from_ctx(interaction)

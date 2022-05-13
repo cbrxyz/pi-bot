@@ -8,7 +8,12 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
-from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP, SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SLASH_COMMAND_GUILDS,
+)
 from src.mongo.mongo import delete, insert, update
 
 if TYPE_CHECKING:
@@ -24,7 +29,7 @@ class StaffTags(commands.Cog):
         name="tagupdate",
         description="Updates the bot's tag list.",
         guild_ids=[SLASH_COMMAND_GUILDS],
-        default_permissions=discord.Permissions(manage_messages=True)
+        default_permissions=discord.Permissions(manage_messages=True),
     )
 
     @tag_commands_group.command(
@@ -35,7 +40,7 @@ class StaffTags(commands.Cog):
     @app_commands.describe(
         tag_name="The name of the tag to add.",
         launch_helpers="Whether launch helpers can use this tag. Defaults to yes.",
-        members="Whether all members can use this tag. Defaults to yes."
+        members="Whether all members can use this tag. Defaults to yes.",
     )
     async def tag_add(
         self,
@@ -61,7 +66,7 @@ class StaffTags(commands.Cog):
         # Send directions to caller
         await interaction.edit_original_message(
             content=f"{EMOJI_LOADING} Please send the new text for the tag. You can use formatting and newlines. All "
-                    f"text sent in your next message will be included in the tag. "
+            f"text sent in your next message will be included in the tag. "
         )
         content_message = await self.bot.listen_for_response(
             follow_id=interaction.user.id,
@@ -104,7 +109,7 @@ class StaffTags(commands.Cog):
     @app_commands.describe(
         tag_name="The tag name to edit the text of.",
         launch_helpers="Whether launch helpers can use. Defaults to 'do not change'.",
-        members="Whether all members can use this tag. Defaults to 'do not change'."
+        members="Whether all members can use this tag. Defaults to 'do not change'.",
     )
     async def tag_edit(
         self,
@@ -184,9 +189,7 @@ class StaffTags(commands.Cog):
         description="Staff command. Removes a tag completely.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.describe(
-        tag_name="The name of the tag to remove."
-    )
+    @app_commands.describe(tag_name="The name of the tag to remove.")
     async def tag_remove(
         self,
         interaction: discord.Interaction,

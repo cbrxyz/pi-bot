@@ -52,10 +52,10 @@ class PingManager(commands.GroupCog, name="ping"):
             self.recent_messages[message.channel.id].append(message)
             if len(self.recent_messages[message.channel.id]) > 5:
                 self.recent_messages[message.channel.id] = self.recent_messages[
-                                                               message.channel.id
-                                                           ][
-                                                           1:
-                                                           ]  # Cut off the message from the longest time ago if there are too many messages stored
+                    message.channel.id
+                ][
+                    1:
+                ]  # Cut off the message from the longest time ago if there are too many messages stored
 
         # Send a ping alert to the relevant users
         for user in src.discord.globals.PING_INFO:
@@ -90,7 +90,9 @@ class PingManager(commands.GroupCog, name="ping"):
                 user_obj = self.bot.get_user(user["user_id"])
                 await self.send_ping_pm(user_obj, message, ping_count)
 
-    def format_text(self, text: str, length: int, user: Union[discord.Member, discord.User]) -> str:
+    def format_text(
+        self, text: str, length: int, user: Union[discord.Member, discord.User]
+    ) -> str:
         """
         Highlights ping expressions in the message and shorten long messages with an ellipsis.
         """
@@ -125,12 +127,12 @@ class PingManager(commands.GroupCog, name="ping"):
         for _, messages in self.recent_messages.items():
             for message in messages[:]:
                 if (discord.utils.utcnow() - message.created_at) > datetime.timedelta(
-                        hours=3
+                    hours=3
                 ):
                     messages.remove(message)
 
     async def send_ping_pm(
-            self, user: discord.User, message: discord.Message, ping_count: int
+        self, user: discord.User, message: discord.Message, ping_count: int
     ) -> None:
         """
         Sends a direct message to the user about a message containing a relevant ping expression.
@@ -146,19 +148,19 @@ class PingManager(commands.GroupCog, name="ping"):
             description = "**Several of your pings were mentioned by a user in the Scioly.org Discord server!**"
 
         description = (
-                description
-                + "\n\n"
-                + "\n".join(
-            [
-                f"{message.author.mention}: {self.format_text(message.content, 100, user)}"
-                for message in self.recent_messages[message.channel.id]
-            ]
-        )
+            description
+            + "\n\n"
+            + "\n".join(
+                [
+                    f"{message.author.mention}: {self.format_text(message.content, 100, user)}"
+                    for message in self.recent_messages[message.channel.id]
+                ]
+            )
         )
         description = (
-                description
-                + "\n\n"
-                + f"Come check out the conversation! [Click here]({message.jump_url}) to be teleported to the message!"
+            description
+            + "\n\n"
+            + f"Come check out the conversation! [Click here]({message.jump_url}) to be teleported to the message!"
         )
         embed = discord.Embed(
             title=":bellhop: Ping Alert!",
@@ -178,7 +180,9 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def dnd(self, interaction: discord.Interaction):
         user = [
-            u for u in src.discord.globals.PING_INFO if u["user_id"] == interaction.user.id
+            u
+            for u in src.discord.globals.PING_INFO
+            if u["user_id"] == interaction.user.id
         ]
 
         if len(user):
@@ -203,16 +207,16 @@ class PingManager(commands.GroupCog, name="ping"):
                 "You can't enter DND mode without any pings!"
             )
 
-    @app_commands.command(name="add", description="Adds a new ping to notify you about.")
+    @app_commands.command(
+        name="add", description="Adds a new ping to notify you about."
+    )
     @app_commands.describe(word="The new word to add a ping for.")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def pingadd(
-            self, interaction: discord.Interaction, word: str
-    ):
+    async def pingadd(self, interaction: discord.Interaction, word: str):
         # Check to see if author in ping info already
         member = interaction.user
         if any(
-                [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
+            [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
         ):
             # User already has an object in the PING_INFO dictionary
             user = next(
@@ -252,9 +256,9 @@ class PingManager(commands.GroupCog, name="ping"):
             src.discord.globals.PING_INFO.append(new_user_dict)
             await insert("data", "pings", new_user_dict)
         return await interaction.response.send_message(
-            f'Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be '
+            f"Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be "
             f'responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may '
-            f'result in you being temporarily disallowed from using or receiving pings. '
+            f"result in you being temporarily disallowed from using or receiving pings. "
         )
 
     @app_commands.command(
@@ -262,11 +266,7 @@ class PingManager(commands.GroupCog, name="ping"):
     )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     @app_commands.describe(test="The phrase to test your pings against.")
-    async def pingtest(
-            self,
-            interaction: discord.Interaction,
-            test: str
-    ):
+    async def pingtest(self, interaction: discord.Interaction, test: str):
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
@@ -298,7 +298,9 @@ class PingManager(commands.GroupCog, name="ping"):
         else:
             return await interaction.response.send_message(response)
 
-    @app_commands.command(name="list", description="Lists all of your registered pings.")
+    @app_commands.command(
+        name="list", description="Lists all of your registered pings."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def pinglist(self, interaction: discord.Interaction):
         member = interaction.user
@@ -330,13 +332,11 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.command(
         name="remove", description="Removes a ping from your list of registered pings."
     )
-    @app_commands.describe(word="The word to remove a ping for. Or use 'all' to remove all pings.")
+    @app_commands.describe(
+        word="The word to remove a ping for. Or use 'all' to remove all pings."
+    )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def pingremove(
-            self,
-            interaction: discord.Interaction,
-            word: str
-    ):
+    async def pingremove(self, interaction: discord.Interaction, word: str):
         # Get the user's info
         member = interaction.user
         user = next(
