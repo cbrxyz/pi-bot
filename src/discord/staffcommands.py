@@ -290,6 +290,11 @@ class StaffEssential(StaffCommands):
         self.__cog_app_commands__.append(
             SlowMode(bot)
         )  # Manually add the slowmode group to this cog
+        self.confirm_ctx_menu = app_commands.ContextMenu(
+            name = "Confirm User",
+            callback = self.confirm_user
+        )
+        self.bot.tree.add_command(self.confirm_ctx_menu)
 
     async def _confirm_core(
         self,
@@ -366,11 +371,10 @@ class StaffEssential(StaffCommands):
                 f"channels and send messages in them. :tada: "
             )
 
-    @app_commands.context_menu(name="Confirm User")
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def confirm_user(self, interaction, member: discord.Member):
+    async def confirm_user(self, interaction: discord.Interaction, member: discord.Member):
         # Confirm member
         channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
         await interaction.response.send_message(
