@@ -45,18 +45,18 @@ class MongoDatabase:
         await collection.delete_one({"_id": iden})
 
     async def delete_by(
-        self, db_name: str, collection_name: str, dict: Dict[str, Any]
+        self, db_name: str, collection_name: str, spec: Dict[str, Any]
     ) -> None:
         """
-        Deletes all documents in a collection matching a specific filter.
+        Deletes all documents in a collection matching a specific spec.
 
         Args:
             db_name: The name of the database.
             collection_name: The name of the collection.
-            dict: The specification to delete by.
+            spec: The specification to delete by.
         """
         collection = self.client[db_name][collection_name]
-        await collection.delete_many(dict)
+        await collection.delete_many(spec)
 
     async def get_entire_collection(
         self, db_name: str, collection_name: str, return_one: bool = False

@@ -1,3 +1,7 @@
+"""
+Contains all functionality related to censoring users' actions in the Scioly.org Discord
+server.
+"""
 from __future__ import annotations
 
 import re
@@ -6,13 +10,18 @@ from typing import TYPE_CHECKING
 import discord
 import src.discord.globals
 from discord.ext import commands
-from src.discord.globals import CATEGORY_STAFF, CHANNEL_SUPPORT, DISCORD_INVITE_ENDINGS
+from src.discord.globals import (CATEGORY_STAFF, CHANNEL_SUPPORT,
+                                 DISCORD_INVITE_ENDINGS)
 
 if TYPE_CHECKING:
     from bot import PiBot
 
 
 class Censor(commands.Cog):
+    """
+    Responsible for censoring innapropriate words' and emojis in user content.
+    """
+
     def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Censor cog.")
@@ -20,11 +29,13 @@ class Censor(commands.Cog):
     async def on_message(self, message: discord.Message) -> None:
         """
         Will censor the message. Will replace any flags in content with "<censored>".
+
         :param message: The message being checked. message.context will be modified
             if censor gets triggered if and only if the author is not a staff member.
         :type message: discord.Message
         """
-        # Type checking - Assume messages come from a text channel where the author is a member of the server
+        # Type checking - Assume messages come from a text channel where the author
+        # is a member of the server
         assert isinstance(message.channel, discord.TextChannel)
         assert isinstance(message.author, discord.Member)
 
@@ -39,7 +50,8 @@ class Censor(commands.Cog):
         content = message.content
         if self.censor_needed(content):
             print(
-                f"Censoring message by {message.author} because it contained a word or emoji on the censor list."
+                f"Censoring message by {message.author} because it contained "
+                "a word or emoji on the censor list."
             )
 
             await message.delete()
@@ -48,7 +60,8 @@ class Censor(commands.Cog):
         # Check for invalid Discord invite endings
         if self.discord_invite_censor_needed(content):
             print(
-                f"Censoring message by {message.author} because of the it mentioned a Discord invite link."
+                f"Censoring message by {message.author} because of the it mentioned "
+                "a Discord invite link."
             )
 
             await message.delete()
@@ -57,7 +70,8 @@ class Censor(commands.Cog):
             )
             assert isinstance(support_channel, discord.TextChannel)
             await message.channel.send(
-                f"*Links to external Discord servers can not be sent in accordance with rule 12. If you have "
+                f"*Links to external Discord servers can not be sent in accordance "
+                "with rule 12. If you have "
                 f"questions, please ask in {support_channel.mention}.* "
             )
 
@@ -75,8 +89,8 @@ class Censor(commands.Cog):
 
     def discord_invite_censor_needed(self, content: str) -> bool:
         """
-        Determines whether the Discord invite link censor is needed. In other words, whether this content contains a
-        Discord invite link.
+        Determines whether the Discord invite link censor is needed. In other
+        words, whether this content contains a Discord invite link.
         """
         if not any(
             ending for ending in DISCORD_INVITE_ENDINGS if ending in content
@@ -95,7 +109,7 @@ class Censor(commands.Cog):
 
         channel = message.channel
         avatar = message.author.display_avatar.url
-        wh = await channel.create_webhook(name="Censor (Automated)")
+        webhook = await channel.create_webhook(name="Censor (Automated)")
         content = message.content
         author = message.author.nick or message.author.name
 
@@ -109,17 +123,20 @@ class Censor(commands.Cog):
 
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
-        await wh.send(
+        await webhook.send(
             content,
             username=f"{author} (auto-censor)",
             avatar_url=avatar,
             allowed_mentions=mention_perms,
         )
-        await wh.delete()
+        await webhook.delete()
 
         # Replace content with censored content for other cogs
-        message.content = content  # apply to message to not propagate censored words to other things like commands
+        message.content = content
 
 
 async def setup(bot: PiBot):
+    """
+    Sets up the Censor cog.
+    """
     await bot.add_cog(Censor(bot))
