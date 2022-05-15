@@ -35,7 +35,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(
         member="The member to trout slap! If not given, Pi-Bot will trout slap you!"
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def trout(
         self, interaction: discord.Interaction, member: Optional[discord.Member] = None
     ):
@@ -61,7 +61,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(
         member="The member to give the treat to! Defaults to yourself!"
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def treat(
         self,
         interaction: discord.Interaction,
@@ -190,7 +190,7 @@ class FunCommands(commands.Cog, name="Fun"):
         await interaction.channel.send(random.choice(snacks[snack]["gifs"]))
 
     @app_commands.command(description="Gives some fish to bear!")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def fish(self, interaction: discord.Interaction):
         """
         Gives a fish to bear.
@@ -247,7 +247,7 @@ class FunCommands(commands.Cog, name="Fun"):
         )
 
     @app_commands.command(description="Steals some fish from bear!")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def stealfish(self, interaction: discord.Interaction):
         """
         Steals fish from bear.
@@ -285,7 +285,7 @@ class FunCommands(commands.Cog, name="Fun"):
 
     @app_commands.command(description="Dog bombs another user!")
     @app_commands.describe(member="The member to dog bomb!")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def dogbomb(
         self,
         interaction: discord.Interaction,
@@ -323,7 +323,7 @@ class FunCommands(commands.Cog, name="Fun"):
 
     @app_commands.command(description="Shiba bombs another user!")
     @app_commands.describe(member="The member to shiba bomb!")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def shibabomb(self, interaction: discord.Interaction, member: discord.Member):
         """
         Shiba bombs a user!
@@ -356,7 +356,7 @@ class FunCommands(commands.Cog, name="Fun"):
         await interaction.channel.send(doggo)
 
     @app_commands.command(description="Rolls the magic 8 ball...")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def magic8ball(self, interaction: discord.Interaction):
         """
         Allows the user to roll a virtual 8 ball for a response.
@@ -398,7 +398,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(
         num="The number of the xkcd comic to get. If not provided, gets a random comic."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def xkcd(self, interaction: discord.Interaction, num: Optional[int] = None):
         """
         Gets an xkcd comic with a given number, or a random comic if the number is

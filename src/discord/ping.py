@@ -175,7 +175,7 @@ class PingManager(commands.GroupCog, name="ping"):
         await user.send(embed=embed)
 
     @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def dnd(self, interaction: discord.Interaction):
         user = [
             u
@@ -209,7 +209,7 @@ class PingManager(commands.GroupCog, name="ping"):
         name="add", description="Adds a new ping to notify you about."
     )
     @app_commands.describe(word="The new word to add a ping for.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pingadd(self, interaction: discord.Interaction, word: str):
         # Check to see if author in ping info already
         member = interaction.user
@@ -262,7 +262,7 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.command(
         name="test", description="Tests your pings on an example message."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(test="The phrase to test your pings against.")
     async def pingtest(self, interaction: discord.Interaction, test: str):
         member = interaction.user
@@ -299,7 +299,7 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.command(
         name="list", description="Lists all of your registered pings."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pinglist(self, interaction: discord.Interaction):
         member = interaction.user
         user = next(
@@ -333,7 +333,7 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.describe(
         word="The word to remove a ping for. Or use 'all' to remove all pings."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pingremove(self, interaction: discord.Interaction, word: str):
         # Get the user's info
         member = interaction.user

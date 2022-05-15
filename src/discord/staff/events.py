@@ -28,7 +28,7 @@ class StaffEvents(commands.Cog):
     event_commands_group = app_commands.Group(
         name="event",
         description="Updates the bot's list of events.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_roles=True),
     )
 

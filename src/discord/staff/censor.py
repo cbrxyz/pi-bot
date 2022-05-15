@@ -26,7 +26,7 @@ class StaffCensor(commands.Cog):
     censor_group = app_commands.Group(
         name="censor",
         description="Controls Pi-Bot's censor.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_messages=True),
     )
 

@@ -18,7 +18,6 @@ from src.discord.globals import (
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
     DEV_TOKEN,
-    PI_BOT_IDS,
     TOKEN,
     dev_mode,
 )
@@ -90,7 +89,7 @@ class PiBot(commands.Bot):
 
     async def on_message(self, message: discord.Message) -> None:
         # Nothing needs to be done to the bot's own messages
-        if message.author.id in PI_BOT_IDS or message.author == self.user:
+        if message.author.bot:
             return
 
         # If user is being listened to, return their message
@@ -101,7 +100,6 @@ class PiBot(commands.Bot):
         # Log incoming direct messages
         if (
             isinstance(message.channel, discord.DMChannel)
-            and message.author not in PI_BOT_IDS
             and message.author != bot
         ):
             logger_cog: Union[commands.Cog, Logger] = self.get_cog("Logger")
@@ -110,7 +108,7 @@ class PiBot(commands.Bot):
         else:
             # Print to output
             if not (
-                message.author.id in PI_BOT_IDS
+                message.author.bot
                 and message.channel.name
                 in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
             ):

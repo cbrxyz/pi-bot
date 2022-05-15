@@ -14,7 +14,6 @@ from src.discord.globals import (
     CHANNEL_LEAVE,
     CHANNEL_LOUNGE,
     CHANNEL_WELCOME,
-    PI_BOT_IDS,
     ROLE_UC,
     SERVER_ID,
 )
@@ -31,7 +30,7 @@ class Logger(commands.Cog):
         print("Initialized Logger cog.")
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         # Do not trigger the message edit event for newly-created messages
         if (discord.utils.utcnow() - after.created_at).total_seconds() < 2:
             return
@@ -48,7 +47,7 @@ class Logger(commands.Cog):
             return
 
         # Stop here for messages from Pi-Bot (no need to do anything else)
-        if after.author.id in PI_BOT_IDS or after.author == self.bot.user:
+        if after.author.bot:
             return
 
         # Delete messages that contain censored words

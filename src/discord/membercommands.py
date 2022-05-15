@@ -49,7 +49,7 @@ class MemberCommands(commands.Cog):
         print("Initialized MemberCommands cog.")
 
     @app_commands.command(description="Looking for help? Try this!")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def help(self, interaction: discord.Interaction):
         """Allows a user to request help for a command."""
         server = self.bot.get_guild(SERVER_ID)
@@ -78,7 +78,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles your pronoun roles.")
     @app_commands.describe(pronouns="The pronoun to add/remove from your account.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pronouns(
         self,
         interaction: discord.Interaction,
@@ -102,7 +102,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         username="The username to get information about. Defaults to your nickname/username."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def profile(self, interaction: discord.Interaction, username: str = None):
         if username is None:
             username = interaction.user.nick or interaction.user.name
@@ -193,7 +193,7 @@ class MemberCommands(commands.Cog):
         await interaction.response.send_message(embed=profile_embed)
 
     @app_commands.command(description="Returns the number of members in the server.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def count(self, interaction: discord.Interaction):
         guild = interaction.user.guild
         await interaction.response.send_message(
@@ -201,7 +201,7 @@ class MemberCommands(commands.Cog):
         )
 
     @app_commands.command(description="Toggles the Alumni role.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def alumni(self, interaction: discord.Interaction):
         """Removes or adds the alumni role from a user."""
         await self._assign_div(interaction, "Alumni")
@@ -211,7 +211,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles division roles for the user.")
     @app_commands.describe(div="The division to assign the user with.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def division(
         self,
         interaction: discord.Interaction,
@@ -250,7 +250,7 @@ class MemberCommands(commands.Cog):
         return role
 
     @app_commands.command(description="Toggles the visibility of the #games channel.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def games(self, interaction: discord.Interaction):
         """Removes or adds someone to the games channel."""
         games_channel = discord.utils.get(
@@ -281,7 +281,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         states="The states to toggle. For example 'Missouri, Iowa, South Dakota'."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def states(self, interaction: discord.Interaction, states: str):
         """Assigns someone with specific states."""
         new_args = states.split(",")
@@ -400,7 +400,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def selfmute(
         self,
         interaction: discord.Interaction,
@@ -497,7 +497,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         invitational="The official name of the invitational you would like to add."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def request(self, interaction: discord.Interaction, invitational: str):
         reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
         await reporter_cog.create_invitational_request_report(
@@ -508,7 +508,7 @@ class MemberCommands(commands.Cog):
         )
 
     @app_commands.command(description="Returns information about the bot and server.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def about(self, interaction: discord.Interaction):
         """Prints information about the bot."""
         repo = "https://github.com/cbrxyz/pi-bot"
@@ -535,7 +535,7 @@ class MemberCommands(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(description="Returns the Discord server invite.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def invite(self, interaction: discord.Interaction):
         await interaction.response.send_message("https://discord.gg/C9PGV6h")
 
@@ -543,7 +543,7 @@ class MemberCommands(commands.Cog):
         description="Returns a link to the Scioly.org forums.",
     )
     @app_commands.describe(destination="The area of the site to link to.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def link(
         self,
         interaction: discord.Interaction,
@@ -566,7 +566,7 @@ class MemberCommands(commands.Cog):
         minimum="The minimum number to choose from. Defaults to 0.",
         maximum="The maximum number to choose from. Defaults to 10.",
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def random(
         self,
         interaction: discord.Interaction,
@@ -583,7 +583,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Returns information about a given rule.")
     @app_commands.describe(rule="The rule to cite.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def rule(
         self,
         interaction: discord.Interaction,
@@ -610,7 +610,7 @@ class MemberCommands(commands.Cog):
         return await interaction.response.send_message(f"**Rule {num}:**\n> {rule}")
 
     @app_commands.command(description="Information about gaining the @Coach role.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def coach(self, interaction: discord.Interaction):
         """Gives an account the coach role."""
         await interaction.response.send_message(
@@ -620,7 +620,7 @@ class MemberCommands(commands.Cog):
         )
 
     @app_commands.command(description="Information about the current server.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def info(self, interaction: discord.Interaction):
         """Gets information about the Discord server."""
         server = interaction.guild
@@ -747,7 +747,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         page="The name of the page to return a summary about. Correct caps must be used."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikisummary(self, interaction: discord.Interaction, page: str):
         command = await implement_command("summary", page)
         if not command:
@@ -759,7 +759,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Searches the wiki for a particular page.")
     @app_commands.describe(term="The term to search for across the wiki.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikisearch(self, interaction: discord.Interaction, term: str):
         command = await implement_command("search", term)
         if len(command):
@@ -773,7 +773,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Links to a particular wiki page.")
     @app_commands.describe(page="The wiki page to link to. Correct caps must be used.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikilink(self, interaction: discord.Interaction, page: str):
         command = await implement_command("link", page)
         if not command:
@@ -793,7 +793,7 @@ class MemberCommands(commands.Cog):
         command="The command to execute.",
         request="The request to execute the command upon. What to search or summarize, etc.",
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikipedia(
         self,
         interaction: discord.Interaction,
@@ -846,7 +846,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         events="The events to toggle. For example, 'anatomy, astro, wq'."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def events(self, interaction: discord.Interaction, events: str):
         """Adds or removes event roles from a user."""
         if len(events) > 100:
@@ -966,7 +966,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def tag(self, interaction: discord.Interaction, tag_name: str):
         member = interaction.user
 

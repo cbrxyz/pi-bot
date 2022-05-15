@@ -35,7 +35,7 @@ class StaffInvitational(commands.Cog):
     invitational_status_group = app_commands.Group(
         name="invitational",
         description="Updates the bot's invitational system.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_channels=True),
     )
 

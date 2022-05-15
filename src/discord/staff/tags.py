@@ -26,7 +26,7 @@ class StaffTags(commands.Cog):
     tag_commands_group = app_commands.Group(
         name="tagupdate",
         description="Updates the bot's tag list.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_messages=True),
     )
 
