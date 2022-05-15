@@ -1,9 +1,12 @@
+"""
+Commands and functionality related to having fun on the Scioly.org Discord server.
+"""
 from __future__ import annotations
 
 import asyncio
 import json
 import random
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord import app_commands
@@ -15,6 +18,12 @@ if TYPE_CHECKING:
 
 
 class FunCommands(commands.Cog, name="Fun"):
+    """
+    Cog for managing fun application commands and needed functionality.
+    """
+
+    # pylint: disable=no-self-use
+
     fish_count: int
 
     def __init__(self, bot: PiBot):
@@ -27,7 +36,17 @@ class FunCommands(commands.Cog, name="Fun"):
         member="The member to trout slap! If not given, Pi-Bot will trout slap you!"
     )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def trout(self, interaction: discord.Interaction, member: discord.Member):
+    async def trout(
+        self, interaction: discord.Interaction, member: Optional[discord.Member] = None
+    ):
+        """
+        Slaps a user with a trout.
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+            member (Optional[discord.Member]): The member to slap. If None, then
+                the member slaps themselves.
+        """
         if not member or member == interaction.user:
             member = "themselves"
         else:
@@ -46,7 +65,7 @@ class FunCommands(commands.Cog, name="Fun"):
     async def treat(
         self,
         interaction: discord.Interaction,
-        type: Literal[
+        snack: Literal[
             "chocolate bar",
             "cookie",
             "ice cream",
@@ -57,8 +76,16 @@ class FunCommands(commands.Cog, name="Fun"):
             "brownie",
             "cotton candy",
         ],
-        member: discord.Member = None,
+        member: Optional[discord.Member] = None,
     ):
+        """
+        Gives a member a treat GIF!
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+            snack (Literal[...]): The snack to send a GIF of.
+            member (Optional[discord.Member]): The member to send a snack to.
+        """
         snacks = {
             "chocolate bar": {
                 "name": "a chocolate bar",
@@ -158,14 +185,19 @@ class FunCommands(commands.Cog, name="Fun"):
             member = member.mention
 
         await interaction.response.send_message(
-            f"{interaction.user.mention} gives {member} {snacks[type]['name']}!"
+            f"{interaction.user.mention} gives {member} {snacks[snack]['name']}!"
         )
-        await interaction.channel.send(random.choice(snacks[type]["gifs"]))
+        await interaction.channel.send(random.choice(snacks[snack]["gifs"]))
 
     @app_commands.command(description="Gives some fish to bear!")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def fish(self, interaction: discord.Interaction):
-        """Gives a fish to bear."""
+        """
+        Gives a fish to bear.
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+        """
         r = random.random()
 
         if len(str(self.fish_count)) > 1000000:
@@ -173,7 +205,8 @@ class FunCommands(commands.Cog, name="Fun"):
             if self.fish_count == 69:
                 self.fish_count = 70
             return await interaction.response.send_message(
-                "Woah! Bear's fish is a little too high, so it unfortunately has to be square rooted."
+                "Woah! Bear's fish is a little too high, so it unfortunately "
+                "has to be square rooted."
             )
 
         if r > 0.9:
@@ -181,39 +214,47 @@ class FunCommands(commands.Cog, name="Fun"):
             if self.fish_count == 69:
                 self.fish_count = 70
             return await interaction.response.send_message(
-                f"Wow, you gave bear a super fish! Added 10 fish! Bear now has {self.fish_count} fish!"
+                "Wow, you gave bear a super fish! Added 10 fish! Bear now "
+                f"has {self.fish_count} fish!"
             )
 
-        elif r > 0.1:
+        if r > 0.1:
             self.fish_count += 1
             if self.fish_count == 69:
                 self.fish_count = 70
                 return await interaction.response.send_message(
                     f"You feed bear two fish. Bear now has {self.fish_count} fish!"
                 )
-            else:
-                return await interaction.response.send_message(
-                    f"You feed bear one fish. Bear now has {self.fish_count} fish!"
-                )
 
-        elif r > 0.02:
+            return await interaction.response.send_message(
+                f"You feed bear one fish. Bear now has {self.fish_count} fish!"
+            )
+
+        if r > 0.02:
             self.fish_count += 0
             return await interaction.response.send_message(
-                f"You can't find any fish... and thus can't feed bear. Bear still has {self.fish_count} fish."
+                "You can't find any fish... and thus can't feed bear. Bear "
+                f"still has {self.fish_count} fish."
             )
 
-        else:
-            self.fish_count = round(pow(self.fish_count, 0.5))
-            if self.fish_count == 69:
-                self.fish_count = 70
-            return await interaction.response.send_message(
-                f":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square root'ed. Bear now has {self.fish_count}"
-                f" fish. \n:sob:\n:sob:\n:sob: "
-            )
+        self.fish_count = round(pow(self.fish_count, 0.5))
+        if self.fish_count == 69:
+            self.fish_count = 70
+        return await interaction.response.send_message(
+            ":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square "
+            f"root'ed. Bear now has {self.fish_count}"
+            " fish. \n:sob:\n:sob:\n:sob: "
+        )
 
     @app_commands.command(description="Steals some fish from bear!")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def stealfish(self, interaction: discord.Interaction):
+        """
+        Steals fish from bear.
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+        """
         r = random.random()
 
         if r >= 0.75:
@@ -224,13 +265,13 @@ class FunCommands(commands.Cog, name="Fun"):
                 f"You stole {per}% of bear's fish!"
             )
 
-        elif r >= 0.416:
+        if r >= 0.416:
             self.fish_count = round(self.fish_count * 0.99)
             return await interaction.response.send_message(
-                f"You stole just 1% of bear's fish!"
+                "You stole just 1% of bear's fish!"
             )
 
-        elif r >= 0.25:
+        if r >= 0.25:
             ratio = r + 0.75
             self.fish_count = round(self.fish_count * ratio)
             per = round(ratio * 100) - 100
@@ -238,10 +279,9 @@ class FunCommands(commands.Cog, name="Fun"):
                 f"Uhh... something went wrong! You gave bear another {per}% of his fish!"
             )
 
-        if r >= 0.01:
-            return await interaction.response.send_message(
-                "Hmm, nothing happened. *crickets*"
-            )
+        return await interaction.response.send_message(
+            "Hmm, nothing happened. *crickets*"
+        )
 
     @app_commands.command(description="Dog bombs another user!")
     @app_commands.describe(member="The member to dog bomb!")
@@ -251,13 +291,21 @@ class FunCommands(commands.Cog, name="Fun"):
         interaction: discord.Interaction,
         member: discord.Member,
     ):
-        """Dog bombs someone!"""
+        """
+        Dog bombs someone!
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+            member (discord.Member): The member to dogbomb.
+        """
         async with self.bot.session as session:
-            page = await session.get(f"https://dog.ceo/api/breeds/image/random")
+            page = await session.get("https://dog.ceo/api/breeds/image/random")
+
         if page.status > 400:
             return await interaction.response.send_message(
-                content=f"Sorry, I couldn't find a doggo to bomb with..."
+                content="Sorry, I couldn't find a doggo to bomb with..."
             )
+
         text = await page.content.read()
         text = text.decode("utf-8")
         jso = json.loads(text)
@@ -277,13 +325,21 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(member="The member to shiba bomb!")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def shibabomb(self, interaction: discord.Interaction, member: discord.Member):
-        """Shiba bombs a user!"""
+        """
+        Shiba bombs a user!
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+            member (discord.Member): The member to send a shiba bomb to.
+        """
         async with self.bot.session as session:
-            page = await session.get(f"https://dog.ceo/api/breed/shiba/images/random")
+            page = await session.get("https://dog.ceo/api/breed/shiba/images/random")
+
         if page.status > 400:
             return await interaction.response.send_message(
-                content=f"Sorry, I couldn't find a shiba to bomb with..."
+                content="Sorry, I couldn't find a shiba to bomb with..."
             )
+
         text = await page.content.read()
         text = text.decode("utf-8")
         jso = json.loads(text)
@@ -302,6 +358,12 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.command(description="Rolls the magic 8 ball...")
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
     async def magic8ball(self, interaction: discord.Interaction):
+        """
+        Allows the user to roll a virtual 8 ball for a response.
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+        """
         await interaction.response.send_message("Swishing the magic 8 ball...")
         await asyncio.sleep(1)
         await interaction.edit_original_message(content="Swishing the magic 8 ball..")
@@ -337,9 +399,19 @@ class FunCommands(commands.Cog, name="Fun"):
         num="The number of the xkcd comic to get. If not provided, gets a random comic."
     )
     @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def xkcd(self, interaction: discord.Interaction, num: int = None):
+    async def xkcd(self, interaction: discord.Interaction, num: Optional[int] = None):
+        """
+        Gets an xkcd comic with a given number, or a random comic if the number is
+        not provided.
+
+        Args:
+            interaction (discord.Interaction): The application command interaction.
+            num (Optional[int]): The number of the xkcd comic to get. If None,
+                then get a random comic.
+        """
         async with self.bot.session as session:
             res = await session.get("https://xkcd.com/info.0.json")
+
         text = await res.text()
         json_obj = json.loads(text)
         max_num = json_obj["num"]
@@ -348,11 +420,17 @@ class FunCommands(commands.Cog, name="Fun"):
             num = random.randrange(1, max_num)
         if 1 <= num <= max_num:
             return await interaction.response.send_message(f"https://xkcd.com/{num}")
-        else:
-            return await interaction.response.send_message(
-                "Invalid attempted number for xkcd."
-            )
+
+        return await interaction.response.send_message(
+            "Invalid attempted number for xkcd."
+        )
 
 
 async def setup(bot: PiBot):
+    """
+    Sets up the fun commands cog.
+
+    Args:
+        bot (PiBot): The bot to use with the cog.
+    """
     await bot.add_cog(FunCommands(bot))
