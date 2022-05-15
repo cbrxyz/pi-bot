@@ -1,11 +1,29 @@
+"""
+Handles all functionality regarding constructing and editing embeds.
+"""
 from __future__ import annotations
 
+import asyncio
+import json
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+import webcolors
+
 import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
     from bot import PiBot
+
+import commandchecks
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SLASH_COMMAND_GUILDS,
+)
 
 
 class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
@@ -21,7 +39,12 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
     status: str
 
     def __init__(
-        self, view: EmbedFieldManagerView, bot: PiBot, name: str, raw_name: str, status: str
+        self,
+        view: EmbedFieldManagerView,
+        bot: PiBot,
+        name: str,
+        raw_name: str,
+        status: str,
     ):
         """
         Args:
@@ -67,7 +90,10 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
             ):
                 # If they haven't, let them know!
                 help_message = await self.field_manager_view.channel.send(
-                    "This field can not yet be completed, because you haven't defined both the field name and value."
+                    (
+                        "This field can not yet be completed, because you haven't defined "
+                        "both the field name and value."
+                    )
                 )
                 await help_message.delete(delay=10)
                 self.field_manager_view.stop()
@@ -86,8 +112,11 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
             # Prompt the user to input the new value.
             await interaction.response.defer()
             info_message = await self.field_manager_view.channel.send(
-                f"Please send the new value for the {self.raw_name}. The operation will be cancelled if no operation "
-                f"was sent within 2 minutes. "
+                (
+                    f"Please send the new value for the {self.raw_name}. The "
+                    "operation will be cancelled if no operation "
+                    f"was sent within 2 minutes. "
+                )
             )
             response_message = await self.bot.listen_for_response(
                 follow_id=self.field_manager_view.user.id,
@@ -105,10 +134,13 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
             await response_message.delete()
 
             # If the user didn't send any text
-            if not len(response_message.content):
+            if not response_message.content:
                 help_message = await self.field_manager_view.channel.send(
-                    "I couldn't find any text response in the message you just sent. Remember that for images, "
-                    "only URLs will work. I can't accept files for the {self.raw_name}! "
+                    (
+                        "I couldn't find any text response in the message you just "
+                        "sent. Remember that for images, "
+                        f"only URLs will work. I can't accept files for the {self.raw_name}!"
+                    )
                 )
                 await help_message.delete(delay=10)
                 self.field_manager_view.stop()
@@ -119,7 +151,10 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
             for k, v in limits.items():
                 if self.raw_name == k and len(response_message.content) > v:
                     help_message = await self.field_manager_view.channel.send(
-                        f"Unforunately, you can not provide a {k} longer than {v} characters. Please try again!"
+                        (
+                            f"Unforunately, you can not provide a {k} longer "
+                            f"than {v} characters. Please try again!"
+                        )
                     )
                     await help_message.delete(delay=10)
                     self.field_manager_view.stop()
@@ -166,11 +201,17 @@ class EmbedFieldManagerView(discord.ui.View):
     index: int  # The index of the current field to process
     embed_update: Dict[str, Any]
 
-    def __init__(self, interaction: discord.Interaction, bot: PiBot, fields: List[Dict[str, Union[str, bool]]], index: int):
+    def __init__(
+        self,
+        interaction: discord.Interaction,
+        bot: PiBot,
+        fields: List[Dict[str, Union[str, bool]]],
+        index: int,
+    ):
         # Friendly type checking
         assert isinstance(interaction.channel, discord.TextChannel)
         assert isinstance(interaction.user, discord.Member)
-        
+
         # Set instance attributes
         self.channel = interaction.channel
         self.user = interaction.user
@@ -272,10 +313,10 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         # If the user attempts to set the author icon/URL without setting
         # name first, deny them
         if self.update_value in ["author_icon", "author_url"] and not any(
-            [
+            (
                 value in self.embed_view.embed_dict
                 for value in ["author_name", "authorName"]
-            ]
+            )
         ):
             help_message = await self.embed_view.channel.send(
                 "You can not set the author URL/icon without first setting the author name."
@@ -302,8 +343,11 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
                 and len(self.embed_view.embed_dict["fields"]) == 25
             ):
                 help_message = await self.embed_view.channel.send(
-                    "You can't have more than 25 embed fields! Don't be so selfish, keeping all of the embed fields "
-                    "to yourself! "
+                    (
+                        "You can't have more than 25 embed fields! Don't be so "
+                        "selfish, keeping all of the embed fields "
+                        "to yourself! "
+                    )
                 )
                 await help_message.delete(delay=10)
                 self.embed_view.stop()
@@ -321,8 +365,9 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         if self.update_value in ["edit_field", "remove_field"]:
 
             # Check to see if any fields actually exist
-            if "fields" not in self.embed_view.embed_dict or not len(
-                self.embed_view.embed_dict["fields"]
+            if (
+                "fields" not in self.embed_view.embed_dict
+                or self.embed_view.embed_dict["fields"]
             ):
                 await self.embed_view.channel.send(
                     "It appears no fields exist in the embed currently."
@@ -337,7 +382,13 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
             max_num = len(fields)
 
             info_message = await self.embed_view.channel.send(
-                f"Please type in the index of the field you would like to {'edit' if self.update_value == 'edit_field' else 'remove'}. `1` refers to the first field, `2` to the second, etc...\n\nThe minimum accepted value is `1` and the maximum accepted value is `{len(fields)}`!"
+                (
+                    f"Please type in the index of the field you would like to "
+                    f"{'edit' if self.update_value == 'edit_field' else 'remove'}. "
+                    "`1` refers to the first field, `2` to the second, etc...\n\nThe "
+                    f"minimum accepted value is `1` and the maximum accepted value "
+                    f"is `{len(fields)}`!"
+                )
             )
 
             valid_response = False
@@ -363,7 +414,10 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
                 if not response_message.content.isnumeric():
                     self.embed_view.stopped_status = "failed"
                     await self.embed_view.channel.send(
-                        "It appears that your message did not solely contain a number. Please try again."
+                        (
+                            "It appears that your message did not solely contain a "
+                            "number. Please try again."
+                        )
                     )
                     return self.embed_view.stop()
 
@@ -381,8 +435,11 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         # ask them for the parameter.
         await interaction.response.defer()
         info_message = await self.embed_view.channel.send(
-            f"Please send the new value for the parameter. The operation will be cancelled if no operation was sent "
-            f"within 2 minutes.\n\n{self.help_message} "
+            (
+                f"Please send the new value for the parameter. The operation "
+                "will be cancelled if no operation was sent "
+                f"within 2 minutes.\n\n{self.help_message} "
+            )
         )
 
         response_message = await self.bot.listen_for_response(
@@ -399,11 +456,15 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         await response_message.delete()
 
         # If the user didn't send any meaningful text, don't do anything
-        if not len(response_message.content):
+        if not response_message.content:
             help_message = await self.embed_view.channel.send(
-                "I couldn't find any text response in the message you just sent. Remember that for images, only URLs will work. I can't accept files for any value!"
+                (
+                    "I couldn't find any text response in the message you just "
+                    "sent. Remember that for images, only URLs will work. I "
+                    "can't accept files for any value!"
+                )
             )
-            await help_message.delete(delay = 10)
+            await help_message.delete(delay=10)
             self.embed_view.stop()
             return
 
@@ -417,7 +478,9 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
         for k, v in limits.items():
             if self.update_value == k and len(response_message.content) > v:
                 help_message = await self.embed_view.channel.send(
-                    f"Unfortunately, you provided a string that is longer than the allowable length for that value. Please provide a value that is less than {v} characters."
+                    "Unfortunately, you provided a string that is longer than "
+                    "the allowable length for that value. Please provide a value "
+                    "that is less than {v} characters."
                 )
                 await help_message.delete(delay=10)
                 self.embed_view.stop()
@@ -425,11 +488,12 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
 
         # If the user is attempting to update the color of the embed, but doesn't
         # pass a color, deny them
-        if self.update_value == "color" and not len(
+        if self.update_value == "color" and not (
             re.findall(r"#[0-9a-f]{6}", response_message.content.lower())
         ):
             help_message = await self.embed_view.channel.send(
-                f"The color you provide must be a hex code. For example, `#abbb02` or `#222ddd`."
+                "The color you provide must be a hex code. For example, `#abbb02` "
+                "or `#222ddd`."
             )
             await help_message.delete(delay=10)
             self.embed_view.stop()
@@ -442,7 +506,9 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
 
 class EmbedView(discord.ui.View):
     # This will be updated when the user updates an embed property
-    embed_update: Dict[str, Any] = {} # Keeps track of what was updated by a button press
+    embed_update: Dict[
+        str, Any
+    ] = {}  # Keeps track of what was updated by a button press
     embed_dict: Dict[str, Any] = {}
     user: discord.Member
     channel: discord.TextChannel
