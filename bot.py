@@ -5,6 +5,7 @@ import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
+from discord import app_commands
 
 from commandchecks import *
 from src.discord.globals import *
@@ -20,6 +21,24 @@ intents.members = True
 intents.message_content = True
 
 
+class PiBotCommandTree(app_commands.CommandTree):
+    def __init__(self, client: 'PiBot'):
+        super().__init__(client)
+
+    async def on_error(
+            self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        if isinstance(error, app_commands.CheckFailure):
+            message = "Sorry, but I don't think you can run that command."
+        # Add more here
+        else:
+            message = "Ooops, there was a command error."
+        try:
+            await interaction.response.send_message(message)
+        except discord.InteractionResponded:
+            await interaction.followup.send(message)
+
+
 class PiBot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -27,6 +46,7 @@ class PiBot(commands.Bot):
             case_insensitive=True,
             intents=intents,
             help_command=None,
+            tree_cls=PiBotCommandTree
         )
         self.http.API_VERSION = 9
         self.listeners_: Dict[
@@ -76,9 +96,9 @@ class PiBot(commands.Bot):
 
         # Log incoming direct messages
         if (
-            type(message.channel) == discord.DMChannel
-            and message.author not in PI_BOT_IDS
-            and message.author != bot
+                type(message.channel) == discord.DMChannel
+                and message.author not in PI_BOT_IDS
+                and message.author != bot
         ):
             logger_cog: Union[commands.Cog, Logger] = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
@@ -86,9 +106,9 @@ class PiBot(commands.Bot):
         else:
             # Print to output
             if not (
-                message.author.id in PI_BOT_IDS
-                and message.channel.name
-                in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
+                    message.author.id in PI_BOT_IDS
+                    and message.channel.name
+                    in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
             ):
                 # avoid sending logs for messages in log channels
                 print(
@@ -119,7 +139,7 @@ class PiBot(commands.Bot):
         await super().close()
 
     async def listen_for_response(
-        self, follow_id: int, timeout: int
+            self, follow_id: int, timeout: int
     ) -> Optional[discord.Message]:
         """
         Creates a global listener for a message from a user.
