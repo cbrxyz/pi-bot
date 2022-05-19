@@ -459,6 +459,7 @@ class MemberCommands(commands.Cog):
         description="produces a LaTeX (math-formatted) output based on given code"
     )
     @app_commands.describe(code="LaTeX code to run")
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def latex(self, interaction: discord.Interaction, code: str):
         print(code)
         new_args = code.replace(" ", r"&space;")
