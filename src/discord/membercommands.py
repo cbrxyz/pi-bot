@@ -84,13 +84,13 @@ class LatexView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self._interaction.user
 
-    @discord.ui.button(emoji="✏️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="✏️", style=discord.ButtonStyle.blurple)
     async def edit_button(self, interaction: discord.Interaction, _: discord.ui.Button):
         message = interaction.message
         modal = LatexModal(self.bot, message)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(emoji="🗑️️", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="🗑️️", style=discord.ButtonStyle.red)
     async def delete_button(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
