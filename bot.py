@@ -5,6 +5,7 @@ import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
+from discord import app_commands
 
 from commandchecks import *
 from src.discord.globals import *
@@ -18,6 +19,24 @@ if TYPE_CHECKING:
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
+
+
+class PiBotCommandTree(app_commands.CommandTree):
+    def __init__(self, client: "PiBot"):
+        super().__init__(client)
+
+    async def on_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        if isinstance(error, app_commands.CheckFailure):
+            message = "Sorry, but I don't think you can run that command."
+        # Add more here
+        else:
+            message = "Ooops, there was a command error."
+        try:
+            await interaction.response.send_message(message)
+        except discord.InteractionResponded:
+            await interaction.followup.send(message)
 
 
 class PiBot(commands.Bot):
