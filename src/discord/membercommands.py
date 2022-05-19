@@ -71,7 +71,7 @@ class LatexModal(discord.ui.Modal):
 
 class LatexView(discord.ui.View):
     def __init__(self, bot: PiBot, _interaction: discord.Interaction):
-        super().__init__(timeout=500)
+        super().__init__(timeout=120)
         self.bot: PiBot = bot
         self._interaction: discord.Interaction = _interaction
 
