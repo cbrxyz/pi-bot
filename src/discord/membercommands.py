@@ -55,7 +55,9 @@ class LatexModal(discord.ui.Modal):
         self.edited_latex = self.add_item(
             discord.ui.TextInput(
                 label="Your LaTeX",
-                default=self._message.content.split(r"{\color{Gray}")[1][:-1],
+                default=self._message.content.split(r"{\color{Gray}")[1][:-1].replace(
+                    r"&space;", " "
+                ),
                 style=discord.TextStyle.short,
             )
         )
