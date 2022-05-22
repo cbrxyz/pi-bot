@@ -1,3 +1,6 @@
+"""
+Holds functionality for members to manage their ping subscriptions.
+"""
 from __future__ import annotations
 
 import datetime
@@ -15,6 +18,10 @@ if TYPE_CHECKING:
 
 
 class PingManager(commands.GroupCog, name="ping"):
+    """
+    Specific cog for holding ping-related functionality.
+    """
+
     recent_messages = {}
 
     def __init__(self, bot: PiBot):
@@ -24,6 +31,12 @@ class PingManager(commands.GroupCog, name="ping"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        """
+        Event listening for new messages in an attempt to send out needed pings.
+
+        Args:
+            message (discord.Message): The message that was just sent by a user.
+        """
         # Do not ping for messages in a private channel
         if message.channel.type == discord.ChannelType.private:
             return
@@ -92,7 +105,16 @@ class PingManager(commands.GroupCog, name="ping"):
         self, text: str, length: int, user: Union[discord.Member, discord.User]
     ) -> str:
         """
-        Highlights ping expressions in the message and shorten long messages with an ellipsis.
+        Highlights ping expressions in the message and shorten long messages
+        with an ellipsis.
+
+        Args:
+            text (str): The raw text to format.
+            length (int): The length of the string desired - the rest will be split
+                off and replaced with a single ellipsis.
+            user (Union[discord.Member, discord.User]): The user to highlight the text
+                with respect to. This is used to get relevant ping info about the
+                specific user.
         """
         user_ping_obj = [
             user_obj
@@ -134,6 +156,11 @@ class PingManager(commands.GroupCog, name="ping"):
     ) -> None:
         """
         Sends a direct message to the user about a message containing a relevant ping expression.
+
+        Args:
+            user (discord.User): The user to send a DM to.
+            message (discord.Message): The message which triggered the ping.
+            ping_count (int): How many pings were triggered by the specific message.
         """
         # Expire recent messages
         self.expire_recent_messages()
@@ -177,6 +204,16 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def dnd(self, interaction: discord.Interaction):
+        """
+        Discord command allowing members to sent their ping mode to DND.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The discord app command which triggered
+                the command.
+        """
         user = [
             u
             for u in src.discord.globals.PING_INFO
@@ -211,7 +248,18 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.describe(word="The new word to add a ping for.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pingadd(self, interaction: discord.Interaction, word: str):
-        # Check to see if author in ping info already
+        """
+        Discord command allowing members to add a ping keyword to their list of
+        pings.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The Discord app command which triggered
+                the command.
+            word (str): The new word to ping on.
+        """
         member = interaction.user
         if any(
             [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
@@ -265,6 +313,17 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(test="The phrase to test your pings against.")
     async def pingtest(self, interaction: discord.Interaction, test: str):
+        """
+        Discord command allowing members to test their ping list against a specific phrase.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (disord.Interaction): The interaction which triggered the app
+                command.
+            test (str): The phrase to test the list of pings against.
+        """
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
@@ -301,6 +360,16 @@ class PingManager(commands.GroupCog, name="ping"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pinglist(self, interaction: discord.Interaction):
+        """
+        Discord command which lists the user's pings.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The app command which triggered this
+                command.
+        """
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
@@ -323,7 +392,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 response += "Your pings are: " + ", ".join(
                     [f"`{word}`" for word in user["word_pings"]]
                 )
-            if not len(response):
+            if not response:
                 response = "You have no registered pings."
             await interaction.response.send_message(response)
 
@@ -335,6 +404,17 @@ class PingManager(commands.GroupCog, name="ping"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pingremove(self, interaction: discord.Interaction, word: str):
+        """
+        Discord command that allows a user to remove a word from their list of pings.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The app command which triggered this
+                command.
+            word (str): The word to attempt to remove from the user's list of pings.
+        """
         # Get the user's info
         member = interaction.user
         user = next(
