@@ -8,9 +8,6 @@ import discord
 import src.discord.globals
 from discord.ext import commands, tasks
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import (delete, get_censor, get_cron, get_events,
-                             get_pings, get_reports, get_settings, get_tags,
-                             insert, update)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -47,26 +44,26 @@ class CronTasks(commands.Cog):
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
-        src.discord.globals.REPORTS = await get_reports()
-        src.discord.globals.PING_INFO = await get_pings()
-        src.discord.globals.TAGS = await get_tags()
-        src.discord.globals.EVENT_INFO = await get_events()
-        src.discord.globals.SETTINGS = await get_settings()
+        src.discord.globals.REPORTS = await self.bot.mongo_database.get_reports()
+        src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
+        src.discord.globals.TAGS = await self.bot.mongo_database.get_tags()
+        src.discord.globals.EVENT_INFO = await self.bot.mongo_database.get_events()
+        src.discord.globals.SETTINGS = await self.bot.mongo_database.get_settings()
 
-        src.discord.globals.CENSOR = await get_censor()
+        src.discord.globals.CENSOR = await self.bot.mongo_database.get_censor()
         print("Fetched previous variables.")
 
     async def add_to_cron(self, item_dict: dict) -> None:
         """
         Adds the given document to the CRON list.
         """
-        await insert("data", "cron", item_dict)
+        await self.bot.mongo_database.insert("data", "cron", item_dict)
 
     async def delete_from_cron(self, doc_id: str) -> None:
         """
         Deletes a CRON task from the CRON list.
         """
-        await delete("data", "cron", doc_id)
+        await self.bot.mongo_database.delete("data", "cron", doc_id)
 
     async def schedule_unban(
         self, user: Union[discord.Member, discord.User], time: datetime.datetime
@@ -111,7 +108,7 @@ class CronTasks(commands.Cog):
         """
         Updates the value of a setting.
         """
-        await update(
+        await self.bot.mongo_database.update(
             "data",
             "settings",
             src.discord.globals.SETTINGS["_id"],
@@ -168,7 +165,7 @@ class CronTasks(commands.Cog):
         """
         print("Executing CRON...")
         # Get the relevant tasks
-        cron_list = await get_cron()
+        cron_list = await self.bot.mongo_database.get_cron()
 
         for task in cron_list:
             # If the date has passed, execute task
@@ -260,7 +257,7 @@ class CronTasks(commands.Cog):
         src.discord.globals.SETTINGS[
             "custom_bot_status_text"
         ] = None  # reset local settings
-        await update(
+        await self.bot.mongo_database.update(
             "data",
             "settings",
             src.discord.globals.SETTINGS["_id"],

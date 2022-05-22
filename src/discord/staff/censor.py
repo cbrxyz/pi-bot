@@ -7,9 +7,12 @@ import discord
 import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
-                                 SLASH_COMMAND_GUILDS)
-from src.mongo.mongo import update
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SLASH_COMMAND_GUILDS,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -23,7 +26,7 @@ class StaffCensor(commands.Cog):
     censor_group = app_commands.Group(
         name="censor",
         description="Controls Pi-Bot's censor.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_messages=True),
     )
 
@@ -57,7 +60,7 @@ class StaffCensor(commands.Cog):
                 )
             else:
                 src.discord.globals.CENSOR["words"].append(phrase)
-                await update(
+                await self.bot.mongo_database.update(
                     "data",
                     "censor",
                     src.discord.globals.CENSOR["_id"],
@@ -75,7 +78,7 @@ class StaffCensor(commands.Cog):
                 )
             else:
                 src.discord.globals.CENSOR["emojis"].append(phrase)
-                await update(
+                await self.bot.mongo_database.update(
                     "data",
                     "censor",
                     src.discord.globals.CENSOR["_id"],
@@ -115,7 +118,7 @@ class StaffCensor(commands.Cog):
                 )
             else:
                 src.discord.globals.CENSOR["words"].remove(phrase)
-                await update(
+                await self.bot.mongo_database.update(
                     "data",
                     "censor",
                     src.discord.globals.CENSOR["_id"],
@@ -131,7 +134,7 @@ class StaffCensor(commands.Cog):
                 )
             else:
                 src.discord.globals.CENSOR["emojis"].remove(phrase)
-                await update(
+                await self.bot.mongo_database.update(
                     "data",
                     "censor",
                     src.discord.globals.CENSOR["_id"],

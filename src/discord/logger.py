@@ -1,78 +1,52 @@
+"""
+Logs actions that happened on the Scioly.org Discord server to specific information
+buckets, such as a Discord channel or database log.
+"""
 from __future__ import annotations
 
 import traceback
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 from commanderrors import CommandNotAllowedInChannel
 from discord.ext import commands
-from src.discord.globals import (CENSOR, CHANNEL_DELETEDM, CHANNEL_DMLOG,
-                                 CHANNEL_EDITEDM, CHANNEL_LEAVE,
-                                 CHANNEL_LOUNGE, CHANNEL_WELCOME, PI_BOT_IDS,
-                                 ROLE_UC, SERVER_ID)
+from src.discord.globals import (
+    CHANNEL_DELETEDM,
+    CHANNEL_DMLOG,
+    CHANNEL_EDITEDM,
+    CHANNEL_LEAVE,
+    CHANNEL_LOUNGE,
+    CHANNEL_WELCOME,
+    ROLE_UC,
+    SERVER_ID,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
-    from src.discord.censor import Censor
-    from src.discord.reporter import Reporter
 
 
 class Logger(commands.Cog):
+    """
+    Cog which stores all logging functionality.
+    """
+
+    # pylint: disable=no-self-use
+
     def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Logger cog.")
 
-    @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        # Do not trigger the message edit event for newly-created messages
-        if (discord.utils.utcnow() - after.created_at).total_seconds() < 2:
-            return
-
-        # Log edit event
-        print(
-            "Message from {0.author} edited to: {0.content}, from: {1.content}".format(
-                after, before
-            )
-        )
-
-        # Stop the event here for DM's (no need to censor, as author is the only one who can see them)
-        if isinstance(after.channel, discord.DMChannel):
-            return
-
-        # Stop here for messages from Pi-Bot (no need to do anything else)
-        if after.author.id in PI_BOT_IDS or after.author == self.bot.user:
-            return
-
-        # Delete messages that contain censored words
-        censor_cog: Union[commands.Cog, Censor] = self.bot.get_cog("Censor")
-        censor_found = censor_cog.censor_needed(after.content)
-        if censor_found:
-            await after.delete()
-            await after.author.send(
-                "You recently edited a message, but it **contained a censored word**! Therefore, I unfortunately had "
-                "to delete it. In the future, please do not edit innapropriate words into your messages, and they "
-                "will not be deleted. "
-            )
-
-        # Delete messages that have Discord invite links in them
-        discord_invite_found = censor_cog.discord_invite_censor_needed(after.content)
-        if discord_invite_found:
-            await after.delete()
-            await after.author.send(
-                "You recently edited a message, but it **contained a link to another Discord server**! Therefore, "
-                "I unfortunately had to delete it. In the future, please do not edit Discord invite links into your "
-                "messages and they will not be deleted. "
-            )
-
     async def send_to_dm_log(self, message: discord.Message):
         """
-        Sends a direct message object to the staff log channel.
+        Sends a direct message object to the staff log channel. Used to store
+        messages sent directly to the bot by a user.
         """
         # Get the relevant objects
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        dm_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name=CHANNEL_DMLOG
-        )
+        guild = self.bot.get_guild(SERVER_ID)
+        assert isinstance(guild, discord.Guild)
+
+        dm_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
+        assert isinstance(dm_channel, discord.TextChannel)
 
         # Create an embed containing the direct message info and send it to the log channel
         message_embed = discord.Embed(
@@ -104,38 +78,37 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        # Give new user confirmed role
-        unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
-        await member.add_roles(unconfirmed_role)
+        """
+        Executes when a member joins. Completes the following actions:
+            * Sends a welcome message to the #welcome channel.
+            * Sends a message to #lounge if the number of members ends with two zeros.
 
-        # Check to see if user's name is innapropriate
-        name = member.name
-        censor_cog: Union[commands.Cog, Censor] = self.bot.get_cog("Censor")
-        if censor_cog.censor_needed(name):
-            # If name contains a censored link
-            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
-            await reporter_cog.create_inappropriate_username_report(member, member.name)
-
-        # Send welcome message to the welcoming channel
+        Args:
+            member (discord.Member): The member who just joined the server.
+        """
         join_channel = discord.utils.get(
             member.guild.text_channels, name=CHANNEL_WELCOME
         )
+        assert isinstance(join_channel, discord.TextChannel)
         await join_channel.send(
             f"{member.mention}, welcome to the Scioly.org Discord Server! "
-            "You can add roles here, using the commands shown at the top of this channel. "
-            "If you have any questions, please just ask here, and a helper or moderator will answer you ASAP."
+            "You can add roles here, using the commands shown at the top of "
+            "this channel. If you have any questions, please just ask here, "
+            "and a helper or moderator will answer you ASAP."
             "\n\n"
-            "**Please add roles by typing the commands above into the text box, and if you have a question, "
-            "please type it here. After adding roles, a moderator will give you access to the rest of the server to "
-            "chat with other "
-            "members!** "
+            "**Please add roles by typing the commands above into the text box,"
+            " and if you have a question, please type it here. After adding "
+            "roles, a moderator will give you access to the rest of the server to "
+            "chat with other members!**"
         )
 
         # Send fun alert message on every 100 members who join
         member_count = len(member.guild.members)
-        lounge_channel: discord.TextChannel = discord.utils.get(
+        lounge_channel = discord.utils.get(
             member.guild.text_channels, name=CHANNEL_LOUNGE
         )
+        assert isinstance(lounge_channel, discord.TextChannel)
+
         if member_count % 100 == 0:
             await lounge_channel.send(
                 f"Wow! There are now `{member_count}` members in the server!"
@@ -143,13 +116,20 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
+        """
+        When a member leaves the server, log that the member left, along with information
+        about their membership when they left.
+
+        Args:
+            member (discord.Member): The member who left the server.
+        """
         # Post a leaving info message
-        leave_channel: discord.TextChannel = discord.utils.get(
+        leave_channel = discord.utils.get(
             member.guild.text_channels, name=CHANNEL_LEAVE
         )
-        unconfirmed_role: discord.Role = discord.utils.get(
-            member.guild.roles, name=ROLE_UC
-        )
+        unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
+        assert isinstance(leave_channel, discord.TextChannel)
+        assert isinstance(unconfirmed_role, discord.Role)
 
         if unconfirmed_role in member.roles:
             unconfirmed_statement = "Unconfirmed: :white_check_mark:"
@@ -160,69 +140,47 @@ class Logger(commands.Cog):
 
         if member.nick is not None:
             await leave_channel.send(
-                f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed).\n{unconfirmed_statement}\n{joined_at}"
+                f"**{member}** (nicknamed `{member.nick}`) has left the server "
+                f"(or was removed).\n{unconfirmed_statement}\n{joined_at}"
             )
         else:
             await leave_channel.send(
-                f"**{member}** has left the server (or was removed).\n{unconfirmed_statement}\n{joined_at}"
+                f"**{member}** has left the server (or was removed)."
+                f"\n{unconfirmed_statement}\n{joined_at}"
             )
 
         # Delete any messages the user left in the welcoming channel
         welcome_channel = discord.utils.get(
             member.guild.text_channels, name=CHANNEL_WELCOME
         )
+        assert isinstance(welcome_channel, discord.TextChannel)
         async for message in welcome_channel.history():
             if not message.pinned:
                 if member in message.mentions or member == message.author:
                     await message.delete()
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        # Notify staff if the user updated their name to include an innapropriate name
-        if after.nick is None:
-            return  # No need to check if user does not have a new nickname set
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        """
+        When any message is edited, get the payload and create a log with it.
 
-        # Get the Censor cog
-        censor_cog: Union[commands.Cog, Censor] = self.bot.get_cog("Censor")
-        censor_found = censor_cog.censor_needed(after.nick)
-        if censor_found:
-            # If name contains a censored link
-            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
-            await reporter_cog.create_inappropriate_username_report(after, after.nick)
-
-    @commands.Cog.listener()
-    async def on_user_update(self, before, after):
-        # Get the Censor cog and see if user's new username is offending censor
-        censor_cog: Union[commands.Cog, Censor] = self.bot.get_cog("Censor")
-        censor_found = censor_cog.censor_needed(after.name)
-        if censor_found:
-            # If name contains a censored link
-            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
-            await reporter_cog.create_inappropriate_username_report(after, after.name)
-
-    @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload):
+        Args:
+            payload (RawMessageUpdateEvent): The payload of the editing.
+        """
         # Get the logger cog and log edited message
         await self.log_edit_message_payload(payload)
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload):
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        """
+        When some message is deleted across the server, grab the event payload
+        and create a log from it.
+
+        Args:
+            payload (RawMessageDeleteEvent): The payload to log.
+        """
         # Get the logger cog and log deleted message
         await self.log_delete_message_payload(payload)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        """
-        Handles reaction add events. Currently, just used to suppress offensive emojis.
-        """
-        if str(payload.emoji) in CENSOR["emojis"]:
-            channel = self.bot.get_channel(payload.channel_id)
-            assert isinstance(channel, discord.TextChannel)
-
-            partial_message = channel.get_partial_message(payload.message_id)
-            assert isinstance(partial_message, discord.PartialMessage)
-
-            await partial_message.clear_reaction(payload.emoji)
 
     @commands.Cog.listener()
     async def on_command_error(
@@ -242,11 +200,13 @@ class Logger(commands.Cog):
             error, discord.ext.commands.InvalidEndOfQuotedStringError
         ):
             return await ctx.send(
-                "Sorry, it appears that your quotation marks are misaligned, and I can't read your query."
+                "Sorry, it appears that your quotation marks are misaligned, "
+                "and I can't read your query."
             )
         if isinstance(error, discord.ext.commands.ExpectedClosingQuoteError):
             return await ctx.send(
-                "Oh. I was expecting you were going to close out your command with a quote somewhere, but never found it!"
+                "Oh. I was expecting you were going to close out your command "
+                "with a quote somewhere, but never found it!"
             )
 
         # User input errors
@@ -262,7 +222,8 @@ class Logger(commands.Cog):
             error, discord.ext.commands.BadUnionArgument
         ):
             return await ctx.send(
-                "Sorry, I'm having trouble reading one of the arguments you just used. Try again!"
+                "Sorry, I'm having trouble reading one of the arguments you just "
+                "used. Try again!"
             )
 
         # Check failure errors
@@ -328,7 +289,8 @@ class Logger(commands.Cog):
             return await ctx.send("Slow down buster! This command's on cooldown.")
         if isinstance(error, discord.ext.commands.MaxConcurrencyReached):
             return await ctx.send(
-                "Uh oh. This command has reached MAXIMUM CONCURRENCY. *lightning flash*. Try again later."
+                "Uh oh. This command has reached MAXIMUM CONCURRENCY. "
+                "*lightning flash*. Try again later."
             )
 
         # Extension errors (not doing specifics)
@@ -349,7 +311,7 @@ class Logger(commands.Cog):
         return
 
     @commands.Cog.listener()
-    async def on_error(self, event, *args, **kwargs):
+    async def on_error(self, _):
         print("Code Error:")
         print(traceback.format_exc())
 
@@ -531,7 +493,8 @@ class Logger(commands.Cog):
             guild.text_channels, name=CHANNEL_DELETEDM
         )
 
-        # Do not send a log for messages deleted out of the deleted messages channel (could cause a possible bot recursion)
+        # Do not send a log for messages deleted out of the deleted messages
+        # channel (could cause a possible bot recursion)
         if channel.type != discord.ChannelType.private and channel.name in [
             CHANNEL_DELETEDM
         ]:
@@ -605,7 +568,10 @@ class Logger(commands.Cog):
 
             embed = discord.Embed(
                 title=":fire: Deleted Message",
-                description="Because this message was not cached, I was unable to retrieve its content before it was deleted.",
+                description=(
+                    "Because this message was not cached, I was unable to "
+                    "retrieve its content before it was deleted."
+                ),
                 color=discord.Color.dark_red(),
             )
             fields = [
