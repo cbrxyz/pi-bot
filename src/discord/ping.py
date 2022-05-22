@@ -1,3 +1,6 @@
+"""
+Holds functionality for members to manage their ping subscriptions.
+"""
 from __future__ import annotations
 
 import datetime
@@ -9,13 +12,16 @@ import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
-from src.mongo.mongo import insert, update
 
 if TYPE_CHECKING:
     from bot import PiBot
 
 
 class PingManager(commands.GroupCog, name="ping"):
+    """
+    Specific cog for holding ping-related functionality.
+    """
+
     recent_messages = {}
 
     def __init__(self, bot: PiBot):
@@ -25,6 +31,12 @@ class PingManager(commands.GroupCog, name="ping"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        """
+        Event listening for new messages in an attempt to send out needed pings.
+
+        Args:
+            message (discord.Message): The message that was just sent by a user.
+        """
         # Do not ping for messages in a private channel
         if message.channel.type == discord.ChannelType.private:
             return
@@ -93,7 +105,16 @@ class PingManager(commands.GroupCog, name="ping"):
         self, text: str, length: int, user: Union[discord.Member, discord.User]
     ) -> str:
         """
-        Highlights ping expressions in the message and shorten long messages with an ellipsis.
+        Highlights ping expressions in the message and shorten long messages
+        with an ellipsis.
+
+        Args:
+            text (str): The raw text to format.
+            length (int): The length of the string desired - the rest will be split
+                off and replaced with a single ellipsis.
+            user (Union[discord.Member, discord.User]): The user to highlight the text
+                with respect to. This is used to get relevant ping info about the
+                specific user.
         """
         user_ping_obj = [
             user_obj
@@ -135,6 +156,11 @@ class PingManager(commands.GroupCog, name="ping"):
     ) -> None:
         """
         Sends a direct message to the user about a message containing a relevant ping expression.
+
+        Args:
+            user (discord.User): The user to send a DM to.
+            message (discord.Message): The message which triggered the ping.
+            ping_count (int): How many pings were triggered by the specific message.
         """
         # Expire recent messages
         self.expire_recent_messages()
@@ -176,8 +202,18 @@ class PingManager(commands.GroupCog, name="ping"):
         await user.send(embed=embed)
 
     @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def dnd(self, interaction: discord.Interaction):
+        """
+        Discord command allowing members to sent their ping mode to DND.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The discord app command which triggered
+                the command.
+        """
         user = [
             u
             for u in src.discord.globals.PING_INFO
@@ -210,9 +246,20 @@ class PingManager(commands.GroupCog, name="ping"):
         name="add", description="Adds a new ping to notify you about."
     )
     @app_commands.describe(word="The new word to add a ping for.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pingadd(self, interaction: discord.Interaction, word: str):
-        # Check to see if author in ping info already
+        """
+        Discord command allowing members to add a ping keyword to their list of
+        pings.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The Discord app command which triggered
+                the command.
+            word (str): The new word to ping on.
+        """
         member = interaction.user
         if any(
             [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
@@ -241,7 +288,7 @@ class PingManager(commands.GroupCog, name="ping"):
                     if doc["user_id"] == member.id
                 ][0]
                 relevant_doc["word_pings"].append(word)
-                await update(
+                await self.bot.mongo_database.update(
                     "data", "pings", user["_id"], {"$push": {"word_pings": word}}
                 )
         else:
@@ -253,7 +300,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 "dnd": False,
             }
             src.discord.globals.PING_INFO.append(new_user_dict)
-            await insert("data", "pings", new_user_dict)
+            await self.bot.mongo_database.insert("data", "pings", new_user_dict)
         return await interaction.response.send_message(
             f"Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be "
             f'responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may '
@@ -263,9 +310,20 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.command(
         name="test", description="Tests your pings on an example message."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(test="The phrase to test your pings against.")
     async def pingtest(self, interaction: discord.Interaction, test: str):
+        """
+        Discord command allowing members to test their ping list against a specific phrase.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (disord.Interaction): The interaction which triggered the app
+                command.
+            test (str): The phrase to test the list of pings against.
+        """
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
@@ -300,8 +358,18 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.command(
         name="list", description="Lists all of your registered pings."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pinglist(self, interaction: discord.Interaction):
+        """
+        Discord command which lists the user's pings.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The app command which triggered this
+                command.
+        """
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
@@ -324,7 +392,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 response += "Your pings are: " + ", ".join(
                     [f"`{word}`" for word in user["word_pings"]]
                 )
-            if not len(response):
+            if not response:
                 response = "You have no registered pings."
             await interaction.response.send_message(response)
 
@@ -334,8 +402,19 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.describe(
         word="The word to remove a ping for. Or use 'all' to remove all pings."
     )
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pingremove(self, interaction: discord.Interaction, word: str):
+        """
+        Discord command that allows a user to remove a word from their list of pings.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The app command which triggered this
+                command.
+            word (str): The word to attempt to remove from the user's list of pings.
+        """
         # Get the user's info
         member = interaction.user
         user = next(
@@ -353,7 +432,7 @@ class PingManager(commands.GroupCog, name="ping"):
         if word == "all":
             user["word_pings"] = []
             user["regex_pings"] = []
-            await update(
+            await self.bot.mongo_database.update(
                 "data",
                 "pings",
                 user["_id"],
@@ -366,7 +445,9 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a word ping
         if word in user["word_pings"]:
             user["word_pings"].remove(word)
-            await update("data", "pings", user["_id"], {"$pull": {"word_pings": word}})
+            await self.bot.mongo_database.update(
+                "data", "pings", user["_id"], {"$pull": {"word_pings": word}}
+            )
             return await interaction.response.send_message(
                 f"I removed the `{word}` ping you were referencing."
             )
@@ -374,7 +455,9 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a regex ping
         elif word in user["regex_pings"]:
             user["regex_pings"].remove(word)
-            await update("data", "pings", user["_id"], {"$pull": {"regex_pings": word}})
+            await self.bot.mongo_database.update(
+                "data", "pings", user["_id"], {"$pull": {"regex_pings": word}}
+            )
             return await interaction.response.send_message(
                 f"I removed the `{word}` RegEx ping you were referencing."
             )
@@ -382,7 +465,7 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a word ping with extra formatting
         elif f"\\b({word})\\b" in user["word_pings"]:
             user["word_pings"].remove(f"\\e({word})\\b")
-            await update(
+            await self.bot.mongo_database.update(
                 "data",
                 "pings",
                 user["_id"],
@@ -395,7 +478,7 @@ class PingManager(commands.GroupCog, name="ping"):
         # Attempt to remove a word ping with alternate extra formatting
         elif f"({word})" in user["word_pings"]:
             user["word_pings"].remove(f"({word})")
-            await update(
+            await self.bot.mongo_database.update(
                 "data", "pings", user["_id"], {"$pull": {"word_pings": f"({word})"}}
             )
             return await interaction.response.send_message(

@@ -7,9 +7,12 @@ import discord
 import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (EMOJI_LOADING, ROLE_STAFF, ROLE_VIP,
-                                 SLASH_COMMAND_GUILDS)
-from src.mongo.mongo import delete, insert, update
+from src.discord.globals import (
+    EMOJI_LOADING,
+    ROLE_STAFF,
+    ROLE_VIP,
+    SLASH_COMMAND_GUILDS,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -23,7 +26,7 @@ class StaffTags(commands.Cog):
     tag_commands_group = app_commands.Group(
         name="tagupdate",
         description="Updates the bot's tag list.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_messages=True),
     )
 
@@ -91,7 +94,7 @@ class StaffTags(commands.Cog):
 
         # Add tag to logs
         src.discord.globals.TAGS.append(new_dict)
-        await insert("data", "tags", new_dict)
+        await self.bot.mongo_database.insert("data", "tags", new_dict)
         await interaction.edit_original_message(
             content=f"The `{tag_name}` tag was added!"
         )
@@ -174,7 +177,9 @@ class StaffTags(commands.Cog):
             update_dict["permissions.members"] = True if members == "yes" else False
 
         # Update tag
-        await update("data", "tags", tag["_id"], {"$set": update_dict})
+        await self.bot.mongo_database.update(
+            "data", "tags", tag["_id"], {"$set": update_dict}
+        )
         await interaction.edit_original_message(
             content=f"The `{tag_name}` tag was updated."
         )
@@ -209,7 +214,7 @@ class StaffTags(commands.Cog):
         # and remove it!
         src.discord.globals.TAGS.remove(tag)
         # and delete it from the DB!
-        await delete("data", "tags", tag["_id"])
+        await self.bot.mongo_database.delete("data", "tags", tag["_id"])
 
         # Send confirmation message
         return await interaction.edit_original_message(

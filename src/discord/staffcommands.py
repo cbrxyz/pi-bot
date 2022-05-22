@@ -12,16 +12,32 @@ import discord
 import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_GENERAL, CATEGORY_SO,
-                                 CATEGORY_STATES, CATEGORY_TOURNAMENTS,
-                                 CHANNEL_WELCOME, EMOJI_LOADING,
-                                 INVITATIONAL_INFO, PI_BOT_IDS, ROLE_AD,
-                                 ROLE_ALL_STATES, ROLE_AT, ROLE_BT, ROLE_GAMES,
-                                 ROLE_GM, ROLE_MR, ROLE_MUTED, ROLE_QUARANTINE,
-                                 ROLE_SELFMUTE, ROLE_STAFF, ROLE_UC, ROLE_VIP,
-                                 ROLE_WM, SERVER_ID, SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_GENERAL,
+    CATEGORY_SO,
+    CATEGORY_STATES,
+    CATEGORY_TOURNAMENTS,
+    CHANNEL_WELCOME,
+    EMOJI_LOADING,
+    INVITATIONAL_INFO,
+    ROLE_AD,
+    ROLE_ALL_STATES,
+    ROLE_AT,
+    ROLE_BT,
+    ROLE_GAMES,
+    ROLE_GM,
+    ROLE_MR,
+    ROLE_MUTED,
+    ROLE_QUARANTINE,
+    ROLE_SELFMUTE,
+    ROLE_STAFF,
+    ROLE_UC,
+    ROLE_VIP,
+    ROLE_WM,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.tournaments import update_tournament_list
-from src.mongo.mongo import delete_by, get_cron, get_pings, remove_doc
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -37,7 +53,7 @@ class SlowMode(app_commands.Group):
             name="slowmode",
             description="Manages slowmode for a channel.",
             default_permissions=discord.Permissions(manage_channels=True),
-            guild_ids=[SLASH_COMMAND_GUILDS],
+            guild_ids=SLASH_COMMAND_GUILDS,
         )
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -160,7 +176,7 @@ class CronConfirm(discord.ui.View):
     async def remove_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await remove_doc("data", "cron", self.doc["_id"])
+        await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
         await interaction.response.edit_message(
             content="Awesome! I successfully removed the action from the CRON list.",
             view=None,
@@ -187,7 +203,7 @@ class CronConfirm(discord.ui.View):
                     return await interaction.edit_original_message(
                         content="Uh oh! The operation was not successful - the user remains banned."
                     )
-            await remove_doc("data", "cron", self.doc["_id"])
+            await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
             return await interaction.edit_original_message(
                 content="The operation was verified - the user can now rejoin the server."
             )
@@ -211,7 +227,9 @@ class CronConfirm(discord.ui.View):
                     view=None,
                 )
                 if role not in member.roles:
-                    await remove_doc("data", "cron", self.doc["_id"])
+                    await self.bot.mongo_database.remove_doc(
+                        "data", "cron", self.doc["_id"]
+                    )
                     return await interaction.edit_original_message(
                         content="The operation was verified - the user can now speak in the server again."
                     )
@@ -291,8 +309,7 @@ class StaffEssential(StaffCommands):
             SlowMode(bot)
         )  # Manually add the slowmode group to this cog
         self.confirm_ctx_menu = app_commands.ContextMenu(
-            name = "Confirm User",
-            callback = self.confirm_user
+            name="Confirm User", callback=self.confirm_user
         )
         self.bot.tree.add_command(self.confirm_ctx_menu)
 
@@ -334,7 +351,7 @@ class StaffEssential(StaffCommands):
         await member.add_roles(role2)
         await channel.purge(
             check=lambda m: (
-                (m.author.id in PI_BOT_IDS and not m.embeds and not m.pinned)
+                (m.author.bot and not m.embeds and not m.pinned)
                 or (m.author == member and not m.embeds)
                 or (member in m.mentions)
             )
@@ -346,7 +363,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(member="The member to confirm.")
     async def confirm(self, interaction: discord.Interaction, member: discord.Member):
         """Allows a staff member to confirm a user."""
@@ -373,8 +390,10 @@ class StaffEssential(StaffCommands):
 
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
-    async def confirm_user(self, interaction: discord.Interaction, member: discord.Member):
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    async def confirm_user(
+        self, interaction: discord.Interaction, member: discord.Member
+    ):
         # Confirm member
         channel = discord.utils.get(member.guild.text_channels, name=CHANNEL_WELCOME)
         await interaction.response.send_message(
@@ -396,7 +415,7 @@ class StaffEssential(StaffCommands):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.describe(count="The amount of messages to nuke.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def nuke(self, interaction, count: app_commands.Range[int, 1, 100]):
         """
         Nukes (deletes) a specified amount of messages in a channel.
@@ -448,7 +467,7 @@ class StaffEssential(StaffCommands):
     @app_commands.command(description="Staff command. Kicks user from the server.")
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(kick_members=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(
         member="The user to kick from the server.",
         reason="The reason to kick the member for.",
@@ -534,7 +553,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(member="The user to unmute.")
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """Unmutes a user."""
@@ -595,7 +614,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(ban_members=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(
         member="The user to ban.",
         reason="The reason to ban the user for.",
@@ -722,7 +741,7 @@ class StaffEssential(StaffCommands):
     @app_commands.command(description="Staff command. Mutes a user.")
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(
         member="The user to mute.",
         reason="The reason to mute the user.",
@@ -837,7 +856,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def cron(self, interaction: discord.Interaction):
         """
         Allows staff to manipulate the CRON list.
@@ -849,7 +868,7 @@ class StaffEssential(StaffCommands):
         """
         commandchecks.is_staff_from_ctx(interaction)
 
-        cron_list = await get_cron()
+        cron_list = await self.bot.mongo_database.get_cron()
         if not len(cron_list):
             return await interaction.response.send_message(
                 f"Unfortunately, there are no items in the CRON list to manage."
@@ -884,7 +903,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_channels=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def vc(self, interaction: discord.Interaction):
         commandchecks.is_staff_from_ctx(interaction)
 
@@ -922,7 +941,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content="Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is "
-                            "allowed.** "
+                    "allowed.** "
                 )
             else:
                 # Voice channel needs to be closed
@@ -995,7 +1014,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content="Created a voice channel. **Please remember to follow the rules! "
-                            "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1044,7 +1063,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content="Created a voice channel. **Please remember to follow the rules! "
-                            "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1061,7 +1080,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         description="Staff command. Finds a user by their ID.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(iden="The ID to lookup.")
     async def userfromid(self, interaction: discord.Interaction, iden: str):
         """Mentions a user with the given ID."""
@@ -1075,7 +1094,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_channels=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def lock(self, interaction: discord.Interaction):
         """Locks a channel to Member access."""
         # Check permissions
@@ -1135,7 +1154,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.default_permissions(manage_channels=True)
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def unlock(self, interaction: discord.Interaction):
         """Unlocks a channel to Member access."""
         # Check permissions
@@ -1201,7 +1220,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(moderate_members=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def met(self, interaction: discord.Interaction):
         """Runs Pi-Bot's Most Edits Table"""
         commandchecks.is_staff_from_ctx(interaction)
@@ -1255,7 +1274,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_webhooks=True)
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(system="The system to refresh.")
     async def refresh(
         self,
@@ -1291,7 +1310,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await interaction.edit_original_message(
                 content=f"{EMOJI_LOADING} Updating all users' pings."
             )
-            src.discord.globals.PING_INFO = await get_pings()
+            src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
             await interaction.edit_original_message(
                 content=":white_check_mark: Updated all users' pings."
             )
@@ -1299,7 +1318,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     change_status_group = app_commands.Group(
         name="status",
         description="Updates the bot's status.",
-        guild_ids=[SLASH_COMMAND_GUILDS],
+        guild_ids=SLASH_COMMAND_GUILDS,
         default_permissions=discord.Permissions(manage_webhooks=True),
     )
 
@@ -1353,11 +1372,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         # Change settings
         await src.discord.globals.update_setting(
-            {"custom_bot_status_text": message, "custom_bot_status_type": activity}
+            {"custom_bot_status_text": message, "custom_bot_status_type": activity},
+            self.bot,
         )
 
         # Delete any relevant documents
-        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
+        await self.bot.mongo_database.delete_by(
+            "data", "cron", {"type": "REMOVE_STATUS"}
+        )
 
         # Insert time length into CRON
         cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
@@ -1399,12 +1421,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             f"{EMOJI_LOADING} Attempting to resetting status..."
         )
         await src.discord.globals.update_setting(
-            {"custom_bot_status_text": None, "custom_bot_status_type": None}
+            {"custom_bot_status_text": None, "custom_bot_status_type": None}, self.bot
         )
         await interaction.edit_original_message(content="Reset the bot's status.")
 
         # Delete any relevant documents
-        await delete_by("data", "cron", {"type": "REMOVE_STATUS"})
+        await self.bot.mongo_database.delete_by(
+            "data", "cron", {"type": "REMOVE_STATUS"}
+        )
 
         # Reset bot status to regularly update
         cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
