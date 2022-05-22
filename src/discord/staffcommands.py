@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import re
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 
@@ -914,7 +914,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ):
             # Handle for tournament channels
 
-            test_vc = discord.utils.get(
+            test_vc: Optional[discord.VoiceChannel] = discord.utils.get(
                 server.voice_channels, name=interaction.channel.name
             )
             if not test_vc:
@@ -940,8 +940,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 await new_vc.set_permissions(at, view_channel=True)
 
                 return await interaction.edit_original_message(
-                    content="Created a voice channel. **Please remember to follow the rules! No doxxing or cursing is "
-                    "allowed.** "
+                    content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
+                        f"No doxxing or cursing is allowed.** "
                 )
             else:
                 # Voice channel needs to be closed
@@ -1013,8 +1013,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 )
 
                 return await interaction.edit_original_message(
-                    content="Created a voice channel. **Please remember to follow the rules! "
-                    "No doxxing or cursing is allowed.**"
+                    content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
+                        "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1062,8 +1062,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 await new_vc.set_permissions(member_role, view_channel=False)
 
                 return await interaction.edit_original_message(
-                    content="Created a voice channel. **Please remember to follow the rules! "
-                    "No doxxing or cursing is allowed.**"
+                    content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
+                        "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
