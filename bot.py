@@ -98,10 +98,7 @@ class PiBot(commands.Bot):
                 listener[1]["message"] = message
 
         # Log incoming direct messages
-        if (
-            isinstance(message.channel, discord.DMChannel)
-            and message.author != bot
-        ):
+        if isinstance(message.channel, discord.DMChannel) and message.author != bot:
             logger_cog: Union[commands.Cog, Logger] = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
             print(f"Message from {message.author} through DM's: {message.content}")
@@ -118,18 +115,16 @@ class PiBot(commands.Bot):
                 )
 
         # Check if the message contains a censored word/emoji
-        is_private = any(
-            (
-                isinstance(message.channel, discord_class)
-                for discord_class in [discord.DMChannel, discord.GroupChannel]
-            )
+        is_private = isinstance(
+            message.channel, (discord.DMChannel, discord.GroupChannel)
         )
+
         if message.content and not is_private:
-            censor: Union[commands.Cog, Censor] = bot.get_cog("Censor")
+            censor: Union[commands.Cog, Censor] = self.get_cog("Censor")
             await censor.on_message(message)
 
             # Check to see if the message contains repeated content or has too many caps
-            spam: Union[commands.Cog, SpamManager] = bot.get_cog("SpamManager")
+            spam: Union[commands.Cog, SpamManager] = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
