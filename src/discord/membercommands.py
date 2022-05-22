@@ -1,9 +1,13 @@
+"""
+Functionality for most member commands. These commands frequently help members manage
+their state on the server, including allowing them to change their roles or subscriptions.
+"""
 from __future__ import annotations
 
 import datetime
 import random
 import re
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union, Optional
 
 import wikipedia as wikip
 from aioify import aioify
@@ -43,6 +47,12 @@ if TYPE_CHECKING:
 
 
 class MemberCommands(commands.Cog):
+    """
+    Class containing several commands meant to be executed by members to control
+    their state across the server.
+    """
+    # pylint: disable=no-self-use
+
     def __init__(self, bot: PiBot):
         self.bot = bot
         self.aiowikip = aioify(obj=wikip)
@@ -51,7 +61,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Looking for help? Try this!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def help(self, interaction: discord.Interaction):
-        """Allows a user to request help for a command."""
+        """
+        Discord command that gives general help about the bot and server.
+
+        Permissions:
+            None: Accessible by all members.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent from Discord.
+        """
         server = self.bot.get_guild(SERVER_ID)
         invitationals_channel = discord.utils.get(
             server.text_channels, name=CHANNEL_TOURNAMENTS
@@ -84,7 +102,16 @@ class MemberCommands(commands.Cog):
         interaction: discord.Interaction,
         pronouns: Literal["He / Him / His", "She / Her / Hers", "They / Them / Theirs"],
     ):
-        """Assigns or removes pronoun roles from a user."""
+        """
+        Discord command allowing members to change their pronouns.
+
+        Permissions:
+            None: Accessible by all members.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent from Discord.
+            pronouns (str): The pronoun set chosen by a member.
+        """
         member = interaction.user
         pronoun_role = discord.utils.get(member.guild.roles, name=pronouns)
         if pronoun_role in member.roles:
@@ -103,7 +130,18 @@ class MemberCommands(commands.Cog):
         username="The username to get information about. Defaults to your nickname/username."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def profile(self, interaction: discord.Interaction, username: str = None):
+    async def profile(self, interaction: discord.Interaction, username: Optional[str] = None):
+        """
+        Allows a user to get information about a Scioly.org profile.
+
+        Permissions:
+            Confirmed member: Unconfirmed members do not have access to this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent from Discord.
+            username (Optional[str]): The Scioly.org username to get profile information for.
+                If None, then defaults to the user's shown name.
+        """
         if username is None:
             username = interaction.user.nick or interaction.user.name
 
@@ -195,6 +233,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Returns the number of members in the server.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def count(self, interaction: discord.Interaction):
+        """
+        Returns the number of members in the server.
+
+        Permissions:
+            None: All members have access to this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         guild = interaction.user.guild
         await interaction.response.send_message(
             content=f"Currently, there are `{len(guild.members)}` members in the server."
@@ -203,7 +250,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Toggles the Alumni role.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def alumni(self, interaction: discord.Interaction):
-        """Removes or adds the alumni role from a user."""
+        """
+        Removes or adds the alumni role from a user.
+
+        Permissions:
+            None: All users have access to this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         await self._assign_div(interaction, "Alumni")
         await interaction.response.send_message(
             content="Assigned you the Alumni role, and removed all other divison/alumni roles."
@@ -217,6 +272,15 @@ class MemberCommands(commands.Cog):
         interaction: discord.Interaction,
         div: Literal["Division A", "Division B", "Division C", "Alumni", "None"],
     ):
+        """
+        Gives the user a specific division role, including the Alumni role.
+
+        Permissions:
+            None: All users have access to this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         if div != "None":
             await self._assign_div(interaction, div)
             await interaction.response.send_message(
@@ -238,7 +302,15 @@ class MemberCommands(commands.Cog):
         interaction: discord.Interaction,
         div: Literal["Division A", "Division B", "Division C", "Alumni"],
     ) -> discord.Role:
-        """Assigns a user a div"""
+        """
+        Internal command which assigns a user a div role. Called by /division
+        and /alumni.
+
+        Args:
+            interaction (discord.Interaction): The Discord interaction sent by one
+                of the commands.
+            div (str): The division chosen by the user.
+        """
         member = interaction.user
         role = discord.utils.get(member.guild.roles, name=div)
         div_a_role = discord.utils.get(member.guild.roles, name=ROLE_DIV_A)
@@ -252,7 +324,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Toggles the visibility of the #games channel.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def games(self, interaction: discord.Interaction):
-        """Removes or adds someone to the games channel."""
+        """
+        Removes or adds someone to the games channel.
+
+        Permissions:
+            Confirmed Members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         games_channel = discord.utils.get(
             interaction.user.guild.text_channels, name=CHANNEL_GAMES
         )
@@ -283,7 +363,16 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def states(self, interaction: discord.Interaction, states: str):
-        """Assigns someone with specific states."""
+        """
+        Assigns someone with specific state roles.
+
+        Permissions:
+            None: All members can access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+            states (str): The list of states the user is attempting to add.
+        """
         new_args = states.split(",")
         new_args = [re.sub("[;,]", "", arg) for arg in new_args]
         new_args = [arg.strip() for arg in new_args]
@@ -419,7 +508,14 @@ class MemberCommands(commands.Cog):
         ],
     ):
         """
-        Self mutes the user that invokes the command.
+        Discord command that allows a member to mute themselves.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+            mute_length (str): The amount of time the user wishes to mute themselves.
         """
         if is_staff_from_ctx(interaction, no_raise=True):
             return await interaction.response.send_message(
@@ -499,6 +595,17 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def request(self, interaction: discord.Interaction, invitational: str):
+        """
+        Discord command allowing members to request a new invitational channel.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+            invitational (str): The specific invitational name the user is requesting
+                to be added.
+        """
         reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
         await reporter_cog.create_invitational_request_report(
             interaction.user, invitational
@@ -510,7 +617,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Returns information about the bot and server.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def about(self, interaction: discord.Interaction):
-        """Prints information about the bot."""
+        """
+        Discord command which prints information about the bot.
+
+        Permissions:
+            None: This command can be access by all members.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         repo = "https://github.com/cbrxyz/pi-bot"
         wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
         forums_link = (
@@ -537,6 +652,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Returns the Discord server invite.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def invite(self, interaction: discord.Interaction):
+        """
+        Discord command which returns an invite link to the Discord server.
+
+        Permissions:
+            None: All members can access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         await interaction.response.send_message("https://discord.gg/C9PGV6h")
 
     @app_commands.command(
@@ -549,6 +673,16 @@ class MemberCommands(commands.Cog):
         interaction: discord.Interaction,
         destination: Literal["forums", "exchange", "gallery", "obb", "wiki", "tests"],
     ):
+        """
+        Discord command which returns a specific Scioly.org link.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+            destination (str): The specific link destination on Scioly.org
+        """
         destination_dict = {
             "forums": "forums",
             "wiki": "wiki",
@@ -573,6 +707,17 @@ class MemberCommands(commands.Cog):
         minimum: int = 0,
         maximum: int = 10,
     ):
+        """
+        Discord command which returns a random number between two numbers.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The specific interaction sent by discord.
+            minimum (int): The smallest number. Defaults to 0.
+            maximum (int): The largest number. Defaults to 10.
+        """
         if minimum > maximum:
             maximum, minimum = minimum, maximum
 
@@ -603,7 +748,16 @@ class MemberCommands(commands.Cog):
             "Rule #13: Use good judgement.",
         ],
     ):
-        """Gets a specified rule."""
+        """
+        Discord command which gets a specified rule.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+            rule (str): The rule to print.
+        """
         num = re.findall(r"Rule #(\d+)", rule)
         num = int(num[0])
         rule = RULES[int(num) - 1]
@@ -612,7 +766,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Information about gaining the @Coach role.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def coach(self, interaction: discord.Interaction):
-        """Gives an account the coach role."""
+        """
+        Discord command returning the link to the form to apply for the @Coach role.
+
+        Permissions:
+            None: All members can access this command.
+
+        Args:
+            interaction (discord.Interaction): The interaction sent by Discord.
+        """
         await interaction.response.send_message(
             "If you would like to apply for the `Coach` role, please fill out the form here: "
             "<https://forms.gle/UBKpWgqCr9Hjw9sa6>.",
@@ -622,7 +784,15 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Information about the current server.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def info(self, interaction: discord.Interaction):
-        """Gets information about the Discord server."""
+        """
+        Discord command which gets information about the Discord server.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The specific interaction sent by Discord.
+        """
         server = interaction.guild
         name = server.name
         owner = server.owner
@@ -646,13 +816,13 @@ class MemberCommands(commands.Cog):
         voice_channel_count = len(server.voice_channels)
         category_count = len(server.categories)
         system_channel = server.system_channel
-        if type(system_channel) == discord.TextChannel:
+        if isinstance(system_channel, discord.TextChannel):
             system_channel = system_channel.mention
         rules_channel = server.rules_channel
-        if type(rules_channel) == discord.TextChannel:
+        if isinstance(rules_channel, discord.TextChannel):
             rules_channel = rules_channel.mention
         public_updates_channel = server.public_updates_channel
-        if type(public_updates_channel) == discord.TextChannel:
+        if isinstance(public_updates_channel, discord.TextChannel):
             public_updates_channel = public_updates_channel.mention
         emoji_limit = server.emoji_limit
         bitrate_limit = server.bitrate_limit
@@ -749,6 +919,17 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikisummary(self, interaction: discord.Interaction, page: str):
+        """
+        Discord command which returns the summary of a wiki page.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The specific app command interaction
+                sent by Discord.
+            page (str): The name of the page to request the summary of.
+        """
         command = await implement_command("summary", page)
         if not command:
             await interaction.response.send_message(
@@ -761,6 +942,17 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(term="The term to search for across the wiki.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikisearch(self, interaction: discord.Interaction, term: str):
+        """
+        Discord command which searches the wiki for a specific page name.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The specific app command interaction
+                sent by Discord.
+            term (str): The term to search with.
+        """
         command = await implement_command("search", term)
         if len(command):
             await interaction.response.send_message(
@@ -775,6 +967,17 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(page="The wiki page to link to. Correct caps must be used.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikilink(self, interaction: discord.Interaction, page: str):
+        """
+        Discord command which returns the link to a specific wiki page.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The specific app command interaction
+                sent by Discord.
+            page (str): The name of the page to get the link of.
+        """
         command = await implement_command("link", page)
         if not command:
             await interaction.response.send_message(
@@ -800,6 +1003,18 @@ class MemberCommands(commands.Cog):
         command: Literal["search", "summary", "link"],
         request: str,
     ):
+        """
+        Discord command which gets specific information about a Wikipedia page.
+
+        Permissions:
+            Confirmed members: Unconfirmed members cannot access this command.
+
+        Args:
+            interaction (discord.Interaction): The app command interaction sent
+                by Discord.
+            command (str): The command to execute across Wikipedia.
+            request (str): The request associated with the command.
+        """
         if command == "search":
             return await interaction.response.send_message(
                 "\n".join(
@@ -848,7 +1063,17 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def events(self, interaction: discord.Interaction, events: str):
-        """Adds or removes event roles from a user."""
+        """
+        Discord command which adds or removes event roles from a user.
+
+        Permissions:
+            None: All members can access this command.
+
+        Args:
+            interaction (discord.Interaction): The app command interaction sent by
+                Discord.
+            events (str): The list of events to add/remove.
+        """
         if len(events) > 100:
             return await interaction.response.send_message(
                 "Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands."
@@ -924,7 +1149,7 @@ class MemberCommands(commands.Cog):
                         ", and could not handle: "
                         + " ".join([f"`{arg}`" for arg in could_not_handle])
                     )
-                    if len(could_not_handle)
+                    if could_not_handle
                     else ""
                 )
                 + "."
@@ -938,7 +1163,7 @@ class MemberCommands(commands.Cog):
                         ", and could not handle: "
                         + " ".join([f"`{arg}`" for arg in could_not_handle])
                     )
-                    if len(could_not_handle)
+                    if could_not_handle
                     else ""
                 )
                 + "."
@@ -948,7 +1173,7 @@ class MemberCommands(commands.Cog):
                 "Added events "
                 + (" ".join([f"`{arg}`" for arg in added_roles]))
                 + ", "
-                + ("and " if not len(could_not_handle) else "")
+                + ("and " if not could_not_handle else "")
                 + "removed events "
                 + (" ".join([f"`{arg}`" for arg in removed_roles]))
                 + (
@@ -956,7 +1181,7 @@ class MemberCommands(commands.Cog):
                         ", and could not handle: "
                         + " ".join([f"`{arg}`" for arg in could_not_handle])
                     )
-                    if len(could_not_handle)
+                    if could_not_handle
                     else ""
                 )
                 + "."
@@ -968,6 +1193,16 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(tag_name="The name of the tag to get.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def tag(self, interaction: discord.Interaction, tag_name: str):
+        """
+        Discord command which prints out a tag name.
+
+        Permissions:
+            Confirmed members: Unconfirmed members do not have access to this command.
+
+        Args:
+            interaction (discord.Interaction): The app command interaction sent by Discord.
+            tag_name (str): The specific tag name sent by Discord.
+        """
         member = interaction.user
 
         if not len(src.discord.globals.TAGS):

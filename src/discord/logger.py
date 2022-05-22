@@ -5,13 +5,12 @@ buckets, such as a Discord channel or database log.
 from __future__ import annotations
 
 import traceback
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 from commanderrors import CommandNotAllowedInChannel
 from discord.ext import commands
 from src.discord.globals import (
-    CENSOR,
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
@@ -24,14 +23,15 @@ from src.discord.globals import (
 
 if TYPE_CHECKING:
     from bot import PiBot
-    from src.discord.censor import Censor
-    from src.discord.reporter import Reporter
 
 
 class Logger(commands.Cog):
     """
     Cog which stores all logging functionality.
     """
+
+    # pylint: disable=no-self-use
+
     def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Logger cog.")
@@ -45,9 +45,7 @@ class Logger(commands.Cog):
         guild = self.bot.get_guild(SERVER_ID)
         assert isinstance(guild, discord.Guild)
 
-        dm_channel = discord.utils.get(
-            guild.text_channels, name=CHANNEL_DMLOG
-        )
+        dm_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
         assert isinstance(dm_channel, discord.TextChannel)
 
         # Create an embed containing the direct message info and send it to the log channel
@@ -80,7 +78,14 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        # Send welcome message to the welcoming channel
+        """
+        Executes when a member joins. Completes the following actions:
+            * Sends a welcome message to the #welcome channel.
+            * Sends a message to #lounge if the number of members ends with two zeros.
+
+        Args:
+            member (discord.Member): The member who just joined the server.
+        """
         join_channel = discord.utils.get(
             member.guild.text_channels, name=CHANNEL_WELCOME
         )
@@ -122,9 +127,7 @@ class Logger(commands.Cog):
         leave_channel = discord.utils.get(
             member.guild.text_channels, name=CHANNEL_LEAVE
         )
-        unconfirmed_role = discord.utils.get(
-            member.guild.roles, name=ROLE_UC
-        )
+        unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
         assert isinstance(leave_channel, discord.TextChannel)
         assert isinstance(unconfirmed_role, discord.Role)
 
@@ -308,7 +311,7 @@ class Logger(commands.Cog):
         return
 
     @commands.Cog.listener()
-    async def on_error(self, event, *args, **kwargs):
+    async def on_error(self, _):
         print("Code Error:")
         print(traceback.format_exc())
 
@@ -490,7 +493,8 @@ class Logger(commands.Cog):
             guild.text_channels, name=CHANNEL_DELETEDM
         )
 
-        # Do not send a log for messages deleted out of the deleted messages channel (could cause a possible bot recursion)
+        # Do not send a log for messages deleted out of the deleted messages
+        # channel (could cause a possible bot recursion)
         if channel.type != discord.ChannelType.private and channel.name in [
             CHANNEL_DELETEDM
         ]:
@@ -564,7 +568,10 @@ class Logger(commands.Cog):
 
             embed = discord.Embed(
                 title=":fire: Deleted Message",
-                description="Because this message was not cached, I was unable to retrieve its content before it was deleted.",
+                description=(
+                    "Because this message was not cached, I was unable to "
+                    "retrieve its content before it was deleted."
+                ),
                 color=discord.Color.dark_red(),
             )
             fields = [
