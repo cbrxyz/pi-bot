@@ -17,12 +17,24 @@ import src.discord.globals
 from commandchecks import is_staff_from_ctx
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_GAMES, CHANNEL_ROLES,
-                                 CHANNEL_TOURNAMENTS, CHANNEL_UNSELFMUTE,
-                                 ROLE_ALUMNI, ROLE_DIV_A, ROLE_DIV_B,
-                                 ROLE_DIV_C, ROLE_GAMES, ROLE_LH, ROLE_MR,
-                                 ROLE_SELFMUTE, RULES, SERVER_ID,
-                                 SLASH_COMMAND_GUILDS)
+from src.discord.globals import (
+    CATEGORY_STAFF,
+    CHANNEL_GAMES,
+    CHANNEL_ROLES,
+    CHANNEL_TOURNAMENTS,
+    CHANNEL_UNSELFMUTE,
+    ROLE_ALUMNI,
+    ROLE_DIV_A,
+    ROLE_DIV_B,
+    ROLE_DIV_C,
+    ROLE_GAMES,
+    ROLE_LH,
+    ROLE_MR,
+    ROLE_SELFMUTE,
+    RULES,
+    SERVER_ID,
+    SLASH_COMMAND_GUILDS,
+)
 from src.discord.views import YesNo
 from src.lists import get_state_list
 from src.wiki.wiki import implement_command
@@ -1209,6 +1221,16 @@ class MemberCommands(commands.Cog):
 
         return await interaction.response.send_message("Tag not found.")
 
+    @tag.autocomplete(name="tag_name")
+    async def tag_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice[str]]:
+        tags = [t["name"] for t in src.discord.globals.TAGS]
+        return [
+            app_commands.Choice(name=t["name"], value=t["name"])
+            for t in tags
+            if current.lower() in t["name"].lower()
+        ]
 
 async def setup(bot: PiBot):
     await bot.add_cog(MemberCommands(bot))
