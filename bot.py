@@ -46,6 +46,7 @@ class PiBot(commands.Bot):
             case_insensitive=True,
             intents=intents,
             help_command=None,
+            tree_cls=PiBotCommandTree
         )
         self.http.API_VERSION = 9
         self.listeners_: Dict[
