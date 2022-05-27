@@ -34,9 +34,9 @@ class PiBotCommandTree(app_commands.CommandTree):
         else:
             message = "Ooops, there was a command error."
         try:
-            await interaction.response.send_message(message)
+            await interaction.response.send_message(message, ephemeral=True)
         except discord.InteractionResponded:
-            await interaction.followup.send(message)
+            await interaction.followup.send(message, ephemeral=True)
 
 
 class PiBot(commands.Bot):
