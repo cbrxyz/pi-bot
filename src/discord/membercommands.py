@@ -384,13 +384,13 @@ class MemberCommands(commands.Cog):
             interaction (discord.Interaction): The interaction sent by Discord.
             state (str): The list of states the user is attempting to add.
         """
+        selected_state_roles = [
+            discord.utils.get(interaction.user.guild.roles, name=v) for k, v in locals() if v
+        ]
+
         member = interaction.user
         removed_roles = []
         added_roles = []
-
-        selected_state_roles = [
-            discord.utils.get(member.guild.roles, name=v) for k, v in locals() if v
-        ]
 
         for role in selected_state_roles:
             if role in member.roles:
@@ -1031,7 +1031,7 @@ class MemberCommands(commands.Cog):
         could_not_handle = []
         multi_word_events = []
 
-        if type(event_info) == int:
+        if isinstance(event_info, int):
             # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few
             # seconds later. This lets the user know this.
             return await interaction.response.send_message(
