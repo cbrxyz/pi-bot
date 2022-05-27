@@ -1225,12 +1225,13 @@ class MemberCommands(commands.Cog):
     async def tag_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> List[app_commands.Choice[str]]:
-        tags = [t["name"] for t in src.discord.globals.TAGS]
+        tags: List[str] = [t["name"] for t in src.discord.globals.TAGS]
         return [
-            app_commands.Choice(name=t["name"], value=t["name"])
+            app_commands.Choice(name=t, value=t)
             for t in tags
-            if current.lower() in t["name"].lower()
+            if current.lower() in t.lower()
         ]
+
 
 async def setup(bot: PiBot):
     await bot.add_cog(MemberCommands(bot))
