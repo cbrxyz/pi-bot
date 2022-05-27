@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Union
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
 
@@ -400,6 +401,33 @@ class Reporter(commands.Cog):
             {json.dumps(task, indent = 4)}
             ```
             Because this likely a development error, no actions can immediately be taken. Please contact a developer to learn more.
+            """,
+            color=discord.Color.brand_red(),
+        )
+        await reports_channel.send(embed=embed)
+
+    async def create_command_error_report(self, error: Exception, command: Union[app_commands.Command, app_commands.ContextMenu]):
+        """
+        Reports a command error to staff.
+        """
+        guild = self.bot.get_guild(SERVER_ID)
+        assert isinstance(guild, discord.Guild)
+
+        reports_channel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
+        assert isinstance(reports_channel, discord.TextChannel)
+
+        # Assemble the embed
+        title = f"Error with `/{command.name}`" if isinstance(command, app_commands.Command) else "Error with `{command.name}` context menu"
+        file_name = error.__traceback__.tb_frame.f_code.co_filename if error.__traceback__ is not None else "???"
+        line_no = error.__traceback__.tb_lineno if error.__traceback__ is not None else "???"
+        embed = discord.Embed(
+            title=title,
+            description=f"""
+            There was an error with the command listed above.
+            
+            The bot experienced a `{type(error)}` in `{file_name}` on line `{line_no}`.
             """,
             color=discord.Color.brand_red(),
         )
