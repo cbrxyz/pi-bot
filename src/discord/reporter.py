@@ -17,6 +17,7 @@ from src.discord.tournaments import Tournament
 if TYPE_CHECKING:
     from bot import PiBot
 
+
 class IgnoreButton(discord.ui.Button):
     """
     A button to mark the report as ignored. This causes the report message to
@@ -24,9 +25,9 @@ class IgnoreButton(discord.ui.Button):
     the report database to be updated.
     """
 
-    view: discord.ui.View
+    view: Union[InnapropriateUsername, InvitationalRequest]
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: Union[InnapropriateUsername, InvitationalRequest]):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -62,9 +63,9 @@ class CompletedButton(discord.ui.Button):
     A button to mark a report as completed.
     """
 
-    view: discord.ui.View
+    view: Union[InnapropriateUsername, InvitationalRequest]
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: Union[InnapropriateUsername, InvitationalRequest]):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -95,9 +96,9 @@ class ChangeInappropriateUsername(discord.ui.Button):
     and the report database to be updated.
     """
 
-    view: discord.ui.View
+    view: InnapropriateUsername
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InnapropriateUsername):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -138,9 +139,9 @@ class KickUserButton(discord.ui.Button):
     Discord button which allows a staff member to promptly kick a user.
     """
 
-    view: discord.ui.View
+    view: InnapropriateUsername
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InnapropriateUsername):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.red,
@@ -181,9 +182,9 @@ class InvitationalArchiveButton(discord.ui.Button):
     Discord button used to archive an invitational channel that was needing archival.
     """
 
-    view: discord.ui.View
+    view: InvitationalArchive
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InvitationalArchive):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.red,
@@ -216,9 +217,9 @@ class InvitationalExtendButton(discord.ui.Button):
     was requesting archival.
     """
 
-    view: discord.ui.View
+    view: InvitationalArchive
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InvitationalArchive):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -270,6 +271,7 @@ class InvitationalRequest(discord.ui.View):
     """
     Discord view representing a user requesting a new invitational channel.
     """
+
     member: discord.Member
     report_id: int
     invitational_name: str
@@ -290,6 +292,7 @@ class InvitationalArchive(discord.ui.View):
     Discord view representing a message about an invitational channel needing
     archival.
     """
+
     report_id: int
     tournament_obj: Tournament
     channel: discord.TextChannel
@@ -332,9 +335,7 @@ class Reporter(commands.Cog):
         guild = self.bot.get_guild(SERVER_ID)
         assert isinstance(guild, discord.Guild)
 
-        reports_channel = discord.utils.get(
-            guild.text_channels, name="reports"
-        )
+        reports_channel = discord.utils.get(guild.text_channels, name="reports")
         assert isinstance(reports_channel, discord.TextChannel)
 
         await reports_channel.send(embed=embed)
@@ -406,22 +407,34 @@ class Reporter(commands.Cog):
         )
         await reports_channel.send(embed=embed)
 
-    async def create_command_error_report(self, error: Exception, command: Union[app_commands.Command, app_commands.ContextMenu]):
+    async def create_command_error_report(
+        self,
+        error: Exception,
+        command: Union[app_commands.Command, app_commands.ContextMenu],
+    ):
         """
         Reports a command error to staff.
         """
         guild = self.bot.get_guild(SERVER_ID)
         assert isinstance(guild, discord.Guild)
 
-        reports_channel = discord.utils.get(
-            guild.text_channels, name="reports"
-        )
+        reports_channel = discord.utils.get(guild.text_channels, name="reports")
         assert isinstance(reports_channel, discord.TextChannel)
 
         # Assemble the embed
-        title = f"Error with `/{command.name}`" if isinstance(command, app_commands.Command) else "Error with `{command.name}` context menu"
-        file_name = error.__traceback__.tb_frame.f_code.co_filename if error.__traceback__ is not None else "???"
-        line_no = error.__traceback__.tb_lineno if error.__traceback__ is not None else "???"
+        title = (
+            f"Error with `/{command.name}`"
+            if isinstance(command, app_commands.Command)
+            else "Error with `{command.name}` context menu"
+        )
+        file_name = (
+            error.__traceback__.tb_frame.f_code.co_filename
+            if error.__traceback__ is not None
+            else "???"
+        )
+        line_no = (
+            error.__traceback__.tb_lineno if error.__traceback__ is not None else "???"
+        )
         embed = discord.Embed(
             title=title,
             description=f"""
