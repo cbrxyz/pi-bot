@@ -388,8 +388,7 @@ class MemberCommands(commands.Cog):
         param_list = [state, state_two, state_three, state_four, state_five, state_six]
 
         selected_state_roles = [
-            discord.utils.get(member.guild.roles, name=s)
-            for s in param_list if s
+            discord.utils.get(member.guild.roles, name=s) for s in param_list if s
         ]
 
         removed_roles = []
@@ -1000,11 +999,22 @@ class MemberCommands(commands.Cog):
                 )
 
     @app_commands.command(description="Toggles event roles.")
-    @app_commands.describe(
-        events="The events to toggle. For example, 'anatomy, astro, wq'."
-    )
+    @app_commands.describe(event="The event to toggle. For example, 'Wright Stuff'.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def events(self, interaction: discord.Interaction, events: str):
+    async def events(
+        self,
+        interaction: discord.Interaction,
+        event: str,
+        event_two: Optional[str] = None,
+        event_three: Optional[str] = None,
+        event_four: Optional[str] = None,
+        event_five: Optional[str] = None,
+        event_six: Optional[str] = None,
+        event_seven: Optional[str] = None,
+        event_eight: Optional[str] = None,
+        event_nine: Optional[str] = None,
+        event_ten: Optional[str] = None,
+    ):
         """
         Discord command which adds or removes event roles from a user.
 
@@ -1014,122 +1024,66 @@ class MemberCommands(commands.Cog):
         Args:
             interaction (discord.Interaction): The app command interaction sent by
                 Discord.
-            events (str): The list of events to add/remove.
+            event (str): The name of the event to add/remove.
         """
-        if len(events) > 100:
-            return await interaction.response.send_message(
-                "Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands."
-            )
         member = interaction.user
 
-        # Fix commas as possible separator
-        new_args = events.split(",")
-        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-        new_args = [arg.strip() for arg in new_args]
-
-        event_info = src.discord.globals.EVENT_INFO
-        event_names = []
         removed_roles = []
         added_roles = []
-        could_not_handle = []
-        multi_word_events = []
 
-        if isinstance(event_info, int):
-            # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few
-            # seconds later. This lets the user know this.
-            return await interaction.response.send_message(
-                "Apologies... refreshing data currently. Try again in a few seconds."
-            )
+        param_list = [
+            event,
+            event_two,
+            event_three,
+            event_four,
+            event_five,
+            event_six,
+            event_seven,
+            event_eight,
+            event_nine,
+            event_ten,
+        ]
+        selected_roles = [
+            discord.utils.get(member.guild.roles, name=e) for e in param_list if e
+        ]
 
-        for i in range(7, 1, -1):
-            # Supports adding 7-word to 2-word long events
-            multi_word_events += [
-                e["name"] for e in event_info if len(e["name"].split(" ")) == i
-            ]
-            for event in multi_word_events:
-                words = event.split(" ")
-                all_here = 0
-                all_here = sum(1 for word in words if word.lower() in new_args)
-                if all_here == i:
-                    # Word is in args
-                    role = discord.utils.get(member.guild.roles, name=event)
-                    if role in member.roles:
-                        await member.remove_roles(role)
-                        removed_roles.append(event)
-                    else:
-                        await member.add_roles(role)
-                        added_roles.append(event)
-                    for word in words:
-                        new_args.remove(word.lower())
-
-        for arg in new_args:
-            found_event = False
-            for event in event_info:
-                aliases = [alias.lower() for alias in event["aliases"]]
-                if arg.lower() in aliases or arg.lower() == event["name"].lower():
-                    event_names.append(event["name"])
-                    found_event = True
-                    break
-            if not found_event:
-                could_not_handle.append(arg)
-
-        for event in event_names:
-            role = discord.utils.get(member.guild.roles, name=event)
+        for role in selected_roles:
             if role in member.roles:
                 await member.remove_roles(role)
-                removed_roles.append(event)
+                removed_roles.append(role.name)
             else:
                 await member.add_roles(role)
-                added_roles.append(event)
+                added_roles.append(role.name)
 
-        if len(added_roles) > 0 and len(removed_roles) == 0:
-            event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
-        elif len(removed_roles) > 0 and len(added_roles) == 0:
-            event_res = (
-                "Removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
-        else:
-            event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + ", "
-                + ("and " if not could_not_handle else "")
-                + "removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
+        event_res = (
+            "Added events "
+            + (" ".join([f"`{arg}`" for arg in added_roles]))
+            + ", "
+            + "removed events "
+            + (" ".join([f"`{arg}`" for arg in removed_roles]))
+            + "."
+        )
 
         await interaction.response.send_message(event_res)
+
+    @events.autocomplete("event")
+    @events.autocomplete("event_two")
+    @events.autocomplete("event_three")
+    @events.autocomplete("event_four")
+    @events.autocomplete("event_five")
+    @events.autocomplete("event_six")
+    @events.autocomplete("event_seven")
+    @events.autocomplete("event_eight")
+    @events.autocomplete("event_nine")
+    @events.autocomplete("event_ten")
+    async def events_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice[str]]:
+        return [
+            app_commands.Choice[e["name"]]
+            for e in src.discord.globals.EVENT_INFO
+            if current.lower() in e["name"].lower()
+        ][:25]
 
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
