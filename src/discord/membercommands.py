@@ -361,7 +361,7 @@ class MemberCommands(commands.Cog):
         description="Toggles the visibility of state roles and channels."
     )
     @app_commands.describe(
-        states="The states to toggle. For example 'Missouri, Iowa, South Dakota'."
+        states="The state to toggle. For example 'Missouri, Iowa, South Dakota'."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def states(
