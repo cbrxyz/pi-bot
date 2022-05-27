@@ -7,7 +7,7 @@ from __future__ import annotations
 import datetime
 import random
 import re
-from typing import TYPE_CHECKING, Literal, Union, Optional
+from typing import List, TYPE_CHECKING, Literal, Union, Optional
 
 import wikipedia as wikip
 from aioify import aioify
@@ -51,6 +51,7 @@ class MemberCommands(commands.Cog):
     Class containing several commands meant to be executed by members to control
     their state across the server.
     """
+
     # pylint: disable=no-self-use
 
     def __init__(self, bot: PiBot):
@@ -98,9 +99,9 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(pronouns="The pronoun to add/remove from your account.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def pronouns(
-        self,
-        interaction: discord.Interaction,
-        pronouns: Literal["He / Him / His", "She / Her / Hers", "They / Them / Theirs"],
+            self,
+            interaction: discord.Interaction,
+            pronouns: Literal["He / Him / His", "She / Her / Hers", "They / Them / Theirs"],
     ):
         """
         Discord command allowing members to change their pronouns.
@@ -130,7 +131,9 @@ class MemberCommands(commands.Cog):
         username="The username to get information about. Defaults to your nickname/username."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def profile(self, interaction: discord.Interaction, username: Optional[str] = None):
+    async def profile(
+            self, interaction: discord.Interaction, username: Optional[str] = None
+    ):
         """
         Allows a user to get information about a Scioly.org profile.
 
@@ -146,7 +149,7 @@ class MemberCommands(commands.Cog):
             username = interaction.user.nick or interaction.user.name
 
         async with self.bot.session.get(
-            f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}"
+                f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}"
         ) as page:
             if page.status > 400:
                 return await interaction.response.send_message(
@@ -268,9 +271,9 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(div="The division to assign the user with.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def division(
-        self,
-        interaction: discord.Interaction,
-        div: Literal["Division A", "Division B", "Division C", "Alumni", "None"],
+            self,
+            interaction: discord.Interaction,
+            div: Literal["Division A", "Division B", "Division C", "Alumni", "None"],
     ):
         """
         Gives the user a specific division role, including the Alumni role.
@@ -298,9 +301,9 @@ class MemberCommands(commands.Cog):
             )
 
     async def _assign_div(
-        self,
-        interaction: discord.Interaction,
-        div: Literal["Division A", "Division B", "Division C", "Alumni"],
+            self,
+            interaction: discord.Interaction,
+            div: Literal["Division A", "Division B", "Division C", "Alumni"],
     ) -> discord.Role:
         """
         Internal command which assigns a user a div role. Called by /division
@@ -362,7 +365,16 @@ class MemberCommands(commands.Cog):
         states="The states to toggle. For example 'Missouri, Iowa, South Dakota'."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def states(self, interaction: discord.Interaction, states: str):
+    async def states(
+            self,
+            interaction: discord.Interaction,
+            state: str,
+            state_two: Optional[str] = None,
+            state_three: Optional[str] = None,
+            state_four: Optional[str] = None,
+            state_five: Optional[str] = None,
+            state_six: Optional[str] = None,
+    ):
         """
         Assigns someone with specific state roles.
 
@@ -371,141 +383,69 @@ class MemberCommands(commands.Cog):
 
         Args:
             interaction (discord.Interaction): The interaction sent by Discord.
-            states (str): The list of states the user is attempting to add.
+            state (str): The list of states the user is attempting to add.
         """
-        new_args = states.split(",")
-        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-        new_args = [arg.strip() for arg in new_args]
-
         member = interaction.user
-        states = await get_state_list()
-        states = [s[: s.rfind(" (")] for s in states]
-        triple_word_states = [s for s in states if len(s.split(" ")) > 2]
-        double_word_states = [s for s in states if len(s.split(" ")) > 1]
         removed_roles = []
         added_roles = []
-        for term in ["california", "ca", "cali"]:
-            if term in [arg.lower() for arg in new_args]:
-                return await interaction.response.send_message(
-                    "Which California, North or South? Try `/state norcal` or `/state socal`."
-                )
-        if len(new_args) > 10:
-            return await interaction.response.send_message(
-                "Sorry, you are attempting to add/remove too many states at once."
-            )
-        for string in ["South", "North"]:
-            california_list = [
-                f"California ({string})",
-                f"California-{string}",
-                f"California {string}",
-                f"{string}ern California",
-                f"{string} California",
-                f"{string} Cali",
-                f"Cali {string}",
-                f"{string} CA",
-                f"CA {string}",
-            ]
-            if string == "North":
-                california_list.append("NorCal")
-            else:
-                california_list.append("SoCal")
-            for listing in california_list:
-                words = listing.split(" ")
-                all_here = sum(1 for word in words if word.lower() in new_args)
-                if all_here == len(words):
-                    role = discord.utils.get(
-                        member.guild.roles, name=f"California ({string})"
-                    )
-                    if role in member.roles:
-                        await member.remove_roles(role)
-                        removed_roles.append(f"California ({string})")
-                    else:
-                        await member.add_roles(role)
-                        added_roles.append(f"California ({string})")
-                    for word in words:
-                        new_args.remove(word.lower())
-        for triple in triple_word_states:
-            words = triple.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == 3:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=triple)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(triple)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(triple)
-                for word in words:
-                    new_args.remove(word.lower())
-        for double in double_word_states:
-            words = double.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == 2:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=double)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(double)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(double)
-                for word in words:
-                    new_args.remove(word.lower())
-        for arg in new_args:
-            role_name = await lookup_role(arg)
-            if not role_name:
-                return await interaction.response.send_message(
-                    f"Sorry, the `{arg}` state could not be found. Try again."
-                )
-            role = discord.utils.get(member.guild.roles, name=role_name)
+
+        states = [s[: s.rfind(" (")] for s in await get_state_list()]
+        selected_state_roles = [
+            discord.utils.get(member.guild.roles, name=v) for k, v in locals() if v
+        ]
+
+        for role in selected_state_roles:
             if role in member.roles:
                 await member.remove_roles(role)
-                removed_roles.append(role_name)
+                removed_roles.append(role.name)
             else:
                 await member.add_roles(role)
-                added_roles.append(role_name)
-        if len(added_roles) > 0 and len(removed_roles) == 0:
-            state_res = (
-                "Added states " + (" ".join([f"`{arg}`" for arg in added_roles])) + "."
-            )
-        elif len(removed_roles) > 0 and len(added_roles) == 0:
-            state_res = (
-                "Removed states "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + "."
-            )
-        else:
-            state_res = (
+                added_roles.append(role.name)
+
+        state_res = (
                 "Added states "
                 + (" ".join([f"`{arg}`" for arg in added_roles]))
                 + ", and removed states "
                 + (" ".join([f"`{arg}`" for arg in removed_roles]))
                 + "."
-            )
+        )
         await interaction.response.send_message(state_res)
+
+    @states.autocomplete("state")
+    @states.autocomplete("state_two")
+    @states.autocomplete("state_three")
+    @states.autocomplete("state_four")
+    @states.autocomplete("state_five")
+    @states.autocomplete("state_six")
+    async def _state_autocomplete(
+            self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice[str]]:
+        states = [s[: s.rfind(" (")] for s in await get_state_list()]
+        return [
+                   app_commands.Choice(name=state, value=state)
+                   for state in states
+                   if current.lower in state.lower()
+               ][:25]
 
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def selfmute(
-        self,
-        interaction: discord.Interaction,
-        mute_length: Literal[
-            "10 minutes",
-            "30 minutes",
-            "1 hour",
-            "2 hours",
-            "4 hours",
-            "8 hours",
-            "1 day",
-            "4 days",
-            "7 days",
-            "1 month",
-            "1 year",
-        ],
+            self,
+            interaction: discord.Interaction,
+            mute_length: Literal[
+                "10 minutes",
+                "30 minutes",
+                "1 hour",
+                "2 hours",
+                "4 hours",
+                "8 hours",
+                "1 day",
+                "4 days",
+                "7 days",
+                "1 month",
+                "1 year",
+            ],
     ):
         """
         Discord command that allows a member to mute themselves.
@@ -669,9 +609,9 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(destination="The area of the site to link to.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def link(
-        self,
-        interaction: discord.Interaction,
-        destination: Literal["forums", "exchange", "gallery", "obb", "wiki", "tests"],
+            self,
+            interaction: discord.Interaction,
+            destination: Literal["forums", "exchange", "gallery", "obb", "wiki", "tests"],
     ):
         """
         Discord command which returns a specific Scioly.org link.
@@ -702,10 +642,10 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def random(
-        self,
-        interaction: discord.Interaction,
-        minimum: int = 0,
-        maximum: int = 10,
+            self,
+            interaction: discord.Interaction,
+            minimum: int = 0,
+            maximum: int = 10,
     ):
         """
         Discord command which returns a random number between two numbers.
@@ -730,23 +670,23 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(rule="The rule to cite.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def rule(
-        self,
-        interaction: discord.Interaction,
-        rule: Literal[
-            "Rule #1: Treat all with respect.",
-            "Rule #2: No profanity/inappropriateness.",
-            "Rule #3: Treat delicate subjects carefully.",
-            "Rule #4: Do not spam or flood.",
-            "Rule #5: Avoid excessive pinging.",
-            "Rule #6: Avoid excessive caps.",
-            "Rule #7: No doxxing/name-dropping.",
-            "Rule #8: No witch-hunting.",
-            "Rule #9: No impersonating.",
-            "Rule #10: Do not use alts.",
-            "Rule #11: Do not violate SOINC copyrights.",
-            "Rule #12: No advertising.",
-            "Rule #13: Use good judgement.",
-        ],
+            self,
+            interaction: discord.Interaction,
+            rule: Literal[
+                "Rule #1: Treat all with respect.",
+                "Rule #2: No profanity/inappropriateness.",
+                "Rule #3: Treat delicate subjects carefully.",
+                "Rule #4: Do not spam or flood.",
+                "Rule #5: Avoid excessive pinging.",
+                "Rule #6: Avoid excessive caps.",
+                "Rule #7: No doxxing/name-dropping.",
+                "Rule #8: No witch-hunting.",
+                "Rule #9: No impersonating.",
+                "Rule #10: Do not use alts.",
+                "Rule #11: Do not violate SOINC copyrights.",
+                "Rule #12: No advertising.",
+                "Rule #13: Use good judgement.",
+            ],
     ):
         """
         Discord command which gets a specified rule.
@@ -843,20 +783,20 @@ class MemberCommands(commands.Cog):
             {
                 "name": "Basic Information",
                 "value": (
-                    f"**Creation Date:** {creation_date}\n"
-                    + f"**ID:** {iden}\n"
-                    + f"**Animated Icon:** {animated_icon}\n"
-                    + f"**Banner URL:** {banner}\n"
-                    + f"**Splash URL:** {splash}\n"
-                    + f"**Discovery Splash URL:** {discovery_splash_url}"
+                        f"**Creation Date:** {creation_date}\n"
+                        + f"**ID:** {iden}\n"
+                        + f"**Animated Icon:** {animated_icon}\n"
+                        + f"**Banner URL:** {banner}\n"
+                        + f"**Splash URL:** {splash}\n"
+                        + f"**Discovery Splash URL:** {discovery_splash_url}"
                 ),
                 "inline": False,
             },
             {
                 "name": "Nitro Information",
                 "value": (
-                    f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n"
-                    + f"**Boosters:** {boosters}"
+                        f"**Nitro Level:** {premium_level} ({boosts} individual boosts)\n"
+                        + f"**Boosters:** {boosters}"
                 ),
                 "inline": False,
             },
@@ -867,36 +807,36 @@ class MemberCommands(commands.Cog):
                     {
                         "name": "Staff Information",
                         "value": (
-                            f"**Owner:** {owner}\n"
-                            + f"**MFA Level:** {mfa_level}\n"
-                            + f"**Verification Level:** {verification_level}\n"
-                            + f"**Content Filter:** {content_filter}\n"
-                            + f"**Default Notifications:** {default_notifs}\n"
-                            + f"**Features:** {features}\n"
-                            + f"**Bitrate Limit:** {bitrate_limit}\n"
-                            + f"**Filesize Limit:** {filesize_limit} MB"
+                                f"**Owner:** {owner}\n"
+                                + f"**MFA Level:** {mfa_level}\n"
+                                + f"**Verification Level:** {verification_level}\n"
+                                + f"**Content Filter:** {content_filter}\n"
+                                + f"**Default Notifications:** {default_notifs}\n"
+                                + f"**Features:** {features}\n"
+                                + f"**Bitrate Limit:** {bitrate_limit}\n"
+                                + f"**Filesize Limit:** {filesize_limit} MB"
                         ),
                         "inline": False,
                     },
                     {
                         "name": "Channels",
                         "value": (
-                            f"**Public Updates Channel:** {public_updates_channel}\n"
-                            + f"**System Channel:** {system_channel}\n"
-                            + f"**Rules Channel:** {rules_channel}\n"
-                            + f"**Text Channel Count:** {text_channel_count}\n"
-                            + f"**Voice Channel Count:** {voice_channel_count}\n"
-                            + f"**Category Count:** {category_count}\n"
+                                f"**Public Updates Channel:** {public_updates_channel}\n"
+                                + f"**System Channel:** {system_channel}\n"
+                                + f"**Rules Channel:** {rules_channel}\n"
+                                + f"**Text Channel Count:** {text_channel_count}\n"
+                                + f"**Voice Channel Count:** {voice_channel_count}\n"
+                                + f"**Category Count:** {category_count}\n"
                         ),
                         "inline": False,
                     },
                     {
                         "name": "Limits",
                         "value": (
-                            f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n"
-                            + f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n"
-                            + f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n"
-                            + f"**Roles:** *{role_percentage}%* ({role_count}/250 roles)"
+                                f"**Channels:** *{channel_percentage}%* ({channel_count}/500 channels)\n"
+                                + f"**Members:** *{member_percentage}%* ({member_count}/{max_members} members)\n"
+                                + f"**Emoji:** *{emoji_percentage}%* ({emoji_count}/{emoji_limit} emojis)\n"
+                                + f"**Roles:** *{role_percentage}%* ({role_count}/250 roles)"
                         ),
                         "inline": False,
                     },
@@ -998,10 +938,10 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def wikipedia(
-        self,
-        interaction: discord.Interaction,
-        command: Literal["search", "summary", "link"],
-        request: str,
+            self,
+            interaction: discord.Interaction,
+            command: Literal["search", "summary", "link"],
+            request: str,
     ):
         """
         Discord command which gets specific information about a Wikipedia page.
@@ -1142,49 +1082,49 @@ class MemberCommands(commands.Cog):
 
         if len(added_roles) > 0 and len(removed_roles) == 0:
             event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
+                    "Added events "
+                    + (" ".join([f"`{arg}`" for arg in added_roles]))
+                    + (
+                        (
+                                ", and could not handle: "
+                                + " ".join([f"`{arg}`" for arg in could_not_handle])
+                        )
+                        if could_not_handle
+                        else ""
                     )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
+                    + "."
             )
         elif len(removed_roles) > 0 and len(added_roles) == 0:
             event_res = (
-                "Removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
+                    "Removed events "
+                    + (" ".join([f"`{arg}`" for arg in removed_roles]))
+                    + (
+                        (
+                                ", and could not handle: "
+                                + " ".join([f"`{arg}`" for arg in could_not_handle])
+                        )
+                        if could_not_handle
+                        else ""
                     )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
+                    + "."
             )
         else:
             event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + ", "
-                + ("and " if not could_not_handle else "")
-                + "removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
+                    "Added events "
+                    + (" ".join([f"`{arg}`" for arg in added_roles]))
+                    + ", "
+                    + ("and " if not could_not_handle else "")
+                    + "removed events "
+                    + (" ".join([f"`{arg}`" for arg in removed_roles]))
+                    + (
+                        (
+                                ", and could not handle: "
+                                + " ".join([f"`{arg}`" for arg in could_not_handle])
+                        )
+                        if could_not_handle
+                        else ""
                     )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
+                    + "."
             )
 
         await interaction.response.send_message(event_res)
@@ -1217,9 +1157,9 @@ class MemberCommands(commands.Cog):
         for t in src.discord.globals.TAGS:
             if t["name"] == tag_name:
                 if (
-                    staff
-                    or (t["permissions"]["launch_helpers"] and lh_role in member.roles)
-                    or (t["permissions"]["members"] and member_role in member.roles)
+                        staff
+                        or (t["permissions"]["launch_helpers"] and lh_role in member.roles)
+                        or (t["permissions"]["members"] and member_role in member.roles)
                 ):
                     return await interaction.response.send_message(content=t["output"])
                 else:
