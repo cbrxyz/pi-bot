@@ -384,11 +384,14 @@ class MemberCommands(commands.Cog):
             interaction (discord.Interaction): The interaction sent by Discord.
             state (str): The list of states the user is attempting to add.
         """
+        member = interaction.user
+        param_list = [state, state_two, state_three, state_four, state_five, state_six]
+
         selected_state_roles = [
-            discord.utils.get(interaction.user.guild.roles, name=v) for k, v in locals() if v
+            discord.utils.get(member.guild.roles, name=s)
+            for s in param_list if s
         ]
 
-        member = interaction.user
         removed_roles = []
         added_roles = []
 
