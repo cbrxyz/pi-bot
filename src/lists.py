@@ -1,4 +1,4 @@
-async def get_state_list():
+def get_state_list():
     return [
         "Alabama (AL)",
         "Alaska (AK)",

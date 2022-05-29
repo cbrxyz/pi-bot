@@ -361,7 +361,16 @@ class MemberCommands(commands.Cog):
         description="Toggles the visibility of state roles and channels."
     )
     @app_commands.describe(
-        states="The state to toggle. For example 'Missouri, Iowa, South Dakota'."
+        state="The first state to add/remove from your profile.",
+        state_two="The second state to add/remove from your profile.",
+        state_three="The third state to add/remove from your profile.",
+        state_four="The fourth state to add/remove from your profile.",
+        state_five="The fifth state to add/remove from your profile.",
+        state_six="The sixth state to add/remove from your profile.",
+        state_seven="The seventh state to add/remove from your profile.",
+        state_eight="The eighth state to add/remove from your profile.",
+        state_nine="The ninth state to add/remove from your profile.",
+        state_ten="The tenth state to add/remove from your profile.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def states(
@@ -373,6 +382,10 @@ class MemberCommands(commands.Cog):
         state_four: Optional[str] = None,
         state_five: Optional[str] = None,
         state_six: Optional[str] = None,
+        state_seven: Optional[str] = None,
+        state_eight: Optional[str] = None,
+        state_nine: Optional[str] = None,
+        state_ten: Optional[str] = None,
     ):
         """
         Assigns someone with specific state roles.
@@ -385,14 +398,17 @@ class MemberCommands(commands.Cog):
             state (str): The list of states the user is attempting to add.
         """
         member = interaction.user
-        param_list = [state, state_two, state_three, state_four, state_five, state_six]
+        param_list = [state, state_two, state_three, state_four, state_five, state_six, state_seven, state_eight, state_nine, state_ten]
+        param_list = [p for p in param_list if p is not None] # No need to try to add/print None later
 
+        states_without_abbrev: List[str] = [s[: s.rfind(" (")] for s in get_state_list()]
         selected_state_roles = [
-            discord.utils.get(member.guild.roles, name=s) for s in param_list if s
+            discord.utils.get(member.guild.roles, name=s) for s in param_list if s in states_without_abbrev
         ]
 
         removed_roles = []
         added_roles = []
+        could_not_handle = [s for s in param_list if s not in states_without_abbrev]
 
         for role in selected_state_roles:
             if role in member.roles:
@@ -402,13 +418,18 @@ class MemberCommands(commands.Cog):
                 await member.add_roles(role)
                 added_roles.append(role.name)
 
-        state_res = (
-            "Added states "
-            + (" ".join([f"`{arg}`" for arg in added_roles]))
-            + ", and removed states "
-            + (" ".join([f"`{arg}`" for arg in removed_roles]))
-            + "."
-        )
+        # Construct a response only containing the needed pieces
+        response_components = []
+        response_components.append("Added states " + " ".join([f"`{arg}`" for arg in added_roles])) if added_roles else None
+        response_components.append("removed states " + " ".join([f"`{arg}`" for arg in removed_roles])) if removed_roles else None
+        response_components.append("could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])) if could_not_handle else None
+
+        # Assemble into message
+        state_res = ", and ".join(response_components)
+
+        # Capitalize and add a period!
+        state_res = state_res.replace(state_res[0], state_res[0].upper(), 1)
+        state_res += "."
         await interaction.response.send_message(state_res)
 
     @states.autocomplete("state")
@@ -417,10 +438,14 @@ class MemberCommands(commands.Cog):
     @states.autocomplete("state_four")
     @states.autocomplete("state_five")
     @states.autocomplete("state_six")
+    @states.autocomplete("state_seven")
+    @states.autocomplete("state_eight")
+    @states.autocomplete("state_nine")
+    @states.autocomplete("state_ten")
     async def _state_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> List[app_commands.Choice[str]]:
-        states: List[str] = [s[: s.rfind(" (")] for s in await get_state_list()]
+        states: List[str] = [s[: s.rfind(" (")] for s in get_state_list()]
         states.append("All States")
         return [
             app_commands.Choice(name=state, value=state)
@@ -999,7 +1024,18 @@ class MemberCommands(commands.Cog):
                 )
 
     @app_commands.command(description="Toggles event roles.")
-    @app_commands.describe(event="The event to toggle. For example, 'Wright Stuff'.")
+    @app_commands.describe(
+        event="The first event to add/remove from your profile.",
+        event_two="The second event to add/remove from your profile.",
+        event_three="The third event to add/remove from your profile.",
+        event_four="The fourth event to add/remove from your profile.",
+        event_five="The fifth event to add/remove from your profile.",
+        event_six="The sixth event to add/remove from your profile.",
+        event_seven="The seventh event to add/remove from your profile.",
+        event_eight="The eighth event to add/remove from your profile.",
+        event_nine="The ninth event to add/remove from your profile.",
+        event_ten="The tenth event to add/remove from your profile.",
+    )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def events(
         self,
@@ -1043,9 +1079,13 @@ class MemberCommands(commands.Cog):
             event_nine,
             event_ten,
         ]
+        param_list = [p for p in param_list if p is not None]
+        event_names = [e["name"] for e in src.discord.globals.EVENT_INFO]
+
         selected_roles = [
-            discord.utils.get(member.guild.roles, name=e) for e in param_list if e
+            discord.utils.get(member.guild.roles, name=e) for e in param_list if e in event_names
         ]
+        could_not_handle = [p for p in param_list if p not in event_names]
 
         for role in selected_roles:
             if role in member.roles:
@@ -1055,14 +1095,18 @@ class MemberCommands(commands.Cog):
                 await member.add_roles(role)
                 added_roles.append(role.name)
 
-        event_res = (
-            "Added events "
-            + (" ".join([f"`{arg}`" for arg in added_roles]))
-            + ", "
-            + "removed events "
-            + (" ".join([f"`{arg}`" for arg in removed_roles]))
-            + "."
-        )
+        # Construct a response only containing the needed pieces
+        response_components = []
+        response_components.append("Added events " + " ".join([f"`{arg}`" for arg in added_roles])) if added_roles else None
+        response_components.append("removed events " + " ".join([f"`{arg}`" for arg in removed_roles])) if removed_roles else None
+        response_components.append("could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])) if could_not_handle else None
+
+        # Assemble into message
+        event_res = ", and ".join(response_components)
+
+        # Capitalize and add a period!
+        event_res = event_res.replace(event_res[0], event_res[0].upper(), 1)
+        event_res += "."
 
         await interaction.response.send_message(event_res)
 
@@ -1080,7 +1124,7 @@ class MemberCommands(commands.Cog):
         self, interaction: discord.Interaction, current: str
     ) -> List[app_commands.Choice[str]]:
         return [
-            app_commands.Choice[e["name"]]
+            app_commands.Choice(name = e["name"], value = e["name"])
             for e in src.discord.globals.EVENT_INFO
             if current.lower() in e["name"].lower()
         ][:25]
