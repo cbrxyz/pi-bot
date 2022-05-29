@@ -7,7 +7,7 @@ from __future__ import annotations
 import datetime
 import random
 import re
-from typing import TYPE_CHECKING, Literal, Union, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional, Union
 
 import wikipedia as wikip
 from aioify import aioify
@@ -17,25 +17,12 @@ import src.discord.globals
 from commandchecks import is_staff_from_ctx
 from discord import app_commands
 from discord.ext import commands
-from src.discord.globals import (
-    CATEGORY_STAFF,
-    CHANNEL_GAMES,
-    CHANNEL_ROLES,
-    CHANNEL_TOURNAMENTS,
-    CHANNEL_UNSELFMUTE,
-    ROLE_ALUMNI,
-    ROLE_DIV_A,
-    ROLE_DIV_B,
-    ROLE_DIV_C,
-    ROLE_GAMES,
-    ROLE_LH,
-    ROLE_MR,
-    ROLE_SELFMUTE,
-    RULES,
-    SERVER_ID,
-    SLASH_COMMAND_GUILDS,
-)
-from src.discord.utils import lookup_role
+from src.discord.globals import (CATEGORY_STAFF, CHANNEL_GAMES, CHANNEL_ROLES,
+                                 CHANNEL_TOURNAMENTS, CHANNEL_UNSELFMUTE,
+                                 ROLE_ALUMNI, ROLE_DIV_A, ROLE_DIV_B,
+                                 ROLE_DIV_C, ROLE_GAMES, ROLE_LH, ROLE_MR,
+                                 ROLE_SELFMUTE, RULES, SERVER_ID,
+                                 SLASH_COMMAND_GUILDS)
 from src.discord.views import YesNo
 from src.lists import get_state_list
 from src.wiki.wiki import implement_command
@@ -51,6 +38,7 @@ class MemberCommands(commands.Cog):
     Class containing several commands meant to be executed by members to control
     their state across the server.
     """
+
     # pylint: disable=no-self-use
 
     def __init__(self, bot: PiBot):
@@ -130,7 +118,9 @@ class MemberCommands(commands.Cog):
         username="The username to get information about. Defaults to your nickname/username."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def profile(self, interaction: discord.Interaction, username: Optional[str] = None):
+    async def profile(
+        self, interaction: discord.Interaction, username: Optional[str] = None
+    ):
         """
         Allows a user to get information about a Scioly.org profile.
 
@@ -359,10 +349,32 @@ class MemberCommands(commands.Cog):
         description="Toggles the visibility of state roles and channels."
     )
     @app_commands.describe(
-        states="The states to toggle. For example 'Missouri, Iowa, South Dakota'."
+        state="The first state to add/remove from your profile.",
+        state_two="The second state to add/remove from your profile.",
+        state_three="The third state to add/remove from your profile.",
+        state_four="The fourth state to add/remove from your profile.",
+        state_five="The fifth state to add/remove from your profile.",
+        state_six="The sixth state to add/remove from your profile.",
+        state_seven="The seventh state to add/remove from your profile.",
+        state_eight="The eighth state to add/remove from your profile.",
+        state_nine="The ninth state to add/remove from your profile.",
+        state_ten="The tenth state to add/remove from your profile.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def states(self, interaction: discord.Interaction, states: str):
+    async def states(
+        self,
+        interaction: discord.Interaction,
+        state: str,
+        state_two: Optional[str] = None,
+        state_three: Optional[str] = None,
+        state_four: Optional[str] = None,
+        state_five: Optional[str] = None,
+        state_six: Optional[str] = None,
+        state_seven: Optional[str] = None,
+        state_eight: Optional[str] = None,
+        state_nine: Optional[str] = None,
+        state_ten: Optional[str] = None,
+    ):
         """
         Assigns someone with specific state roles.
 
@@ -371,121 +383,97 @@ class MemberCommands(commands.Cog):
 
         Args:
             interaction (discord.Interaction): The interaction sent by Discord.
-            states (str): The list of states the user is attempting to add.
+            state_XXX (str): The name of the XXXth state to add/remove from the user.
         """
-        new_args = states.split(",")
-        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-        new_args = [arg.strip() for arg in new_args]
-
         member = interaction.user
-        states = await get_state_list()
-        states = [s[: s.rfind(" (")] for s in states]
-        triple_word_states = [s for s in states if len(s.split(" ")) > 2]
-        double_word_states = [s for s in states if len(s.split(" ")) > 1]
+        param_list = [
+            state,
+            state_two,
+            state_three,
+            state_four,
+            state_five,
+            state_six,
+            state_seven,
+            state_eight,
+            state_nine,
+            state_ten,
+        ]
+        param_list = [
+            p for p in param_list if p is not None
+        ]  # No need to try to add/print None later
+
+        states_without_abbrev: List[str] = [
+            s[: s.rfind(" (")] for s in get_state_list()
+        ]
+        selected_state_roles = [
+            discord.utils.get(member.guild.roles, name=s)
+            for s in param_list
+            if s in states_without_abbrev
+        ]
+
         removed_roles = []
         added_roles = []
-        for term in ["california", "ca", "cali"]:
-            if term in [arg.lower() for arg in new_args]:
-                return await interaction.response.send_message(
-                    "Which California, North or South? Try `/state norcal` or `/state socal`."
-                )
-        if len(new_args) > 10:
-            return await interaction.response.send_message(
-                "Sorry, you are attempting to add/remove too many states at once."
-            )
-        for string in ["South", "North"]:
-            california_list = [
-                f"California ({string})",
-                f"California-{string}",
-                f"California {string}",
-                f"{string}ern California",
-                f"{string} California",
-                f"{string} Cali",
-                f"Cali {string}",
-                f"{string} CA",
-                f"CA {string}",
-            ]
-            if string == "North":
-                california_list.append("NorCal")
-            else:
-                california_list.append("SoCal")
-            for listing in california_list:
-                words = listing.split(" ")
-                all_here = sum(1 for word in words if word.lower() in new_args)
-                if all_here == len(words):
-                    role = discord.utils.get(
-                        member.guild.roles, name=f"California ({string})"
-                    )
-                    if role in member.roles:
-                        await member.remove_roles(role)
-                        removed_roles.append(f"California ({string})")
-                    else:
-                        await member.add_roles(role)
-                        added_roles.append(f"California ({string})")
-                    for word in words:
-                        new_args.remove(word.lower())
-        for triple in triple_word_states:
-            words = triple.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == 3:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=triple)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(triple)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(triple)
-                for word in words:
-                    new_args.remove(word.lower())
-        for double in double_word_states:
-            words = double.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == 2:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=double)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(double)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(double)
-                for word in words:
-                    new_args.remove(word.lower())
-        for arg in new_args:
-            role_name = await lookup_role(arg)
-            if not role_name:
-                return await interaction.response.send_message(
-                    f"Sorry, the `{arg}` state could not be found. Try again."
-                )
-            role = discord.utils.get(member.guild.roles, name=role_name)
+        could_not_handle = [s for s in param_list if s not in states_without_abbrev]
+
+        for role in selected_state_roles:
             if role in member.roles:
                 await member.remove_roles(role)
-                removed_roles.append(role_name)
+                removed_roles.append(role.name)
             else:
                 await member.add_roles(role)
-                added_roles.append(role_name)
-        if len(added_roles) > 0 and len(removed_roles) == 0:
-            state_res = (
-                "Added states " + (" ".join([f"`{arg}`" for arg in added_roles])) + "."
-            )
-        elif len(removed_roles) > 0 and len(added_roles) == 0:
-            state_res = (
-                "Removed states "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + "."
-            )
-        else:
-            state_res = (
-                "Added states "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + ", and removed states "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + "."
-            )
+                added_roles.append(role.name)
+
+        # Construct a response only containing the needed pieces
+        response_components = []
+        response_components.append(
+            "Added states " + " ".join([f"`{arg}`" for arg in added_roles])
+        ) if added_roles else None
+        response_components.append(
+            "removed states " + " ".join([f"`{arg}`" for arg in removed_roles])
+        ) if removed_roles else None
+        response_components.append(
+            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])
+        ) if could_not_handle else None
+
+        # Assemble into message
+        state_res = ", and ".join(response_components)
+
+        # Capitalize and add a period!
+        state_res = state_res.replace(state_res[0], state_res[0].upper(), 1)
+        state_res += "."
         await interaction.response.send_message(state_res)
+
+    @states.autocomplete("state")
+    @states.autocomplete("state_two")
+    @states.autocomplete("state_three")
+    @states.autocomplete("state_four")
+    @states.autocomplete("state_five")
+    @states.autocomplete("state_six")
+    @states.autocomplete("state_seven")
+    @states.autocomplete("state_eight")
+    @states.autocomplete("state_nine")
+    @states.autocomplete("state_ten")
+    async def states_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice[str]]:
+        """
+        Provides autocompletion for the states method/command.
+
+        Args:
+            interaction (discord.Interaction): The autocomplete interaction.
+            current (str): The current phrase typed by the user.
+
+        Returns:
+            List[app_commands.Choice[str]]: A list of string choices to choose from.
+        """
+        states: List[str] = [s[: s.rfind(" (")] for s in get_state_list()]
+        states.append("All States")
+
+        return [
+            app_commands.Choice(name=state, value=state)
+            for state in states
+            if current.lower() in state.lower()
+        ][:25]
 
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
@@ -1059,10 +1047,32 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles event roles.")
     @app_commands.describe(
-        events="The events to toggle. For example, 'anatomy, astro, wq'."
+        event="The first event to add/remove from your profile.",
+        event_two="The second event to add/remove from your profile.",
+        event_three="The third event to add/remove from your profile.",
+        event_four="The fourth event to add/remove from your profile.",
+        event_five="The fifth event to add/remove from your profile.",
+        event_six="The sixth event to add/remove from your profile.",
+        event_seven="The seventh event to add/remove from your profile.",
+        event_eight="The eighth event to add/remove from your profile.",
+        event_nine="The ninth event to add/remove from your profile.",
+        event_ten="The tenth event to add/remove from your profile.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def events(self, interaction: discord.Interaction, events: str):
+    async def events(
+        self,
+        interaction: discord.Interaction,
+        event: str,
+        event_two: Optional[str] = None,
+        event_three: Optional[str] = None,
+        event_four: Optional[str] = None,
+        event_five: Optional[str] = None,
+        event_six: Optional[str] = None,
+        event_seven: Optional[str] = None,
+        event_eight: Optional[str] = None,
+        event_nine: Optional[str] = None,
+        event_ten: Optional[str] = None,
+    ):
         """
         Discord command which adds or removes event roles from a user.
 
@@ -1072,122 +1082,92 @@ class MemberCommands(commands.Cog):
         Args:
             interaction (discord.Interaction): The app command interaction sent by
                 Discord.
-            events (str): The list of events to add/remove.
+            event_XXX (str): The name of the XXXth event to add/remove.
         """
-        if len(events) > 100:
-            return await interaction.response.send_message(
-                "Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands."
-            )
         member = interaction.user
 
-        # Fix commas as possible separator
-        new_args = events.split(",")
-        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-        new_args = [arg.strip() for arg in new_args]
-
-        event_info = src.discord.globals.EVENT_INFO
-        event_names = []
         removed_roles = []
         added_roles = []
-        could_not_handle = []
-        multi_word_events = []
 
-        if type(event_info) == int:
-            # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few
-            # seconds later. This lets the user know this.
-            return await interaction.response.send_message(
-                "Apologies... refreshing data currently. Try again in a few seconds."
-            )
+        param_list = [
+            event,
+            event_two,
+            event_three,
+            event_four,
+            event_five,
+            event_six,
+            event_seven,
+            event_eight,
+            event_nine,
+            event_ten,
+        ]
+        param_list = [p for p in param_list if p is not None]
+        event_names = [e["name"] for e in src.discord.globals.EVENT_INFO]
 
-        for i in range(7, 1, -1):
-            # Supports adding 7-word to 2-word long events
-            multi_word_events += [
-                e["name"] for e in event_info if len(e["name"].split(" ")) == i
-            ]
-            for event in multi_word_events:
-                words = event.split(" ")
-                all_here = 0
-                all_here = sum(1 for word in words if word.lower() in new_args)
-                if all_here == i:
-                    # Word is in args
-                    role = discord.utils.get(member.guild.roles, name=event)
-                    if role in member.roles:
-                        await member.remove_roles(role)
-                        removed_roles.append(event)
-                    else:
-                        await member.add_roles(role)
-                        added_roles.append(event)
-                    for word in words:
-                        new_args.remove(word.lower())
+        selected_roles = [
+            discord.utils.get(member.guild.roles, name=e)
+            for e in param_list
+            if e in event_names
+        ]
+        could_not_handle = [p for p in param_list if p not in event_names]
 
-        for arg in new_args:
-            found_event = False
-            for event in event_info:
-                aliases = [alias.lower() for alias in event["aliases"]]
-                if arg.lower() in aliases or arg.lower() == event["name"].lower():
-                    event_names.append(event["name"])
-                    found_event = True
-                    break
-            if not found_event:
-                could_not_handle.append(arg)
-
-        for event in event_names:
-            role = discord.utils.get(member.guild.roles, name=event)
+        for role in selected_roles:
             if role in member.roles:
                 await member.remove_roles(role)
-                removed_roles.append(event)
+                removed_roles.append(role.name)
             else:
                 await member.add_roles(role)
-                added_roles.append(event)
+                added_roles.append(role.name)
 
-        if len(added_roles) > 0 and len(removed_roles) == 0:
-            event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
-        elif len(removed_roles) > 0 and len(added_roles) == 0:
-            event_res = (
-                "Removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
-        else:
-            event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + ", "
-                + ("and " if not could_not_handle else "")
-                + "removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
+        # Construct a response only containing the needed pieces
+        response_components = []
+        response_components.append(
+            "Added events " + " ".join([f"`{arg}`" for arg in added_roles])
+        ) if added_roles else None
+        response_components.append(
+            "removed events " + " ".join([f"`{arg}`" for arg in removed_roles])
+        ) if removed_roles else None
+        response_components.append(
+            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])
+        ) if could_not_handle else None
+
+        # Assemble into message
+        event_res = ", and ".join(response_components)
+
+        # Capitalize and add a period!
+        event_res = event_res.replace(event_res[0], event_res[0].upper(), 1)
+        event_res += "."
 
         await interaction.response.send_message(event_res)
+
+    @events.autocomplete("event")
+    @events.autocomplete("event_two")
+    @events.autocomplete("event_three")
+    @events.autocomplete("event_four")
+    @events.autocomplete("event_five")
+    @events.autocomplete("event_six")
+    @events.autocomplete("event_seven")
+    @events.autocomplete("event_eight")
+    @events.autocomplete("event_nine")
+    @events.autocomplete("event_ten")
+    async def events_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice[str]]:
+        """
+        Provides autocompletion for the events method/command.
+
+        Args:
+            interaction (discord.Interaction): The autocomplete interaction.
+            current (str): The current phrase typed by the user.
+
+        Returns:
+            List[app_commands.Choice[str]]: A list of string choices to choose from.
+        """
+        return [
+            app_commands.Choice(name=e["name"], value=e["name"])
+            for e in src.discord.globals.EVENT_INFO
+            if current.lower() in e["name"].lower()
+        ][:25]
 
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
