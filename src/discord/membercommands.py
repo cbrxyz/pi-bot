@@ -1225,7 +1225,35 @@ class MemberCommands(commands.Cog):
     async def tag_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> List[app_commands.Choice[str]]:
-        tags: List[str] = [t["name"] for t in src.discord.globals.TAGS]
+        """
+        Serves as autocompletion for the /tag command. Returns the names of the
+        tags the user can send with their allotted permissions
+
+        Args:
+            interaction (discord.Interaction): The interaction sent with the autocomplete
+                request.
+            current (str): The amount the user has typed.
+
+        Returns:
+            List[app_commands.Choice[str]]: The names of the tags the user can choose
+            from given their permissions.
+        """
+        # Check if the user is a staff member to see if they can see staff tags
+        is_staff = is_staff_from_ctx(interaction, no_raise=True)
+
+        # Check if the user is a normal member to see if they can see member tags
+        assert isinstance(interaction.guild, discord.Guild)
+        member_role = discord.utils.get(interaction.guild.roles, name=ROLE_MR)
+        assert isinstance(interaction.user, discord.Member)
+        is_member = member_role in interaction.user.roles
+
+        # Send the tags
+        tags: List[str] = [
+            t["name"]
+            for t in src.discord.globals.TAGS
+            if (t["permissions"]["staff"] and is_staff)
+            or (t["permissions"]["members"] and is_member)
+        ]
         return [
             app_commands.Choice(name=t, value=t)
             for t in tags
