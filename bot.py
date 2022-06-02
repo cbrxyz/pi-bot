@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
@@ -26,6 +27,7 @@ from src.mongo.mongo import MongoDatabase
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
+    from src.discord.reporter import Reporter
     from src.discord.logger import Logger
     from src.discord.spam import SpamManager
 
@@ -41,41 +43,57 @@ class PiBotCommandTree(app_commands.CommandTree):
     ) -> None:
         # Handle check failures
         if isinstance(error, app_commands.NoPrivateMessage):
-            message = ("Sorry, but this command does not work in private messsage. "
-                       "Please hop on over to the Scioly.org server to use the command!")
+            message = (
+                "Sorry, but this command does not work in private messsage. "
+                "Please hop on over to the Scioly.org server to use the command!"
+            )
         elif isinstance(error, (app_commands.MissingRole, app_commands.MissingAnyRole)):
             message = "Sorry, you don't have the needed role to run this command."
         elif isinstance(error, app_commands.MissingPermissions):
-            message = ("Sorry, but you aren't allotted the proper permissions "
-                       "needed by this command.")
+            message = (
+                "Sorry, but you aren't allotted the proper permissions "
+                "needed by this command."
+            )
         elif isinstance(error, app_commands.BotMissingPermissions):
-            message = "Oh no! I can't run this command right now. Please contact a developer."
+            message = (
+                "Oh no! I can't run this command right now. Please contact a developer."
+            )
         elif isinstance(error, app_commands.CommandOnCooldown):
-            next_time = discord.utils.utcnow() + datetime.timedelta(seconds = error.retry_after)
-            message = ("Time to _chill out_ - this command is on cooldown! "
-                       f"Please try again **{discord.utils.format_dt(next_time, 'R')}.**"
-                       "\n\n"
-                       "For future reference, this command is currently limited to "
-                       f"being excecuted **{error.cooldown.rate} times per {error.cooldown.per} seconds**.")
+            next_time = discord.utils.utcnow() + datetime.timedelta(
+                seconds=error.retry_after
+            )
+            message = (
+                "Time to _chill out_ - this command is on cooldown! "
+                f"Please try again **{discord.utils.format_dt(next_time, 'R')}.**"
+                "\n\n"
+                "For future reference, this command is currently limited to "
+                f"being excecuted **{error.cooldown.rate} times per {error.cooldown.per} seconds**."
+            )
 
         # Handle general app command errors
         elif isinstance(error, app_commands.CommandLimitReached):
-            message = ("Oh no! I've reached my max command limit. Please contact a developer.")
+            message = (
+                "Oh no! I've reached my max command limit. Please contact a developer."
+            )
         elif isinstance(error, app_commands.CommandInvokeError):
             message = "This command experienced a general error."
 
             # Report error to staff
             reporter_cog = self.client.get_cog("Reporter")
 
-            if reporter_cog is not None:
-                await reporter_cog.create_command_error_report(error.original, interaction.command)
+            assert isinstance(reporter_cog, Reporter)
+            await reporter_cog.create_command_error_report(
+                error.original, interaction.command
+            )
 
         elif isinstance(error, app_commands.TransformerError):
             message = "This command experienced a transformer error."
         elif isinstance(error, app_commands.CommandAlreadyRegistered):
             message = "This command was already registered."
         elif isinstance(error, app_commands.CommandSignatureMismatch):
-            message = "This command is currently out of sync. Please contact a developer."
+            message = (
+                "This command is currently out of sync. Please contact a developer."
+            )
         elif isinstance(error, app_commands.CommandNotFound):
             message = "Unfortunately, this command could not be found."
         elif isinstance(error, app_commands.MissingApplicationID):
@@ -104,7 +122,7 @@ class PiBot(commands.Bot):
             case_insensitive=True,
             intents=intents,
             help_command=None,
-            tree_cls=PiBotCommandTree
+            tree_cls=PiBotCommandTree,
         )
         self.listeners_: Dict[
             str, Dict[str, Any]
