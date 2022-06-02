@@ -132,22 +132,27 @@ class Logger(commands.Cog):
         assert isinstance(unconfirmed_role, discord.Role)
 
         if unconfirmed_role in member.roles:
-            unconfirmed_statement = "Unconfirmed: :white_check_mark:"
+            unconfirmed_statement = ":white_check_mark:"
+            embed = discord.Embed(color=discord.Color.yellow())
         else:
-            unconfirmed_statement = "Unconfirmed: :x:"
+            unconfirmed_statement = ":x:"
+            embed = discord.Embed(color=discord.Color.brand_green())
 
-        joined_at = f"Joined at: `{str(member.joined_at)}`"
+        embed.title = "Member Leave"
 
-        if member.nick is not None:
-            await leave_channel.send(
-                f"**{member}** (nicknamed `{member.nick}`) has left the server "
-                f"(or was removed).\n{unconfirmed_statement}\n{joined_at}"
-            )
-        else:
-            await leave_channel.send(
-                f"**{member}** has left the server (or was removed)."
-                f"\n{unconfirmed_statement}\n{joined_at}"
-            )
+        joined_at = (
+            f"{discord.utils.format_dt(member.joined_at, style='f')}"
+            f"({discord.utils.format_dt(member.joined_at, style='R')})"
+        )
+        embed.description = (
+            f"**{member}** (nicknamed `{member.nick}`) has left the server (or was removed)."
+            if member.nick
+            else f"**{member}** has left the server (or was removed)."
+        )
+
+        embed.add_field(name="Joined At", value=joined_at)
+        embed.add_field(name="Unconfirmed", value=unconfirmed_statement)
+        await leave_channel.send(embed=embed)
 
         # Delete any messages the user left in the welcoming channel
         welcome_channel = discord.utils.get(
