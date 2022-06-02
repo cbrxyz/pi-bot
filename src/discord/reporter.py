@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 import discord
 from discord.ext import commands
@@ -410,7 +410,7 @@ class Reporter(commands.Cog):
     async def create_command_error_report(
         self,
         error: Exception,
-        command: Union[app_commands.Command, app_commands.ContextMenu],
+        command: Optional[Union[app_commands.Command, app_commands.ContextMenu]],
     ):
         """
         Reports a command error to staff.
@@ -439,7 +439,7 @@ class Reporter(commands.Cog):
             title=title,
             description=f"""
             There was an error with the command listed above.
-            
+
             The bot experienced a `{type(error)}` in `{file_name}` on line `{line_no}`.
             """,
             color=discord.Color.brand_red(),

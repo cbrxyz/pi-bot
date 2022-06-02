@@ -79,12 +79,12 @@ class PiBotCommandTree(app_commands.CommandTree):
             message = "This command experienced a general error."
 
             # Report error to staff
-            reporter_cog: Union[commands.Cog, Reporter, None] = self.client.get_cog("Reporter")
+            reporter_cog = self.client.get_cog("Reporter")
 
-            if reporter_cog is not None:
-                await reporter_cog.create_command_error_report(
-                    error.original, interaction.command
-                )
+            assert isinstance(reporter_cog, Reporter)
+            await reporter_cog.create_command_error_report(
+                error.original, interaction.command
+            )
 
         elif isinstance(error, app_commands.TransformerError):
             message = "This command experienced a transformer error."
