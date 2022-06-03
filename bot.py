@@ -24,6 +24,7 @@ from src.discord.globals import (
     dev_mode,
 )
 from src.mongo.mongo import MongoDatabase
+from src.discord.views import UnselfmuteView
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
@@ -124,6 +125,7 @@ class PiBot(commands.Bot):
             help_command=None,
             tree_cls=PiBotCommandTree,
         )
+        self.persistent_views_added: bool = False
         self.listeners_: Dict[
             str, Dict[str, Any]
         ] = {}  # name differentiation between internal _listeners attribute
@@ -158,6 +160,10 @@ class PiBot(commands.Bot):
                 await self.load_extension(extension)
             except commands.ExtensionError as e:
                 print(f"Failed to load extension {extension}: {e}")
+
+        if not self.persistent_views_added:
+            self.add_view(UnselfmuteView(self))
+            self.persistent_views_added = True
 
     async def on_ready(self) -> None:
         """
