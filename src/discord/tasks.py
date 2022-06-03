@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Any, Union
 import discord
 import src.discord.globals
 from discord.ext import commands, tasks
-from src.discord.tournaments import update_tournament_list
+from .tournaments import update_tournament_list
+from .views import UnselfmuteView
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -325,6 +326,19 @@ class CronTasks(commands.Cog):
                 )
             )
         print("Changed the bot's status.")
+
+    @tasks.loop(hours=24)
+    async def unselfmute_view(self):
+        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        channel = discord.utils.get(
+            guild.text_channels, name=src.discord.globals.CHANNEL_UNSELFMUTE
+        )
+        message = await channel.fetch_message(799390713590710323)
+        if message.reactions:
+            for r in message.reactions:
+                await r.clear()
+        if not message.components:
+            await message.edit(view=UnselfmuteView(self.bot))
 
 
 async def setup(bot: PiBot):
