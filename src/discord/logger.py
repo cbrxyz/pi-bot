@@ -287,11 +287,12 @@ class Logger(commands.Cog):
                 self.bot.tree.get_commands(guild=discord.Object(s_id))
                 for s_id in SLASH_COMMAND_GUILDS
             ]
-            if ctx.command.name in [
+            invoked_command = ctx.message.content[1:].split(' ')[0]
+            if invoked_command in [
                 c.name for c in itertools.chain.from_iterable(slash_commands)
             ]:
                 return await ctx.send(
-                    f"{ctx.author.mention}, please use slash commands (`/{ctx.command.name}`) instead!\n"
+                    f"{ctx.author.mention}, please use slash commands (`/{invoked_command}`) instead!\n"
                     f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
                 )
             return await ctx.send(
