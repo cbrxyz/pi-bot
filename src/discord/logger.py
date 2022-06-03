@@ -282,7 +282,7 @@ class Logger(commands.Cog):
                 self.bot.tree.get_commands(guild=discord.Object(s_id))
                 for s_id in SLASH_COMMAND_GUILDS
             ]
-            invoked_command = ctx.message.content[1:].split(' ')[0]
+            invoked_command = ctx.message.content[1:].split(" ")[0]
             if invoked_command in [
                 c.name for c in itertools.chain.from_iterable(slash_commands)
             ]:
