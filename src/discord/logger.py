@@ -4,6 +4,7 @@ buckets, such as a Discord channel or database log.
 """
 from __future__ import annotations
 
+import itertools
 import traceback
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,7 @@ from src.discord.globals import (
     CHANNEL_WELCOME,
     ROLE_UC,
     SERVER_ID,
+    SLASH_COMMAND_GUILDS,
 )
 
 if TYPE_CHECKING:
@@ -276,7 +278,22 @@ class Logger(commands.Cog):
                 "Hmmm... I'm having trouble reading what you're trying to tell me."
             )
         if isinstance(error, discord.ext.commands.CommandNotFound):
-            return await ctx.send("Sorry, I couldn't find that command.")
+            slash_commands = [
+                self.bot.tree.get_commands(guild=discord.Object(s_id))
+                for s_id in SLASH_COMMAND_GUILDS
+            ]
+            if ctx.command.name in [
+                c.name for c in itertools.chain.from_iterable(slash_commands)
+            ]:
+                return await ctx.send(
+                    f"{ctx.author.mention}, please use slash commands (`/{ctx.command.name}`) instead!\n"
+                    f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
+                )
+            return await ctx.send(
+                f"{ctx.author.mention}, please use slash commands e.g, (`/states state: Florida`) instead!\n"
+                f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
+            )
+
         if isinstance(error, discord.ext.commands.CheckFailure):
             return await ctx.send("Sorry, but I don't think you can run that command.")
         if isinstance(error, discord.ext.commands.DisabledCommand):
