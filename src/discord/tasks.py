@@ -329,6 +329,10 @@ class CronTasks(commands.Cog):
 
     @tasks.loop(hours=24)
     async def unselfmute_view(self):
+        """
+        Runs every 24 hours
+        Clears reactions and checks if view is there
+        """
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         channel = discord.utils.get(
             guild.text_channels, name=src.discord.globals.CHANNEL_UNSELFMUTE
