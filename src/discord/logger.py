@@ -4,12 +4,10 @@ buckets, such as a Discord channel or database log.
 """
 from __future__ import annotations
 
-import itertools
 import traceback
 from typing import TYPE_CHECKING
 
 import discord
-from commanderrors import CommandNotAllowedInChannel
 from discord.ext import commands
 from src.discord.globals import (
     CHANNEL_DELETEDM,
@@ -20,7 +18,6 @@ from src.discord.globals import (
     CHANNEL_WELCOME,
     ROLE_UC,
     SERVER_ID,
-    SLASH_COMMAND_GUILDS,
 )
 
 if TYPE_CHECKING:

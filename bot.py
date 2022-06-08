@@ -5,6 +5,7 @@ core functionality.
 from __future__ import annotations
 
 import asyncio
+import itertools
 import uuid
 import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
@@ -20,6 +21,7 @@ from src.discord.globals import (
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
     DEV_TOKEN,
+    SLASH_COMMAND_GUILDS,
     TOKEN,
     dev_mode,
 )
@@ -204,6 +206,26 @@ class PiBot(commands.Bot):
             # Check to see if the message contains repeated content or has too many caps
             spam: Union[commands.Cog, SpamManager] = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
+
+        if message.content.startswith(BOT_PREFIX):
+            slash_commands = [
+                self.tree.get_commands(guild=discord.Object(s_id))
+                for s_id in SLASH_COMMAND_GUILDS
+            ]
+            invoked_command = message.content[1:].split(" ")[0]
+            if invoked_command in [
+                c.name for c in itertools.chain.from_iterable(slash_commands)
+            ]:
+                await message.channel.send(
+                    f"{message.author.mention}, please use the slash command (`/{invoked_command}`) instead!\n"
+                    f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
+                )
+                return
+            await message.channel.send(
+                f"{message.author.mention}, please use slash commands e.g, (`/states state: Florida`) instead!\n"
+                f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
+            )
+            return
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         self.session = aiohttp.ClientSession()
