@@ -136,12 +136,12 @@ class Logger(commands.Cog):
             embed = discord.Embed(color=discord.Color.yellow())
         else:
             unconfirmed_statement = ":x:"
-            embed = discord.Embed(color=discord.Color.brand_green())
+            embed = discord.Embed(color=discord.Color.brand_red())
 
         embed.title = "Member Leave"
 
         joined_at = (
-            f"{discord.utils.format_dt(member.joined_at, style='f')}"
+            f"{discord.utils.format_dt(member.joined_at, style='f')} "
             f"({discord.utils.format_dt(member.joined_at, style='R')})"
         )
         embed.description = (
