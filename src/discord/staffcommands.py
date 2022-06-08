@@ -941,7 +941,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
-                        f"No doxxing or cursing is allowed.** "
+                    f"No doxxing or cursing is allowed.** "
                 )
             else:
                 # Voice channel needs to be closed
@@ -1014,7 +1014,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
-                        "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1063,7 +1063,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
                 return await interaction.edit_original_message(
                     content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
-                        "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
