@@ -208,12 +208,7 @@ class PiBot(commands.Bot):
             spam: Union[commands.Cog, SpamManager] = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
-        if (
-            re.match(
-                r'\s*[!"#$%&\'()*+,\-./:;<=>?@[\]^_`{|}~]', message.content.lstrip()[1:]
-            )
-            is None
-        ):
+        if message.content.startswith(BOT_PREFIX):
             slash_commands = [
                 self.tree.get_commands(guild=discord.Object(s_id))
                 for s_id in SLASH_COMMAND_GUILDS
@@ -224,14 +219,10 @@ class PiBot(commands.Bot):
             ]:
                 await message.channel.send(
                     f"{message.author.mention}, please use the slash command (`/{invoked_command}`) instead!\n"
-                    f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
+                    f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. ",
+                    delete_after=10,
                 )
                 return
-            await message.channel.send(
-                f"{message.author.mention}, please use slash commands e.g, (`/states state: Florida`) instead!\n"
-                f"Pi-bot has officially made the switch to slash commands to make the user experience cleaner and easier. "
-            )
-            return
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         self.session = aiohttp.ClientSession()
