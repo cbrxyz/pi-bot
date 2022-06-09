@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+import re
 import uuid
 import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
@@ -207,7 +208,7 @@ class PiBot(commands.Bot):
             spam: Union[commands.Cog, SpamManager] = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
-        if message.content.startswith(BOT_PREFIX):
+        if re.match(r'\s*[!"#$%&\'()*+,\-./:;<=>?@[\]^_`{|}~]', message.content.lstrip()[1:]) is None:
             slash_commands = [
                 self.tree.get_commands(guild=discord.Object(s_id))
                 for s_id in SLASH_COMMAND_GUILDS
