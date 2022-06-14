@@ -14,54 +14,48 @@ Remember that the mission of Pi-Bot is to assist the Science Olympiad community 
 
 ## Development
 
-There are many components to Pi-Bot that you will need to set up before you can begin to develop with him.
+There are many components to Pi-Bot that you will need to set up before you can begin to develop.
+
+To begin, first clone the repo:
+```sh
+git clone https://github.com/cbrxyz/pi-bot
+cd pi-bot
+```
 
 ### Discord
 
 To set up your Pi-Bot testing environment for Discord, follow the following instructions:
 
-1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/).  Create a new application and add a bot in the Bot section. There, get your bot token.                       
-2. Create a new `.env` file locally, and add your first entry:
-    ```
-    DEV_MODE=TRUE
-    DISCORD_TOKEN=abc <-- literally
-    DISCORD_DEV_TOKEN=(your token)
-    ```
-3. In the code, find the `PI_BOT_IDS` constant, and add your bot's **user ID** to the array. Your bot's user ID can be found by enabling Developer Mode in Discord and right clicking on your bot, and copying it's ID.
-4. You can now create a new server to test your bot in. Here, you can make the
-   various channels and roles you need to simulate the server environment.
-5. Add the ID of your development server to the `.env` file, as so:
-    ```
-    DEV_SERVER_ID=1234567890
-    ```
-6. Join the Pi-Bot Development server, where developers can discuss various
-   ideas surrounding the bot. Available [here](https://discord.gg/tNBNgTH).
+1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/). 
+   Create a new application and add a bot in the Bot section. There, get your bot token.                       
+1. In your Discord client, create a brand new guild, and invite your bot using the
+   instructions in your development portal. Give your bot `Administrator` permissions across
+   the entire guild, for the time being. Then, run the `scripts/createserver.py`
+   file, which will setup the guild in accordance with how the Scioly.org server
+   is setup. After this step, you should most of the channels that you see on the
+   official Scioly.org server!
+1. You can now adjust the bot's permissions to match those of Pi-Bot on the official
+   Scioly.org. This helps to ensure that your testing bot doesn't accidentally have
+   more permissions than the true bot has. The bot has the following permissions:
+   View Channels, Manage Channels, Manage Roles, Manage Emojis and Stickers,
+   View Server Insights, Manage Webhooks, Change Nickname, Manage Nicknames, Kick Members,
+   Ban Members, Send Messages, Embed Links, Attach Files, Add Reactions, Use External
+   Emoji, Manage Messages, Read Message History, Send Text-to-Speech Messages, Use Application
+   Commands, Request to Speak.
 
-### Google Sheets
+### MongoDB
 
-1. To get your bot set up with Google Sheets, you are going to need to create a service account to test your bot with.
-2. Head to the [Google Cloud Console](https://www.console.cloud.google.com).
-3. Create a new project for testing your bot.
-4. Enable the Google Sheets and Google Drive APIs for  your project in the `APIs & Services` tab.
-5. Head to the `API & Services > Credentials` tab, and create a new credential. Make a `Service account`.
-6. Give it a name and ID, and create the service account.
-7. Click on your newly created service account in the `Credentials` tab. Create a new key in the `JSON` format.
-8. This will download a new file.
-9. Take these values from the new file and add them to the `.env` file in the following format:
+To manage its information, Pi-Bot uses a MongoDB database. To create a database of
+your own, you can use `mongoimport`. This takes in some amount of data and puts
+it into a MongoDB database for you. You can setup a local instance of MongoDB, or
+alternatively use [MongoDB Atlas](https://www.mongodb.com/atlas/database).
+
+1. Run the `scripts/mongoimport.py` script, which will generate a JSON file that
+   resembles the MongoDB database you can setup.
+1. Use `mongoimport` to import the database:
     ```
-    ...
-    GCP_PROJECT_ID= value of "project_id"
-    GCP_PRIVATE_KEY_ID = value of "private_key_id"
-    GCP_PRIVATE_KEY = value of "private_key"
-    GCP_CLIENT_EMAIL = value of "client_email"
-    GCP_CLIENT_ID = value of "client_id"
-    GCP_AUTH_URI = value of "auth_uri"
-    GCP_TOKEN_URI = value of "token_uri"
-    GCP_AUTH_PROVIDER_X509 = value of "auth_provider_x509_cert_url"
-    GCP_CLIENT_X509_CERT_URL = value of "client_x509_cert_url"
+    mongoimport --file mongo_export.json --jsonArray
     ```
-10. Create a new Google Sheet using the account you used to make the service account. If you would like the Pi-Bot Google Sheet template, please contact pepperonipi.
-11. Share this Google Sheet with the value of `"client_email"` in the JSON file. If you do not do this, your bot will not be able to read/write to the sheet.
 
 ### Forums / Wiki
 
@@ -77,6 +71,22 @@ To set up your Pi-Bot testing environment for Discord, follow the following inst
     PI_BOT_WIKI_PASSWORD= (account wiki password)
     PI_BOT_FORUMS_USERNAME= (account username)
     PI_BOT_FORUMS_PASSWORD= (account forums password)
+    ```
+
+### Local Environment Variables
+
+1. Create a `.env` file to store your private environment variables. This helps
+   to get your bot setup. You will need to update the file with the following variables.
+    ```
+    DEV_MODE=TRUE
+    DISCORD_TOKEN=<not needed since you will be developing only>
+    DISCORD_DEV_TOKEN=<bot token from step 1>
+    DEV_SERVER_ID=<your development server ID>
+    SLASH_COMMAND_GUILDS=<your development server ID>
+    EMOJI_GUILDS=<your emoji guild ID>
+    PI_BOT_WIKI_USERNAME=<only needed if you will be testing wiki functionality>
+    PI_BOT_WIKI_PASSWORD=<only needed if you will be testing wiki functionality>
+    MONGO_URL=<connection to your mongo database, see below>
     ```
 
 At this point you should be ready to develop! If you have any questions, don't hesistate to reach out to me on the Pi-Bot Discord server listed above.
