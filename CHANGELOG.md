@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Staff can now refresh only part of the bot, if desired.
 * Staff can now set a custom bot status for a specified amount of time.
 * CRON handling is now handled by a group of methods, rather than just one method.
+* Add cooldowns to member commands.
 
 #### Embeds
 * Adding/updating embeds is now done through Discord UI, with the help of dedicated classes.
