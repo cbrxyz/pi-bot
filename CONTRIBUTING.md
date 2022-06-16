@@ -17,9 +17,23 @@ Remember that the mission of Pi-Bot is to assist the Science Olympiad community 
 There are many components to Pi-Bot that you will need to set up before you can begin to develop.
 
 To begin, first clone the repo:
+
 ```sh
-git clone https://github.com/cbrxyz/pi-bot
-cd pi-bot
+$ git clone https://github.com/cbrxyz/pi-bot
+$ cd pi-bot
+```
+
+Then, active a Python virtual environment (Windows will use a slightly different syntax):
+
+```sh
+$ python3 -m venv venv
+$ source venv/bin/active
+```
+
+Install the required pip dependencies:
+
+```sh
+$ pip install -r requirements.txt
 ```
 
 ### Discord
@@ -28,20 +42,13 @@ To set up your Pi-Bot testing environment for Discord, follow the following inst
 
 1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/). 
    Create a new application and add a bot in the Bot section. There, get your bot token.                       
-1. In your Discord client, create a brand new guild, and invite your bot using the
-   instructions in your development portal. Give your bot `Administrator` permissions across
-   the entire guild, for the time being. Then, run the `scripts/createserver.py`
-   file, which will setup the guild in accordance with how the Scioly.org server
-   is setup. After this step, you should most of the channels that you see on the
-   official Scioly.org server!
-1. You can now adjust the bot's permissions to match those of Pi-Bot on the official
-   Scioly.org. This helps to ensure that your testing bot doesn't accidentally have
-   more permissions than the true bot has. The bot has the following permissions:
-   View Channels, Manage Channels, Manage Roles, Manage Emojis and Stickers,
-   View Server Insights, Manage Webhooks, Change Nickname, Manage Nicknames, Kick Members,
-   Ban Members, Send Messages, Embed Links, Attach Files, Add Reactions, Use External
-   Emoji, Manage Messages, Read Message History, Send Text-to-Speech Messages, Use Application
-   Commands, Request to Speak.
+1. You can use a custom Discord server template to make your own testing guild that
+   has an identical channel and permissions structure similar to that of Scioly.org.
+   You and your bot (and maybe other testing accounts) should be the only accounts
+   in that guild. Testing multiple bots in the same server could result in the bots
+   overwriting each other. The [server template can be found here](https://discord.new/Gsk2jP9KnYJv).
+
+Now, you should have a guild with your own testing bot inside. Making progress!
 
 ### MongoDB
 
