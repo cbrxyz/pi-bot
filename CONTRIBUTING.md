@@ -66,6 +66,10 @@ alternatively use [MongoDB Atlas](https://www.mongodb.com/atlas/database).
 
 ### Forums / Wiki
 
+Another important aspect of the bot is its ability to interact with the forums
+and wiki, two other critical site components. These interactions are primarily done
+through a headless browser (for the fourms), or the MediaWiki API (for the wiki).
+
 1. Add this line to your `.env` file, just so the [`pywikibot`](https://www.mediawiki.org/wiki/Manual:Pywikibot) module is configured:
     ```
     PYWIKIBOT_DIR=$PWD/src/wiki
