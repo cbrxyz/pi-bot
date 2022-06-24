@@ -112,6 +112,7 @@ class Censor(commands.Cog):
         webhook = await channel.create_webhook(name="Censor (Automated)")
         content = message.content
         author = message.author.nick or message.author.name
+        reply = message.reference
 
         # Actually replace content found on the censored words/emojis list
         for word in src.discord.globals.CENSOR["words"]:
@@ -123,12 +124,22 @@ class Censor(commands.Cog):
 
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
-        await webhook.send(
-            content,
-            username=f"{author} (auto-censor)",
-            avatar_url=avatar,
-            allowed_mentions=mention_perms,
-        )
+        if reply:
+            reply_message = (f'*Replying to {reply.cached_message.author.mention}*'
+                             f'\n>[{reply.cached_message.content[:80]}...]({reply.cached_message.jump_url})\n')
+            await webhook.send(
+                reply_message + content,
+                username=f"{author} (auto-censor)",
+                avatar_url=avatar,
+                allowed_mentions=mention_perms,
+            )
+        else:
+            await webhook.send(
+                content,
+                username=f"{author} (auto-censor)",
+                avatar_url=avatar,
+                allowed_mentions=mention_perms,
+            )
         await webhook.delete()
 
         # Replace content with censored content for other cogs
