@@ -10,8 +10,13 @@ from typing import TYPE_CHECKING
 import discord
 import src.discord.globals
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_SUPPORT,
-                                 DISCORD_INVITE_ENDINGS, ROLE_UC, CENSOR)
+from src.discord.globals import (
+    CATEGORY_STAFF,
+    CHANNEL_SUPPORT,
+    DISCORD_INVITE_ENDINGS,
+    ROLE_UC,
+    CENSOR,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -125,8 +130,10 @@ class Censor(commands.Cog):
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
         if reply:
-            reply_message = (f'*Replying to {reply.cached_message.author.mention}*'
-                             f'\n>[{reply.cached_message.content[:80]}...]({reply.cached_message.jump_url})\n')
+            reply_message = (
+                f"*Replying to {reply.cached_message.author.mention}*"
+                f"\n>[{reply.cached_message.content[:80]}...]({reply.cached_message.jump_url})\n"
+            )
             await webhook.send(
                 reply_message + content,
                 username=f"{author} (auto-censor)",
