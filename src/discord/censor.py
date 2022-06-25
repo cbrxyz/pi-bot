@@ -130,23 +130,26 @@ class Censor(commands.Cog):
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
         if reply:
-            reply_message = (
-                f"*Replying to {reply.cached_message.author.mention}*"
-                f"\n>[{reply.cached_message.content[:80]}...]({reply.cached_message.jump_url})\n"
+
+            _message = (
+                reply.cached_message
+                if reply.cached_message
+                else await self.bot.get_channel(reply.channel_id).fetch_message(
+                    reply.message_id
+                )
             )
-            await webhook.send(
-                reply_message + content,
-                username=f"{author} (auto-censor)",
-                avatar_url=avatar,
-                allowed_mentions=mention_perms,
+            reply_message = (
+                f"*Replying to {_message.author.mention}*"
+                f"\n>[{reply.cached_message.content[:40]}...]({reply.cached_message.jump_url})\n"
             )
         else:
-            await webhook.send(
-                content,
-                username=f"{author} (auto-censor)",
-                avatar_url=avatar,
-                allowed_mentions=mention_perms,
-            )
+            reply_message = ""
+        await webhook.send(
+            (content + reply_message)[:2000] if reply_message else content,
+            username=f"{author} (auto-censor)",
+            avatar_url=avatar,
+            allowed_mentions=mention_perms,
+        )
         await webhook.delete()
 
         # Replace content with censored content for other cogs
