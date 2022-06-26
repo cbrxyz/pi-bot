@@ -48,7 +48,15 @@ To set up your Pi-Bot testing environment for Discord, follow the following inst
    in that guild. Testing multiple bots in the same server could result in the bots
    overwriting each other. The [server template can be found here](https://discord.new/Gsk2jP9KnYJv).
 
-Now, you should have a guild with your own testing bot inside. Making progress!
+Now, you should have a guild with your own testing bot inside. The bot won't work,
+but you should be able to see it in your guild. Making progress!
+
+### Docker
+
+To run the bot, we will use `docker-compose`. Docker is a handy tool to setup
+a containerized development environment for the bot. Docker will launch both the
+bot, along with a MongoDB container. This will allow the bot to store data in a quick
+and efficient way, without needing to use an external service.
 
 ### MongoDB
 
