@@ -12,10 +12,10 @@ import src.discord.globals
 from discord.ext import commands
 from src.discord.globals import (
     CATEGORY_STAFF,
+    CENSOR,
     CHANNEL_SUPPORT,
     DISCORD_INVITE_ENDINGS,
     ROLE_UC,
-    CENSOR,
 )
 
 if TYPE_CHECKING:

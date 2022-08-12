@@ -40,8 +40,8 @@ $ pip install -r requirements.txt
 
 To set up your Pi-Bot testing environment for Discord, follow the following instructions:
 
-1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/). 
-   Create a new application and add a bot in the Bot section. There, get your bot token.                       
+1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/).
+   Create a new application and add a bot in the Bot section. There, get your bot token.
 1. You can use a custom Discord server template to make your own testing guild that
    has an identical channel and permissions structure similar to that of Scioly.org.
    You and your bot (and maybe other testing accounts) should be the only accounts

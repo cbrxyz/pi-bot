@@ -45,7 +45,7 @@ class MongoDatabase:
         await collection.delete_one({"_id": iden})
 
     async def delete_by(
-        self, db_name: str, collection_name: str, spec: Dict[str, Any]
+        self, db_name: str, collection_name: str, spec: dict[str, Any]
     ) -> None:
         """
         Deletes all documents in a collection matching a specific spec.
@@ -127,7 +127,7 @@ class MongoDatabase:
         return await self.get_entire_collection("data", "settings", return_one=True)
 
     async def insert(
-        self, db_name: str, collection_name: str, insert_dict: Dict[str, Any]
+        self, db_name: str, collection_name: str, insert_dict: dict[str, Any]
     ):
         """
         Inserts a new document into a collection using a dictionary of document to
@@ -141,7 +141,7 @@ class MongoDatabase:
         db_name: str,
         collection_name: str,
         doc_id: ObjectId,
-        update_dict: Dict[str, Any],
+        update_dict: dict[str, Any],
     ) -> None:
         """
         Updates a document in a specific collection using a specific dictionary holding updates.
@@ -150,7 +150,7 @@ class MongoDatabase:
         await collection.update_one({"_id": doc_id}, update_dict)
 
     async def update_many(
-        self, db_name: str, collection_name: str, docs: Any, update_dict: Dict[str, Any]
+        self, db_name: str, collection_name: str, docs: Any, update_dict: dict[str, Any]
     ) -> None:
         """
         Updates several documents in a collection with a specific dictionary holding

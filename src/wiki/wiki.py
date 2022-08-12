@@ -24,7 +24,7 @@ async def init_wiki():
     global site
     site = await aiopwb.Site()
     site.login()
-    print("Wiki initalized.")
+    print("Wiki initialized.")
 
 
 async def get_page_text(pageName):

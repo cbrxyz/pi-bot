@@ -1,3 +1,6 @@
+---
+
+# yamllint disable-line rule:truthy
 on:
   push:
   pull_request:
@@ -7,27 +10,27 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9.7
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9.7
 
-    - name: Install pip packages
-      run: |
-        pip install --upgrade pip
-        pip install black==22.3.0 pylint==2.12.2 mypy==0.950
+      - name: Install pip packages
+        run: |
+          pip install --upgrade pip
+          pip install black==22.3.0 pylint==2.12.2 mypy==0.950
 
-    - name: Run black
-      if: always()
-      run: black --diff --check $(git ls-files '*.py')
+      - name: Run black
+        if: always()
+        run: black --diff --check $(git ls-files '*.py')
 
-    - name: Run pylint
-      if: always()
-      run: pylint --exit-zero $(git ls-files '*.py')
+      - name: Run pylint
+        if: always()
+        run: pylint --exit-zero $(git ls-files '*.py')
 
-    - name: Run mypy
-      if: always()
-      run: mypy --python-version 3.9 --strict $(git ls-files '*.py')
+      - name: Run mypy
+        if: always()
+        run: mypy --python-version 3.9 --strict $(git ls-files '*.py')
