@@ -14,6 +14,8 @@ Remember that the mission of Pi-Bot is to assist the Science Olympiad community 
 
 ## Development
 
+### Installing requirements
+
 There are many components to Pi-Bot that you will need to set up before you can begin to develop.
 
 To begin, first clone the repo:
@@ -36,7 +38,11 @@ Install the required pip dependencies:
 $ pip install -r requirements.txt
 ```
 
-### Discord
+Alternatively, you can use `docker-compose` to launch the app if you don't want
+to use a virtual environment. Both a containerized MongoDB database and app will
+be launched with the user of this command.
+
+### Setting up Discord
 
 To set up your Pi-Bot testing environment for Discord, follow the following instructions:
 
@@ -51,26 +57,26 @@ To set up your Pi-Bot testing environment for Discord, follow the following inst
 Now, you should have a guild with your own testing bot inside. The bot won't work,
 but you should be able to see it in your guild. Making progress!
 
-### Docker
-
-To run the bot, we will use `docker-compose`. Docker is a handy tool to setup
-a containerized development environment for the bot. Docker will launch both the
-bot, along with a MongoDB container. This will allow the bot to store data in a quick
-and efficient way, without needing to use an external service.
-
 ### MongoDB
 
-To manage its information, Pi-Bot uses a MongoDB database. To create a database of
-your own, you can use `mongoimport`. This takes in some amount of data and puts
-it into a MongoDB database for you. You can setup a local instance of MongoDB, or
-alternatively use [MongoDB Atlas](https://www.mongodb.com/atlas/database).
+To manage its information, Pi-Bot uses a MongoDB database. For development, there
+are a few ways that you can set this up:
 
-1. Run the `scripts/mongoimport.py` script, which will generate a JSON file that
-   resembles the MongoDB database you can setup.
-1. Use `mongoimport` to import the database:
-    ```
-    mongoimport --file mongo_export.json --jsonArray
-    ```
+1. Setup a MongoDB database running locally on your computer.
+1. Setup a MongoDB database through [MongoDB Atlas](https://www.mongodb.com/atlas/database).
+1. Use the `docker-compose` setup provided below.
+
+Whichever method you choose, you will need to get a URL that allows the bot to
+connect to your testing database. This URL can use the `srv` feature or not. You
+can set this URL in the `.env` file through the `MONGO_URL` attribute.
+
+To test if the bot will be able to see your instance, you can run the following:
+```python
+>>> from pymongo import MongoClient
+>>> client = MongoClient("your very special URL", tz_aware = True)
+>>> client.data.command('ping')
+{'ok': 1.0}
+```
 
 ### Forums / Wiki
 
@@ -108,6 +114,38 @@ through a headless browser (for the fourms), or the MediaWiki API (for the wiki)
     MONGO_URL=<connection to your mongo database, see below>
     ```
 
-At this point you should be ready to develop! If you have any questions, don't hesistate to reach out to me on the Pi-Bot Discord server listed above.
+At this point you should be ready to develop! If you have any questions, don't 
+hesistate to reach out to me on the Pi-Bot Discord server listed above.
+
+## Docker
+
+To develop the bot using Docker, you can use `docker-compose`. Compose will
+build two containers for the bot: one for MongoDB and one for the bot itself, which
+depends on the MongoDB container.
+
+To make Docker work, you will need to update your MongoDB URL to include the default
+database credentials and the proper host address.
+
+```bash
+$ docker-compose up
+```
+
+## Contributing changes
+
+When you are ready to contribute changes, feel free to fork the project and submit
+a PR. You are highly encouraged to set up `pre-commit` before committing and pushing
+your changes, as this lessens the chance of your PR being rejected because of failing
+CI tests.
+
+You can install `pre-commit` through:
+
+```bash
+$ pip install pre-commit
+$ pre-commit install
+```
+
+This will install hooks into your Git configuration that allow various tests to
+run right before you commit. All of these hooks are specific to our repository,
+and they will not affect any other projects you may be working on.
 
 Thank you. :heart:
