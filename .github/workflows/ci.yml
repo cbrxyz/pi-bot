@@ -1,9 +1,23 @@
 ---
+name: Pi-Bot CI
 
 # yamllint disable-line rule:truthy
 on:
-  push:
-  pull_request:
+  [push, workflow_dispatch]
+
+env:
+  # Cache version to control pre-commit caches
+  CACHE_VERSION: 0
+  # 3.9 is recent enough
+  DEFAULT_PYTHON: 3.9.7
+  # Location of the pre-commit cache. This is set by pre-commit, not us!
+  PRE_COMMIT_CACHE: ~/.cache/pre-commit
+
+# Cancels previous runs targeting the same hash
+concurrency:
+  group: >
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -11,26 +25,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.0.2
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4.1.0
         with:
-          python-version: 3.9.7
+          python-version: ${{ env.DEFAULT_PYTHON}}
+          cache: "pip"
 
-      - name: Install pip packages
+      - name: Generate pre-commit cache key
+        id: pre-commit_cache_key
+        run: >
+          echo "::set-output
+          name=key::${{ env.CACHE_VERSION }}-${{ env.DEFAULT_PYTHON }}-${{
+          hashFiles('.pre-commit-config.yaml') }}"
+
+      - name: Install pre-commit
         run: |
           pip install --upgrade pip
-          pip install black==22.3.0 pylint==2.12.2 mypy==0.950
+          pip install "$(cat requirements_test.txt | grep pre-commit)"
 
-      - name: Run black
-        if: always()
-        run: black --diff --check $(git ls-files '*.py')
+      - name: Restore base pre-commit environment
+        id: cache-pre-commmit
+        uses: actions/cache@v3.0.4
+        with:
+          path: ${{ env.PRE_COMMIT_CACHE }}
+          key: >
+            ${{ runner.os
+            }}-pre-commit-${{
+            steps.pre-commit_cache_key.outputs.key }}
 
-      - name: Run pylint
-        if: always()
-        run: pylint --exit-zero $(git ls-files '*.py')
+      - name: Install pre-commit dependencies if no cache
+        if: steps.cache-pre-commit.outputs.cache-hit != 'true'
+        run: |
+          pre-commit install-hooks
 
-      - name: Run mypy
-        if: always()
-        run: mypy --python-version 3.9 --strict $(git ls-files '*.py')
+      - name: Install hadolint
+        run: >
+          sudo wget -O
+          /bin/hadolint
+          https://github.com/hadolint/hadolint/releases/download/v2.10.0/hadolint-Linux-x86_64
+
+          sudo chmod +x /bin/hadolint
+
+      - name: Run hooks
+        run: |
+          pre-commit run --all-files --show-diff-on-failure

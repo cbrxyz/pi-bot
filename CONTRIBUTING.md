@@ -114,7 +114,7 @@ through a headless browser (for the fourms), or the MediaWiki API (for the wiki)
     MONGO_URL=<connection to your mongo database, see below>
     ```
 
-At this point you should be ready to develop! If you have any questions, don't 
+At this point you should be ready to develop! If you have any questions, don't
 hesistate to reach out to me on the Pi-Bot Discord server listed above.
 
 ## Docker
