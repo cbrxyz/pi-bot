@@ -78,25 +78,14 @@ To test if the bot will be able to see your instance, you can run the following:
 {'ok': 1.0}
 ```
 
-### Forums / Wiki
+### Wiki
 
-Another important aspect of the bot is its ability to interact with the forums
-and wiki, two other critical site components. These interactions are primarily done
-through a headless browser (for the fourms), or the MediaWiki API (for the wiki).
+Another aspect of the bot is its interaction with the Scioly.org wiki. This interaction
+powers some of the current Discord commands used by the bot.
 
-1. Add this line to your `.env` file, just so the [`pywikibot`](https://www.mediawiki.org/wiki/Manual:Pywikibot) module is configured:
-    ```
-    PYWIKIBOT_DIR=$PWD/src/wiki
-    ```
-2. Create a new account on Scioly.org for testing your bot. Name it something so that it can be recognized as your Pi-Bot testing account.
-3. **YOU MUST REACH OUT TO A STAFF MEMBER ABOUT YOUR NEW BOT TESTING ACCOUNT SO THAT IT CAN RECEIVE THE BOT FLAG.** Failure to follow this step can result in your bot account and/or your account being banned from the site.
-4. Get it's username and password, and add them to the `.env` file as shown:
-    ```
-    PI_BOT_WIKI_USERNAME= (account username)
-    PI_BOT_WIKI_PASSWORD= (account wiki password)
-    PI_BOT_FORUMS_USERNAME= (account username)
-    PI_BOT_FORUMS_PASSWORD= (account forums password)
-    ```
+Currently, you do not need to supply credentials to allow the bot to interact with
+the wiki - it should be able to complete all needed operations without signing
+into an account.
 
 ### Local Environment Variables
 
