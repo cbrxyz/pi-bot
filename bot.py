@@ -23,12 +23,12 @@ from src.discord.globals import (
     TOKEN,
     dev_mode,
 )
+from src.discord.reporter import Reporter
 from src.mongo.mongo import MongoDatabase
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
     from src.discord.logger import Logger
-    from src.discord.reporter import Reporter
     from src.discord.spam import SpamManager
 
 intents = discord.Intents.all()

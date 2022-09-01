@@ -816,12 +816,12 @@ class EmbedCommands(commands.Cog):
             try:
                 message = await channel.fetch_message(message_id)
             except discord.NotFound:
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content="No message with that ID was found."
                 )
 
             if not message.embeds:
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"The requested message has no embeds."
                 )
             else:
@@ -841,7 +841,7 @@ class EmbedCommands(commands.Cog):
                 view = EmbedView(self.bot, embed_dict, interaction)
 
             assert isinstance(view, (EmbedView, EmbedFieldManagerView))
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"This embed will be sent to {channel.mention}:",
                 embed=response,
                 view=view,
@@ -869,7 +869,7 @@ class EmbedCommands(commands.Cog):
 
                     if "import" in view.embed_update:
                         # Import a JSON file as the embed dict
-                        await interaction.edit_original_message(
+                        await interaction.edit_original_response(
                             content="Please send the JSON file containing the embed message as a `.json` file.",
                             view=None,
                             embed=None,
@@ -880,7 +880,7 @@ class EmbedCommands(commands.Cog):
                         )
                         # If emoji message has file, use this as emoji, otherwise, use default emoji provided
                         if file_message is None:
-                            await interaction.edit_original_message(
+                            await interaction.edit_original_response(
                                 content="No file was provided, so the operation was cancelled."
                             )
                             return
@@ -890,7 +890,7 @@ class EmbedCommands(commands.Cog):
                             or file_message.attachments[0].content_type
                             != "application/json"
                         ):
-                            await interaction.edit_original_message(
+                            await interaction.edit_original_response(
                                 content="I couldn't find a `.json` attachment on your message. Operation aborted."
                             )
 
@@ -912,7 +912,7 @@ class EmbedCommands(commands.Cog):
                         with open("embed_export.json", "w+") as file:
                             json.dump(embed_dict, file)
 
-                        await interaction.edit_original_message(
+                        await interaction.edit_original_response(
                             content="Here is the exported embed! The embed creator will return in approximately 15 "
                             "seconds.",
                             embed=None,
@@ -963,7 +963,7 @@ class EmbedCommands(commands.Cog):
 
             else:
                 if view.stopped_status == "failed":
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content="An error has occurred. You may not have responded to my query in 2 minutes, or your "
                         "message may not have been formatted correctly. Operation cancelled.",
                         embed=None,
@@ -971,7 +971,7 @@ class EmbedCommands(commands.Cog):
                     )
                     return
                 elif view.stopped_status == "aborted":
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content="The embed creation was aborted.", embed=None, view=None
                     )
                     return
@@ -986,7 +986,7 @@ class EmbedCommands(commands.Cog):
         if not message_id:
             # Send a new embed
             await channel.send(embed=response)
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The embed was successfully sent!", embed=None, view=None
             )
 
@@ -995,12 +995,12 @@ class EmbedCommands(commands.Cog):
             try:
                 message = await channel.fetch_message(message_id)
             except discord.NotFound:
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content="No message with that ID was found."
                 )
 
             await message.edit(embed=response)
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The embed was successfully edited!", embed=None, view=None
             )
 

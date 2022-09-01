@@ -373,9 +373,9 @@ class FunCommands(commands.Cog, name="Fun"):
         """
         await interaction.response.send_message("Swishing the magic 8 ball...")
         await asyncio.sleep(1)
-        await interaction.edit_original_message(content="Swishing the magic 8 ball..")
+        await interaction.edit_original_response(content="Swishing the magic 8 ball..")
         await asyncio.sleep(1)
-        await interaction.edit_original_message(content="Swishing the magic 8 ball.")
+        await interaction.edit_original_response(content="Swishing the magic 8 ball.")
         await asyncio.sleep(1)
         sayings = [
             "Yes.",
@@ -399,7 +399,7 @@ class FunCommands(commands.Cog, name="Fun"):
             "Definitely no.",
         ]
         response = random.choice(sayings)
-        await interaction.edit_original_message(content=f"**{response}**")
+        await interaction.edit_original_response(content=f"**{response}**")
 
     @app_commands.command(description="Gets an xkcd comic!")
     @app_commands.describe(

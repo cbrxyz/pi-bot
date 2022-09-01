@@ -55,7 +55,7 @@ class StaffCensor(commands.Cog):
         print(src.discord.globals.CENSOR)
         if censor_type == "word":
             if phrase in src.discord.globals.CENSOR["words"]:
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"`{phrase}` is already in the censored words list. Operation cancelled."
                 )
             else:
@@ -68,12 +68,12 @@ class StaffCensor(commands.Cog):
                 )
                 first_letter = phrase[0]
                 last_letter = phrase[-1]
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"Added `{first_letter}...{last_letter}` to the censor list."
                 )
         elif censor_type == "emoji":
             if phrase in src.discord.globals.CENSOR["emojis"]:
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"Emoji is already in the censored emoijs list. Operation cancelled."
                 )
             else:
@@ -84,7 +84,7 @@ class StaffCensor(commands.Cog):
                     src.discord.globals.CENSOR["_id"],
                     {"$push": {"emojis": phrase}},
                 )
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"Added emoji to the censor list."
                 )
 
@@ -124,7 +124,7 @@ class StaffCensor(commands.Cog):
                     src.discord.globals.CENSOR["_id"],
                     {"$pull": {"words": phrase}},
                 )
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"Removed `{phrase}` from the censor list."
                 )
         elif censor_type == "emoji":
@@ -140,7 +140,7 @@ class StaffCensor(commands.Cog):
                     src.discord.globals.CENSOR["_id"],
                     {"$pull": {"emojis": phrase}},
                 )
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"Removed {phrase} from the emojis list."
                 )
 
