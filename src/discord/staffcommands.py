@@ -194,7 +194,7 @@ class CronConfirm(discord.ui.View):
             except:
                 pass
             await interaction.response.edit_message(
-                content="Attempted to unban the user. Checking to see if operation was succesful...",
+                content="Attempted to unban the user. Checking to see if operation was successful...",
                 view=None,
             )
             bans = [b async for b in server.bans()]
@@ -223,7 +223,7 @@ class CronConfirm(discord.ui.View):
                 except:
                     pass
                 await interaction.response.edit_message(
-                    content="Attempted to unmute the user. Checking to see if the operation was succesful...",
+                    content="Attempted to unmute the user. Checking to see if the operation was successful...",
                     view=None,
                 )
                 if role not in member.roles:
@@ -599,7 +599,7 @@ class StaffEssential(StaffCommands):
         # Test user was unmuted
         if role not in member.roles:
             await interaction.edit_original_message(
-                content="The user was succesfully unmuted.", embed=None, view=None
+                content="The user was successfully unmuted.", embed=None, view=None
             )
         else:
             await interaction.edit_original_message(
@@ -719,9 +719,7 @@ class StaffEssential(StaffCommands):
                 pass
 
         if ban_length != "Indefinitely":
-            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog(
-                "CronTasks"
-            )
+            cron_tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await cron_tasks_cog.schedule_unban(member, times[ban_length])
 
         # Test
@@ -839,9 +837,7 @@ class StaffEssential(StaffCommands):
                 pass
 
         if mute_length != "Indefinitely":
-            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog(
-                "CronTasks"
-            )
+            cron_tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await cron_tasks_cog.schedule_unmute(member, times[mute_length])
 
         # Test
@@ -914,7 +910,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ):
             # Handle for tournament channels
 
-            test_vc: Optional[discord.VoiceChannel] = discord.utils.get(
+            test_vc: discord.VoiceChannel | None = discord.utils.get(
                 server.voice_channels, name=interaction.channel.name
             )
             if not test_vc:
@@ -1294,7 +1290,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await interaction.edit_original_message(
                 content=f"{EMOJI_LOADING} Pulling all updated database information..."
             )
-            tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+            tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await tasks_cog.pull_prev_info()
 
         if system in ["invitationals", "all"]:
@@ -1382,7 +1378,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         # Insert time length into CRON
-        cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+        cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
         await cron_cog.schedule_status_remove(selected_time)
 
         # Update activity
@@ -1431,7 +1427,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         # Reset bot status to regularly update
-        cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+        cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
         cron_cog.change_bot_status.restart()
 
 

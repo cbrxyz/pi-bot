@@ -1,5 +1,5 @@
 """
-Stores various checks for specific commands, including priveleged commands.
+Stores various checks for specific commands, including privileged commands.
 """
 from typing import Union
 

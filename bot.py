@@ -5,14 +5,14 @@ core functionality.
 from __future__ import annotations
 
 import asyncio
-import uuid
 import datetime
+import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
-from discord import app_commands
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import (
     BOT_PREFIX,
@@ -27,15 +27,15 @@ from src.mongo.mongo import MongoDatabase
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
-    from src.discord.reporter import Reporter
     from src.discord.logger import Logger
+    from src.discord.reporter import Reporter
     from src.discord.spam import SpamManager
 
 intents = discord.Intents.all()
 
 
 class PiBotCommandTree(app_commands.CommandTree):
-    def __init__(self, client: "PiBot"):
+    def __init__(self, client: PiBot):
         super().__init__(client)
 
     async def on_error(
@@ -44,7 +44,7 @@ class PiBotCommandTree(app_commands.CommandTree):
         # Handle check failures
         if isinstance(error, app_commands.NoPrivateMessage):
             message = (
-                "Sorry, but this command does not work in private messsage. "
+                "Sorry, but this command does not work in private message. "
                 "Please hop on over to the Scioly.org server to use the command!"
             )
         elif isinstance(error, (app_commands.MissingRole, app_commands.MissingAnyRole)):
@@ -67,7 +67,7 @@ class PiBotCommandTree(app_commands.CommandTree):
                 f"Please try again **{discord.utils.format_dt(next_time, 'R')}.**"
                 "\n\n"
                 "For future reference, this command is currently limited to "
-                f"being excecuted **{error.cooldown.rate} times per {error.cooldown.per} seconds**."
+                f"being executed **{error.cooldown.rate} times per {error.cooldown.per} seconds**."
             )
 
         # Handle general app command errors
@@ -113,7 +113,7 @@ class PiBot(commands.Bot):
     The bot itself. Controls all functionality needed for core operations.
     """
 
-    session: Optional[aiohttp.ClientSession]
+    session: aiohttp.ClientSession | None
     mongo_database: MongoDatabase
 
     def __init__(self):
@@ -124,8 +124,8 @@ class PiBot(commands.Bot):
             help_command=None,
             tree_cls=PiBotCommandTree,
         )
-        self.listeners_: Dict[
-            str, Dict[str, Any]
+        self.listeners_: dict[
+            str, dict[str, Any]
         ] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.0.0"
         self.session = None
@@ -177,7 +177,7 @@ class PiBot(commands.Bot):
 
         # Log incoming direct messages
         if isinstance(message.channel, discord.DMChannel) and message.author != bot:
-            logger_cog: Union[commands.Cog, Logger] = self.get_cog("Logger")
+            logger_cog: commands.Cog | Logger = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
             print(f"Message from {message.author} through DM's: {message.content}")
         else:
@@ -198,11 +198,11 @@ class PiBot(commands.Bot):
         )
 
         if message.content and not is_private:
-            censor: Union[commands.Cog, Censor] = self.get_cog("Censor")
+            censor: commands.Cog | Censor = self.get_cog("Censor")
             await censor.on_message(message)
 
             # Check to see if the message contains repeated content or has too many caps
-            spam: Union[commands.Cog, SpamManager] = self.get_cog("SpamManager")
+            spam: commands.Cog | SpamManager = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
@@ -215,7 +215,7 @@ class PiBot(commands.Bot):
 
     async def listen_for_response(
         self, follow_id: int, timeout: int
-    ) -> Optional[discord.Message]:
+    ) -> discord.Message | None:
         """
         Creates a global listener for a message from a user.
 

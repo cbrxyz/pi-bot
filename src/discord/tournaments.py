@@ -292,9 +292,7 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
             if day_diff < -after_days:
                 # If past tournament date, now out of range - make warning report to archive
                 if channel_category.name != CATEGORY_ARCHIVE:
-                    reporter_cog: Union[commands.Cog, Reporter] = bot.get_cog(
-                        "Reporter"
-                    )
+                    reporter_cog: commands.Cog | Reporter = bot.get_cog("Reporter")
                     await reporter_cog.create_invitational_archive_report(
                         t, channel, role
                     )

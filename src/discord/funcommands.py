@@ -38,7 +38,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     async def trout(
-        self, interaction: discord.Interaction, member: Optional[discord.Member] = None
+        self, interaction: discord.Interaction, member: discord.Member | None = None
     ):
         """
         Slaps a user with a trout.
@@ -78,7 +78,7 @@ class FunCommands(commands.Cog, name="Fun"):
             "brownie",
             "cotton candy",
         ],
-        member: Optional[discord.Member] = None,
+        member: discord.Member | None = None,
     ):
         """
         Gives a member a treat GIF!
@@ -407,7 +407,7 @@ class FunCommands(commands.Cog, name="Fun"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
-    async def xkcd(self, interaction: discord.Interaction, num: Optional[int] = None):
+    async def xkcd(self, interaction: discord.Interaction, num: int | None = None):
         """
         Gets an xkcd comic with a given number, or a random comic if the number is
         not provided.

@@ -14,71 +14,127 @@ Remember that the mission of Pi-Bot is to assist the Science Olympiad community 
 
 ## Development
 
-There are many components to Pi-Bot that you will need to set up before you can begin to develop with him.
+### Installing requirements
 
-### Discord
+There are many components to Pi-Bot that you will need to set up before you can begin to develop.
+
+To begin, first clone the repo:
+
+```sh
+$ git clone https://github.com/cbrxyz/pi-bot
+$ cd pi-bot
+```
+
+Then, active a Python virtual environment (Windows will use a slightly different syntax):
+
+```sh
+$ python3 -m venv venv
+$ source venv/bin/active
+```
+
+Install the required pip dependencies:
+
+```sh
+$ pip install -r requirements.txt
+```
+
+Alternatively, you can use `docker-compose` to launch the app if you don't want
+to use a virtual environment. Both a containerized MongoDB database and app will
+be launched with the user of this command.
+
+### Setting up Discord
 
 To set up your Pi-Bot testing environment for Discord, follow the following instructions:
 
-1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/).  Create a new application and add a bot in the Bot section. There, get your bot token.                       
-2. Create a new `.env` file locally, and add your first entry:
+1. Add a bot account in the [Discord Developers Portal](https://discord.com/developers/applications/).
+   Create a new application and add a bot in the Bot section. There, get your bot token.
+1. You can use a custom Discord server template to make your own testing guild that
+   has an identical channel and permissions structure similar to that of Scioly.org.
+   You and your bot (and maybe other testing accounts) should be the only accounts
+   in that guild. Testing multiple bots in the same server could result in the bots
+   overwriting each other. The [server template can be found here](https://discord.new/Gsk2jP9KnYJv).
+
+Now, you should have a guild with your own testing bot inside. The bot won't work,
+but you should be able to see it in your guild. Making progress!
+
+### MongoDB
+
+To manage its information, Pi-Bot uses a MongoDB database. For development, there
+are a few ways that you can set this up:
+
+1. Setup a MongoDB database running locally on your computer.
+1. Setup a MongoDB database through [MongoDB Atlas](https://www.mongodb.com/atlas/database).
+1. Use the `docker-compose` setup provided below.
+
+Whichever method you choose, you will need to get a URL that allows the bot to
+connect to your testing database. This URL can use the `srv` feature or not. You
+can set this URL in the `.env` file through the `MONGO_URL` attribute.
+
+To test if the bot will be able to see your instance, you can run the following:
+```python
+>>> from pymongo import MongoClient
+>>> client = MongoClient("your very special URL", tz_aware = True)
+>>> client.data.command('ping')
+{'ok': 1.0}
+```
+
+### Wiki
+
+Another aspect of the bot is its interaction with the Scioly.org wiki. This interaction
+powers some of the current Discord commands used by the bot.
+
+Currently, you do not need to supply credentials to allow the bot to interact with
+the wiki - it should be able to complete all needed operations without signing
+into an account.
+
+### Local Environment Variables
+
+1. Create a `.env` file to store your private environment variables. This helps
+   to get your bot setup. You will need to update the file with the following variables.
     ```
     DEV_MODE=TRUE
-    DISCORD_TOKEN=abc <-- literally
-    DISCORD_DEV_TOKEN=(your token)
-    ```
-3. In the code, find the `PI_BOT_IDS` constant, and add your bot's **user ID** to the array. Your bot's user ID can be found by enabling Developer Mode in Discord and right clicking on your bot, and copying it's ID.
-4. You can now create a new server to test your bot in. Here, you can make the
-   various channels and roles you need to simulate the server environment.
-5. Add the ID of your development server to the `.env` file, as so:
-    ```
-    DEV_SERVER_ID=1234567890
-    ```
-6. Join the Pi-Bot Development server, where developers can discuss various
-   ideas surrounding the bot. Available [here](https://discord.gg/tNBNgTH).
-
-### Google Sheets
-
-1. To get your bot set up with Google Sheets, you are going to need to create a service account to test your bot with.
-2. Head to the [Google Cloud Console](https://www.console.cloud.google.com).
-3. Create a new project for testing your bot.
-4. Enable the Google Sheets and Google Drive APIs for  your project in the `APIs & Services` tab.
-5. Head to the `API & Services > Credentials` tab, and create a new credential. Make a `Service account`.
-6. Give it a name and ID, and create the service account.
-7. Click on your newly created service account in the `Credentials` tab. Create a new key in the `JSON` format.
-8. This will download a new file.
-9. Take these values from the new file and add them to the `.env` file in the following format:
-    ```
-    ...
-    GCP_PROJECT_ID= value of "project_id"
-    GCP_PRIVATE_KEY_ID = value of "private_key_id"
-    GCP_PRIVATE_KEY = value of "private_key"
-    GCP_CLIENT_EMAIL = value of "client_email"
-    GCP_CLIENT_ID = value of "client_id"
-    GCP_AUTH_URI = value of "auth_uri"
-    GCP_TOKEN_URI = value of "token_uri"
-    GCP_AUTH_PROVIDER_X509 = value of "auth_provider_x509_cert_url"
-    GCP_CLIENT_X509_CERT_URL = value of "client_x509_cert_url"
-    ```
-10. Create a new Google Sheet using the account you used to make the service account. If you would like the Pi-Bot Google Sheet template, please contact pepperonipi.
-11. Share this Google Sheet with the value of `"client_email"` in the JSON file. If you do not do this, your bot will not be able to read/write to the sheet.
-
-### Forums / Wiki
-
-1. Add this line to your `.env` file, just so the [`pywikibot`](https://www.mediawiki.org/wiki/Manual:Pywikibot) module is configured:
-    ```
-    PYWIKIBOT_DIR=$PWD/src/wiki
-    ```
-2. Create a new account on Scioly.org for testing your bot. Name it something so that it can be recognized as your Pi-Bot testing account.
-3. **YOU MUST REACH OUT TO A STAFF MEMBER ABOUT YOUR NEW BOT TESTING ACCOUNT SO THAT IT CAN RECEIVE THE BOT FLAG.** Failure to follow this step can result in your bot account and/or your account being banned from the site.
-4. Get it's username and password, and add them to the `.env` file as shown:
-    ```
-    PI_BOT_WIKI_USERNAME= (account username)
-    PI_BOT_WIKI_PASSWORD= (account wiki password)
-    PI_BOT_FORUMS_USERNAME= (account username)
-    PI_BOT_FORUMS_PASSWORD= (account forums password)
+    DISCORD_TOKEN=<not needed since you will be developing only>
+    DISCORD_DEV_TOKEN=<bot token from step 1>
+    DEV_SERVER_ID=<your development server ID>
+    SLASH_COMMAND_GUILDS=<your development server ID>
+    EMOJI_GUILDS=<your emoji guild ID>
+    PI_BOT_WIKI_USERNAME=<only needed if you will be testing wiki functionality>
+    PI_BOT_WIKI_PASSWORD=<only needed if you will be testing wiki functionality>
+    MONGO_URL=<connection to your mongo database, see below>
     ```
 
-At this point you should be ready to develop! If you have any questions, don't hesistate to reach out to me on the Pi-Bot Discord server listed above.
+At this point you should be ready to develop! If you have any questions, don't
+hesistate to reach out to me on the Pi-Bot Discord server listed above.
+
+## Docker
+
+To develop the bot using Docker, you can use `docker-compose`. Compose will
+build two containers for the bot: one for MongoDB and one for the bot itself, which
+depends on the MongoDB container.
+
+To make Docker work, you will need to update your MongoDB URL to include the default
+database credentials and the proper host address.
+
+```bash
+$ docker-compose up
+```
+
+## Contributing changes
+
+When you are ready to contribute changes, feel free to fork the project and submit
+a PR. You are highly encouraged to set up `pre-commit` before committing and pushing
+your changes, as this lessens the chance of your PR being rejected because of failing
+CI tests.
+
+You can install `pre-commit` through:
+
+```bash
+$ pip install pre-commit
+$ pre-commit install
+```
+
+This will install hooks into your Git configuration that allow various tests to
+run right before you commit. All of these hooks are specific to our repository,
+and they will not affect any other projects you may be working on.
 
 Thank you. :heart:

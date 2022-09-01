@@ -102,7 +102,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 await self.send_ping_pm(user_obj, message, ping_count)
 
     def format_text(
-        self, text: str, length: int, user: Union[discord.Member, discord.User]
+        self, text: str, length: int, user: discord.Member | discord.User
     ) -> str:
         """
         Highlights ping expressions in the message and shorten long messages

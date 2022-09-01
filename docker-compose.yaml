@@ -1,0 +1,26 @@
+---
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+
+  mongodb:
+    build: ./src/mongo
+    restart: unless-stopped
+    volumes:
+      - ./mongodata:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS}
+      MONGO_INITDB_DATABASE: data
+      MONGO_DATA_DIR: /data/db
+      MONGODB_LOG_DIR: /dev/null
+    ports:
+      - 28017:27017  # In case already an instance of mongo running on 27017
+
+volumes:
+  mongodata:

@@ -66,7 +66,7 @@ class CronTasks(commands.Cog):
         await self.bot.mongo_database.delete("data", "cron", doc_id)
 
     async def schedule_unban(
-        self, user: Union[discord.Member, discord.User], time: datetime.datetime
+        self, user: discord.Member | discord.User, time: datetime.datetime
     ) -> None:
         """
         Schedules for a particular Discord user to be unbanned at a particular time.
@@ -75,7 +75,7 @@ class CronTasks(commands.Cog):
         await self.add_to_cron(item_dict)
 
     async def schedule_unmute(
-        self, user: Union[discord.Member, discord.User], time: datetime.datetime
+        self, user: discord.Member | discord.User, time: datetime.datetime
     ) -> None:
         """
         Schedules for a particular Discord user to be unmuted at a particular time.
@@ -84,7 +84,7 @@ class CronTasks(commands.Cog):
         await self.add_to_cron(item_dict)
 
     async def schedule_unselfmute(
-        self, user: Union[discord.Member, discord.User], time: datetime.datetime
+        self, user: discord.Member | discord.User, time: datetime.datetime
     ) -> None:
         """
         Schedules for a particular Discord user to be un-selfmuted at a particular time.
@@ -182,9 +182,7 @@ class CronTasks(commands.Cog):
                         reporter_cog = self.bot.get_cog("Reporter")
                         await reporter_cog.create_cron_task_report(task)
                 except Exception as _:
-                    reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog(
-                        "Reporter"
-                    )
+                    reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
                     await reporter_cog.create_cron_task_report(task)
 
     async def cron_handle_unban(self, task: dict):
@@ -193,7 +191,7 @@ class CronTasks(commands.Cog):
         """
         # Get the necessary resources
         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-        reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
+        reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
 
         # Type checking
         assert isinstance(server, discord.Guild)
@@ -224,7 +222,7 @@ class CronTasks(commands.Cog):
         """
         # Get the necessary resources
         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-        reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
+        reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
         muted_role = discord.utils.get(
             server.roles, name=src.discord.globals.ROLE_MUTED
         )

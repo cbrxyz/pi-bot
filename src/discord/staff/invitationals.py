@@ -630,7 +630,7 @@ class StaffInvitational(commands.Cog):
 
             # Actually update season
             src.discord.globals.SETTINGS["invitational_season"] += 1
-            tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+            tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await tasks_cog.update_setting(
                 "invitational_season",
                 src.discord.globals.SETTINGS["invitational_season"] + 1,
