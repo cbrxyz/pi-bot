@@ -65,3 +65,10 @@ db.invitationals.insertMany([
     status: "open"
   }
 ]);
+
+// Set up settings
+db.settings.insertOne({
+  custom_bot_status_text: null,
+  custom_bot_status_type: null,
+  invitational_season: 2023
+});

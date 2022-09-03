@@ -48,7 +48,8 @@ class CronTasks(commands.Cog):
         src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
         src.discord.globals.TAGS = await self.bot.mongo_database.get_tags()
         src.discord.globals.EVENT_INFO = await self.bot.mongo_database.get_events()
-        src.discord.globals.SETTINGS = await self.bot.mongo_database.get_settings()
+        self.bot.settings = await self.bot.mongo_database.get_settings()
+        assert isinstance(self.bot.settings, dict)
 
         src.discord.globals.CENSOR = await self.bot.mongo_database.get_censor()
         print("Fetched previous variables.")
@@ -111,7 +112,7 @@ class CronTasks(commands.Cog):
         await self.bot.mongo_database.update(
             "data",
             "settings",
-            src.discord.globals.SETTINGS["_id"],
+            self.bot.settings["_id"],
             {"$set": {setting_name: value}},
         )
 
@@ -249,16 +250,12 @@ class CronTasks(commands.Cog):
         Handles serving CRON tasks with the type of 'REMOVE_STATUS'.
         """
         # Attempt to remove status
-        src.discord.globals.SETTINGS[
-            "custom_bot_status_type"
-        ] = None  # reset local settings
-        src.discord.globals.SETTINGS[
-            "custom_bot_status_text"
-        ] = None  # reset local settings
+        self.bot.settings["custom_bot_status_type"] = None  # reset local settings
+        self.bot.settings["custom_bot_status_text"] = None  # reset local settings
         await self.bot.mongo_database.update(
             "data",
             "settings",
-            src.discord.globals.SETTINGS["_id"],
+            self.bot.settings["_id"],
             {"$set": {"custom_bot_status_type": None, "custom_bot_status_text": None}},
         )  # update cloud settings
         self.change_bot_status.restart()  # update bot now
@@ -298,12 +295,12 @@ class CronTasks(commands.Cog):
             {"type": "watching", "text": "Jmol tutorials"},
         ]
         bot_status = None
-        if src.discord.globals.SETTINGS["custom_bot_status_type"] == None:
+        if self.bot.settings["custom_bot_status_type"] == None:
             bot_status = random.choice(statuses)
         else:
             bot_status = {
-                "type": src.discord.globals.SETTINGS["custom_bot_status_type"],
-                "text": src.discord.globals.SETTINGS["custom_bot_status_text"],
+                "type": self.bot.settings["custom_bot_status_type"],
+                "text": self.bot.settings["custom_bot_status_text"],
             }
 
         if bot_status["type"] == "playing":

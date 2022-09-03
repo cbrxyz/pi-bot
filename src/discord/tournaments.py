@@ -363,9 +363,9 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
     await tourney_channel.purge()  # Delete all messages to make way for new messages/views
     await tourney_channel.send(embed=help_embed)
 
-    assert isinstance(src.discord.globals.SETTINGS["invitational_season"], int)
-    first_year = src.discord.globals.SETTINGS["invitational_season"] - 1
-    second_year = src.discord.globals.SETTINGS["invitational_season"]
+    assert isinstance(bot.settings["invitational_season"], int)
+    first_year = bot.settings["invitational_season"] - 1
+    second_year = bot.settings["invitational_season"]
     months = [
         {"name": "September", "number": 9, "year": first_year, "optional": True},
         {"name": "October", "number": 10, "year": first_year, "optional": False},

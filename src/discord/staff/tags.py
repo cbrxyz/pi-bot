@@ -57,12 +57,12 @@ class StaffTags(commands.Cog):
 
         # Check if tag has already been added
         if tag_name in [t["name"] for t in src.discord.globals.TAGS]:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content=f"The `{tag_name}` tag has already been added. To edit this tag, please use `/tagedit` instead."
             )
 
         # Send directions to caller
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"{EMOJI_LOADING} Please send the new text for the tag. You can use formatting and newlines. All "
             f"text sent in your next message will be included in the tag. "
         )
@@ -73,7 +73,7 @@ class StaffTags(commands.Cog):
 
         # If user does not respond, alert them
         if not content_message:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content="No message was found within 2 minutes. Operation cancelled."
             )
 
@@ -95,7 +95,7 @@ class StaffTags(commands.Cog):
         # Add tag to logs
         src.discord.globals.TAGS.append(new_dict)
         await self.bot.mongo_database.insert("data", "tags", new_dict)
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"The `{tag_name}` tag was added!"
         )
 
@@ -126,7 +126,7 @@ class StaffTags(commands.Cog):
 
         # Check that tag exists.
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content=f"No tag with name `{tag_name}` could be found."
             )
 
@@ -134,7 +134,7 @@ class StaffTags(commands.Cog):
         tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
 
         # Send info message about updating tag
-        info_message = await interaction.edit_original_message(
+        info_message = await interaction.edit_original_response(
             content=f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag['output']}\n----------\n"
             + "Please send the new text for the tag below:"
         )
@@ -147,7 +147,7 @@ class StaffTags(commands.Cog):
 
         # If user did not respond
         if not content_message:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="No message was found within 2 minutes. Operation cancelled."
             )
             return
@@ -180,7 +180,7 @@ class StaffTags(commands.Cog):
         await self.bot.mongo_database.update(
             "data", "tags", tag["_id"], {"$set": update_dict}
         )
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"The `{tag_name}` tag was updated."
         )
 
@@ -205,7 +205,7 @@ class StaffTags(commands.Cog):
 
         # If tag does not exist
         if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content=f"No tag with the name of `{tag_name}` was found."
             )
 
@@ -217,7 +217,7 @@ class StaffTags(commands.Cog):
         await self.bot.mongo_database.delete("data", "tags", tag["_id"])
 
         # Send confirmation message
-        return await interaction.edit_original_message(
+        return await interaction.edit_original_response(
             content=f"The `{tag_name}` tag was deleted."
         )
 
