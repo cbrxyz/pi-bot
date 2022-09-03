@@ -596,9 +596,9 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to run command..."
         )
 
-        assert isinstance(src.discord.globals.SETTINGS["invitational_season"], int)
+        assert isinstance(self.bot.settings["invitational_season"], int)
         description = f"""
-        This will update the season for the invitational season from `{src.discord.globals.SETTINGS['invitational_season']}` to `{src.discord.globals.SETTINGS['invitational_season'] + 1}`.
+        This will update the season for the invitational season from `{self.bot.settings['invitational_season']}` to `{self.bot.settings['invitational_season'] + 1}`.
 
         This **will not remove any data**, but the invitational display in the invitationals channel will be updated to only display invitationals relevant to the new season.
 
@@ -629,11 +629,11 @@ class StaffInvitational(commands.Cog):
             )
 
             # Actually update season
-            src.discord.globals.SETTINGS["invitational_season"] += 1
+            self.bot.settings["invitational_season"] += 1
             tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await tasks_cog.update_setting(
                 "invitational_season",
-                src.discord.globals.SETTINGS["invitational_season"] + 1,
+                self.bot.settings["invitational_season"] + 1,
             )
 
             # Update the tournament list to reflect

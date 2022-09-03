@@ -1367,9 +1367,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         selected_time = times[length]
 
         # Change settings
-        await src.discord.globals.update_setting(
+        await self.bot.update_setting(
             {"custom_bot_status_text": message, "custom_bot_status_type": activity},
-            self.bot,
         )
 
         # Delete any relevant documents
@@ -1416,8 +1415,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to resetting status..."
         )
-        await src.discord.globals.update_setting(
-            {"custom_bot_status_text": None, "custom_bot_status_type": None}, self.bot
+        await self.bot.update_setting(
+            {"custom_bot_status_text": None, "custom_bot_status_type": None}
         )
         await interaction.edit_original_response(content="Reset the bot's status.")
 

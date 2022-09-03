@@ -142,18 +142,3 @@ INVITATIONAL_INFO = []
 REPORTS = []
 TAGS = []
 CURRENT_WIKI_PAGE = None
-
-SETTINGS = {
-    "_id": None,
-    "custom_bot_status_type": None,
-    "custom_bot_status_text": None,
-    "invitational_season": None,
-}
-
-
-async def update_setting(values, bot):
-    for k, v in values.items():
-        SETTINGS[k] = v
-        await bot.mongo_database.update(
-            "data", "settings", SETTINGS["_id"], {"$set": values}
-        )

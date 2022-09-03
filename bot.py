@@ -115,6 +115,12 @@ class PiBot(commands.Bot):
 
     session: aiohttp.ClientSession | None
     mongo_database: MongoDatabase
+    settings = {
+        "_id": None,
+        "custom_bot_status_type": None,
+        "custom_bot_status_text": None,
+        "invitational_season": None,
+    }
 
     def __init__(self):
         super().__init__(
@@ -158,6 +164,13 @@ class PiBot(commands.Bot):
                 await self.load_extension(extension)
             except commands.ExtensionError as e:
                 print(f"Failed to load extension {extension}: {e}")
+
+    async def update_setting(self, values: dict[str, Any]):
+        for k, v in values.items():
+            self.settings[k] = v
+            await self.mongo_database.update(
+                "data", "settings", self.settings["_id"], {"$set": values}
+            )
 
     async def on_ready(self) -> None:
         """
