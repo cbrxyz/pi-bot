@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import commandchecks
 import discord
-import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import (
@@ -251,7 +250,7 @@ class StaffInvitational(commands.Cog):
                 )
 
             # If not, update invitational to be open
-            await update(
+            await self.bot.mongo_database.update(
                 "data",
                 "invitationals",
                 found_invitationals[0]["_id"],
@@ -346,7 +345,7 @@ class StaffInvitational(commands.Cog):
                         }
                     }
                     # and update the DB
-                    await update(
+                    await self.bot.mongo_database.update(
                         "data",
                         "invitationals",
                         invitational["_id"],
@@ -647,6 +646,57 @@ class StaffInvitational(commands.Cog):
             await interaction.edit_original_response(
                 content="The operation was cancelled.", view=None, embed=None
             )
+
+    @invitational_status_group.command(
+        name="renew",
+        description="Staff command. Renews an archived invitational by making it open again.",
+    )
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        short_name="The short name referring to the invitational, such as 'mit'.",
+        voting="If yes, the invitational is sent back to voting before members can join it.",
+    )
+    async def invitational_renew(
+        self,
+        interaction: discord.Interaction,
+        short_name: str,
+        voting: Literal["yes", "no"],
+    ):
+        # Check for staff permissions again
+        commandchecks.is_staff_from_ctx(interaction)
+
+        # Let staff know process started
+        await interaction.response.send_message(
+            content=f"{EMOJI_LOADING} Attempting to renew the `{short_name}` invitational..."
+        )
+
+        invitationals = await self.bot.mongo_database.get_invitationals()
+        found_invitationals = [
+            i for i in invitationals if i["channel_name"] == short_name
+        ]
+
+        if not len(found_invitationals):
+            await interaction.edit_original_response(
+                content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
+            )
+
+        invitational = invitationals[0]
+        await self.bot.mongo_database.update(
+            "data",
+            "invitationals",
+            invitational["_id"],
+            {"$set": {"status": "voting" if voting == "yes" else "opened"}},
+        )
+
+        # Update the tournament list to reflect
+        await update_tournament_list(self.bot, {})
+
+        # Send message to staff
+        await interaction.edit_original_response(
+            content=f"The operation succeeded, and the `{short_name}` invitational has been renewed."
+        )
+
+    print([c.name for c in invitational_status_group.walk_commands()])
 
 
 async def setup(bot: PiBot):

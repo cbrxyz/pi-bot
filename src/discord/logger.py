@@ -240,27 +240,33 @@ class Logger(commands.Cog):
             return await ctx.send(
                 "Pssttt. You're going to have to DM me to run this command!"
             )
-        if isinstance(error, discord.ext.commands.NoPrivateMessage):
+        if isinstance(
+            error,
+            (
+                discord.ext.commands.NoPrivateMessage,
+                discord.app_commands.NoPrivateMessage,
+            ),
+        ):
             return await ctx.send("Ope. You can't run this command in the DM's!")
         if isinstance(error, discord.ext.commands.NotOwner):
             return await ctx.send(
                 "Oof. You have to be the bot's master to run that command!"
             )
-        if isinstance(error, discord.ext.commands.MissingPermissions) or isinstance(
-            error, discord.ext.commands.BotMissingPermissions
+        if isinstance(
+            error,
+            (
+                discord.ext.commands.MissingPermissions,
+                discord.ext.commands.BotMissingPermissions,
+                discord.app_commands.MissingPermissions,
+                discord.app_commands.BotMissingPermissions,
+            ),
         ):
             return await ctx.send(
                 "Er, you don't have the permissions to run this command."
             )
-        if isinstance(error, discord.ext.commands.MissingRole) or isinstance(
-            error, discord.ext.commands.BotMissingRole
-        ):
-            return await ctx.send(
-                "Oh no... you don't have the required role to run this command."
-            )
-        if isinstance(error, discord.ext.commands.MissingAnyRole) or isinstance(
-            error, discord.ext.commands.BotMissingAnyRole
-        ):
+        if isinstance(
+            error, discord.ext.commands.MissingRole, discord.app_commands.MissingRole
+        ) or isinstance(error, discord.ext.commands.BotMissingRole):
             return await ctx.send(
                 "Oh no... you don't have the required role to run this command."
             )
@@ -280,9 +286,18 @@ class Logger(commands.Cog):
             return await ctx.send(
                 "Hmmm... I'm having trouble reading what you're trying to tell me."
             )
-        if isinstance(error, discord.ext.commands.CommandNotFound):
+        if isinstance(
+            error,
+            (
+                discord.ext.commands.CommandNotFound,
+                discord.app_commands.CommandNotFound,
+            ),
+        ):
             return await ctx.send("Sorry, I couldn't find that command.")
-        if isinstance(error, discord.ext.commands.CheckFailure):
+        if isinstance(
+            error,
+            (discord.ext.commands.CheckFailure, discord.app_commands.CheckFailure),
+        ):
             return await ctx.send("Sorry, but I don't think you can run that command.")
         if isinstance(error, discord.ext.commands.DisabledCommand):
             return await ctx.send("Sorry, but this command is disabled.")
@@ -308,6 +323,11 @@ class Logger(commands.Cog):
         if isinstance(error, discord.ext.commands.CommandRegistrationError):
             return await ctx.send(
                 "Oh boy. Command registration error. Please ping a developer about this."
+            )
+
+        if isinstance(error, discord.app_commands.CheckFailure):
+            return await ctx.send(
+                "Unfortunately, you are not able to use this command. Try running the command in `#bot-spam`."
             )
 
         # Overall errors

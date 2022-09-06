@@ -9,6 +9,7 @@ import random
 from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
+from commandchecks import is_in_bot_spam
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import SLASH_COMMAND_GUILDS
@@ -37,6 +38,7 @@ class FunCommands(commands.Cog, name="Fun"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def trout(
         self, interaction: discord.Interaction, member: discord.Member | None = None
     ):
@@ -64,6 +66,7 @@ class FunCommands(commands.Cog, name="Fun"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def treat(
         self,
         interaction: discord.Interaction,
@@ -194,6 +197,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.command(description="Gives some fish to bear!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 10, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def fish(self, interaction: discord.Interaction):
         """
         Gives a fish to bear.
@@ -252,6 +256,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.command(description="Steals some fish from bear!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 10, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def stealfish(self, interaction: discord.Interaction):
         """
         Steals fish from bear.
@@ -291,6 +296,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(member="The member to dog bomb!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def dogbomb(
         self,
         interaction: discord.Interaction,
@@ -330,6 +336,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.describe(member="The member to shiba bomb!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def shibabomb(self, interaction: discord.Interaction, member: discord.Member):
         """
         Shiba bombs a user!
@@ -364,6 +371,7 @@ class FunCommands(commands.Cog, name="Fun"):
     @app_commands.command(description="Rolls the magic 8 ball...")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def magic8ball(self, interaction: discord.Interaction):
         """
         Allows the user to roll a virtual 8 ball for a response.
@@ -407,6 +415,7 @@ class FunCommands(commands.Cog, name="Fun"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def xkcd(self, interaction: discord.Interaction, num: int | None = None):
         """
         Gets an xkcd comic with a given number, or a random comic if the number is

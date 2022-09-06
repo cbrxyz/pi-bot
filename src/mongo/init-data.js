@@ -39,13 +39,13 @@ db.events.insertMany([
 // Set up invitational data
 db.invitationals.insertMany([
   {
-    official_name: "Bernard Invitational",
+    official_name: "Big Bernard Invitational",
     channel_name: "bernard",
     emoji: "🐶",
     aliases: [
       "doggo"
     ],
-    tourney_date: { "$date": "2023-12-10T00:00:00.000Z" },
+    tourney_date: new Date("2023-12-10T00:00:00.000Z"),
     open_days: 10,
     closed_days: 30,
     voters: [],
@@ -58,7 +58,7 @@ db.invitationals.insertMany([
     aliases: [
       "bearasauras"
     ],
-    tourney_date: { "$date": "2024-02-12T00:00:00.000Z" },
+    tourney_date: new Date("2024-02-12T00:00:00.000Z"),
     open_days: 10,
     closed_days: 30,
     voters: [],

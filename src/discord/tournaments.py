@@ -76,7 +76,7 @@ class AllTournamentsView(discord.ui.View):
 
 
 class TournamentDropdown(discord.ui.Select):
-    def __init__(self, month_tournaments, bot: PiBot, voting=False):
+    def __init__(self, month_tournaments: list[Tournament], bot: PiBot, voting=False):
 
         final_options = []
         for tourney in month_tournaments:
@@ -245,6 +245,7 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
 
         if isinstance(channel, discord.TextChannel) and t.status == "archived":
             # Tournament channel should be archived
+            print(f"Attempting to archive #{t.official_name}.")
             channel_category = channel.category
             assert isinstance(channel_category, discord.CategoryChannel)
 
@@ -283,7 +284,8 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
                 await channel.edit(category=archive_category, position=1000)
                 await channel.send(embed=embed)
 
-        if isinstance(channel, discord.TextChannel) and t.status == "open":
+        elif isinstance(channel, discord.TextChannel) and t.status == "open":
+            print(f"Ensuring #{t.official_name} is up-to-date.")
             # Type checking
             channel_category = channel.category
             assert isinstance(channel_category, discord.CategoryChannel)
@@ -336,6 +338,7 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
 
         elif channel is None and t.status == "open":
             # If tournament needs to be created
+            print(f"Creating new channel for #{t.channel_name}.")
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(
                 t.channel_name, category=tournament_category
@@ -348,6 +351,10 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
             await new_channel.set_permissions(new_role, read_messages=True)
             await new_channel.set_permissions(all_tournaments_role, read_messages=True)
             await new_channel.set_permissions(server.default_role, read_messages=False)
+            print(f"Created new channel for #{t.channel_name}.")
+
+        else:
+            print(f"No action was taken for the {t.official_name} tournament.")
 
     help_embed = discord.Embed(
         title=":first_place: Join a Tournament Channel!",
@@ -363,6 +370,9 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
     await tourney_channel.purge()  # Delete all messages to make way for new messages/views
     await tourney_channel.send(embed=help_embed)
 
+    # Occasionally, MongoDB can write ints as floats in the db
+    if isinstance(bot.settings["invitational_season"], float):
+        bot.settings["invitational_season"] = int(bot.settings["invitational_season"])
     assert isinstance(bot.settings["invitational_season"], int)
     first_year = bot.settings["invitational_season"] - 1
     second_year = bot.settings["invitational_season"]

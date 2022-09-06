@@ -98,6 +98,8 @@ class PiBotCommandTree(app_commands.CommandTree):
             message = "Unfortunately, this command could not be found."
         elif isinstance(error, app_commands.MissingApplicationID):
             message = "This application needs an application ID."
+        elif isinstance(error, app_commands.CheckFailure):
+            message = "You are not allowed to run this command here. Try running it in `#bot-spam` instead."
 
         # Add more here
         else:
@@ -176,6 +178,11 @@ class PiBot(commands.Bot):
         """
         Called when the bot is enabled and ready to be run.
         """
+        # try:
+        #     await self.tree.sync(guild=discord.Object(749057176756027414))
+        # except:
+        #     import traceback
+        #     traceback.print_exc()
         print(f"{self.user} has connected!")
 
     async def on_message(self, message: discord.Message) -> None:

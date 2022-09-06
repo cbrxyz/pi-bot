@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import random
+import traceback
 from typing import TYPE_CHECKING, Any, Union
 
 import discord
@@ -26,13 +27,13 @@ class CronTasks(commands.Cog):
             await self.pull_prev_info()
         except Exception as e:
             print("Error in starting function with pulling previous information:")
-            print(e)
+            traceback.print_exc()
 
         try:
             await update_tournament_list(self.bot, {})
         except Exception as e:
             print("Error in starting function with updating tournament list:")
-            print(e)
+            traceback.print_exc()
 
         self.cron.start()
         self.change_bot_status.start()
