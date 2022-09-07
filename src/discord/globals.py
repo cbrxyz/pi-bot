@@ -1,26 +1,24 @@
-import datetime
+"""
+Holds global variables shared between cogs and variables that are initialized when
+the bot is first setup.
+"""
 import os
 
 from dotenv import load_dotenv
 
-from src.mongo.mongo import update
-
 load_dotenv()
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 DEV_TOKEN = os.getenv("DISCORD_DEV_TOKEN")
 dev_mode = os.getenv("DEV_MODE") == "TRUE"
 
-if dev_mode:
-    BOT_PREFIX = "?"
-    SERVER_ID = int(os.getenv("DEV_SERVER_ID"))
-else:
-    BOT_PREFIX = "!"
-    SERVER_ID = 698306997287780363
+# Use the dev server, else the official Scioly.org server
+SERVER_ID = int(os.getenv("DEV_SERVER_ID")) if dev_mode else 698306997287780363
+BOT_PREFIX = '?' if dev_mode else '!'
 
 ##############
 # CONSTANTS
 ##############
-PI_BOT_IDS = [723767075427844106, 743254543952904197, 637519324072116247]
 DISCORD_INVITE_ENDINGS = [
     "9Z5zKtV",
     "C9PGV6h",
@@ -31,8 +29,10 @@ DISCORD_INVITE_ENDINGS = [
     "RnkqUbK",
     "scioly",
 ]
-SLASH_COMMAND_GUILDS = int(os.getenv("SLASH_COMMAND_GUILDS"))
-EMOJI_GUILDS = [int(iden) for iden in [os.getenv("EMOJI_GUILDS")]]
+SLASH_COMMAND_GUILDS = [
+    int(iden) for iden in os.getenv("SLASH_COMMAND_GUILDS").split(",")
+]
+EMOJI_GUILDS = [int(iden) for iden in os.getenv("EMOJI_GUILDS").split(",")]
 
 # Roles
 ROLE_WM = "Wiki/Gallery Moderator"
@@ -98,17 +98,37 @@ EMOJI_LOADING = "<a:loading:909706909404237834>"
 RULES = [
     "Treat *all* users with respect.",
     "No profanity or inappropriate language, content, or links.",
-    "Treat delicate subjects delicately. When discussing religion, politics, instruments, or other similar topics, please remain objective and avoid voicing strong opinions.",
+    (
+        "Treat delicate subjects delicately. When discussing religion, politics, "
+        "instruments, or other similar topics, please remain objective and avoid "
+        "voicing strong opinions."
+    ),
     "Do not spam or flood (an excessive number of messages sent within a short timespan).",
     "Avoid intentional repeating pinging of other users (saying another user’s name).",
     "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
     "Never name-drop (using a real name without permission) or dox another user.",
     "No witch-hunting (requests of kicks or bans for other users).",
-    "While you are not required to use your Scioly.org username as your nickname for this Server, please avoid assuming the username of or otherwise impersonating another active user.",
-    "Do not use multiple accounts within this Server, unless specifically permitted. A separate tournament account may be operated alongside a personal account.",
-    "Do not violate Science Olympiad Inc. copyrights. In accordance with the Scioly.org Resource Policy, all sharing of tests on Scioly.org must occur in the designated Test Exchanges. Do not solicit test trades on this Server.",
+    (
+        "While you are not required to use your Scioly.org username as your "
+        "nickname for this Server, please avoid assuming the username of or "
+        "otherwise impersonating another active user."
+    ),
+    (
+        "Do not use multiple accounts within this Server, unless specifically "
+        "permitted. A separate tournament account may be operated alongside a "
+        "personal account."
+    ),
+    (
+        "Do not violate Science Olympiad Inc. copyrights. In accordance with "
+        "the Scioly.org Resource Policy, all sharing of tests on Scioly.org "
+        "must occur in the designated Test Exchanges. Do not solicit test "
+        "trades on this Server.",
+    ),
     "Do not advertise other servers or paid services with which you have an affiliation.",
-    "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: 'When in doubt, leave it out.'",
+    (
+        "Use good judgment when deciding what content to leave in and take out."
+        " As a general rule of thumb: 'When in doubt, leave it out.'"
+    ),
 ]
 
 ##############
@@ -131,7 +151,9 @@ SETTINGS = {
 }
 
 
-async def update_setting(values):
+async def update_setting(values, bot):
     for k, v in values.items():
         SETTINGS[k] = v
-        await update("data", "settings", SETTINGS["_id"], {"$set": values})
+        await bot.mongo_database.update(
+            "data", "settings", SETTINGS["_id"], {"$set": values}
+        )

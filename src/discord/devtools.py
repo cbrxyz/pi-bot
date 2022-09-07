@@ -21,7 +21,7 @@ class DevCommands(commands.Cog):
         self.bot = bot
 
     @app_commands.command(description="Returns the current channel ID.")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(channel="The channel to get the ID of.")
     async def getchannelid(
         self, interaction: discord.Interaction, channel: discord.TextChannel = None
@@ -40,7 +40,7 @@ class DevCommands(commands.Cog):
         await interaction.response.send_message(f"{channel.mention}: `{channel.id}`")
 
     @app_commands.command(description="Returns the ID ")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(emoji="The emoji to get the ID of.")
     async def getemojiid(self, interaction: discord.Interaction, emoji: str):
         """
@@ -52,7 +52,7 @@ class DevCommands(commands.Cog):
         await interaction.response.send_message(f"{emoji}: `{emoji}`")
 
     @app_commands.command(description="Returns the ID ")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(name="The name of the role to get the ID of.")
     async def getroleid(
         self,
@@ -74,7 +74,7 @@ class DevCommands(commands.Cog):
             )
 
     @app_commands.command(description="Returns the ID of a user (or yourself).")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(member="The member to get the ID of.")
     async def getuserid(
         self, interaction: discord.Interaction, member: discord.Member = None
@@ -91,7 +91,7 @@ class DevCommands(commands.Cog):
         await interaction.response.send_message(f"{str(member)}: `{member.id}`")
 
     @app_commands.command(description="Says hello!")
-    @app_commands.guilds(SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     async def hello(self, interaction: discord.Interaction):
         """
         Simply says hello. Used for testing the bot.

@@ -1,3 +1,7 @@
+"""
+Contains functionality for reporting various issues around the server to staff
+members.
+"""
 from __future__ import annotations
 
 import datetime
@@ -12,20 +16,16 @@ from src.discord.tournaments import Tournament
 if TYPE_CHECKING:
     from bot import PiBot
 
-"""
-Relevant views.
-"""
-
-
 class IgnoreButton(discord.ui.Button):
     """
-    A button to mark the report as ignored.
-    This causes the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated
+    A button to mark the report as ignored. This causes the report message to
+    be deleted, an informational message to be posted in closed-reports, and
+    the report database to be updated.
     """
 
-    view = None
+    view: discord.ui.View
 
-    def __init__(self, view):
+    def __init__(self, view: discord.ui.View):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -61,9 +61,9 @@ class CompletedButton(discord.ui.Button):
     A button to mark a report as completed.
     """
 
-    view = None
+    view: discord.ui.View
 
-    def __init__(self, view):
+    def __init__(self, view: discord.ui.View):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -89,13 +89,14 @@ class CompletedButton(discord.ui.Button):
 
 class ChangeInappropriateUsername(discord.ui.Button):
     """
-    A button that changes the username of a user.
-    This caues the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated.
+    A button that changes the username of a user. This caues the report message
+    to be deleted, an informational message to be posted in #closed-reports,
+    and the report database to be updated.
     """
 
-    view = None
+    view: discord.ui.View
 
-    def __init__(self, view):
+    def __init__(self, view: discord.ui.View):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -132,10 +133,13 @@ class ChangeInappropriateUsername(discord.ui.Button):
 
 
 class KickUserButton(discord.ui.Button):
+    """
+    Discord button which allows a staff member to promptly kick a user.
+    """
 
-    view = None
+    view: discord.ui.View
 
-    def __init__(self, view):
+    def __init__(self, view: discord.ui.View):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.red,
@@ -172,10 +176,13 @@ class KickUserButton(discord.ui.Button):
 
 
 class InvitationalArchiveButton(discord.ui.Button):
+    """
+    Discord button used to archive an invitational channel that was needing archival.
+    """
 
-    view = None
+    view: discord.ui.View
 
-    def __init__(self, view):
+    def __init__(self, view: discord.ui.View):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.red,
@@ -203,10 +210,14 @@ class InvitationalArchiveButton(discord.ui.Button):
 
 
 class InvitationalExtendButton(discord.ui.Button):
+    """
+    Discord button used to extend the lifetime of an invitational channel that
+    was requesting archival.
+    """
 
-    view = None
+    view: discord.ui.View
 
-    def __init__(self, view):
+    def __init__(self, view: discord.ui.View):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -234,6 +245,9 @@ class InvitationalExtendButton(discord.ui.Button):
 
 
 class InnapropriateUsername(discord.ui.View):
+    """
+    Discord view representing a report on a user with an innapropriate username.
+    """
 
     member: discord.Member
     offending_username: str
@@ -252,7 +266,9 @@ class InnapropriateUsername(discord.ui.View):
 
 
 class InvitationalRequest(discord.ui.View):
-
+    """
+    Discord view representing a user requesting a new invitational channel.
+    """
     member: discord.Member
     report_id: int
     invitational_name: str
@@ -269,7 +285,10 @@ class InvitationalRequest(discord.ui.View):
 
 
 class InvitationalArchive(discord.ui.View):
-
+    """
+    Discord view representing a message about an invitational channel needing
+    archival.
+    """
     report_id: int
     tournament_obj: Tournament
     channel: discord.TextChannel
@@ -294,20 +313,43 @@ class InvitationalArchive(discord.ui.View):
 
 
 class Reporter(commands.Cog):
+    """
+    Cog containing functionality related to reporting on server events.
+    """
+
     def __init__(self, bot: PiBot):
         self.bot = bot
         print("Initialized Reporter cog.")
 
     async def create_staff_message(self, embed: discord.Embed):
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(
+        """
+        Sends an embed to the staff #reports channel. This method can be used
+        by other cogs to send a non-actionable status update, such as how the Spam
+        cog uses this command to send non-actionable embeds containing info about
+        spam on the server.
+        """
+        guild = self.bot.get_guild(SERVER_ID)
+        assert isinstance(guild, discord.Guild)
+
+        reports_channel = discord.utils.get(
             guild.text_channels, name="reports"
         )
+        assert isinstance(reports_channel, discord.TextChannel)
+
         await reports_channel.send(embed=embed)
 
     async def create_inappropriate_username_report(
         self, member: Union[discord.Member, discord.User], offending_username: str
     ):
+        """
+        Creates a report that a user has an innapropriate username.
+
+        Args:
+            member: The member with the inappropriate username.
+            offending_username: The offending username used by the member. This parameter
+                is supplied in case the member's username changes before staff members examine
+                the report.
+        """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels, name="reports"
@@ -330,7 +372,13 @@ class Reporter(commands.Cog):
             embed=embed, view=InnapropriateUsername(member, 123, offending_username)
         )
 
-    async def create_cron_task_report(self, task: dict):
+    async def create_cron_task_report(self, task: dict) -> None:
+        """
+        Creates a report that an error with a CRON task occurred.
+
+        Args:
+            task: The dictionary containing the CRON task.
+        """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels, name="reports"
@@ -360,6 +408,15 @@ class Reporter(commands.Cog):
     async def create_invitational_request_report(
         self, user: discord.Member, invitational_name: str
     ):
+        """
+        Creates a report that a member is requesting a new invitational channel
+        to be added.
+
+        Args:
+            user: The user requesting the new invitational channel.
+            invitational_name: The name of the invitational channel requested by the
+                user.
+        """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels, name="reports"
@@ -385,6 +442,14 @@ class Reporter(commands.Cog):
         channel: discord.TextChannel,
         role: discord.Role,
     ):
+        """
+        Creates a report that an invitational channel likely needs to be archived.
+
+        Args:
+            tournament_obj (Tournament): The tournament object relevant to the invitational.
+            channel (discord.TextChannel): The channel associated with the invitational.
+            role (discord.Role): The role associated with the invitational.
+        """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels, name="reports"
@@ -407,9 +472,13 @@ class Reporter(commands.Cog):
         self, user: discord.User, is_present: bool, already_unbanned: bool = None
     ) -> None:
         """
-        Creates a notice (as a closed report) that a user was automatically unbanned through CRON.
-        :param user: The user to make the auto notice about.
-        :param is_present: Whether the user was present in the server when the unbanning occurred.
+        Creates a notice (as a closed report) that a user was automatically
+        unbanned through CRON.
+
+        Args:
+            user: The user to make the auto notice about.
+            is_present: Whether the user was present in the server when the unbanning occurred.
+            already_unbanned: Whether the user has already been unbanned.
         """
         guild = self.bot.get_guild(SERVER_ID)
         closed_reports_channel = discord.utils.get(
@@ -437,9 +506,12 @@ class Reporter(commands.Cog):
         self, user: Union[discord.Member, discord.User], is_present: bool
     ) -> None:
         """
-        Creates a notice (as a closed report) that a user was automatically unmuted through CRON.
-        :param user: The user to make the auto notice about.
-        :param is_present: Whether the user was present in the server when the unmuting occurred.
+        Creates a notice (as a closed report) that a user was automatically
+        unmuted through CRON.
+
+        Args:
+            user: The user to make the auto notice about.
+            is_present: Whether the user was present in the server when the unmuting occurred.
         """
         guild = self.bot.get_guild(SERVER_ID)
         closed_reports_channel = discord.utils.get(
