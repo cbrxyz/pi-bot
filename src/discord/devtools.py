@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
+from commandchecks import is_in_bot_spam
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import SLASH_COMMAND_GUILDS
@@ -23,6 +24,7 @@ class DevCommands(commands.Cog):
     @app_commands.command(description="Returns the current channel ID.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(channel="The channel to get the ID of.")
+    @app_commands.check(is_in_bot_spam)
     async def getchannelid(
         self, interaction: discord.Interaction, channel: discord.TextChannel = None
     ):
@@ -42,6 +44,7 @@ class DevCommands(commands.Cog):
     @app_commands.command(description="Returns the ID ")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(emoji="The emoji to get the ID of.")
+    @app_commands.check(is_in_bot_spam)
     async def getemojiid(self, interaction: discord.Interaction, emoji: str):
         """
         Gets the ID of the given emoji.
@@ -54,6 +57,7 @@ class DevCommands(commands.Cog):
     @app_commands.command(description="Returns the ID ")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(name="The name of the role to get the ID of.")
+    @app_commands.check(is_in_bot_spam)
     async def getroleid(
         self,
         interaction: discord.Interaction,
@@ -76,6 +80,7 @@ class DevCommands(commands.Cog):
     @app_commands.command(description="Returns the ID of a user (or yourself).")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(member="The member to get the ID of.")
+    @app_commands.check(is_in_bot_spam)
     async def getuserid(
         self, interaction: discord.Interaction, member: discord.Member = None
     ):
@@ -92,6 +97,7 @@ class DevCommands(commands.Cog):
 
     @app_commands.command(description="Says hello!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.check(is_in_bot_spam)
     async def hello(self, interaction: discord.Interaction):
         """
         Simply says hello. Used for testing the bot.

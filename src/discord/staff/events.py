@@ -56,7 +56,7 @@ class StaffEvents(commands.Cog):
 
         # Check to see if event has already been added.
         if event_name in [e["name"] for e in src.discord.globals.EVENT_INFO]:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content=f"The `{event_name}` event has already been added."
             )
 
@@ -73,6 +73,7 @@ class StaffEvents(commands.Cog):
 
         # Create role on server
         server = self.bot.get_guild(SERVER_ID)
+        assert isinstance(server, discord.Guild)
         await server.create_role(
             name=event_name,
             color=discord.Color(0x82A3D3),
@@ -80,7 +81,7 @@ class StaffEvents(commands.Cog):
         )
 
         # Notify user of process completion
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"The `{event_name}` event was added."
         )
 
@@ -118,7 +119,7 @@ class StaffEvents(commands.Cog):
 
         if event_not_in_list and potential_role:
             # If no event in list and no role exists on server
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content=f"The `{event_name}` event does not exist."
             )
 
@@ -129,7 +130,7 @@ class StaffEvents(commands.Cog):
             assert isinstance(role, discord.Role)
             await role.delete()
             if event_not_in_list:
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content=f"The `{event_name}` role was completely deleted from the server. All members with the role no longer have it."
                 )
 
@@ -142,12 +143,12 @@ class StaffEvents(commands.Cog):
 
         # Notify staff member of completion
         if delete_role == "yes":
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"The `{event_name}` event was deleted entirely. The role has been removed from all users, "
                 f"and can not be added to new users. "
             )
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"The `{event_name}` event was deleted partially. Users who have the role currently will keep "
                 f"it, but new members can not access the role.\n\nTo delete the role entirely, re-run the "
                 f"command with `delete_role = yes`. "

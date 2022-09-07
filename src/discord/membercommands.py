@@ -7,14 +7,14 @@ from __future__ import annotations
 import datetime
 import random
 import re
-from typing import TYPE_CHECKING, Literal, Union, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional, Union
 
 import wikipedia as wikip
 from aioify import aioify
 
 import discord
 import src.discord.globals
-from commandchecks import is_staff_from_ctx
+from commandchecks import is_in_bot_spam, is_staff_from_ctx
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import (
@@ -35,7 +35,6 @@ from src.discord.globals import (
     SERVER_ID,
     SLASH_COMMAND_GUILDS,
 )
-from src.discord.utils import lookup_role
 from src.discord.views import YesNo
 from src.lists import get_state_list
 from src.wiki.wiki import implement_command
@@ -109,6 +108,7 @@ class MemberCommands(commands.Cog):
     Class containing several commands meant to be executed by members to control
     their state across the server.
     """
+
     # pylint: disable=no-self-use
 
     def __init__(self, bot: PiBot):
@@ -118,6 +118,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Looking for help? Try this!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(2, 20, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def help(self, interaction: discord.Interaction):
         """
         Discord command that gives general help about the bot and server.
@@ -155,6 +157,8 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Toggles your pronoun roles.")
     @app_commands.describe(pronouns="The pronoun to add/remove from your account.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(2, 20, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def pronouns(
         self,
         interaction: discord.Interaction,
@@ -188,7 +192,11 @@ class MemberCommands(commands.Cog):
         username="The username to get information about. Defaults to your nickname/username."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def profile(self, interaction: discord.Interaction, username: Optional[str] = None):
+    @app_commands.checks.cooldown(10, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
+    async def profile(
+        self, interaction: discord.Interaction, username: str | None = None
+    ):
         """
         Allows a user to get information about a Scioly.org profile.
 
@@ -290,6 +298,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Returns the number of members in the server.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def count(self, interaction: discord.Interaction):
         """
         Returns the number of members in the server.
@@ -307,6 +317,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles the Alumni role.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def alumni(self, interaction: discord.Interaction):
         """
         Removes or adds the alumni role from a user.
@@ -319,12 +331,14 @@ class MemberCommands(commands.Cog):
         """
         await self._assign_div(interaction, "Alumni")
         await interaction.response.send_message(
-            content="Assigned you the Alumni role, and removed all other divison/alumni roles."
+            content="Assigned you the Alumni role, and removed all other division/alumni roles."
         )
 
     @app_commands.command(description="Toggles division roles for the user.")
     @app_commands.describe(div="The division to assign the user with.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def division(
         self,
         interaction: discord.Interaction,
@@ -342,7 +356,7 @@ class MemberCommands(commands.Cog):
         if div != "None":
             await self._assign_div(interaction, div)
             await interaction.response.send_message(
-                content=f"Assigned you the {div} role, and removed all other divison/alumni roles."
+                content=f"Assigned you the {div} role, and removed all other division/alumni roles."
             )
         else:
             member = interaction.user
@@ -381,6 +395,10 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles the visibility of the #games channel.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(
+        2, 120, key=lambda i: (i.guild_id, i.user.id)
+    )  # Allow people to toggle choice, but discourage them from toggling multiple times
+    @app_commands.check(is_in_bot_spam)
     async def games(self, interaction: discord.Interaction):
         """
         Removes or adds someone to the games channel.
@@ -417,10 +435,34 @@ class MemberCommands(commands.Cog):
         description="Toggles the visibility of state roles and channels."
     )
     @app_commands.describe(
-        states="The states to toggle. For example 'Missouri, Iowa, South Dakota'."
+        state="The first state to add/remove from your profile.",
+        state_two="The second state to add/remove from your profile.",
+        state_three="The third state to add/remove from your profile.",
+        state_four="The fourth state to add/remove from your profile.",
+        state_five="The fifth state to add/remove from your profile.",
+        state_six="The sixth state to add/remove from your profile.",
+        state_seven="The seventh state to add/remove from your profile.",
+        state_eight="The eighth state to add/remove from your profile.",
+        state_nine="The ninth state to add/remove from your profile.",
+        state_ten="The tenth state to add/remove from your profile.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def states(self, interaction: discord.Interaction, states: str):
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
+    async def states(
+        self,
+        interaction: discord.Interaction,
+        state: str,
+        state_two: str | None = None,
+        state_three: str | None = None,
+        state_four: str | None = None,
+        state_five: str | None = None,
+        state_six: str | None = None,
+        state_seven: str | None = None,
+        state_eight: str | None = None,
+        state_nine: str | None = None,
+        state_ten: str | None = None,
+    ):
         """
         Assigns someone with specific state roles.
 
@@ -429,121 +471,66 @@ class MemberCommands(commands.Cog):
 
         Args:
             interaction (discord.Interaction): The interaction sent by Discord.
-            states (str): The list of states the user is attempting to add.
+            state_XXX (str): The name of the XXXth state to add/remove from the user.
         """
-        new_args = states.split(",")
-        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-        new_args = [arg.strip() for arg in new_args]
-
         member = interaction.user
-        states = await get_state_list()
-        states = [s[: s.rfind(" (")] for s in states]
-        triple_word_states = [s for s in states if len(s.split(" ")) > 2]
-        double_word_states = [s for s in states if len(s.split(" ")) > 1]
+        param_list = [
+            state,
+            state_two,
+            state_three,
+            state_four,
+            state_five,
+            state_six,
+            state_seven,
+            state_eight,
+            state_nine,
+            state_ten,
+        ]
+        param_list = [
+            p for p in param_list if p is not None
+        ]  # No need to try to add/print None later
+
+        states_without_abbrev: list[str] = [
+            s[: s.rfind(" (")] for s in get_state_list()
+        ]
+        selected_state_roles = [
+            discord.utils.get(member.guild.roles, name=s)
+            for s in param_list
+            if s in states_without_abbrev
+        ]
+
         removed_roles = []
         added_roles = []
-        for term in ["california", "ca", "cali"]:
-            if term in [arg.lower() for arg in new_args]:
-                return await interaction.response.send_message(
-                    "Which California, North or South? Try `/state norcal` or `/state socal`."
-                )
-        if len(new_args) > 10:
-            return await interaction.response.send_message(
-                "Sorry, you are attempting to add/remove too many states at once."
-            )
-        for string in ["South", "North"]:
-            california_list = [
-                f"California ({string})",
-                f"California-{string}",
-                f"California {string}",
-                f"{string}ern California",
-                f"{string} California",
-                f"{string} Cali",
-                f"Cali {string}",
-                f"{string} CA",
-                f"CA {string}",
-            ]
-            if string == "North":
-                california_list.append("NorCal")
-            else:
-                california_list.append("SoCal")
-            for listing in california_list:
-                words = listing.split(" ")
-                all_here = sum(1 for word in words if word.lower() in new_args)
-                if all_here == len(words):
-                    role = discord.utils.get(
-                        member.guild.roles, name=f"California ({string})"
-                    )
-                    if role in member.roles:
-                        await member.remove_roles(role)
-                        removed_roles.append(f"California ({string})")
-                    else:
-                        await member.add_roles(role)
-                        added_roles.append(f"California ({string})")
-                    for word in words:
-                        new_args.remove(word.lower())
-        for triple in triple_word_states:
-            words = triple.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == 3:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=triple)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(triple)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(triple)
-                for word in words:
-                    new_args.remove(word.lower())
-        for double in double_word_states:
-            words = double.split(" ")
-            all_here = 0
-            all_here = sum(1 for word in words if word.lower() in new_args)
-            if all_here == 2:
-                # Word is in args
-                role = discord.utils.get(member.guild.roles, name=double)
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    removed_roles.append(double)
-                else:
-                    await member.add_roles(role)
-                    added_roles.append(double)
-                for word in words:
-                    new_args.remove(word.lower())
-        for arg in new_args:
-            role_name = await lookup_role(arg)
-            if not role_name:
-                return await interaction.response.send_message(
-                    f"Sorry, the `{arg}` state could not be found. Try again."
-                )
-            role = discord.utils.get(member.guild.roles, name=role_name)
+        could_not_handle = [s for s in param_list if s not in states_without_abbrev]
+
+        for role in selected_state_roles:
             if role in member.roles:
                 await member.remove_roles(role)
-                removed_roles.append(role_name)
+                removed_roles.append(role.name)
             else:
                 await member.add_roles(role)
-                added_roles.append(role_name)
-        if len(added_roles) > 0 and len(removed_roles) == 0:
-            state_res = (
-                "Added states " + (" ".join([f"`{arg}`" for arg in added_roles])) + "."
-            )
-        elif len(removed_roles) > 0 and len(added_roles) == 0:
-            state_res = (
-                "Removed states "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + "."
-            )
-        else:
-            state_res = (
-                "Added states "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + ", and removed states "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + "."
-            )
+                added_roles.append(role.name)
+
+        # Construct a response only containing the needed pieces
+        response_components = []
+        response_components.append(
+            "Added states " + " ".join([f"`{arg}`" for arg in added_roles])
+        ) if added_roles else None
+        response_components.append(
+            "removed states " + " ".join([f"`{arg}`" for arg in removed_roles])
+        ) if removed_roles else None
+        response_components.append(
+            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])
+        ) if could_not_handle else None
+
+        # Assemble into message
+        state_res = ", and ".join(response_components)
+
+        # Capitalize and add a period!
+        state_res = state_res.replace(state_res[0], state_res[0].upper(), 1)
+        state_res += "."
         await interaction.response.send_message(state_res)
+
 
     @app_commands.command(
         description="produces a LaTeX (math-formatted) output based on given code"
@@ -563,9 +550,44 @@ class MemberCommands(commands.Cog):
             content=url, view=LatexView(self.bot, _interaction=interaction)
         )
 
+    @states.autocomplete("state")
+    @states.autocomplete("state_two")
+    @states.autocomplete("state_three")
+    @states.autocomplete("state_four")
+    @states.autocomplete("state_five")
+    @states.autocomplete("state_six")
+    @states.autocomplete("state_seven")
+    @states.autocomplete("state_eight")
+    @states.autocomplete("state_nine")
+    @states.autocomplete("state_ten")
+    async def states_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        """
+        Provides autocompletion for the states method/command.
+
+        Args:
+            interaction (discord.Interaction): The autocomplete interaction.
+            current (str): The current phrase typed by the user.
+
+        Returns:
+            List[app_commands.Choice[str]]: A list of string choices to choose from.
+        """
+        states: list[str] = [s[: s.rfind(" (")] for s in get_state_list()]
+        states.append("All States")
+
+        return [
+            app_commands.Choice(name=state, value=state)
+            for state in states
+            if current.lower() in state.lower()
+        ][:25]
+
+
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def selfmute(
         self,
         interaction: discord.Interaction,
@@ -649,7 +671,7 @@ class MemberCommands(commands.Cog):
                         "tag": str(member),
                     },
                 )
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content=f"You have been muted. You may use the button in the {unselfmute_channel} channel to unmute.",
                     embed=None,
                     view=None,
@@ -657,7 +679,7 @@ class MemberCommands(commands.Cog):
             except:
                 pass
 
-        return await interaction.edit_original_message(
+        return await interaction.edit_original_response(
             content=f"The operation was cancelled, and you can still speak throughout the server.",
             embed=None,
             view=None,
@@ -670,6 +692,8 @@ class MemberCommands(commands.Cog):
         invitational="The official name of the invitational you would like to add."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(3, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def request(self, interaction: discord.Interaction, invitational: str):
         """
         Discord command allowing members to request a new invitational channel.
@@ -682,7 +706,7 @@ class MemberCommands(commands.Cog):
             invitational (str): The specific invitational name the user is requesting
                 to be added.
         """
-        reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
+        reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
         await reporter_cog.create_invitational_request_report(
             interaction.user, invitational
         )
@@ -692,6 +716,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Returns information about the bot and server.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(2, 20, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def about(self, interaction: discord.Interaction):
         """
         Discord command which prints information about the bot.
@@ -727,6 +753,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Returns the Discord server invite.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def invite(self, interaction: discord.Interaction):
         """
         Discord command which returns an invite link to the Discord server.
@@ -744,6 +772,8 @@ class MemberCommands(commands.Cog):
     )
     @app_commands.describe(destination="The area of the site to link to.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def link(
         self,
         interaction: discord.Interaction,
@@ -777,6 +807,8 @@ class MemberCommands(commands.Cog):
         maximum="The maximum number to choose from. Defaults to 10.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def random(
         self,
         interaction: discord.Interaction,
@@ -805,6 +837,8 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Returns information about a given rule.")
     @app_commands.describe(rule="The rule to cite.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def rule(
         self,
         interaction: discord.Interaction,
@@ -841,6 +875,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Information about gaining the @Coach role.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def coach(self, interaction: discord.Interaction):
         """
         Discord command returning the link to the form to apply for the @Coach role.
@@ -859,6 +895,8 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Information about the current server.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def info(self, interaction: discord.Interaction):
         """
         Discord command which gets information about the Discord server.
@@ -994,6 +1032,8 @@ class MemberCommands(commands.Cog):
         page="The name of the page to return a summary about. Correct caps must be used."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def wikisummary(self, interaction: discord.Interaction, page: str):
         """
         Discord command which returns the summary of a wiki page.
@@ -1017,6 +1057,8 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Searches the wiki for a particular page.")
     @app_commands.describe(term="The term to search for across the wiki.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def wikisearch(self, interaction: discord.Interaction, term: str):
         """
         Discord command which searches the wiki for a specific page name.
@@ -1042,6 +1084,8 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Links to a particular wiki page.")
     @app_commands.describe(page="The wiki page to link to. Correct caps must be used.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def wikilink(self, interaction: discord.Interaction, page: str):
         """
         Discord command which returns the link to a specific wiki page.
@@ -1073,6 +1117,8 @@ class MemberCommands(commands.Cog):
         request="The request to execute the command upon. What to search or summarize, etc.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def wikipedia(
         self,
         interaction: discord.Interaction,
@@ -1135,10 +1181,34 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles event roles.")
     @app_commands.describe(
-        events="The events to toggle. For example, 'anatomy, astro, wq'."
+        event="The first event to add/remove from your profile.",
+        event_two="The second event to add/remove from your profile.",
+        event_three="The third event to add/remove from your profile.",
+        event_four="The fourth event to add/remove from your profile.",
+        event_five="The fifth event to add/remove from your profile.",
+        event_six="The sixth event to add/remove from your profile.",
+        event_seven="The seventh event to add/remove from your profile.",
+        event_eight="The eighth event to add/remove from your profile.",
+        event_nine="The ninth event to add/remove from your profile.",
+        event_ten="The tenth event to add/remove from your profile.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
-    async def events(self, interaction: discord.Interaction, events: str):
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
+    async def events(
+        self,
+        interaction: discord.Interaction,
+        event: str,
+        event_two: str | None = None,
+        event_three: str | None = None,
+        event_four: str | None = None,
+        event_five: str | None = None,
+        event_six: str | None = None,
+        event_seven: str | None = None,
+        event_eight: str | None = None,
+        event_nine: str | None = None,
+        event_ten: str | None = None,
+    ):
         """
         Discord command which adds or removes event roles from a user.
 
@@ -1148,126 +1218,98 @@ class MemberCommands(commands.Cog):
         Args:
             interaction (discord.Interaction): The app command interaction sent by
                 Discord.
-            events (str): The list of events to add/remove.
+            event_XXX (str): The name of the XXXth event to add/remove.
         """
-        if len(events) > 100:
-            return await interaction.response.send_message(
-                "Woah, that's a lot for me to handle at once. Please separate your requests over multiple commands."
-            )
         member = interaction.user
 
-        # Fix commas as possible separator
-        new_args = events.split(",")
-        new_args = [re.sub("[;,]", "", arg) for arg in new_args]
-        new_args = [arg.strip() for arg in new_args]
-
-        event_info = src.discord.globals.EVENT_INFO
-        event_names = []
         removed_roles = []
         added_roles = []
-        could_not_handle = []
-        multi_word_events = []
 
-        if type(event_info) == int:
-            # When the bot starts up, EVENT_INFO is initialized to 0 before receiving the data from the sheet a few
-            # seconds later. This lets the user know this.
-            return await interaction.response.send_message(
-                "Apologies... refreshing data currently. Try again in a few seconds."
-            )
+        param_list = [
+            event,
+            event_two,
+            event_three,
+            event_four,
+            event_five,
+            event_six,
+            event_seven,
+            event_eight,
+            event_nine,
+            event_ten,
+        ]
+        param_list = [p for p in param_list if p is not None]
+        event_names = [e["name"] for e in src.discord.globals.EVENT_INFO]
 
-        for i in range(7, 1, -1):
-            # Supports adding 7-word to 2-word long events
-            multi_word_events += [
-                e["name"] for e in event_info if len(e["name"].split(" ")) == i
-            ]
-            for event in multi_word_events:
-                words = event.split(" ")
-                all_here = 0
-                all_here = sum(1 for word in words if word.lower() in new_args)
-                if all_here == i:
-                    # Word is in args
-                    role = discord.utils.get(member.guild.roles, name=event)
-                    if role in member.roles:
-                        await member.remove_roles(role)
-                        removed_roles.append(event)
-                    else:
-                        await member.add_roles(role)
-                        added_roles.append(event)
-                    for word in words:
-                        new_args.remove(word.lower())
+        selected_roles = [
+            discord.utils.get(member.guild.roles, name=e)
+            for e in param_list
+            if e in event_names
+        ]
+        could_not_handle = [p for p in param_list if p not in event_names]
 
-        for arg in new_args:
-            found_event = False
-            for event in event_info:
-                aliases = [alias.lower() for alias in event["aliases"]]
-                if arg.lower() in aliases or arg.lower() == event["name"].lower():
-                    event_names.append(event["name"])
-                    found_event = True
-                    break
-            if not found_event:
-                could_not_handle.append(arg)
-
-        for event in event_names:
-            role = discord.utils.get(member.guild.roles, name=event)
+        for role in selected_roles:
             if role in member.roles:
                 await member.remove_roles(role)
-                removed_roles.append(event)
+                removed_roles.append(role.name)
             else:
                 await member.add_roles(role)
-                added_roles.append(event)
+                added_roles.append(role.name)
 
-        if len(added_roles) > 0 and len(removed_roles) == 0:
-            event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
-        elif len(removed_roles) > 0 and len(added_roles) == 0:
-            event_res = (
-                "Removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
-        else:
-            event_res = (
-                "Added events "
-                + (" ".join([f"`{arg}`" for arg in added_roles]))
-                + ", "
-                + ("and " if not could_not_handle else "")
-                + "removed events "
-                + (" ".join([f"`{arg}`" for arg in removed_roles]))
-                + (
-                    (
-                        ", and could not handle: "
-                        + " ".join([f"`{arg}`" for arg in could_not_handle])
-                    )
-                    if could_not_handle
-                    else ""
-                )
-                + "."
-            )
+        # Construct a response only containing the needed pieces
+        response_components = []
+        response_components.append(
+            "Added events " + " ".join([f"`{arg}`" for arg in added_roles])
+        ) if added_roles else None
+        response_components.append(
+            "removed events " + " ".join([f"`{arg}`" for arg in removed_roles])
+        ) if removed_roles else None
+        response_components.append(
+            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])
+        ) if could_not_handle else None
+
+        # Assemble into message
+        event_res = ", and ".join(response_components)
+
+        # Capitalize and add a period!
+        event_res = event_res.replace(event_res[0], event_res[0].upper(), 1)
+        event_res += "."
 
         await interaction.response.send_message(event_res)
+
+    @events.autocomplete("event")
+    @events.autocomplete("event_two")
+    @events.autocomplete("event_three")
+    @events.autocomplete("event_four")
+    @events.autocomplete("event_five")
+    @events.autocomplete("event_six")
+    @events.autocomplete("event_seven")
+    @events.autocomplete("event_eight")
+    @events.autocomplete("event_nine")
+    @events.autocomplete("event_ten")
+    async def events_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        """
+        Provides autocompletion for the events method/command.
+
+        Args:
+            interaction (discord.Interaction): The autocomplete interaction.
+            current (str): The current phrase typed by the user.
+
+        Returns:
+            List[app_commands.Choice[str]]: A list of string choices to choose from.
+        """
+        return [
+            app_commands.Choice(name=e["name"], value=e["name"])
+            for e in src.discord.globals.EVENT_INFO
+            if current.lower() in e["name"].lower()
+        ][:25]
 
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def tag(self, interaction: discord.Interaction, tag_name: str):
         """
         Discord command which prints out a tag name.
@@ -1304,6 +1346,45 @@ class MemberCommands(commands.Cog):
                     )
 
         return await interaction.response.send_message("Tag not found.")
+
+    @tag.autocomplete(name="tag_name")
+    async def tag_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        """
+        Serves as autocompletion for the /tag command. Returns the names of the
+        tags the user can send with their allotted permissions
+
+        Args:
+            interaction (discord.Interaction): The interaction sent with the autocomplete
+                request.
+            current (str): The amount the user has typed.
+
+        Returns:
+            List[app_commands.Choice[str]]: The names of the tags the user can choose
+            from given their permissions.
+        """
+        # Check if the user is a staff member to see if they can see staff tags
+        is_staff = is_staff_from_ctx(interaction, no_raise=True)
+
+        # Check if the user is a normal member to see if they can see member tags
+        assert isinstance(interaction.guild, discord.Guild)
+        member_role = discord.utils.get(interaction.guild.roles, name=ROLE_MR)
+        assert isinstance(interaction.user, discord.Member)
+        is_member = member_role in interaction.user.roles
+
+        # Send the tags
+        tags: list[str] = [
+            t["name"]
+            for t in src.discord.globals.TAGS
+            if (t["permissions"]["staff"] and is_staff)
+            or (t["permissions"]["members"] and is_member)
+        ]
+        return [
+            app_commands.Choice(name=t, value=t)
+            for t in tags
+            if current.lower() in t.lower()
+        ]
 
 
 async def setup(bot: PiBot):

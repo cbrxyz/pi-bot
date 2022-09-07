@@ -10,8 +10,13 @@ from typing import TYPE_CHECKING
 import discord
 import src.discord.globals
 from discord.ext import commands
-from src.discord.globals import (CATEGORY_STAFF, CHANNEL_SUPPORT,
-                                 DISCORD_INVITE_ENDINGS, ROLE_UC, CENSOR)
+from src.discord.globals import (
+    CATEGORY_STAFF,
+    CENSOR,
+    CHANNEL_SUPPORT,
+    DISCORD_INVITE_ENDINGS,
+    ROLE_UC,
+)
 
 if TYPE_CHECKING:
     from bot import PiBot

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 5.0.0 - 
+## 5.0.0 -
 ### Added
 * New Discord UI interfaces for several commands (closes [#370](https://github.com/cbrxyz/pi-bot/issues/370))
 * MongoDB is now where Pi-Bot stores his information (closes [#369](https://github.com/cbrxyz/pi-bot/issues/369))
@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Staff can now refresh only part of the bot, if desired.
 * Staff can now set a custom bot status for a specified amount of time.
 * CRON handling is now handled by a group of methods, rather than just one method.
+* Add cooldowns to member commands.
 
 #### Embeds
 * Adding/updating embeds is now done through Discord UI, with the help of dedicated classes.

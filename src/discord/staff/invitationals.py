@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import commandchecks
 import discord
-import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import (
@@ -80,7 +79,7 @@ class StaffInvitational(commands.Cog):
         emoji = None
         while emoji is None:
             # Send info message
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING}\nPlease send the emoji to use for the tournament. If you would like to use "
                 f"a custom image, **send a message containing a file that is less than 256KB in size.**\n\nIf "
                 f"you would like to use a standard emoji, please send a message with only the standard emoji. "
@@ -94,7 +93,7 @@ class StaffInvitational(commands.Cog):
 
             # If emoji message has file, use this as emoji, otherwise, use default emoji provided
             if not emoji_message:
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content="No emoji was provided after 2 minutes, so the operation was cancelled."
                 )
 
@@ -146,7 +145,7 @@ class StaffInvitational(commands.Cog):
                         break
 
                 if not created_emoji:
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot administrator "
                         f"will need to add more emoji guilds. "
                     )
@@ -188,7 +187,7 @@ class StaffInvitational(commands.Cog):
 
         # Use Yes/No view for final confirmation
         view = YesNo()
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"Please confirm that you would like to add the following tournament:",
             embed=confirm_embed,
             view=view,
@@ -200,14 +199,14 @@ class StaffInvitational(commands.Cog):
             await self.bot.mongo_database.insert(
                 "data", "invitationals", new_tourney_doc
             )
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The invitational was added successfully! The tournament list will now be refreshed.",
                 embed=None,
                 view=None,
             )
             await update_tournament_list(self.bot, {})
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The operation was cancelled.", embed=None, view=None
             )
 
@@ -237,7 +236,7 @@ class StaffInvitational(commands.Cog):
 
         # If invitational is not found
         if len(found_invitationals) < 1:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`."
             )
 
@@ -246,18 +245,18 @@ class StaffInvitational(commands.Cog):
 
             # Check to see if invitational is already open
             if found_invitationals[0]["status"] == "open":
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"The `{short_name}` invitational is already open."
                 )
 
             # If not, update invitational to be open
-            await update(
+            await self.bot.mongo_database.update(
                 "data",
                 "invitationals",
                 found_invitationals[0]["_id"],
                 {"$set": {"status": "open"}},
             )
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"The status of the `{short_name}` invitational was updated."
             )
 
@@ -265,7 +264,7 @@ class StaffInvitational(commands.Cog):
             await update_tournament_list(self.bot, {})
 
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="I found more than one invitational with a matching name. Contact an administrator - "
                 "something is wrong. "
             )
@@ -303,7 +302,7 @@ class StaffInvitational(commands.Cog):
 
         # If no invitational was found
         if len(found_invitationals) < 1:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`."
             )
 
@@ -324,7 +323,7 @@ class StaffInvitational(commands.Cog):
                     "\n\nTo update the tournament date, please send the date formatted as "
                     "YYYY-mm-dd, such as `2022-01-12`. "
                 )
-            await interaction.edit_original_message(content=info_message_text)
+            await interaction.edit_original_response(content=info_message_text)
 
             # Ask user for the new content!
             content_message = await self.bot.listen_for_response(
@@ -346,13 +345,13 @@ class StaffInvitational(commands.Cog):
                         }
                     }
                     # and update the DB
-                    await update(
+                    await self.bot.mongo_database.update(
                         "data",
                         "invitationals",
                         invitational["_id"],
                         {"$set": {"official_name": content_message.content}},
                     )
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content=f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**."
                     )
 
@@ -371,7 +370,7 @@ class StaffInvitational(commands.Cog):
                         invitational["_id"],
                         {"$set": {"channel_name": content_message.content}},
                     )
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content=f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**."
                     )
 
@@ -383,7 +382,7 @@ class StaffInvitational(commands.Cog):
                         # User provided custom emoji
                         emoji_attachment = content_message.attachments[0]
                         if emoji_attachment.size > 256000:
-                            await interaction.edit_original_message(
+                            await interaction.edit_original_response(
                                 content="Please use an emoji that is less than 256KB. Operation cancelled."
                             )
 
@@ -393,7 +392,7 @@ class StaffInvitational(commands.Cog):
                             "image/jpeg",
                             "image/png",
                         ]:
-                            await interaction.edit_original_message(
+                            await interaction.edit_original_response(
                                 content="Please use a file that is a GIF, JPEG, or PNG. Operation cancelled."
                             )
 
@@ -422,7 +421,7 @@ class StaffInvitational(commands.Cog):
                                 created_emoji = True
 
                         if not created_emoji:
-                            return await interaction.edit_original_message(
+                            return await interaction.edit_original_response(
                                 content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot "
                                 f"administrator will need to add more emoji guilds. "
                             )
@@ -440,7 +439,7 @@ class StaffInvitational(commands.Cog):
                     )
 
                     # Send confirmation message
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content=f"The emoji for `{invitational['official_name']}` was updated to: {emoji}."
                     )
 
@@ -457,12 +456,12 @@ class StaffInvitational(commands.Cog):
                         {"$set": {"tourney_date": date_dt}},
                     )
                     # and send user confirmation
-                    await interaction.edit_original_message(
+                    await interaction.edit_original_response(
                         content=f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}."
                     )
                 await update_tournament_list(self.bot, rename_dict)
             else:
-                await interaction.edit_original_message(
+                await interaction.edit_original_response(
                     content=f"No message was provided. Operation timed out after 120 seconds."
                 )
 
@@ -490,7 +489,7 @@ class StaffInvitational(commands.Cog):
             i for i in invitationals if i["channel_name"] == short_name
         ]
         if not len(found_invitationals):
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
 
@@ -504,7 +503,7 @@ class StaffInvitational(commands.Cog):
             invitational["_id"],
             {"$set": {"status": "archived"}},
         )
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"The **`{invitational['official_name']}`** is now being archived."
         )
         await update_tournament_list(self.bot, {})
@@ -535,7 +534,7 @@ class StaffInvitational(commands.Cog):
         ]
 
         if not len(found_invitationals):
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
 
@@ -575,7 +574,7 @@ class StaffInvitational(commands.Cog):
             await self.bot.mongo_database.delete(
                 "data", "invitationals", invitational["_id"]
             )
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"Deleted the **`{invitational['official_name']}`**."
             )
 
@@ -596,9 +595,9 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to run command..."
         )
 
-        assert isinstance(src.discord.globals.SETTINGS["invitational_season"], int)
+        assert isinstance(self.bot.settings["invitational_season"], int)
         description = f"""
-        This will update the season for the invitational season from `{src.discord.globals.SETTINGS['invitational_season']}` to `{src.discord.globals.SETTINGS['invitational_season'] + 1}`.
+        This will update the season for the invitational season from `{self.bot.settings['invitational_season']}` to `{self.bot.settings['invitational_season'] + 1}`.
 
         This **will not remove any data**, but the invitational display in the invitationals channel will be updated to only display invitationals relevant to the new season.
 
@@ -614,7 +613,7 @@ class StaffInvitational(commands.Cog):
 
         # Use Yes/No view for final confirmation
         view = YesNo()
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"Please confirm that you would like to update the invitational season:",
             embed=confirm_embed,
             view=view,
@@ -622,31 +621,82 @@ class StaffInvitational(commands.Cog):
         await view.wait()
         if view.value:
             # Let staff member know of success
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Attempting to update the invitational year and refresh tournament list...",
                 view=None,
                 embed=None,
             )
 
             # Actually update season
-            src.discord.globals.SETTINGS["invitational_season"] += 1
-            tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+            self.bot.settings["invitational_season"] += 1
+            tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await tasks_cog.update_setting(
                 "invitational_season",
-                src.discord.globals.SETTINGS["invitational_season"] + 1,
+                self.bot.settings["invitational_season"] + 1,
             )
 
             # Update the tournament list to reflect
             await update_tournament_list(self.bot, {})
 
             # Send message to staff
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The operation succeeded, and the tournament list was refreshed."
             )
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The operation was cancelled.", view=None, embed=None
             )
+
+    @invitational_status_group.command(
+        name="renew",
+        description="Staff command. Renews an archived invitational by making it open again.",
+    )
+    @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+    @app_commands.describe(
+        short_name="The short name referring to the invitational, such as 'mit'.",
+        voting="If yes, the invitational is sent back to voting before members can join it.",
+    )
+    async def invitational_renew(
+        self,
+        interaction: discord.Interaction,
+        short_name: str,
+        voting: Literal["yes", "no"],
+    ):
+        # Check for staff permissions again
+        commandchecks.is_staff_from_ctx(interaction)
+
+        # Let staff know process started
+        await interaction.response.send_message(
+            content=f"{EMOJI_LOADING} Attempting to renew the `{short_name}` invitational..."
+        )
+
+        invitationals = await self.bot.mongo_database.get_invitationals()
+        found_invitationals = [
+            i for i in invitationals if i["channel_name"] == short_name
+        ]
+
+        if not len(found_invitationals):
+            await interaction.edit_original_response(
+                content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
+            )
+
+        invitational = invitationals[0]
+        await self.bot.mongo_database.update(
+            "data",
+            "invitationals",
+            invitational["_id"],
+            {"$set": {"status": "voting" if voting == "yes" else "opened"}},
+        )
+
+        # Update the tournament list to reflect
+        await update_tournament_list(self.bot, {})
+
+        # Send message to staff
+        await interaction.edit_original_response(
+            content=f"The operation succeeded, and the `{short_name}` invitational has been renewed."
+        )
+
+    print([c.name for c in invitational_status_group.walk_commands()])
 
 
 async def setup(bot: PiBot):

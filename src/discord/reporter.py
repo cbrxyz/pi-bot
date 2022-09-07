@@ -6,15 +6,17 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
 
 if TYPE_CHECKING:
     from bot import PiBot
+
 
 class IgnoreButton(discord.ui.Button):
     """
@@ -23,9 +25,9 @@ class IgnoreButton(discord.ui.Button):
     the report database to be updated.
     """
 
-    view: discord.ui.View
+    view: InnapropriateUsername | InvitationalRequest
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InnapropriateUsername | InvitationalRequest):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -61,9 +63,9 @@ class CompletedButton(discord.ui.Button):
     A button to mark a report as completed.
     """
 
-    view: discord.ui.View
+    view: InnapropriateUsername | InvitationalRequest
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InnapropriateUsername | InvitationalRequest):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -94,9 +96,9 @@ class ChangeInappropriateUsername(discord.ui.Button):
     and the report database to be updated.
     """
 
-    view: discord.ui.View
+    view: InnapropriateUsername
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InnapropriateUsername):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -137,9 +139,9 @@ class KickUserButton(discord.ui.Button):
     Discord button which allows a staff member to promptly kick a user.
     """
 
-    view: discord.ui.View
+    view: InnapropriateUsername
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InnapropriateUsername):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.red,
@@ -168,7 +170,7 @@ class KickUserButton(discord.ui.Button):
 
         else:
             await closed_reports.send(
-                f"**Attemped to kick member* by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
+                f"**Attempted to kick member* by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
             )
 
         # Update the report database
@@ -180,9 +182,9 @@ class InvitationalArchiveButton(discord.ui.Button):
     Discord button used to archive an invitational channel that was needing archival.
     """
 
-    view: discord.ui.View
+    view: InvitationalArchive
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InvitationalArchive):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.red,
@@ -215,9 +217,9 @@ class InvitationalExtendButton(discord.ui.Button):
     was requesting archival.
     """
 
-    view: discord.ui.View
+    view: InvitationalArchive
 
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: InvitationalArchive):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -269,6 +271,7 @@ class InvitationalRequest(discord.ui.View):
     """
     Discord view representing a user requesting a new invitational channel.
     """
+
     member: discord.Member
     report_id: int
     invitational_name: str
@@ -289,6 +292,7 @@ class InvitationalArchive(discord.ui.View):
     Discord view representing a message about an invitational channel needing
     archival.
     """
+
     report_id: int
     tournament_obj: Tournament
     channel: discord.TextChannel
@@ -331,15 +335,13 @@ class Reporter(commands.Cog):
         guild = self.bot.get_guild(SERVER_ID)
         assert isinstance(guild, discord.Guild)
 
-        reports_channel = discord.utils.get(
-            guild.text_channels, name="reports"
-        )
+        reports_channel = discord.utils.get(guild.text_channels, name="reports")
         assert isinstance(reports_channel, discord.TextChannel)
 
         await reports_channel.send(embed=embed)
 
     async def create_inappropriate_username_report(
-        self, member: Union[discord.Member, discord.User], offending_username: str
+        self, member: discord.Member | discord.User, offending_username: str
     ):
         """
         Creates a report that a user has an innapropriate username.
@@ -400,6 +402,45 @@ class Reporter(commands.Cog):
             {json.dumps(task, indent = 4)}
             ```
             Because this likely a development error, no actions can immediately be taken. Please contact a developer to learn more.
+            """,
+            color=discord.Color.brand_red(),
+        )
+        await reports_channel.send(embed=embed)
+
+    async def create_command_error_report(
+        self,
+        error: Exception,
+        command: app_commands.Command | app_commands.ContextMenu | None,
+    ):
+        """
+        Reports a command error to staff.
+        """
+        guild = self.bot.get_guild(SERVER_ID)
+        assert isinstance(guild, discord.Guild)
+
+        reports_channel = discord.utils.get(guild.text_channels, name="reports")
+        assert isinstance(reports_channel, discord.TextChannel)
+
+        # Assemble the embed
+        title = (
+            f"Error with `/{command.name}`"
+            if isinstance(command, app_commands.Command)
+            else "Error with `{command.name}` context menu"
+        )
+        file_name = (
+            error.__traceback__.tb_frame.f_code.co_filename
+            if error.__traceback__ is not None
+            else "???"
+        )
+        line_no = (
+            error.__traceback__.tb_lineno if error.__traceback__ is not None else "???"
+        )
+        embed = discord.Embed(
+            title=title,
+            description=f"""
+            There was an error with the command listed above.
+
+            The bot experienced a `{type(error)}` in `{file_name}` on line `{line_no}`.
             """,
             color=discord.Color.brand_red(),
         )
@@ -503,7 +544,7 @@ class Reporter(commands.Cog):
             )
 
     async def create_cron_unmute_auto_notice(
-        self, user: Union[discord.Member, discord.User], is_present: bool
+        self, user: discord.Member | discord.User, is_present: bool
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically

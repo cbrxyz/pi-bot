@@ -148,7 +148,7 @@ class NukeStopButton(discord.ui.Button["Nuke"]):
         self.label = "ABORTED"
         self.disabled = True
         await interaction.response.send_message(content="NUKE ABORTED, COMMANDER.")
-        await interaction.edit_original_message(view=self.nuke)
+        await interaction.edit_original_response(view=self.nuke)
         self.nuke.stop()
 
 
@@ -194,17 +194,17 @@ class CronConfirm(discord.ui.View):
             except:
                 pass
             await interaction.response.edit_message(
-                content="Attempted to unban the user. Checking to see if operation was succesful...",
+                content="Attempted to unban the user. Checking to see if operation was successful...",
                 view=None,
             )
             bans = [b async for b in server.bans()]
             for ban in bans:
                 if ban.user.id == self.doc["user"]:
-                    return await interaction.edit_original_message(
+                    return await interaction.edit_original_response(
                         content="Uh oh! The operation was not successful - the user remains banned."
                     )
             await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content="The operation was verified - the user can now rejoin the server."
             )
         elif self.doc["type"] == "UNMUTE":
@@ -223,18 +223,18 @@ class CronConfirm(discord.ui.View):
                 except:
                     pass
                 await interaction.response.edit_message(
-                    content="Attempted to unmute the user. Checking to see if the operation was succesful...",
+                    content="Attempted to unmute the user. Checking to see if the operation was successful...",
                     view=None,
                 )
                 if role not in member.roles:
                     await self.bot.mongo_database.remove_doc(
                         "data", "cron", self.doc["_id"]
                     )
-                    return await interaction.edit_original_message(
+                    return await interaction.edit_original_response(
                         content="The operation was verified - the user can now speak in the server again."
                     )
                 else:
-                    return await interaction.edit_original_message(
+                    return await interaction.edit_original_response(
                         content="Uh oh! The operation was not successful - the user is still muted."
                     )
 
@@ -333,7 +333,7 @@ class StaffEssential(StaffCommands):
             bool: Whether the member was successfully confirmed.
         """
         if member.bot:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=":x: You can't confirm a bot!"
             )
             return False
@@ -342,7 +342,7 @@ class StaffEssential(StaffCommands):
         role2 = discord.utils.get(member.guild.roles, name=ROLE_MR)
 
         if role2 in member.roles:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=":x: This user is already confirmed."
             )
             return False
@@ -383,7 +383,7 @@ class StaffEssential(StaffCommands):
 
         # Sends confirmation message
         if response:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other "
                 f"channels and send messages in them. :tada: "
             )
@@ -404,7 +404,7 @@ class StaffEssential(StaffCommands):
 
         # Send confirmation message
         if response:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f":white_check_mark: Alrighty, confirmed {member.mention}. They now have access to see other "
                 f"channels and send messages in them. :tada: "
             )
@@ -445,7 +445,7 @@ class StaffEssential(StaffCommands):
 
             To stop this nuke, press the red button below!
             """
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 embed=original_shown_embed, view=view
             )
             if view.stopped:
@@ -456,7 +456,7 @@ class StaffEssential(StaffCommands):
         original_shown_embed.description = f"""
         Now nuking {count} messages from the channel...
         """
-        await interaction.edit_original_message(embed=original_shown_embed, view=None)
+        await interaction.edit_original_response(embed=original_shown_embed, view=None)
 
         def nuke_check(msg: discord.Message):
             return not len(msg.components) and not msg.pinned
@@ -538,11 +538,11 @@ class StaffEssential(StaffCommands):
         guild = interaction.user.guild
         if member not in guild.members:
             # User was successfully kicked
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The user was successfully kicked.", embed=None, view=None
             )
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The user was not successfully kicked because of an error. They remain in the server.",
                 embed=None,
                 view=None,
@@ -598,11 +598,11 @@ class StaffEssential(StaffCommands):
 
         # Test user was unmuted
         if role not in member.roles:
-            await interaction.edit_original_message(
-                content="The user was succesfully unmuted.", embed=None, view=None
+            await interaction.edit_original_response(
+                content="The user was successfully unmuted.", embed=None, view=None
             )
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The user was not unmuted because of an error. They remain muted. Please contact a bot "
                 "developer about this issue.",
                 embed=None,
@@ -719,20 +719,18 @@ class StaffEssential(StaffCommands):
                 pass
 
         if ban_length != "Indefinitely":
-            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog(
-                "CronTasks"
-            )
+            cron_tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await cron_tasks_cog.schedule_unban(member, times[ban_length])
 
         # Test
         guild = interaction.user.guild
         if member not in guild.members:
             # User was successfully banned
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The user was successfully banned.", embed=None, view=None
             )
         else:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The user was not successfully banned because of an error. They remain in the server.",
                 embed=None,
                 view=None,
@@ -839,15 +837,13 @@ class StaffEssential(StaffCommands):
                 pass
 
         if mute_length != "Indefinitely":
-            cron_tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog(
-                "CronTasks"
-            )
+            cron_tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await cron_tasks_cog.schedule_unmute(member, times[mute_length])
 
         # Test
         if role in member.roles:
             # User was successfully muted
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="The user was successfully muted.", embed=None, view=None
             )
 
@@ -914,7 +910,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         ):
             # Handle for tournament channels
 
-            test_vc: Optional[discord.VoiceChannel] = discord.utils.get(
+            test_vc: discord.VoiceChannel | None = discord.utils.get(
                 server.voice_channels, name=interaction.channel.name
             )
             if not test_vc:
@@ -939,9 +935,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 at = discord.utils.get(server.roles, name=ROLE_AT)
                 await new_vc.set_permissions(at, view_channel=True)
 
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
-                        f"No doxxing or cursing is allowed.** "
+                    f"No doxxing or cursing is allowed.** "
                 )
             else:
                 # Voice channel needs to be closed
@@ -1012,9 +1008,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                     all_states_role, view_channel=True, connect=True
                 )
 
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
-                        "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1061,9 +1057,9 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                 await new_vc.set_permissions(games_role, view_channel=True)
                 await new_vc.set_permissions(member_role, view_channel=False)
 
-                return await interaction.edit_original_message(
+                return await interaction.edit_original_response(
                     content=f"Created a voice channel: {new_vc.mention}. **Please remember to follow the rules! "
-                        "No doxxing or cursing is allowed.**"
+                    "No doxxing or cursing is allowed.**"
                 )
             else:
                 # Voice channel needs to be closed
@@ -1109,7 +1105,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         # Check channel category
         if channel.category.name in ["beta", "staff", "Pi-Bot"]:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content="This command is not suitable for this channel because of its category."
             )
 
@@ -1145,7 +1141,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         # Edit to final message
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content="Locked the channel to Member access."
         )
 
@@ -1169,7 +1165,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
 
         # Check channel category
         if channel.category.name in ["beta", "staff", "Pi-Bot"]:
-            return await interaction.edit_original_message(
+            return await interaction.edit_original_response(
                 content="This command is not suitable for this channel because of its category."
             )
 
@@ -1178,7 +1174,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             channel.category.name == CATEGORY_SO
             or channel.category.name == CATEGORY_GENERAL
         ):
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content="Synced permissions with channel category."
             )
             return await channel.edit(sync_permissions=True)
@@ -1211,7 +1207,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         # Edit to final message
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content="Unlocked the channel to Member access. Please check if permissions need to be synced."
         )
 
@@ -1244,7 +1240,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         plt.tight_layout()
         plt.savefig("met.png")
         plt.close()
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"{EMOJI_LOADING} Generating graph..."
         )
         await asyncio.sleep(3)
@@ -1263,7 +1259,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             ),
         )
         embed.set_image(url="attachment://met.png")
-        await interaction.edit_original_message(
+        await interaction.edit_original_response(
             content=f"The Most Edits Table for the week:",
             attachments=[file],
             embed=embed,
@@ -1291,27 +1287,27 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         if system in ["all"]:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Pulling all updated database information..."
             )
-            tasks_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+            tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
             await tasks_cog.pull_prev_info()
 
         if system in ["invitationals", "all"]:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Updating the invitationals list."
             )
             await update_tournament_list(self.bot)
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=":white_check_mark: Updated the invitationals list."
             )
 
         if system in ["pings", "all"]:
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Updating all users' pings."
             )
             src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
-            await interaction.edit_original_message(
+            await interaction.edit_original_response(
                 content=":white_check_mark: Updated all users' pings."
             )
 
@@ -1371,9 +1367,8 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         selected_time = times[length]
 
         # Change settings
-        await src.discord.globals.update_setting(
+        await self.bot.update_setting(
             {"custom_bot_status_text": message, "custom_bot_status_type": activity},
-            self.bot,
         )
 
         # Delete any relevant documents
@@ -1382,7 +1377,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         # Insert time length into CRON
-        cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+        cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
         await cron_cog.schedule_status_remove(selected_time)
 
         # Update activity
@@ -1420,10 +1415,10 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to resetting status..."
         )
-        await src.discord.globals.update_setting(
-            {"custom_bot_status_text": None, "custom_bot_status_type": None}, self.bot
+        await self.bot.update_setting(
+            {"custom_bot_status_text": None, "custom_bot_status_type": None}
         )
-        await interaction.edit_original_message(content="Reset the bot's status.")
+        await interaction.edit_original_response(content="Reset the bot's status.")
 
         # Delete any relevant documents
         await self.bot.mongo_database.delete_by(
@@ -1431,7 +1426,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         )
 
         # Reset bot status to regularly update
-        cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+        cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
         cron_cog.change_bot_status.restart()
 
 
