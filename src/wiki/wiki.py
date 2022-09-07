@@ -24,18 +24,18 @@ async def init_wiki():
     global site
     site = await aiopwb.Site()
     site.login()
-    print("Wiki initalized.")
+    print("Wiki initialized.")
 
 
-async def get_page_text(pageName):
+async def get_page_text(page_name):
     """Gets the text of a page on the wiki."""
     site = await aiopwb.Site()
-    return aiopwb.Page(site, pageName).text
+    return aiopwb.Page(site, page_name).text
 
 
-async def get_page_tables(pageName, temp_format):
+async def get_page_tables(page_name, temp_format):
     site = await aiopwb.Site()
-    text = aiopwb.Page(site, pageName).text
+    text = aiopwb.Page(site, page_name).text
     parsed = wtp.parse(str(text))
     if temp_format:
         return parsed.templates
@@ -43,19 +43,19 @@ async def get_page_tables(pageName, temp_format):
         return parsed.tables
 
 
-async def set_page_text(pageName, text, summary, minor=False):
-    page = aiopwb.Page(site, pageName)
+async def set_page_text(page_name, text, summary, minor=False):
+    page = aiopwb.Page(site, page_name)
     page.text = text
     await page.save(summary=summary, minor=minor, asynchronous=True)
 
 
-async def upload_file(filePath, title, comment):
+async def upload_file(file_path, title, comment):
     site = await aiopwb.Site()
     await site.upload()
 
 
-async def all_pages(startTitle):
-    return site.allpages(start=startTitle)
+async def all_pages(start_title):
+    return site.allpages(start=start_title)
 
 
 async def implement_command(action, page_title):
@@ -98,5 +98,8 @@ async def implement_command(action, page_title):
         return res[:5]
 
 
-event_loop = asyncio.get_event_loop()
-asyncio.ensure_future(init_wiki(), loop=event_loop)
+if "PI_BOT_WIKI_USERNAME" in os.environ:
+    event_loop = asyncio.get_event_loop()
+    asyncio.ensure_future(init_wiki(), loop=event_loop)
+else:
+    print("User did not supply keys for wiki functionality; not turned on.")

@@ -6,11 +6,11 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import TYPE_CHECKING, Union, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
 
@@ -25,9 +25,9 @@ class IgnoreButton(discord.ui.Button):
     the report database to be updated.
     """
 
-    view: Union[InnapropriateUsername, InvitationalRequest]
+    view: InnapropriateUsername | InvitationalRequest
 
-    def __init__(self, view: Union[InnapropriateUsername, InvitationalRequest]):
+    def __init__(self, view: InnapropriateUsername | InvitationalRequest):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
@@ -63,9 +63,9 @@ class CompletedButton(discord.ui.Button):
     A button to mark a report as completed.
     """
 
-    view: Union[InnapropriateUsername, InvitationalRequest]
+    view: InnapropriateUsername | InvitationalRequest
 
-    def __init__(self, view: Union[InnapropriateUsername, InvitationalRequest]):
+    def __init__(self, view: InnapropriateUsername | InvitationalRequest):
         self.view = view
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -170,7 +170,7 @@ class KickUserButton(discord.ui.Button):
 
         else:
             await closed_reports.send(
-                f"**Attemped to kick member* by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
+                f"**Attempted to kick member* by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
             )
 
         # Update the report database
@@ -341,7 +341,7 @@ class Reporter(commands.Cog):
         await reports_channel.send(embed=embed)
 
     async def create_inappropriate_username_report(
-        self, member: Union[discord.Member, discord.User], offending_username: str
+        self, member: discord.Member | discord.User, offending_username: str
     ):
         """
         Creates a report that a user has an innapropriate username.
@@ -410,7 +410,7 @@ class Reporter(commands.Cog):
     async def create_command_error_report(
         self,
         error: Exception,
-        command: Optional[Union[app_commands.Command, app_commands.ContextMenu]],
+        command: app_commands.Command | app_commands.ContextMenu | None,
     ):
         """
         Reports a command error to staff.
@@ -544,7 +544,7 @@ class Reporter(commands.Cog):
             )
 
     async def create_cron_unmute_auto_notice(
-        self, user: Union[discord.Member, discord.User], is_present: bool
+        self, user: discord.Member | discord.User, is_present: bool
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically

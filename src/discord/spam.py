@@ -73,7 +73,7 @@ class SpamManager(commands.Cog):
                 No further action needs to be taken. To teleport to the issue, please [click here]({info_message.jump_url}). Please know that the offending messages may have been deleted by the author or staff.
                 """,
             )
-            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
+            reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
             await reporter_cog.create_staff_message(staff_embed_message)
         elif matching_messages_count >= self.warning_limit:
             await message.author.send(
@@ -115,7 +115,7 @@ class SpamManager(commands.Cog):
                 No further action needs to be taken. To teleport to the issue, please [click here]({info_message.jump_url}). Please know that the offending messages may have been deleted by the author or staff.
                 """,
             )
-            reporter_cog: Union[commands.Cog, Reporter] = self.bot.get_cog("Reporter")
+            reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
             await reporter_cog.create_staff_message(staff_embed_message)
         elif caps_messages_count >= self.warning_limit and self.has_caps(message):
             await message.author.send(
@@ -133,7 +133,7 @@ class SpamManager(commands.Cog):
         # Type checking
         assert isinstance(muted_role, discord.Role)
 
-        cron_cog: Union[commands.Cog, CronTasks] = self.bot.get_cog("CronTasks")
+        cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
         await cron_cog.schedule_unmute(member, unmute_time)
         await member.add_roles(muted_role)
 

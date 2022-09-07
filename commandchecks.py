@@ -1,11 +1,27 @@
 """
-Stores various checks for specific commands, including priveleged commands.
+Stores various checks for specific commands, including privileged commands.
 """
 from typing import Union
 
 import discord
 from discord.ext import commands
 from src.discord.globals import ROLE_STAFF, ROLE_VIP
+
+
+def is_in_bot_spam(interaction: discord.Interaction):
+    guild = interaction.guild
+    assert isinstance(guild, discord.Guild)
+    staff_role = discord.utils.get(guild.roles, name=ROLE_STAFF)
+    vip_role = discord.utils.get(guild.roles, name=ROLE_VIP)
+
+    assert isinstance(interaction.user, discord.Member)
+
+    if staff_role in interaction.user.roles or vip_role in interaction.user.roles:
+        return True
+
+    if isinstance(interaction.channel, (discord.abc.GuildChannel, discord.Thread)):
+        return interaction.channel.name in ["bot-spam", "welcome"]
+    return False
 
 
 def is_staff_from_ctx(

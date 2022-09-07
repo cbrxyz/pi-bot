@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Union
 
 import discord
 import src.discord.globals
+from commandchecks import is_in_bot_spam
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
@@ -102,7 +103,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 await self.send_ping_pm(user_obj, message, ping_count)
 
     def format_text(
-        self, text: str, length: int, user: Union[discord.Member, discord.User]
+        self, text: str, length: int, user: discord.Member | discord.User
     ) -> str:
         """
         Highlights ping expressions in the message and shorten long messages
@@ -203,6 +204,8 @@ class PingManager(commands.GroupCog, name="ping"):
 
     @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(2, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def dnd(self, interaction: discord.Interaction):
         """
         Discord command allowing members to sent their ping mode to DND.
@@ -247,6 +250,8 @@ class PingManager(commands.GroupCog, name="ping"):
     )
     @app_commands.describe(word="The new word to add a ping for.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def pingadd(self, interaction: discord.Interaction, word: str):
         """
         Discord command allowing members to add a ping keyword to their list of
@@ -312,6 +317,8 @@ class PingManager(commands.GroupCog, name="ping"):
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(test="The phrase to test your pings against.")
+    @app_commands.checks.cooldown(10, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def pingtest(self, interaction: discord.Interaction, test: str):
         """
         Discord command allowing members to test their ping list against a specific phrase.
@@ -359,6 +366,8 @@ class PingManager(commands.GroupCog, name="ping"):
         name="list", description="Lists all of your registered pings."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def pinglist(self, interaction: discord.Interaction):
         """
         Discord command which lists the user's pings.
@@ -403,6 +412,8 @@ class PingManager(commands.GroupCog, name="ping"):
         word="The word to remove a ping for. Or use 'all' to remove all pings."
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.check(is_in_bot_spam)
     async def pingremove(self, interaction: discord.Interaction, word: str):
         """
         Discord command that allows a user to remove a word from their list of pings.
