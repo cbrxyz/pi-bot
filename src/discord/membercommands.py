@@ -20,7 +20,6 @@ from discord.ext import commands
 from src.discord.globals import (
     CATEGORY_STAFF,
     CHANNEL_GAMES,
-    CHANNEL_ROLES,
     CHANNEL_TOURNAMENTS,
     CHANNEL_UNSELFMUTE,
     ROLE_ALUMNI,
@@ -76,11 +75,9 @@ class MemberCommands(commands.Cog):
         invitationals_channel = discord.utils.get(
             server.text_channels, name=CHANNEL_TOURNAMENTS
         )
-        roles_channel = discord.utils.get(server.text_channels, name=CHANNEL_ROLES)
 
         # Type checking
         assert isinstance(invitationals_channel, discord.TextChannel)
-        assert isinstance(roles_channel, discord.TextChannel)
 
         help_embed = discord.Embed(
             title="Looking for help?",
@@ -88,7 +85,7 @@ class MemberCommands(commands.Cog):
             description=f"""
             Hey there, I'm Scioly.org's resident bot, and I'm here to assist with all of your needs.
 
-            To interact with me, use _slash commands_ by typing `/` and the name of the command into the text bar below. You can also use the dropdowns in the {invitationals_channel.mention} and {roles_channel.mention} channels to assign yourself roles!
+            To interact with me, use _slash commands_ by typing `/` and the name of the command into the text bar below. You can also use the dropdowns in the {invitationals_channel.mention} invitational to assign yourself roles!
 
             If you're looking for more help, feel free to ask other members (including our helpful staff members) for more information.
             """,

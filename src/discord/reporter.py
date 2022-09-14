@@ -25,10 +25,10 @@ class IgnoreButton(discord.ui.Button):
     the report database to be updated.
     """
 
-    view: InnapropriateUsername | InvitationalRequest
+    report_view: InnapropriateUsername | InvitationalRequest
 
     def __init__(self, view: InnapropriateUsername | InvitationalRequest):
-        self.view = view
+        self.report_view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
             label="Ignore",
@@ -43,15 +43,15 @@ class IgnoreButton(discord.ui.Button):
         closed_reports = discord.utils.get(
             interaction.guild.text_channels, name="closed-reports"
         )
-        if isinstance(self.view, InnapropriateUsername):
+        if isinstance(self.report_view, InnapropriateUsername):
             await closed_reports.send(
-                f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} had the "
-                f"inappropriate username `{self.view.offending_username}`, but the report was ignored. "
+                f"**Report was ignored** by {interaction.user.mention} - {self.report_view.member.mention} had the "
+                f"inappropriate username `{self.report_view.offending_username}`, but the report was ignored. "
             )
-        elif isinstance(self.view, InvitationalRequest):
+        elif isinstance(self.report_view, InvitationalRequest):
             await closed_reports.send(
-                f"**Report was ignored** by {interaction.user.mention} - {self.view.member.mention} requested adding "
-                f"a invitational channel for `{self.view.invitational_name}`, but the report was ignored. "
+                f"**Report was ignored** by {interaction.user.mention} - {self.report_view.member.mention} requested adding "
+                f"a invitational channel for `{self.report_view.invitational_name}`, but the report was ignored. "
             )
 
         # Update the report database
@@ -63,10 +63,10 @@ class CompletedButton(discord.ui.Button):
     A button to mark a report as completed.
     """
 
-    view: InnapropriateUsername | InvitationalRequest
+    report_view: InnapropriateUsername | InvitationalRequest
 
     def __init__(self, view: InnapropriateUsername | InvitationalRequest):
-        self.view = view
+        self.report_view = view
         super().__init__(
             style=discord.ButtonStyle.green,
             label="Mark as Completed",
@@ -82,7 +82,7 @@ class CompletedButton(discord.ui.Button):
             interaction.guild.text_channels, name="closed-reports"
         )
         await closed_reports.send(
-            f"**Invitational channel request was fulfilled** by {interaction.user.mention} - {self.view.member.mention} requested adding a invitational channel for the `{self.view.invitational_name}`, and the request has been fulfilled."
+            f"**Invitational channel request was fulfilled** by {interaction.user.mention} - {self.report_view.member.mention} requested adding a invitational channel for the `{self.report_view.invitational_name}`, and the request has been fulfilled."
         )
 
         # Update the report database
@@ -96,10 +96,10 @@ class ChangeInappropriateUsername(discord.ui.Button):
     and the report database to be updated.
     """
 
-    view: InnapropriateUsername
+    report_view: InnapropriateUsername
 
     def __init__(self, view: InnapropriateUsername):
-        self.view = view
+        self.report_view = view
         super().__init__(
             style=discord.ButtonStyle.green,
             label="Change Username",
@@ -111,7 +111,9 @@ class ChangeInappropriateUsername(discord.ui.Button):
         await interaction.message.delete()
 
         # Check to make sure user is still in server before taking action
-        member_still_here = self.view.member in self.view.member.guild.members
+        member_still_here = (
+            self.report_view.member in self.report_view.member.guild.members
+        )
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
@@ -119,15 +121,15 @@ class ChangeInappropriateUsername(discord.ui.Button):
         )
         if member_still_here:
             await closed_reports.send(
-                f"**Member's username was changed** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, and their username was changed to `boomilever`."
+                f"**Member's username was changed** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and their username was changed to `boomilever`."
             )
 
             # Change the user's username
-            await self.view.member.edit(nick="boomilever")
+            await self.report_view.member.edit(nick="boomilever")
 
         else:
             await closed_reports.send(
-                f"**Member's username was attempted to be changed** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, and their username was attempted to be changed to `boomilever`, however, the user had left the server."
+                f"**Member's username was attempted to be changed** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and their username was attempted to be changed to `boomilever`, however, the user had left the server."
             )
 
         # Update the report database
@@ -139,10 +141,10 @@ class KickUserButton(discord.ui.Button):
     Discord button which allows a staff member to promptly kick a user.
     """
 
-    view: InnapropriateUsername
+    report_view: InnapropriateUsername
 
     def __init__(self, view: InnapropriateUsername):
-        self.view = view
+        self.report_view = view
         super().__init__(
             style=discord.ButtonStyle.red,
             label="Kick User",
@@ -154,7 +156,9 @@ class KickUserButton(discord.ui.Button):
         await interaction.message.delete()
 
         # Check to make sure user is still in server before taking action
-        member_still_here = self.view.member in self.view.member.guild.members
+        member_still_here = (
+            self.report_view.member in self.report_view.member.guild.members
+        )
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
@@ -162,15 +166,15 @@ class KickUserButton(discord.ui.Button):
         )
         if member_still_here:
             await closed_reports.send(
-                f"**Member was kicked** by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}`, and the user was kicked from the server."
+                f"**Member was kicked** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and the user was kicked from the server."
             )
 
             # Kick the user
-            await self.view.member.kick()
+            await self.report_view.member.kick()
 
         else:
             await closed_reports.send(
-                f"**Attempted to kick member* by {interaction.user.mention} - {self.view.member.mention} had the innapropriate username `{self.view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
+                f"**Attempted to kick member* by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
             )
 
         # Update the report database
@@ -182,10 +186,10 @@ class InvitationalArchiveButton(discord.ui.Button):
     Discord button used to archive an invitational channel that was needing archival.
     """
 
-    view: InvitationalArchive
+    report_view: InvitationalArchive
 
     def __init__(self, view: InvitationalArchive):
-        self.view = view
+        self.report_view = view
         super().__init__(
             style=discord.ButtonStyle.red,
             label="Archive",
@@ -204,7 +208,7 @@ class InvitationalArchiveButton(discord.ui.Button):
             interaction.guild.text_channels, name="closed-reports"
         )
         await closed_reports.send(
-            f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.view.tournament_obj.official_name} was archived after being open for {self.view.tournament_obj.closed_days} after the tournament date on {discord.utils.format_dt(self.view.tournament_obj.tourney_date, 'D')}."
+            f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.report_view.tournament_obj.official_name} was archived after being open for {self.report_view.tournament_obj.closed_days} after the tournament date on {discord.utils.format_dt(self.report_view.tournament_obj.tourney_date, 'D')}."
         )
 
         # Update the report database
@@ -217,10 +221,10 @@ class InvitationalExtendButton(discord.ui.Button):
     was requesting archival.
     """
 
-    view: InvitationalArchive
+    report_view: InvitationalArchive
 
     def __init__(self, view: InvitationalArchive):
-        self.view = view
+        self.report_view = view
         super().__init__(
             style=discord.ButtonStyle.gray,
             label="Extend",
@@ -239,7 +243,7 @@ class InvitationalExtendButton(discord.ui.Button):
             interaction.guild.text_channels, name="closed-reports"
         )
         await closed_reports.send(
-            f"**Invitational archive warning was extended** by {interaction.user.mention} - A warning about the {self.view.tournament_obj.official_name} channel being open too long was sent, but the warning was extended by 15 days. Users are still able to chat in the tournament channel."
+            f"**Invitational archive warning was extended** by {interaction.user.mention} - A warning about the {self.report_view.tournament_obj.official_name} channel being open too long was sent, but the warning was extended by 15 days. Users are still able to chat in the tournament channel."
         )
 
         # Update the report database

@@ -77,7 +77,6 @@ class PingManager(commands.GroupCog, name="ping"):
                 continue
 
             pings = [rf"\b({ping})\b" for ping in user["word_pings"]]
-            pings.extend(user["regex_pings"])
 
             # Do not ping any users mentioned in the message
             user_is_mentioned = user["user_id"] in [m.id for m in message.mentions]
@@ -125,7 +124,6 @@ class PingManager(commands.GroupCog, name="ping"):
         assert isinstance(user_ping_obj, dict)
 
         pings = [rf"\b({ping})\b" for ping in user_ping_obj["word_pings"]]
-        pings.extend(user_ping_obj["regex_pings"])
 
         for expression in pings:
             try:
@@ -274,7 +272,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 (u for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
                 None,
             )
-            pings = user["word_pings"] + user["regex_pings"]
+            pings = user["word_pings"]
             try:
                 re.findall(word, "test phrase")
             except:
@@ -301,7 +299,6 @@ class PingManager(commands.GroupCog, name="ping"):
             new_user_dict = {
                 "user_id": member.id,
                 "word_pings": [word],
-                "regex_pings": [],
                 "dnd": False,
             }
             src.discord.globals.PING_INFO.append(new_user_dict)
@@ -341,7 +338,7 @@ class PingManager(commands.GroupCog, name="ping"):
         word_pings = [
             {"new": rf"\b({ping})\b", "original": ping} for ping in user["word_pings"]
         ]
-        user_pings = word_pings + user["regex_pings"]
+        user_pings = word_pings
         matched = False
         response = ""
 
@@ -386,17 +383,13 @@ class PingManager(commands.GroupCog, name="ping"):
         )
 
         # User has no pings
-        if user is None or len(user["word_pings"] + user["regex_pings"]) == 0:
+        if user is None or len(user["word_pings"]) == 0:
             return await interaction.response.send_message(
                 "You have no registered pings."
             )
 
         else:
             response = ""
-            if len(user["regex_pings"]) > 0:
-                response += "Your RegEx pings are: " + ", ".join(
-                    [f"`{regex}`" for regex in user["regex_pings"]]
-                )
             if len(user["word_pings"]) > 0:
                 response += "Your pings are: " + ", ".join(
                     [f"`{word}`" for word in user["word_pings"]]
@@ -434,7 +427,7 @@ class PingManager(commands.GroupCog, name="ping"):
         )
 
         # The user has no pings
-        if user is None or len(user["word_pings"] + user["regex_pings"]) == 0:
+        if user is None or len(user["word_pings"]) == 0:
             return await interaction.response.send_message(
                 "You have no registered pings."
             )
@@ -442,12 +435,11 @@ class PingManager(commands.GroupCog, name="ping"):
         # Remove all of user's pings
         if word == "all":
             user["word_pings"] = []
-            user["regex_pings"] = []
             await self.bot.mongo_database.update(
                 "data",
                 "pings",
                 user["_id"],
-                {"$pull": {"word_pings": {}, "regex_pings": {}}},
+                {"$pull": {"word_pings": {}}},
             )
             return await interaction.response.send_message(
                 "I removed all of your pings."
@@ -461,16 +453,6 @@ class PingManager(commands.GroupCog, name="ping"):
             )
             return await interaction.response.send_message(
                 f"I removed the `{word}` ping you were referencing."
-            )
-
-        # Attempt to remove a regex ping
-        elif word in user["regex_pings"]:
-            user["regex_pings"].remove(word)
-            await self.bot.mongo_database.update(
-                "data", "pings", user["_id"], {"$pull": {"regex_pings": word}}
-            )
-            return await interaction.response.send_message(
-                f"I removed the `{word}` RegEx ping you were referencing."
             )
 
         # Attempt to remove a word ping with extra formatting
