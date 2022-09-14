@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 5.0.0 -
+## 5.0.0 - 2022-09-14
 ### Added
 * New Discord UI interfaces for several commands (closes [#370](https://github.com/cbrxyz/pi-bot/issues/370))
 * MongoDB is now where Pi-Bot stores his information (closes [#369](https://github.com/cbrxyz/pi-bot/issues/369))
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The bot can now listen for individual user responses. Helpful for users attempting to interact with application commands in complex ways.
 * `/invitational add`, `/invitational approve`, `/invitational edit`, and `/invitational archive` allow staff to manage invitational data
 * `/invitational season` allows staff to manage the season of each invitational
+* `/invitational renew` allows staff to renew previously archived channels
 * Invitational tournaments can now be archived from any channel
 * `/event add` and `/event remove` allow staff to modify events from the server
 * Event-modifying commands no longer require staff to manually add event roles to the server, instead, roles are automatically generated.
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Staff can now set a custom bot status for a specified amount of time.
 * CRON handling is now handled by a group of methods, rather than just one method.
 * Add cooldowns to member commands.
+* Members can be confirmed through a User Interaction (ie, right-clicking on a user icon).
 
 #### Embeds
 * Adding/updating embeds is now done through Discord UI, with the help of dedicated classes.
@@ -57,10 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * When reports are acted upon, messages are sent to `#closed-reports`.
 
 ### Changed
-* The main library is now [pycord](https://github.com/Pycord-Development/pycord).
 * bot.py was split into separate files/cogs. (closes [#42](https://github.com/cbrxyz/pi-bot/issues/42))
 * Some dependencies were updated (numpy).
-* The default Python runtime was updated to 3.9.7.
+* The default Python runtime was updated to 3.10.
 * New tournament channels will not be created if an appropriate tournament channel already exists, just in the archived category
 * Automated data updates are no longer made on a constant basis; rather, data is updated only when changes are needed because of a process
 * The layout of the `/about` embed response was slightly updated.
@@ -68,10 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/forums`, `/obb`, `/gallery`, and `/exchange` were simplified into `/link`.
 * `/info` no longer checks for the user's staff role, and instead only checks the category name of the channel the command was called in.
 * `/wiki` was split into separate commands: `/wikilink`, `/wikisearch`, and `/wikisummary`.
+* `/treat` can now be used to share a wide variety of treats. Yum!
 * Users who are repeatedly spamming/using caps are now warned through direct messages, rather than in public channels.
 * Edited and deleted message logs now use Discord UI relative times instead of displaying times in UTC.
 * README now features slash commands instead of typical commands.
-* Version is now stored in `__init__.py`.
+* Version is now stored in `bot.py` - `info.py` was removed.
 * Message history in `#welcome` is now gotten newest-first in an effort to conserve resources.
 
 ### Removed
@@ -101,36 +103,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `/invyarchive` (previously `!archive`) now correctly links to the `#competitions` channel for more questions/info about an archived tournamentin the response embed (closes [#363](https://github.com/cbrxyz/pi-bot/issues/363))
 * Direct message logs no longer log outgoing messages from the bot.
 
-## 4.5.19 - 2020-04-15
+## 4.5.20 - 2021-06-03
+### Changed
+* `!invite` now links to partner invite link
+* `discord.gg/scioly` is now an allowed external Discord link
+
+### Fixed
+* Fixed incorrect dates in CHANGELOG
+* Fixed misspelling in `!division` command
+
+## 4.5.19 - 2021-04-15
 * Timing issues with `!selfmute`, `!mute`, and `!ban` should be fixed (closes [#242](https://github.com/cbrxyz/pi-bot/issues/242))
 
-## 4.5.18 - 2020-04-11
+## 4.5.18 - 2021-04-11
 ### Fixed
 * `!archive` would make a tournament channel no longer viewable to current competitors (closes [#365](https://github.com/cbrxyz/pi-bot/issues/365))
 
-## 4.5.17 - 2020-04-09
+## 4.5.17 - 2021-04-09
 ### Added
 * Voice channels can now be opened for state channels (hello socal! :D)
 
-## 4.5.16 - 2020-04-04
+## 4.5.16 - 2021-04-04
 ### Fixed
 * An empty requested tournaments list would break the tournament-updating sequence
 * Added more `try/except` blocks to refresh algorithms to stop the entire algorithm from stopping in case one part breaks
 
-## 4.5.15 - 2020-03-22
+## 4.5.15 - 2021-03-22
 ### Added
 * Added `!archive` command (closes [#263](https://github.com/cbrxyz/pi-bot/issues/263))
 
 ### Fixed
 * `!dogbomb` with no arguments referred to shiba bomb (closes [#323](https://github.com/cbrxyz/pi-bot/issues/323))
 
-## 4.5.14 - 2020-02-16
+## 4.5.14 - 2021-02-16
 ### Changed
 * `!magic8ball` response now replies to the original message (closes [#356](https://github.com/cbrxyz/pi-bot/issues/356))
 * `!fish` can no longer give bear 69 fish at any time (closes [#355](https://github.com/cbrxyz/pi-bot/issues/355))
 * Updated `discord.py` pip package to `1.6.0`
 
-## 4.5.13 - 2020-02-13
+## 4.5.13 - 2021-02-13
 ### Changed
 * Slightly cleaned up logs
 

@@ -101,7 +101,6 @@ class PiBotCommandTree(app_commands.CommandTree):
         elif isinstance(error, app_commands.CheckFailure):
             message = "You are not allowed to run this command here. Try running it in `#bot-spam` instead."
 
-        # Add more here
         else:
             message = "Ooops, there was a command error."
         try:
