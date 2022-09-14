@@ -1,3 +1,3 @@
 """
-USED FOR INTERACTING WITH THE FORUMS
+Forums support in Pi-Bot.
 """

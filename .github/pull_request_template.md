@@ -23,7 +23,7 @@
 # Issues Closed
 My pull request closes the following issues:
 
-- 
+-
 
 # Thank You
 Thank you for your contribution to Scioly.org! This pull request will be reviewed

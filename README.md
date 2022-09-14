@@ -15,9 +15,9 @@ Here are some commands that can be run on the Discord server:
 
 |Command |Result
 |--------|-------
-|`!fish` |Adds one fish to bear's fish counter
-|`!wiki link California (North)` |Returns the link to the Scioly.org wiki page for "California (North)"
-|`!school "west windsor" "NJ"` |Query a national school database for school information
+|`/states Ohio` |Adds the user to the Ohio state channel and role
+|`/wiki link California (North)` |Returns the link to the Scioly.org wiki page for "California (North)"
+|`/vc` |Allows staff members to open a voice channel for members to discuss tournaments
 |... |...
 
 ## Issues

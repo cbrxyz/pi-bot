@@ -6,8 +6,10 @@ apicache-py3/
 *password*
 .DS_Store
 met.png
+embed_export.json
 resultstemplate.txt
 *.svg
+mongodata/
 
 # Python gitignore template
 # Byte-compiled / optimized / DLL files
