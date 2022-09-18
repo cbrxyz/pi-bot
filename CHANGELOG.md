@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.1 - 2022-09-18
+### Added
+* Users using `!` or `?` are now notified to use slash commands (closes [#403](https://github.com/cbrxyz/pi-bot/issues/403))
+
+### Fixed
+* Typo in `/invitational renew` command
+* `/ping on_message` event handler would often take up event loop
+
 ## 5.0.0 - 2022-09-14
 ### Added
 * New Discord UI interfaces for several commands (closes [#370](https://github.com/cbrxyz/pi-bot/issues/370))

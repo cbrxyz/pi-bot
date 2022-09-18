@@ -3,9 +3,10 @@ Holds functionality for members to manage their ping subscriptions.
 """
 from __future__ import annotations
 
+import asyncio
 import datetime
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 import src.discord.globals
@@ -71,6 +72,8 @@ class PingManager(commands.GroupCog, name="ping"):
 
         # Send a ping alert to the relevant users
         for user in src.discord.globals.PING_INFO:
+            # Give up event loop to other coroutines in case ping list is long
+            await asyncio.sleep(0)
 
             # Do not ping the author of the message
             if user["user_id"] == message.author.id:

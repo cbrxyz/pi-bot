@@ -685,7 +685,7 @@ class StaffInvitational(commands.Cog):
             "data",
             "invitationals",
             invitational["_id"],
-            {"$set": {"status": "voting" if voting == "yes" else "opened"}},
+            {"$set": {"status": "voting" if voting == "yes" else "open"}},
         )
 
         # Update the tournament list to reflect
