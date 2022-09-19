@@ -680,12 +680,12 @@ class StaffInvitational(commands.Cog):
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}."
             )
 
-        invitational = invitationals[0]
+        invitational = found_invitationals[0]
         await self.bot.mongo_database.update(
             "data",
             "invitationals",
             invitational["_id"],
-            {"$set": {"status": "voting" if voting == "yes" else "opened"}},
+            {"$set": {"status": "voting" if voting == "yes" else "open"}},
         )
 
         # Update the tournament list to reflect

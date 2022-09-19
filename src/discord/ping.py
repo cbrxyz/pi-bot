@@ -3,9 +3,10 @@ Holds functionality for members to manage their ping subscriptions.
 """
 from __future__ import annotations
 
+import asyncio
 import datetime
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 import src.discord.globals
@@ -70,7 +71,10 @@ class PingManager(commands.GroupCog, name="ping"):
                 ]  # Cut off the message from the longest time ago if there are too many messages stored
 
         # Send a ping alert to the relevant users
+        ids = [m.id for m in message.channel.members]
         for user in src.discord.globals.PING_INFO:
+            # Give up event loop to other coroutines in case ping list is long
+            await asyncio.sleep(0)
 
             # Do not ping the author of the message
             if user["user_id"] == message.author.id:
@@ -84,9 +88,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 continue
 
             # Do not ping if the user cannot see the channel or has DND enabled
-            user_can_see_channel = user["user_id"] in [
-                m.id for m in message.channel.members
-            ]
+            user_can_see_channel = user["user_id"] in ids
             user_in_dnd = "dnd" in user and user["dnd"]
             if not user_can_see_channel or user_in_dnd:
                 continue

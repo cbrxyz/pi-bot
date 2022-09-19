@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import re
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
@@ -16,6 +17,7 @@ from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import (
     BOT_PREFIX,
+    CHANNEL_BOTSPAM,
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
@@ -134,7 +136,7 @@ class PiBot(commands.Bot):
         self.listeners_: dict[
             str, dict[str, Any]
         ] = {}  # name differentiation between internal _listeners attribute
-        self.__version__ = "v5.0.0"
+        self.__version__ = "v5.0.1"
         self.session = None
         self.mongo_database = MongoDatabase(self)
 
@@ -224,6 +226,15 @@ class PiBot(commands.Bot):
             spam: commands.Cog | SpamManager = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
+        if message.content and len(re.findall(r"^[!\?]\s*\w+$", message.content)):
+            botspam_channel = discord.utils.get(
+                message.guild.channels, name=CHANNEL_BOTSPAM
+            )
+            reply_message = await message.reply(
+                f"Hola {message.author.mention}, please use slash commands now! Try typing `/` in {botspam_channel.mention}!"
+            )
+            await reply_message.delete(delay=10)
+
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         self.session = aiohttp.ClientSession()
         await super().start(token=token, reconnect=reconnect)
@@ -257,7 +268,9 @@ class PiBot(commands.Bot):
             await asyncio.sleep(1)
             count -= 1
             if self.listeners_[my_id]["message"] is not None:
-                return self.listeners_[my_id]["message"]
+                message = self.listeners_[my_id]["message"]
+                del self.listeners_[my_id]
+                return message
         return None
 
 
