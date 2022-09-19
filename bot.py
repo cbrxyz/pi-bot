@@ -226,7 +226,7 @@ class PiBot(commands.Bot):
             spam: commands.Cog | SpamManager = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
-        if message.content and len(re.findall(r"[!\?]\s*\w+", message.content)):
+        if message.content and len(re.findall(r"^[!\?]\s*\w+$", message.content)):
             botspam_channel = discord.utils.get(
                 message.guild.channels, name=CHANNEL_BOTSPAM
             )
@@ -268,7 +268,9 @@ class PiBot(commands.Bot):
             await asyncio.sleep(1)
             count -= 1
             if self.listeners_[my_id]["message"] is not None:
-                return self.listeners_[my_id]["message"]
+                message = self.listeners_[my_id]["message"]
+                del self.listeners_[my_id]
+                return message
         return None
 
 
