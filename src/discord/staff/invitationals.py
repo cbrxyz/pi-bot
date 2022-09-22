@@ -154,6 +154,7 @@ class StaffInvitational(commands.Cog):
             # If just standard emoji, use that
             if len(emoji_message.content) > 0:
                 emoji = emoji_message.content
+                await emoji_message.delete()
 
         # Tournament creation embed description
         description = f"""
