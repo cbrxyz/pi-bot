@@ -127,6 +127,8 @@ class TournamentDropdown(discord.ui.Select):
                         ephemeral=True,
                     )
 
+                await interaction.message.edit()
+
         else:
             # This dropdown is being used for voting
             need_to_update = []
@@ -164,6 +166,7 @@ class TournamentDropdown(discord.ui.Select):
             # Send output
             result_string = result_string[:-1]  # Delete last newline character
             await interaction.response.send_message(result_string, ephemeral=True)
+            await interaction.message.edit()
 
 
 class TournamentDropdownView(discord.ui.View):
