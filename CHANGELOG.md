@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.2 - 2022-09-24
+### Changed
+
+* Invitational dropdowns now reset after choosing an option
+* Instructions on joining/leaving invitational channels through `#invitationals` are clearer
+
 ## 5.0.1 - 2022-09-18
 ### Added
 * Users using `!` or `?` are now notified to use slash commands (closes [#403](https://github.com/cbrxyz/pi-bot/issues/403))
