@@ -127,6 +127,8 @@ class TournamentDropdown(discord.ui.Select):
                         ephemeral=True,
                     )
 
+                await interaction.message.edit()
+
         else:
             # This dropdown is being used for voting
             need_to_update = []
@@ -164,6 +166,7 @@ class TournamentDropdown(discord.ui.Select):
             # Send output
             result_string = result_string[:-1]  # Delete last newline character
             await interaction.response.send_message(result_string, ephemeral=True)
+            await interaction.message.edit()
 
 
 class TournamentDropdownView(discord.ui.View):
@@ -360,9 +363,9 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
         title=":first_place: Join a Tournament Channel!",
         color=discord.Color(0x2E66B6),
         description=f"""
-        Below is a list of **tournament channels**. Some are available right now, some will be available soon, and others have been requested, but have not received enough support to be considered for a channel.
+        Below is a list of **tournament channels**. Some are available right now, while others have been requested, but have not received enough support to be considered for a channel.
 
-        To join a tournament channel, use the dropdowns below! Dropdowns are split up by date!
+        To join a tournament channel, use the dropdowns below! Dropdowns are split up by date! If you would like to leave an invitational channel you previously joined, please re-select the invitational from the appropriate dropdown.
 
         To request a new tournament channel, please use the `/request` command in {bot_spam_channel.mention}. If you need help, feel free to let a {admin_role.mention} or {global_moderator_role.mention} know!
         """,
@@ -400,7 +403,7 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
         ]
         if len(month_tournaments) > 0:
             await tourney_channel.send(
-                f"Join a channel for a tournament in **{month['name']} {month['year']}**:",
+                f"Tournaments in **{month['name']} {month['year']}**:",
                 view=TournamentDropdownView(month_tournaments, bot),
             )
         else:
@@ -419,7 +422,7 @@ async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
     await tourney_channel.send(embed=voting_embed)
     if len(voting_tournaments):
         await tourney_channel.send(
-            "Please choose from the requested tournaments below:",
+            "Vote on a requested tournament:",
             view=TournamentDropdownView(voting_tournaments, bot, voting=True),
         )
     else:
