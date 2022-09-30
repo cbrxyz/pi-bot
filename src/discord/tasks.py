@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Union
 import discord
 import src.discord.globals
 from discord.ext import commands, tasks
-from src.discord.tournaments import update_tournament_list
+from src.discord.invitationals import update_invitational_list
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -30,7 +30,7 @@ class CronTasks(commands.Cog):
             traceback.print_exc()
 
         try:
-            await update_tournament_list(self.bot, {})
+            await update_invitational_list(self.bot, {})
         except Exception as e:
             print("Error in starting function with updating tournament list:")
             traceback.print_exc()

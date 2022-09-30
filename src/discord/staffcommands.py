@@ -14,9 +14,9 @@ from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import (
     CATEGORY_GENERAL,
+    CATEGORY_INVITATIONALS,
     CATEGORY_SO,
     CATEGORY_STATES,
-    CATEGORY_TOURNAMENTS,
     CHANNEL_WELCOME,
     EMOJI_LOADING,
     INVITATIONAL_INFO,
@@ -37,7 +37,7 @@ from src.discord.globals import (
     SERVER_ID,
     SLASH_COMMAND_GUILDS,
 )
-from src.discord.tournaments import update_tournament_list
+from src.discord.invitationals import update_invitational_list
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -906,7 +906,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         server = interaction.user.guild
         if (
             interaction.channel.category
-            and interaction.channel.category.name == CATEGORY_TOURNAMENTS
+            and interaction.channel.category.name == CATEGORY_INVITATIONALS
         ):
             # Handle for tournament channels
 
@@ -931,7 +931,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
                         await new_vc.set_permissions(tourney_role, view_channel=True)
                         break
 
-                # Give permissions to All Tournaments role
+                # Give permissions to All Invitationals role
                 at = discord.utils.get(server.roles, name=ROLE_AT)
                 await new_vc.set_permissions(at, view_channel=True)
 
@@ -1297,7 +1297,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Updating the invitationals list."
             )
-            await update_tournament_list(self.bot)
+            await update_invitational_list(self.bot)
             await interaction.edit_original_response(
                 content=":white_check_mark: Updated the invitationals list."
             )

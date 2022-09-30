@@ -20,7 +20,7 @@ from discord.ext import commands
 from src.discord.globals import (
     CATEGORY_STAFF,
     CHANNEL_GAMES,
-    CHANNEL_TOURNAMENTS,
+    CHANNEL_INVITATIONALS,
     CHANNEL_UNSELFMUTE,
     ROLE_ALUMNI,
     ROLE_DIV_A,
@@ -73,7 +73,7 @@ class MemberCommands(commands.Cog):
         """
         server = self.bot.get_guild(SERVER_ID)
         invitationals_channel = discord.utils.get(
-            server.text_channels, name=CHANNEL_TOURNAMENTS
+            server.text_channels, name=CHANNEL_INVITATIONALS
         )
 
         # Type checking
