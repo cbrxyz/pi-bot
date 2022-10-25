@@ -697,7 +697,63 @@ class StaffInvitational(commands.Cog):
             content=f"The operation succeeded, and the `{short_name}` invitational has been renewed."
         )
 
-    print([c.name for c in invitational_status_group.walk_commands()])
+    @invitational_approve.autocomplete("short_name")
+    async def short_name_voting_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        invitationals = await self.bot.mongo_database.get_invitationals()
+        return [
+            discord.app_commands.Choice(
+                name=f"#{i['channel_name']} ({len(i['voters'])} voters)",
+                value=i["channel_name"],
+            )
+            for i in invitationals
+            if current.lower() in i["channel_name"].lower() and i["status"] == "voting"
+        ][:25]
+
+    @invitational_edit.autocomplete("short_name")
+    @invitational_delete.autocomplete("short_name")
+    async def short_name_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        invitationals = await self.bot.mongo_database.get_invitationals()
+        return [
+            discord.app_commands.Choice(
+                name=f"#{i['channel_name']}",
+                value=i["channel_name"],
+            )
+            for i in invitationals
+            if current.lower() in i["channel_name"].lower()
+        ][:25]
+
+    @invitational_archive.autocomplete("short_name")
+    async def short_name_open_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        invitationals = await self.bot.mongo_database.get_invitationals()
+        return [
+            discord.app_commands.Choice(
+                name=f"#{i['channel_name']}",
+                value=i["channel_name"],
+            )
+            for i in invitationals
+            if current.lower() in i["channel_name"].lower() and i["status"] == "open"
+        ][:25]
+
+    @invitational_renew.autocomplete("short_name")
+    async def short_name_open_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        invitationals = await self.bot.mongo_database.get_invitationals()
+        return [
+            discord.app_commands.Choice(
+                name=f"#{i['channel_name']}",
+                value=i["channel_name"],
+            )
+            for i in invitationals
+            if current.lower() in i["channel_name"].lower()
+            and i["status"] == "archived"
+        ][:25]
 
 
 async def setup(bot: PiBot):
