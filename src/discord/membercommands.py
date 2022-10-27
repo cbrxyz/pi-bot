@@ -946,11 +946,17 @@ class MemberCommands(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(description="Returns a summary of a wiki page.")
+    wiki_group = app_commands.Group(
+        name="wiki",
+        description="Get information from the community-sourced wiki, available at scioly.org/wiki",
+        guild_ids=SLASH_COMMAND_GUILDS,
+        default_permissions=discord.Permissions(send_messages=True),
+    )
+
+    @wiki_group.command(name="summary", description="Returns a summary of a wiki page.")
     @app_commands.describe(
         page="The name of the page to return a summary about. Correct caps must be used."
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def wikisummary(self, interaction: discord.Interaction, page: str):
@@ -973,9 +979,10 @@ class MemberCommands(commands.Cog):
         else:
             await interaction.response.send_message(" ".join(command))
 
-    @app_commands.command(description="Searches the wiki for a particular page.")
+    @wiki_group.command(
+        name="search", description="Searches the wiki for a particular page."
+    )
     @app_commands.describe(term="The term to search for across the wiki.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def wikisearch(self, interaction: discord.Interaction, term: str):
@@ -1000,9 +1007,8 @@ class MemberCommands(commands.Cog):
                 f"No pages matching `{term}` were found."
             )
 
-    @app_commands.command(description="Links to a particular wiki page.")
+    @wiki_group.command(name="link", description="Links to a particular wiki page.")
     @app_commands.describe(page="The wiki page to link to. Correct caps must be used.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def wikilink(self, interaction: discord.Interaction, page: str):
