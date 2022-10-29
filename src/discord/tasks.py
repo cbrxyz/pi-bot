@@ -9,6 +9,7 @@ import discord
 import src.discord.globals
 from discord.ext import commands, tasks
 from src.discord.invitationals import update_invitational_list
+from src.discord.views import UnselfmuteView
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -37,7 +38,27 @@ class CronTasks(commands.Cog):
 
         self.cron.start()
         self.change_bot_status.start()
+        self.send_unselfmute.start()
         self.update_member_count.start()
+
+    @tasks.loop(minutes=10)
+    async def send_unselfmute(self):
+        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        unselfmute_channel = discord.utils.get(
+            guild.text_channels, name=src.discord.globals.CHANNEL_UNSELFMUTE
+        )
+        assert isinstance(unselfmute_channel, discord.TextChannel)
+        messages = [msg async for msg in unselfmute_channel.history()]
+        if messages:
+            await messages[0].edit(view=UnselfmuteView(self.bot))
+        else:  # No message exists in the channel yet!
+            embed = discord.Embed(
+                description=f"""
+                                  Clicking the reaction below will remove your selfmute, allowing you access back to the server. All of the remaining time on your selfmute will be removed. If you have questions, please DM a moderator.
+                                  """,
+                color=discord.Color.brand_red(),
+            )
+            await unselfmute_channel.send(embed=embed, view=UnselfmuteView(self.bot))
 
     def cog_unload(self):
         self.cron.cancel()
@@ -177,6 +198,8 @@ class CronTasks(commands.Cog):
                         await self.cron_handle_unban(task)
                     elif task["type"] == "UNMUTE":
                         await self.cron_handle_unmute(task)
+                    elif task["type"] == "UNSELFMUTE":
+                        await self.cron_handle_unselfmute(task)
                     elif task["type"] == "REMOVE_STATUS":
                         await self.cron_handle_remove_status(task)
                     else:
@@ -184,6 +207,7 @@ class CronTasks(commands.Cog):
                         reporter_cog = self.bot.get_cog("Reporter")
                         await reporter_cog.create_cron_task_report(task)
                 except Exception as _:
+                    traceback.print_exc()
                     reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
                     await reporter_cog.create_cron_task_report(task)
 
@@ -242,6 +266,30 @@ class CronTasks(commands.Cog):
         else:
             # User is not in server, thus no unmute can occur
             await reporter_cog.create_cron_unmute_auto_notice(member, is_present=False)
+
+        # Remove cron task.
+        await self.delete_from_cron(task["_id"])
+
+    async def cron_handle_unselfmute(self, task: dict):
+        """
+        Handles serving CRON tasks with the type of 'UNSELFMUTE'.
+        """
+        # Get the necessary resources
+        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
+        muted_role = discord.utils.get(
+            server.roles, name=src.discord.globals.ROLE_SELFMUTE
+        )
+
+        # Type checking
+        assert isinstance(server, discord.Guild)
+        assert isinstance(muted_role, discord.Role)
+
+        # Attempt to unmute user
+        member = server.get_member(task["user"])
+        if member in server.members:
+            # User is still in server, thus can be unmuted
+            await member.remove_roles(muted_role)
 
         # Remove cron task.
         await self.delete_from_cron(task["_id"])

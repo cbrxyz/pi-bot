@@ -591,7 +591,7 @@ class MemberCommands(commands.Cog):
                     },
                 )
                 return await interaction.edit_original_response(
-                    content=f"You have been muted. You may use the button in the {unselfmute_channel} channel to unmute.",
+                    content=f"You have been muted. You may use the button in the {unselfmute_channel.mention} channel to unmute.",
                     embed=None,
                     view=None,
                 )
