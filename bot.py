@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import re
+import traceback
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
@@ -166,7 +167,8 @@ class PiBot(commands.Bot):
             try:
                 await self.load_extension(extension)
             except commands.ExtensionError as e:
-                print(f"Failed to load extension {extension}: {e}")
+                print(f"Failed to load extension {extension}!")
+                traceback.print_exc()
 
     async def update_setting(self, values: dict[str, Any]):
         for k, v in values.items():
