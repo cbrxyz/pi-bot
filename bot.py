@@ -44,6 +44,9 @@ class PiBotCommandTree(app_commands.CommandTree):
     async def on_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ) -> None:
+        # Optional delay for some commands
+        delay = None
+
         # Handle check failures
         if isinstance(error, app_commands.NoPrivateMessage):
             message = (
@@ -70,8 +73,9 @@ class PiBotCommandTree(app_commands.CommandTree):
                 f"Please try again **{discord.utils.format_dt(next_time, 'R')}.**"
                 "\n\n"
                 "For future reference, this command is currently limited to "
-                f"being executed **{error.cooldown.rate} times per {error.cooldown.per} seconds**."
+                f"being executed **{error.cooldown.rate} times every {error.cooldown.per} seconds**."
             )
+            delay = error.retry_after - 1 if error.retry_after > 1 else 0
 
         # Handle general app command errors
         elif isinstance(error, app_commands.CommandLimitReached):
@@ -106,10 +110,12 @@ class PiBotCommandTree(app_commands.CommandTree):
 
         else:
             message = "Ooops, there was a command error."
-        try:
-            await interaction.response.send_message(message, ephemeral=True)
-        except discord.InteractionResponded:
-            await interaction.followup.send(message, ephemeral=True)
+
+        await interaction.response.defer(ephemeral=True)
+        msg = await interaction.followup.send(message, ephemeral=True, wait=True)
+
+        if delay is not None:
+            await msg.delete(delay=delay)
 
 
 class PiBot(commands.Bot):
@@ -242,7 +248,8 @@ class PiBot(commands.Bot):
         await super().start(token=token, reconnect=reconnect)
 
     async def close(self) -> None:
-        await self.session.close()
+        if self.session:
+            await self.session.close()
         await super().close()
 
     async def listen_for_response(

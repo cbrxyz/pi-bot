@@ -595,7 +595,10 @@ class Logger(commands.Cog):
                 title=":fire: Deleted Message",
                 description=(
                     "Because this message was not cached, I was unable to "
-                    "retrieve its content before it was deleted."
+                    "retrieve its content before it was deleted. _Note, this may "
+                    "mean that the message was ephemeral, aka, only visible to one "
+                    "user. Ephemeral messages are not cached, as most users will "
+                    "never see them._"
                 ),
                 color=discord.Color.dark_red(),
             )
