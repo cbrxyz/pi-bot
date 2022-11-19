@@ -12,7 +12,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
-from src.discord.invitationals import Invitational
+from src.discord.invitationals import Invitational, update_invitational_list
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -200,19 +200,27 @@ class InvitationalArchiveButton(discord.ui.Button):
         # Delete the original message
         await interaction.message.delete()
 
-        # Update the invitational database
-        # TODO
+        # Update the invitationals database
+        await self.report_view.bot.mongo_database.update(
+            "data",
+            "invitationals",
+            self.report_view.invitational_obj.doc_id,
+            {"$set": {"status": "archived"}},
+        )
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
             interaction.guild.text_channels, name="closed-reports"
         )
         await closed_reports.send(
-            f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.report_view.invitational_obj.official_name} was archived after being open for {self.report_view.invitational_obj.closed_days} after the invitational date on {discord.utils.format_dt(self.report_view.invitational_obj.tourney_date, 'D')}."
+            f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.report_view.invitational_obj.official_name} was archived after being open for {self.report_view.invitational_obj.closed_days:.0f} days after the invitational date on {discord.utils.format_dt(self.report_view.invitational_obj.tourney_date, 'D')}."
         )
 
         # Update the report database
         # TODO
+
+        # Update the tournament list
+        await update_invitational_list(self.report_view.bot)
 
 
 class InvitationalExtendButton(discord.ui.Button):
@@ -236,7 +244,12 @@ class InvitationalExtendButton(discord.ui.Button):
         await interaction.message.delete()
 
         # Update the invitationals database
-        # TODO
+        await self.report_view.bot.mongo_database.update(
+            "data",
+            "invitationals",
+            self.report_view.invitational_obj.doc_id,
+            {"$inc": {"closed_days": 15}},
+        )
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
@@ -248,6 +261,9 @@ class InvitationalExtendButton(discord.ui.Button):
 
         # Update the report database
         # TODO
+
+        # Refresh the tournament list
+        await update_invitational_list(self.report_view.bot)
 
 
 class InnapropriateUsername(discord.ui.View):
@@ -301,14 +317,17 @@ class InvitationalArchive(discord.ui.View):
     invitational_obj: Invitational
     channel: discord.TextChannel
     role: discord.Role
+    bot: PiBot
 
     def __init__(
         self,
+        bot: PiBot,
         invitational_obj: Invitational,
         channel: discord.TextChannel,
         role: discord.Role,
         report_id: int,
     ):
+        self.bot = bot
         self.report_id = report_id
         self.invitational_obj = invitational_obj
         self.channel = channel
@@ -504,13 +523,14 @@ class Reporter(commands.Cog):
             title="Invitational Channel Suggested to be Archived",
             description=f"""
             The `{invitational_obj.official_name}` occurred on {discord.utils.format_dt(invitational_obj.tourney_date, 'D')}. Because it has been {invitational_obj.closed_days} days since that date, the invitational channel should potentially be archived.
-            Archiving invitationals helps to prevent spam in invitational channels where competitors may be looking for updates. If tournamnet events are still occurring (such as waiting on results or event notifications), consider extending this warning.
+            Archiving invitationals helps to prevent spam in invitational channels where competitors may be looking for updates. If tournament events are still occurring (such as waiting on results or event notifications), consider extending this warning.
             """,
             color=discord.Color.orange(),
         )
         # TODO Fix report ID generation
         await reports_channel.send(
-            embed=embed, view=InvitationalArchive(invitational_obj, channel, role, 123)
+            embed=embed,
+            view=InvitationalArchive(self.bot, invitational_obj, channel, role, 123),
         )
 
     async def create_cron_unban_auto_notice(
