@@ -143,7 +143,7 @@ class PiBot(commands.Bot):
         self.listeners_: dict[
             str, dict[str, Any]
         ] = {}  # name differentiation between internal _listeners attribute
-        self.__version__ = "v5.0.1"
+        self.__version__ = "v5.0.5"
         self.session = None
         self.mongo_database = MongoDatabase(self)
 
