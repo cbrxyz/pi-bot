@@ -69,5 +69,6 @@ jobs:
           sudo chmod +x /bin/hadolint
 
       - name: Run hooks
-        run: |
+        run: >
+          SKIP=no-commit-to-branch
           pre-commit run --all-files --show-diff-on-failure

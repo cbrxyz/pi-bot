@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.6 - 2023-02-08
+### Changed
+* Invitational dropdowns in #invitationals now show archived invitationals, so users can update their roles without invitationals being open.
+
+### Fixed
+* CI would never pass on `master` because of a check that was accidentally running.
+
 ## 5.0.5 - 2022-11-19
 ### Added
 * Logs of deleted messages not in cache now include warning that non-caching may be due to ephemeral state

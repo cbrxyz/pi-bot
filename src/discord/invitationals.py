@@ -84,7 +84,9 @@ class InvitationalDropdown(discord.ui.Select):
         for tourney in month_invitationals:
             final_options.append(
                 discord.SelectOption(
-                    label=tourney.official_name,
+                    label=tourney.official_name
+                    if not tourney.status == "archived"
+                    else f"{tourney.official_name} (archived)",
                     description=f"Occurs on {str(tourney.tourney_date.date())}.",
                     emoji=tourney.emoji,
                 )
@@ -113,6 +115,7 @@ class InvitationalDropdown(discord.ui.Select):
             # If this dropdown isn't being used for voting
             for value in self.values:
                 # For each invitational selected
+                value = value.replace(" (archived)", "")
                 role = discord.utils.get(server.roles, name=value)
                 assert isinstance(role, discord.Role)
 
@@ -411,8 +414,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             for t in invitationals
             if t.tourney_date.month == month["number"]
             and t.tourney_date.year == month["year"]
-            and t.status == "open"
-        ]
+        ][:25]
         if len(month_invitationals) > 0:
             await invitational_channel.send(
                 f"Invitationals in **{month['name']} {month['year']}**:",
