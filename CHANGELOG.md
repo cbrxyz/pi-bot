@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 5.0.7 - 2023-02-19
 ### Changed
 * Dependencies upgraded to work with Python 3.11
+* Users are only warned of using frequent pings when adding small ping terms (closes [#467](https://github.com/cbrxyz/pi-bot/issues/467))
 
 ### Fixed
 * Using `All States` argument with `/states` would not be handled correctly
