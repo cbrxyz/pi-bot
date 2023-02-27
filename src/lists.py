@@ -1,5 +1,6 @@
 def get_state_list():
     return [
+        "All States (AS)",
         "Alabama (AL)",
         "Alaska (AK)",
         "Arizona (AZ)",

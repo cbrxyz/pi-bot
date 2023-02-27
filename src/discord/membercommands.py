@@ -494,7 +494,6 @@ class MemberCommands(commands.Cog):
             List[app_commands.Choice[str]]: A list of string choices to choose from.
         """
         states: list[str] = [s[: s.rfind(" (")] for s in get_state_list()]
-        states.append("All States")
 
         return [
             app_commands.Choice(name=state, value=state)

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.7 - 2023-02-19
+### Changed
+* Dependencies upgraded to work with Python 3.11
+* Users are only warned of using frequent pings when adding small ping terms (closes [#467](https://github.com/cbrxyz/pi-bot/issues/467))
+
+### Fixed
+* Using `All States` argument with `/states` would not be handled correctly
+
 ## 5.0.6 - 2023-02-08
 ### Changed
 * Invitational dropdowns in #invitationals now show archived invitationals, so users can update their roles without invitationals being open.

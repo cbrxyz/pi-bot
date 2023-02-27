@@ -305,10 +305,15 @@ class PingManager(commands.GroupCog, name="ping"):
             }
             src.discord.globals.PING_INFO.append(new_user_dict)
             await self.bot.mongo_database.insert("data", "pings", new_user_dict)
+        small_ping_message = ""
+        if len(word) < 4:
+            small_ping_message = (
+                "\n\n**Please be "
+                'responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may '
+                "result in you being temporarily disallowed from using or receiving pings.**"
+            )
         return await interaction.response.send_message(
-            f"Great! You will now receive an alert for messages that contain the `{word}` word.\n\nPlease be "
-            f'responsible with the pinging feature. Using pings senselessly (such as pinging for "the" or "a") may '
-            f"result in you being temporarily disallowed from using or receiving pings. "
+            f"Great! You will now receive an alert for messages that contain the `{word}` word.{small_ping_message}"
         )
 
     @app_commands.command(
