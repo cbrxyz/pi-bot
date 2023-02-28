@@ -1,23 +1,12 @@
 # Description
-<!-- Please explain what you changed in this pull request: -->
+<!-- Please explain what you changed in this pull request, if not already explained in CHANGELOG.md. -->
 
-
-
-# Checks
-<!-- Have you done the following? -->
-
-- [ ] I ran `black` over the code to ensure formatting.
-- [ ] I added docstrings to **any** new modules, classes, and methods.
-- [ ] I updated the docstrings of **any** updated modules, classes, and methods.
-- [ ] I added/updated Python typings for any new/updated class and module.
-- [ ] I updated the bot version (if necessary).
-- [ ] I ran mypy and reviewed any shown errors related to my changes.
 
 # Important Info
 <!-- Does any of this apply to your pull request? -->
 
 - [ ] This pull request adds new `pip` dependencies.
-- [ ] This pull request adds new external dependencies.
+- [ ] This pull request adds other new dependencies.
 - [ ] This pull request changes the required versions of some dependencies.
 
 # Issues Closed
