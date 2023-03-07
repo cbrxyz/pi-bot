@@ -55,7 +55,6 @@ class MemberCommands(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
         self.aiowikip = aioify(obj=wikip)
-        print("Initialized MemberCommands cog.")
 
     @app_commands.command(description="Looking for help? Try this!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)

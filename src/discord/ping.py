@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,9 @@ if TYPE_CHECKING:
     from bot import PiBot
 
 
+logger = logging.getLogger(__name__)
+
+
 class PingManager(commands.GroupCog, name="ping"):
     """
     Specific cog for holding ping-related functionality.
@@ -29,7 +33,6 @@ class PingManager(commands.GroupCog, name="ping"):
     def __init__(self, bot: PiBot):
         self.bot = bot
         self.recent_messages = {}
-        print("Initialized Ping cog.")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -131,7 +134,7 @@ class PingManager(commands.GroupCog, name="ping"):
             try:
                 text = re.sub(rf"{expression}", r"**\1**", text, flags=re.I)
             except Exception as e:
-                print(f"Could not bold ping due to unfavored RegEx. Error: {e}")
+                logger.warn(f"Could not bold ping due to unfavored RegEx. Error: {e}")
 
         # Prevent the text from being too long
         if len(text) > length:
@@ -286,7 +289,7 @@ class PingManager(commands.GroupCog, name="ping"):
                     f"Ignoring adding the `{word}` ping because you already have a ping currently set as that."
                 )
             else:
-                print(f"adding word: {re.escape(word)}")
+                logger.debug(f"adding word: {re.escape(word)}")
                 relevant_doc = [
                     doc
                     for doc in src.discord.globals.PING_INFO

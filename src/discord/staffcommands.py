@@ -243,7 +243,6 @@ class CronSelect(discord.ui.Select):
     def __init__(self, docs, bot: PiBot):
         options = []
         docs.sort(key=lambda d: d["time"])
-        print([d["time"] for d in docs])
         counts = {}
         for doc in docs[:20]:
             timeframe = (doc["time"] - discord.utils.utcnow()).days
@@ -1225,7 +1224,6 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             f"{EMOJI_LOADING} Generating the Most Edits Table..."
         )
         res = await run_table()
-        print(res)
         names = [v["name"] for v in res]
         data = [v["increase"] for v in res]
         names = names[:10]

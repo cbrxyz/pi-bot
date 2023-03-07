@@ -30,7 +30,6 @@ class FunCommands(commands.Cog, name="Fun"):
     def __init__(self, bot: PiBot):
         self.bot = bot
         self.fish_count = 0
-        print("Initialized Fun cog.")
 
     @app_commands.command(description="Trout slaps yourself or another user!")
     @app_commands.describe(

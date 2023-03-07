@@ -346,7 +346,6 @@ class Reporter(commands.Cog):
 
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized Reporter cog.")
 
     async def create_staff_message(self, embed: discord.Embed):
         """

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import logging
 import re
 import traceback
 import uuid
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from src.discord.spam import SpamManager
 
 intents = discord.Intents.all()
+logger = logging.getLogger(__name__)
 
 
 class PiBotCommandTree(app_commands.CommandTree):
@@ -169,11 +171,12 @@ class PiBot(commands.Bot):
             "src.discord.reporter",
             "src.discord.logger",
         )
-        for extension in extensions:
+        for i, extension in enumerate(extensions):
             try:
                 await self.load_extension(extension)
-            except commands.ExtensionError as e:
-                print(f"Failed to load extension {extension}!")
+                logger.info(f"Enabled extension: {extension} {i + 1}/{len(extensions)}")
+            except commands.ExtensionError:
+                logger.error(f"Failed to load extension {extension}!")
                 traceback.print_exc()
 
     async def update_setting(self, values: dict[str, Any]):
@@ -192,7 +195,7 @@ class PiBot(commands.Bot):
         # except:
         #     import traceback
         #     traceback.print_exc()
-        print(f"{self.user} has connected!")
+        logger.info(f"{self.user} has connected!")
 
     async def on_message(self, message: discord.Message) -> None:
         # Nothing needs to be done to the bot's own messages
@@ -208,7 +211,9 @@ class PiBot(commands.Bot):
         if isinstance(message.channel, discord.DMChannel) and message.author != bot:
             logger_cog: commands.Cog | Logger = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
-            print(f"Message from {message.author} through DM's: {message.content}")
+            logger.debug(
+                f"Message from {message.author} through DM's: {message.content}"
+            )
         else:
             # Print to output
             if not (
@@ -217,7 +222,7 @@ class PiBot(commands.Bot):
                 in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
             ):
                 # avoid sending logs for messages in log channels
-                print(
+                logger.debug(
                     f"Message from {message.author} in #{message.channel}: {message.content}"
                 )
 
@@ -284,6 +289,7 @@ class PiBot(commands.Bot):
 
 
 bot = PiBot()
+discord.utils.setup_logging()
 
 
 async def main(token: str):

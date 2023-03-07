@@ -4,6 +4,7 @@ server.
 """
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -21,6 +22,8 @@ from src.discord.globals import (
 if TYPE_CHECKING:
     from bot import PiBot
 
+logger = logging.getLogger(__name__)
+
 
 class Censor(commands.Cog):
     """
@@ -29,7 +32,6 @@ class Censor(commands.Cog):
 
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized Censor cog.")
 
     async def on_message(self, message: discord.Message) -> None:
         """
@@ -54,7 +56,7 @@ class Censor(commands.Cog):
         # Get the content and attempt to find any words on the censor list
         content = message.content
         if self.censor_needed(content):
-            print(
+            logger.debug(
                 f"Censoring message by {message.author} because it contained "
                 "a word or emoji on the censor list."
             )
@@ -64,7 +66,7 @@ class Censor(commands.Cog):
 
         # Check for invalid Discord invite endings
         if self.discord_invite_censor_needed(content):
-            print(
+            logger.debug(
                 f"Censoring message by {message.author} because of the it mentioned "
                 "a Discord invite link."
             )
@@ -153,7 +155,7 @@ class Censor(commands.Cog):
             return
 
         # Log edit event
-        print(
+        logger.info(
             "Message from {0.author} edited to: {0.content}, from: {1.content}".format(
                 after, before
             )
