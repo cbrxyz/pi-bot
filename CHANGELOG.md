@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.8 - 2023-03-15
+### Changed
+* Logs no longer use `print()`, rather native Python `logging` features (closes [#460](https://github.com/cbrxyz/pi-bot/issues/460))
+* Logs are saved to a file, and also printed to the user when in development mode
+
+### Fixed
+* Edited message logs no longer error when a message has never truly been edited.
+
 ## 5.0.7 - 2023-02-19
 ### Changed
 * Dependencies upgraded to work with Python 3.11

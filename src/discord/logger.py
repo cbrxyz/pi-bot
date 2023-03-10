@@ -463,7 +463,9 @@ class Logger(commands.Cog):
                 },
                 {
                     "name": "Edited At",
-                    "value": discord.utils.format_dt(message_now.edited_at, "R"),
+                    "value": discord.utils.format_dt(message_now.edited_at, "R")
+                    if message_now.edited_at != None
+                    else "Never",
                     "inline": True,
                 },
                 {
