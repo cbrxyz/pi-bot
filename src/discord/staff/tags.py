@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 class StaffTags(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized staff tags cog.")
 
     tag_commands_group = app_commands.Group(
         name="tagupdate",

@@ -3,6 +3,7 @@ from dotenv import find_dotenv, load_dotenv
 load_dotenv(find_dotenv())
 
 import asyncio
+import logging
 import os
 import re
 
@@ -13,6 +14,7 @@ from aioify import aioify
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 site = None
+logger = logging.getLogger(__name__)
 
 
 async def init_wiki():
@@ -102,4 +104,4 @@ if "PI_BOT_WIKI_USERNAME" in os.environ:
     event_loop = asyncio.get_event_loop()
     asyncio.ensure_future(init_wiki(), loop=event_loop)
 else:
-    print("User did not supply keys for wiki functionality; not turned on.")
+    logger.info("User did not supply keys for wiki functionality; not turned on.")

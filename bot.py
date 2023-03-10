@@ -7,12 +7,14 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import logging.handlers
 import re
 import traceback
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import aiohttp
+from rich.logging import RichHandler
 
 import discord
 from discord import app_commands
@@ -289,7 +291,12 @@ class PiBot(commands.Bot):
 
 
 bot = PiBot()
-discord.utils.setup_logging()
+KB = 1024
+MB = 1024 * KB
+handler = logging.handlers.RotatingFileHandler(
+    filename="pibot.log", encoding="utf-8", maxBytes=32 * MB, backupCount=5
+)
+discord.utils.setup_logging(handler=handler)
 
 
 async def main(token: str):
@@ -305,6 +312,10 @@ async def main(token: str):
 
 if __name__ == "__main__":
     if dev_mode:
+        # If in development, also print to console
+        logger = logging.getLogger()
+        logger.addHandler(RichHandler(rich_tracebacks=True))
+
         asyncio.run(main(DEV_TOKEN))
     else:
         asyncio.run(main(TOKEN))

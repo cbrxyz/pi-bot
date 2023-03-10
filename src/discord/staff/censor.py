@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 class StaffCensor(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized staff censor cog.")
 
     censor_group = app_commands.Group(
         name="censor",
@@ -52,7 +51,6 @@ class StaffCensor(commands.Cog):
             f"{EMOJI_LOADING} Attempting to add {censor_type} to censor list."
         )
 
-        print(src.discord.globals.CENSOR)
         if censor_type == "word":
             if phrase in src.discord.globals.CENSOR["words"]:
                 await interaction.edit_original_response(

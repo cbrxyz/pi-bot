@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 class StaffInvitational(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized Invitationals cog.")
 
     invitational_status_group = app_commands.Group(
         name="invitational",
