@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import random
 import traceback
 from typing import TYPE_CHECKING, Any, Union
@@ -17,23 +18,27 @@ if TYPE_CHECKING:
     from .reporter import Reporter
 
 
+logger = logging.getLogger(__name__)
+
+
 class CronTasks(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized Tasks cog.")
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         try:
             await self.pull_prev_info()
         except Exception as e:
-            print("Error in starting function with pulling previous information:")
+            logger.error(
+                "Error in starting function with pulling previous information:"
+            )
             traceback.print_exc()
 
         try:
             await update_invitational_list(self.bot, {})
         except Exception as e:
-            print("Error in starting function with updating tournament list:")
+            logger.error("Error in starting function with updating tournament list:")
             traceback.print_exc()
 
         self.cron.start()
@@ -74,7 +79,7 @@ class CronTasks(commands.Cog):
         assert isinstance(self.bot.settings, dict)
 
         src.discord.globals.CENSOR = await self.bot.mongo_database.get_censor()
-        print("Fetched previous variables.")
+        logger.info("Fetched previous variables.")
 
     async def add_to_cron(self, item_dict: dict) -> None:
         """
@@ -179,14 +184,14 @@ class CronTasks(commands.Cog):
 
         # Edit the voice channel
         await vc.edit(name=f"{member_count} Members (+{joined_today}/-{left_today})")
-        print("Refreshed member count.")
+        logger.debug("Refreshed member count.")
 
     @tasks.loop(minutes=1)
     async def cron(self) -> None:
         """
         The main CRON handler, running every minute. On every execution of the function, all CRON tasks are fetched and are evaluated to check if they are old and action needs to be taken.
         """
-        print("Executing CRON...")
+        logger.debug("Executing CRON...")
         # Get the relevant tasks
         cron_list = await self.bot.mongo_database.get_cron()
 
@@ -203,7 +208,7 @@ class CronTasks(commands.Cog):
                     elif task["type"] == "REMOVE_STATUS":
                         await self.cron_handle_remove_status(task)
                     else:
-                        print("ERROR:")
+                        logger.error("ERROR:")
                         reporter_cog = self.bot.get_cog("Reporter")
                         await reporter_cog.create_cron_task_report(task)
                 except Exception as _:
@@ -368,7 +373,7 @@ class CronTasks(commands.Cog):
                     type=discord.ActivityType.watching, name=bot_status["text"]
                 )
             )
-        print("Changed the bot's status.")
+        logger.info("Changed the bot's status.")
 
 
 async def setup(bot: PiBot):

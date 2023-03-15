@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 class StaffEvents(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized staff events cog.")
 
     event_commands_group = app_commands.Group(
         name="event",

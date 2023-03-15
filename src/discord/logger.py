@@ -4,6 +4,7 @@ buckets, such as a Discord channel or database log.
 """
 from __future__ import annotations
 
+import logging
 import traceback
 from typing import TYPE_CHECKING
 
@@ -25,6 +26,9 @@ if TYPE_CHECKING:
     from bot import PiBot
 
 
+logger = logging.getLogger(__name__)
+
+
 class Logger(commands.Cog):
     """
     Cog which stores all logging functionality.
@@ -34,7 +38,6 @@ class Logger(commands.Cog):
 
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized Logger cog.")
 
     async def send_to_dm_log(self, message: discord.Message):
         """
@@ -191,9 +194,6 @@ class Logger(commands.Cog):
     async def on_command_error(
         self, ctx: commands.Context, error: commands.CommandError
     ):
-        print("Command Error:")
-        print(error)
-
         # If a cog has a separate error handler, don't also run the global error handler
         if (
             ctx.command.has_error_handler() or ctx.cog.has_error_handler()
@@ -337,8 +337,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_error(self, _):
-        print("Code Error:")
-        print(traceback.format_exc())
+        logger.error(traceback.format_exc())
 
     async def log_edit_message_payload(self, payload):
         """
@@ -464,7 +463,9 @@ class Logger(commands.Cog):
                 },
                 {
                     "name": "Edited At",
-                    "value": discord.utils.format_dt(message_now.edited_at, "R"),
+                    "value": discord.utils.format_dt(message_now.edited_at, "R")
+                    if message_now.edited_at != None
+                    else "Never",
                     "inline": True,
                 },
                 {

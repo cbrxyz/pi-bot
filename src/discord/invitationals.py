@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Union
 
 import discord
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
     from bot import PiBot
 
     from .reporter import Reporter
+
+
+logger = logging.getLogger(__name__)
 
 
 class Invitational:
@@ -253,13 +257,13 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
         after_days = int(t.closed_days)
         day_diff = (t.tourney_date - now).days
 
-        print(
+        logger.info(
             f"Invitational List: Handling {t.official_name} (Day diff: {day_diff} days)"
         )
 
         if isinstance(channel, discord.TextChannel) and t.status == "archived":
             # Invitational channel should be archived
-            print(f"Attempting to archive #{t.official_name}.")
+            logger.info(f"Attempting to archive #{t.official_name}.")
             channel_category = channel.category
             assert isinstance(channel_category, discord.CategoryChannel)
 
@@ -301,7 +305,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
                 await channel.send(embed=embed)
 
         elif isinstance(channel, discord.TextChannel) and t.status == "open":
-            print(f"Ensuring #{t.official_name} is up-to-date.")
+            logger.debug(f"Ensuring #{t.official_name} is up-to-date.")
             # Type checking
             channel_category = channel.category
             assert isinstance(channel_category, discord.CategoryChannel)
@@ -354,7 +358,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
 
         elif channel is None and t.status == "open":
             # If invitational needs to be created
-            print(f"Creating new channel for #{t.channel_name}.")
+            logger.info(f"Creating new channel for #{t.channel_name}.")
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(
                 t.channel_name, category=invitational_category
@@ -369,10 +373,10 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
                 all_invitationals_role, read_messages=True
             )
             await new_channel.set_permissions(server.default_role, read_messages=False)
-            print(f"Created new channel for #{t.channel_name}.")
+            logger.info(f"Created new channel for #{t.channel_name}.")
 
         else:
-            print(f"No action was taken for the {t.official_name} invitational.")
+            logger.debug(f"No action was taken for the {t.official_name} invitational.")
 
     help_embed = discord.Embed(
         title=":first_place: Join a Invitational Channel!",

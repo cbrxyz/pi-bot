@@ -764,7 +764,6 @@ class EmbedCommands(commands.Cog):
 
     def __init__(self, bot: PiBot):
         self.bot = bot
-        print("Initialized embed cog.")
 
     @app_commands.command(
         description="Staff command. Assembles an embed in a particular channel."
