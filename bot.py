@@ -11,14 +11,14 @@ import logging.handlers
 import re
 import traceback
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
-from rich.logging import RichHandler
-
 import discord
 from discord import app_commands
 from discord.ext import commands
+from rich.logging import RichHandler
+
 from src.discord.globals import (
     BOT_PREFIX,
     CHANNEL_BOTSPAM,
@@ -46,7 +46,9 @@ class PiBotCommandTree(app_commands.CommandTree):
         super().__init__(client)
 
     async def on_error(
-        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+        self,
+        interaction: discord.Interaction,
+        error: app_commands.AppCommandError,
     ) -> None:
         # Optional delay for some commands
         delay = None
@@ -57,7 +59,7 @@ class PiBotCommandTree(app_commands.CommandTree):
                 "Sorry, but this command does not work in private message. "
                 "Please hop on over to the Scioly.org server to use the command!"
             )
-        elif isinstance(error, (app_commands.MissingRole, app_commands.MissingAnyRole)):
+        elif isinstance(error, app_commands.MissingRole | app_commands.MissingAnyRole):
             message = "Sorry, you don't have the needed role to run this command."
         elif isinstance(error, app_commands.MissingPermissions):
             message = (
@@ -70,7 +72,7 @@ class PiBotCommandTree(app_commands.CommandTree):
             )
         elif isinstance(error, app_commands.CommandOnCooldown):
             next_time = discord.utils.utcnow() + datetime.timedelta(
-                seconds=error.retry_after
+                seconds=error.retry_after,
             )
             message = (
                 "Time to _chill out_ - this command is on cooldown! "
@@ -94,7 +96,8 @@ class PiBotCommandTree(app_commands.CommandTree):
 
             assert isinstance(reporter_cog, Reporter)
             await reporter_cog.create_command_error_report(
-                error.original, interaction.command
+                error.original,
+                interaction.command,
             )
 
         elif isinstance(error, app_commands.TransformerError):
@@ -145,7 +148,8 @@ class PiBot(commands.Bot):
             tree_cls=PiBotCommandTree,
         )
         self.listeners_: dict[
-            str, dict[str, Any]
+            str,
+            dict[str, Any],
         ] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.0.8"
         self.session = None
@@ -185,7 +189,10 @@ class PiBot(commands.Bot):
         for k, v in values.items():
             self.settings[k] = v
             await self.mongo_database.update(
-                "data", "settings", self.settings["_id"], {"$set": values}
+                "data",
+                "settings",
+                self.settings["_id"],
+                {"$set": values},
             )
 
     async def on_ready(self) -> None:
@@ -214,7 +221,7 @@ class PiBot(commands.Bot):
             logger_cog: commands.Cog | Logger = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
             logger.debug(
-                f"Message from {message.author} through DM's: {message.content}"
+                f"Message from {message.author} through DM's: {message.content}",
             )
         else:
             # Print to output
@@ -225,12 +232,13 @@ class PiBot(commands.Bot):
             ):
                 # avoid sending logs for messages in log channels
                 logger.debug(
-                    f"Message from {message.author} in #{message.channel}: {message.content}"
+                    f"Message from {message.author} in #{message.channel}: {message.content}",
                 )
 
         # Check if the message contains a censored word/emoji
         is_private = isinstance(
-            message.channel, (discord.DMChannel, discord.GroupChannel)
+            message.channel,
+            discord.DMChannel | discord.GroupChannel,
         )
 
         if message.content and not is_private:
@@ -243,10 +251,11 @@ class PiBot(commands.Bot):
 
         if message.content and len(re.findall(r"^[!\?]\s*\w+$", message.content)):
             botspam_channel = discord.utils.get(
-                message.guild.channels, name=CHANNEL_BOTSPAM
+                message.guild.channels,
+                name=CHANNEL_BOTSPAM,
             )
             reply_message = await message.reply(
-                f"Hola {message.author.mention}, please use slash commands now! Try typing `/` in {botspam_channel.mention}!"
+                f"Hola {message.author.mention}, please use slash commands now! Try typing `/` in {botspam_channel.mention}!",
             )
             await reply_message.delete(delay=10)
 
@@ -260,7 +269,9 @@ class PiBot(commands.Bot):
         await super().close()
 
     async def listen_for_response(
-        self, follow_id: int, timeout: int
+        self,
+        follow_id: int,
+        timeout: int,
     ) -> discord.Message | None:
         """
         Creates a global listener for a message from a user.
@@ -294,7 +305,10 @@ bot = PiBot()
 KB = 1024
 MB = 1024 * KB
 handler = logging.handlers.RotatingFileHandler(
-    filename="pibot.log", encoding="utf-8", maxBytes=32 * MB, backupCount=5
+    filename="pibot.log",
+    encoding="utf-8",
+    maxBytes=32 * MB,
+    backupCount=5,
 )
 discord.utils.setup_logging(handler=handler)
 

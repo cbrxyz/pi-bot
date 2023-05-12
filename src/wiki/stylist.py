@@ -1,17 +1,13 @@
-import os
-
-import wikitextparser as wtp
-from dotenv import find_dotenv, load_dotenv
-
-load_dotenv(find_dotenv())
 import asyncio
 
 import pywikibot
+import wikitextparser as wtp
 from aioify import aioify
+from dotenv import find_dotenv, load_dotenv
 
-from src.discord.globals import CURRENT_WIKI_PAGE
 from src.wiki.wiki import all_pages, set_page_text
 
+load_dotenv(find_dotenv())
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 
@@ -28,7 +24,7 @@ async def prettify_templates():
         CURRENT_WIKI_PAGE = title
         if page_id > 5:
             page_id = 0
-            parsed = wtp.parse(text)
+            wtp.parse(text)
         await set_page_text(
             str(title),
             str(text),

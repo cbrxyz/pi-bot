@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
-from commandchecks import is_in_bot_spam
 from discord import app_commands
 from discord.ext import commands
+
+from commandchecks import is_in_bot_spam
 from src.discord.globals import SLASH_COMMAND_GUILDS
 
 if TYPE_CHECKING:
@@ -26,7 +27,9 @@ class DevCommands(commands.Cog):
     @app_commands.describe(channel="The channel to get the ID of.")
     @app_commands.check(is_in_bot_spam)
     async def getchannelid(
-        self, interaction: discord.Interaction, channel: discord.TextChannel = None
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel = None,
     ):
         """
         Gets the channel ID of the requested channel. If no channel is explicitly
@@ -74,7 +77,7 @@ class DevCommands(commands.Cog):
             await interaction.response.send_message(f"{str(role)}: `{role.mention}`")
         else:
             await interaction.response.send_message(
-                f"No role named `{name}` was found."
+                f"No role named `{name}` was found.",
             )
 
     @app_commands.command(description="Returns the ID of a user (or yourself).")
@@ -82,7 +85,9 @@ class DevCommands(commands.Cog):
     @app_commands.describe(member="The member to get the ID of.")
     @app_commands.check(is_in_bot_spam)
     async def getuserid(
-        self, interaction: discord.Interaction, member: discord.Member = None
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member = None,
     ):
         """
         Gets the member ID of the author or another member.
@@ -103,7 +108,7 @@ class DevCommands(commands.Cog):
         Simply says hello. Used for testing the bot.
         """
         await interaction.response.send_message(
-            "Well, hello there. Welcome to version 5!"
+            "Well, hello there. Welcome to version 5!",
         )
 
 

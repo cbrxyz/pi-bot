@@ -6,11 +6,12 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
 from discord.ext import commands
+
 from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.invitationals import Invitational, update_invitational_list
 
@@ -41,17 +42,18 @@ class IgnoreButton(discord.ui.Button):
 
         # Send an informational message about the report being ignored
         closed_reports = discord.utils.get(
-            interaction.guild.text_channels, name="closed-reports"
+            interaction.guild.text_channels,
+            name="closed-reports",
         )
         if isinstance(self.report_view, InnapropriateUsername):
             await closed_reports.send(
                 f"**Report was ignored** by {interaction.user.mention} - {self.report_view.member.mention} had the "
-                f"inappropriate username `{self.report_view.offending_username}`, but the report was ignored. "
+                f"inappropriate username `{self.report_view.offending_username}`, but the report was ignored. ",
             )
         elif isinstance(self.report_view, InvitationalRequest):
             await closed_reports.send(
                 f"**Report was ignored** by {interaction.user.mention} - {self.report_view.member.mention} requested adding "
-                f"an invitational channel for `{self.report_view.invitational_name}`, but the report was ignored. "
+                f"an invitational channel for `{self.report_view.invitational_name}`, but the report was ignored. ",
             )
 
         # Update the report database
@@ -79,10 +81,11 @@ class CompletedButton(discord.ui.Button):
 
         # Send an informational message about the report being updated
         closed_reports: discord.TextChannel = discord.utils.get(
-            interaction.guild.text_channels, name="closed-reports"
+            interaction.guild.text_channels,
+            name="closed-reports",
         )
         await closed_reports.send(
-            f"**Invitational channel request was fulfilled** by {interaction.user.mention} - {self.report_view.member.mention} requested adding an invitational channel for the `{self.report_view.invitational_name}`, and the request has been fulfilled."
+            f"**Invitational channel request was fulfilled** by {interaction.user.mention} - {self.report_view.member.mention} requested adding an invitational channel for the `{self.report_view.invitational_name}`, and the request has been fulfilled.",
         )
 
         # Update the report database
@@ -117,11 +120,12 @@ class ChangeInappropriateUsername(discord.ui.Button):
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
-            interaction.guild.text_channels, name="closed-reports"
+            interaction.guild.text_channels,
+            name="closed-reports",
         )
         if member_still_here:
             await closed_reports.send(
-                f"**Member's username was changed** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and their username was changed to `boomilever`."
+                f"**Member's username was changed** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and their username was changed to `boomilever`.",
             )
 
             # Change the user's username
@@ -129,7 +133,7 @@ class ChangeInappropriateUsername(discord.ui.Button):
 
         else:
             await closed_reports.send(
-                f"**Member's username was attempted to be changed** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and their username was attempted to be changed to `boomilever`, however, the user had left the server."
+                f"**Member's username was attempted to be changed** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and their username was attempted to be changed to `boomilever`, however, the user had left the server.",
             )
 
         # Update the report database
@@ -162,11 +166,12 @@ class KickUserButton(discord.ui.Button):
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
-            interaction.guild.text_channels, name="closed-reports"
+            interaction.guild.text_channels,
+            name="closed-reports",
         )
         if member_still_here:
             await closed_reports.send(
-                f"**Member was kicked** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and the user was kicked from the server."
+                f"**Member was kicked** by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}`, and the user was kicked from the server.",
             )
 
             # Kick the user
@@ -174,7 +179,7 @@ class KickUserButton(discord.ui.Button):
 
         else:
             await closed_reports.send(
-                f"**Attempted to kick member* by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}` and a kick was attempted on the user, however, the user had left the server."
+                f"**Attempted to kick member* by {interaction.user.mention} - {self.report_view.member.mention} had the innapropriate username `{self.report_view.offending_username}` and a kick was attempted on the user, however, the user had left the server.",
             )
 
         # Update the report database
@@ -210,10 +215,11 @@ class InvitationalArchiveButton(discord.ui.Button):
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
-            interaction.guild.text_channels, name="closed-reports"
+            interaction.guild.text_channels,
+            name="closed-reports",
         )
         await closed_reports.send(
-            f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.report_view.invitational_obj.official_name} was archived after being open for {self.report_view.invitational_obj.closed_days:.0f} days after the invitational date on {discord.utils.format_dt(self.report_view.invitational_obj.tourney_date, 'D')}."
+            f"**Invitational channel and role were archived** by {interaction.user.mention} - The {self.report_view.invitational_obj.official_name} was archived after being open for {self.report_view.invitational_obj.closed_days:.0f} days after the invitational date on {discord.utils.format_dt(self.report_view.invitational_obj.tourney_date, 'D')}.",
         )
 
         # Update the report database
@@ -253,10 +259,11 @@ class InvitationalExtendButton(discord.ui.Button):
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
-            interaction.guild.text_channels, name="closed-reports"
+            interaction.guild.text_channels,
+            name="closed-reports",
         )
         await closed_reports.send(
-            f"**Invitational archive warning was extended** by {interaction.user.mention} - A warning about the {self.report_view.invitational_obj.official_name} channel being open too long was sent, but the warning was extended by 15 days. Users are still able to chat in the invitational channel."
+            f"**Invitational archive warning was extended** by {interaction.user.mention} - A warning about the {self.report_view.invitational_obj.official_name} channel being open too long was sent, but the warning was extended by 15 days. Users are still able to chat in the invitational channel.",
         )
 
         # Update the report database
@@ -363,7 +370,9 @@ class Reporter(commands.Cog):
         await reports_channel.send(embed=embed)
 
     async def create_inappropriate_username_report(
-        self, member: discord.Member | discord.User, offending_username: str
+        self,
+        member: discord.Member | discord.User,
+        offending_username: str,
     ):
         """
         Creates a report that a user has an innapropriate username.
@@ -376,7 +385,8 @@ class Reporter(commands.Cog):
         """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name="reports"
+            guild.text_channels,
+            name="reports",
         )
 
         # Turn User into Member - if not possible, ignore the report, as no action needs to be taken
@@ -393,7 +403,8 @@ class Reporter(commands.Cog):
             """,
         )
         await reports_channel.send(
-            embed=embed, view=InnapropriateUsername(member, 123, offending_username)
+            embed=embed,
+            view=InnapropriateUsername(member, 123, offending_username),
         )
 
     async def create_cron_task_report(self, task: dict) -> None:
@@ -405,14 +416,16 @@ class Reporter(commands.Cog):
         """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name="reports"
+            guild.text_channels,
+            name="reports",
         )
 
         # Serialize values
         task["_id"] = str(task["_id"])  # ObjectID is not serializable by default
         if "time" in task:
             task["time"] = datetime.datetime.strftime(
-                task["time"], "%m/%d/%Y, %H:%M:%S"
+                task["time"],
+                "%m/%d/%Y, %H:%M:%S",
             )  # datetime.datetime is not serializable by default
 
         # Assemble the embed
@@ -469,7 +482,9 @@ class Reporter(commands.Cog):
         await reports_channel.send(embed=embed)
 
     async def create_invitational_request_report(
-        self, user: discord.Member, invitational_name: str
+        self,
+        user: discord.Member,
+        invitational_name: str,
     ):
         """
         Creates a report that a member is requesting a new invitational channel
@@ -482,7 +497,8 @@ class Reporter(commands.Cog):
         """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name="reports"
+            guild.text_channels,
+            name="reports",
         )
 
         # Assemble the embed
@@ -496,7 +512,8 @@ class Reporter(commands.Cog):
             color=discord.Color.yellow(),
         )
         await reports_channel.send(
-            embed=embed, view=InvitationalRequest(user, invitational_name, 123)
+            embed=embed,
+            view=InvitationalRequest(user, invitational_name, 123),
         )
 
     async def create_invitational_archive_report(
@@ -515,7 +532,8 @@ class Reporter(commands.Cog):
         """
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
         reports_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name="reports"
+            guild.text_channels,
+            name="reports",
         )
 
         embed = discord.Embed(
@@ -533,7 +551,10 @@ class Reporter(commands.Cog):
         )
 
     async def create_cron_unban_auto_notice(
-        self, user: discord.User, is_present: bool, already_unbanned: bool = None
+        self,
+        user: discord.User,
+        is_present: bool,
+        already_unbanned: bool = None,
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically
@@ -546,7 +567,8 @@ class Reporter(commands.Cog):
         """
         guild = self.bot.get_guild(SERVER_ID)
         closed_reports_channel = discord.utils.get(
-            guild.text_channels, name=CHANNEL_CLOSED_REPORTS
+            guild.text_channels,
+            name=CHANNEL_CLOSED_REPORTS,
         )
 
         # Type checking
@@ -555,19 +577,21 @@ class Reporter(commands.Cog):
 
         if is_present:
             await closed_reports_channel.send(
-                f"**Attempt to automatically unban user by CRON.** A previous timed ban set on {user.mention} expired, therefore CRON attempted to unban the user. However, the user is already in the server, and therefore the user has already been unbanned by a previous staff member. The user is now free to rejoin the server."
+                f"**Attempt to automatically unban user by CRON.** A previous timed ban set on {user.mention} expired, therefore CRON attempted to unban the user. However, the user is already in the server, and therefore the user has already been unbanned by a previous staff member. The user is now free to rejoin the server.",
             )
         elif not is_present and not already_unbanned:
             await closed_reports_channel.send(
-                f"**User was automatically unbanned by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON has unbanned the user. The user is free to join the server at any time."
+                f"**User was automatically unbanned by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON has unbanned the user. The user is free to join the server at any time.",
             )
         elif not is_present and already_unbanned:
             await closed_reports_channel.send(
-                f"**Attempt to automatically unban user by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON attempted to unban the user. However, the user was already unbanned. The user remains free to join the server at any time."
+                f"**Attempt to automatically unban user by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON attempted to unban the user. However, the user was already unbanned. The user remains free to join the server at any time.",
             )
 
     async def create_cron_unmute_auto_notice(
-        self, user: discord.Member | discord.User, is_present: bool
+        self,
+        user: discord.Member | discord.User,
+        is_present: bool,
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically
@@ -579,7 +603,8 @@ class Reporter(commands.Cog):
         """
         guild = self.bot.get_guild(SERVER_ID)
         closed_reports_channel = discord.utils.get(
-            guild.text_channels, name=CHANNEL_CLOSED_REPORTS
+            guild.text_channels,
+            name=CHANNEL_CLOSED_REPORTS,
         )
 
         # Type checking
@@ -589,13 +614,13 @@ class Reporter(commands.Cog):
         if is_present:
             await closed_reports_channel.send(
                 f"**User was automatically unmuted by CRON.** A previous timed mute set on {user.mention} expired, "
-                f"therefore CRON unmuted the user. The user is now free to communicate in the server."
+                f"therefore CRON unmuted the user. The user is now free to communicate in the server.",
             )
         elif not is_present:
             await closed_reports_channel.send(
                 f"**Attempt to automatically unmute user by CRON.** A previous timed mute on {str(user)} expired, "
                 f"and therefore, CRON attempted to unmute the user. "
-                f"However, because the user is no longer present in the server, no unmute could occur."
+                f"However, because the user is no longer present in the server, no unmute could occur.",
             )
 
 

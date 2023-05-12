@@ -9,8 +9,9 @@ import traceback
 from typing import TYPE_CHECKING
 
 import discord
-from commanderrors import CommandNotAllowedInChannel
 from discord.ext import commands
+
+from commanderrors import CommandNotAllowedInChannel
 from src.discord.globals import (
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
@@ -60,7 +61,9 @@ class Logger(commands.Cog):
             color=discord.Color.brand_green(),
         )
         message_embed.add_field(
-            name="Author", value=message.author.mention, inline=True
+            name="Author",
+            value=message.author.mention,
+            inline=True,
         )
         message_embed.add_field(name="Message ID", value=message.id, inline=True)
         message_embed.add_field(
@@ -71,7 +74,7 @@ class Logger(commands.Cog):
         message_embed.add_field(
             name="Attachments",
             value=" | ".join(
-                [f"**{a.filename}**: [Link]({a.url})" for a in message.attachments]
+                [f"**{a.filename}**: [Link]({a.url})" for a in message.attachments],
             )
             if len(message.attachments) > 0
             else "None",
@@ -90,7 +93,8 @@ class Logger(commands.Cog):
             member (discord.Member): The member who just joined the server.
         """
         join_channel = discord.utils.get(
-            member.guild.text_channels, name=CHANNEL_WELCOME
+            member.guild.text_channels,
+            name=CHANNEL_WELCOME,
         )
         assert isinstance(join_channel, discord.TextChannel)
         await join_channel.send(
@@ -102,19 +106,20 @@ class Logger(commands.Cog):
             "**Please add roles by typing the commands above into the text box,"
             " and if you have a question, please type it here. After adding "
             "roles, a moderator will give you access to the rest of the server to "
-            "chat with other members!**"
+            "chat with other members!**",
         )
 
         # Send fun alert message on every 100 members who join
         member_count = len(member.guild.members)
         lounge_channel = discord.utils.get(
-            member.guild.text_channels, name=CHANNEL_LOUNGE
+            member.guild.text_channels,
+            name=CHANNEL_LOUNGE,
         )
         assert isinstance(lounge_channel, discord.TextChannel)
 
         if member_count % 100 == 0:
             await lounge_channel.send(
-                f"Wow! There are now `{member_count}` members in the server!"
+                f"Wow! There are now `{member_count}` members in the server!",
             )
 
     @commands.Cog.listener()
@@ -128,7 +133,8 @@ class Logger(commands.Cog):
         """
         # Post a leaving info message
         leave_channel = discord.utils.get(
-            member.guild.text_channels, name=CHANNEL_LEAVE
+            member.guild.text_channels,
+            name=CHANNEL_LEAVE,
         )
         unconfirmed_role = discord.utils.get(member.guild.roles, name=ROLE_UC)
         assert isinstance(leave_channel, discord.TextChannel)
@@ -159,13 +165,15 @@ class Logger(commands.Cog):
 
         # Delete any messages the user left in the welcoming channel
         welcome_channel = discord.utils.get(
-            member.guild.text_channels, name=CHANNEL_WELCOME
+            member.guild.text_channels,
+            name=CHANNEL_WELCOME,
         )
         assert isinstance(welcome_channel, discord.TextChannel)
         async for message in welcome_channel.history():
-            if not message.pinned:
-                if member in message.mentions or member == message.author:
-                    await message.delete()
+            if not message.pinned and (
+                member in message.mentions or member == message.author
+            ):
+                await message.delete()
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
@@ -192,142 +200,142 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
+        self,
+        ctx: commands.Context,
+        error: commands.CommandError,
     ):
         # If a cog has a separate error handler, don't also run the global error handler
         if (
             ctx.command.has_error_handler() or ctx.cog.has_error_handler()
-        ) and True == ctx.__slots__:
+        ) and True is ctx.__slots__:
             return
 
         # Argument parsing errors
-        if isinstance(error, discord.ext.commands.UnexpectedQuoteError) or isinstance(
-            error, discord.ext.commands.InvalidEndOfQuotedStringError
+        if isinstance(
+            error,
+            discord.ext.commands.UnexpectedQuoteError
+            | discord.ext.commands.InvalidEndOfQuotedStringError,
         ):
             return await ctx.send(
                 "Sorry, it appears that your quotation marks are misaligned, "
-                "and I can't read your query."
+                "and I can't read your query.",
             )
         if isinstance(error, discord.ext.commands.ExpectedClosingQuoteError):
             return await ctx.send(
                 "Oh. I was expecting you were going to close out your command "
-                "with a quote somewhere, but never found it!"
+                "with a quote somewhere, but never found it!",
             )
 
         # User input errors
         if isinstance(error, discord.ext.commands.MissingRequiredArgument):
             return await ctx.send(
-                "Oops, you are missing a required argument in the command."
+                "Oops, you are missing a required argument in the command.",
             )
         if isinstance(error, discord.ext.commands.ArgumentParsingError):
             return await ctx.send("Sorry, I had trouble parsing one of your arguments.")
         if isinstance(error, discord.ext.commands.TooManyArguments):
             return await ctx.send("Woahhh!! Too many arguments for this command!")
-        if isinstance(error, discord.ext.commands.BadArgument) or isinstance(
-            error, discord.ext.commands.BadUnionArgument
+        if isinstance(
+            error,
+            discord.ext.commands.BadArgument | discord.ext.commands.BadUnionArgument,
         ):
             return await ctx.send(
                 "Sorry, I'm having trouble reading one of the arguments you just "
-                "used. Try again!"
+                "used. Try again!",
             )
 
         # Check failure errors
         if isinstance(error, discord.ext.commands.CheckAnyFailure):
             return await ctx.send(
-                "It looks like you aren't able to run this command, sorry."
+                "It looks like you aren't able to run this command, sorry.",
             )
         if isinstance(error, discord.ext.commands.PrivateMessageOnly):
             return await ctx.send(
-                "Pssttt. You're going to have to DM me to run this command!"
+                "Pssttt. You're going to have to DM me to run this command!",
             )
         if isinstance(
             error,
-            (
-                discord.ext.commands.NoPrivateMessage,
-                discord.app_commands.NoPrivateMessage,
-            ),
+            discord.ext.commands.NoPrivateMessage
+            | discord.app_commands.NoPrivateMessage,
         ):
             return await ctx.send("Ope. You can't run this command in the DM's!")
         if isinstance(error, discord.ext.commands.NotOwner):
             return await ctx.send(
-                "Oof. You have to be the bot's master to run that command!"
+                "Oof. You have to be the bot's master to run that command!",
             )
         if isinstance(
             error,
-            (
-                discord.ext.commands.MissingPermissions,
-                discord.ext.commands.BotMissingPermissions,
-                discord.app_commands.MissingPermissions,
-                discord.app_commands.BotMissingPermissions,
-            ),
+            discord.ext.commands.MissingPermissions
+            | discord.ext.commands.BotMissingPermissions
+            | discord.app_commands.MissingPermissions
+            | discord.app_commands.BotMissingPermissions,
         ):
             return await ctx.send(
-                "Er, you don't have the permissions to run this command."
+                "Er, you don't have the permissions to run this command.",
             )
         if isinstance(
-            error, discord.ext.commands.MissingRole, discord.app_commands.MissingRole
+            error,
+            discord.ext.commands.MissingRole,
+            discord.app_commands.MissingRole,
         ) or isinstance(error, discord.ext.commands.BotMissingRole):
             return await ctx.send(
-                "Oh no... you don't have the required role to run this command."
+                "Oh no... you don't have the required role to run this command.",
             )
         if isinstance(error, discord.ext.commands.NSFWChannelRequired):
             return await ctx.send(
-                "Uh... this channel can only be run in a NSFW channel... sorry to disappoint."
+                "Uh... this channel can only be run in a NSFW channel... sorry to disappoint.",
             )
 
         # Command errors
         if isinstance(error, CommandNotAllowedInChannel):
             return await ctx.send(
-                f"You are not allowed to use this command in {error.channel.mention}."
+                f"You are not allowed to use this command in {error.channel.mention}.",
             )
         if isinstance(error, discord.ext.commands.ConversionError):
             return await ctx.send("Oops, there was a bot error here, sorry about that.")
         if isinstance(error, discord.ext.commands.UserInputError):
             return await ctx.send(
-                "Hmmm... I'm having trouble reading what you're trying to tell me."
+                "Hmmm... I'm having trouble reading what you're trying to tell me.",
             )
         if isinstance(
             error,
-            (
-                discord.ext.commands.CommandNotFound,
-                discord.app_commands.CommandNotFound,
-            ),
+            discord.ext.commands.CommandNotFound | discord.app_commands.CommandNotFound,
         ):
             return await ctx.send("Sorry, I couldn't find that command.")
         if isinstance(
             error,
-            (discord.ext.commands.CheckFailure, discord.app_commands.CheckFailure),
+            discord.ext.commands.CheckFailure | discord.app_commands.CheckFailure,
         ):
             return await ctx.send("Sorry, but I don't think you can run that command.")
         if isinstance(error, discord.ext.commands.DisabledCommand):
             return await ctx.send("Sorry, but this command is disabled.")
         if isinstance(error, discord.ext.commands.CommandInvokeError):
             return await ctx.send(
-                "Sorry, but an error incurred when the command was invoked."
+                "Sorry, but an error incurred when the command was invoked.",
             )
         if isinstance(error, discord.ext.commands.CommandOnCooldown):
             return await ctx.send("Slow down buster! This command's on cooldown.")
         if isinstance(error, discord.ext.commands.MaxConcurrencyReached):
             return await ctx.send(
                 "Uh oh. This command has reached MAXIMUM CONCURRENCY. "
-                "*lightning flash*. Try again later."
+                "*lightning flash*. Try again later.",
             )
 
         # Extension errors (not doing specifics)
         if isinstance(error, discord.ext.commands.ExtensionError):
             return await ctx.send(
-                "Oh no. There's an extension error. Please ping a developer about this one."
+                "Oh no. There's an extension error. Please ping a developer about this one.",
             )
 
         # Client exception errors (not doing specifics)
         if isinstance(error, discord.ext.commands.CommandRegistrationError):
             return await ctx.send(
-                "Oh boy. Command registration error. Please ping a developer about this."
+                "Oh boy. Command registration error. Please ping a developer about this.",
             )
 
         if isinstance(error, discord.app_commands.CheckFailure):
             return await ctx.send(
-                "Unfortunately, you are not able to use this command. Try running the command in `#bot-spam`."
+                "Unfortunately, you are not able to use this command. Try running the command in `#bot-spam`.",
             )
 
         # Overall errors
@@ -351,7 +359,8 @@ class Logger(commands.Cog):
             else channel.guild
         )
         edited_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name=CHANNEL_EDITEDM
+            guild.text_channels,
+            name=CHANNEL_EDITEDM,
         )
 
         # Ignore payloads for events in logging channels (which would cause recursion)
@@ -377,7 +386,8 @@ class Logger(commands.Cog):
             )
 
             embed = discord.Embed(
-                title=":pencil: Edited Message", color=discord.Color.yellow()
+                title=":pencil: Edited Message",
+                color=discord.Color.yellow(),
             )
             fields = [
                 {"name": "Author", "value": message.author, "inline": True},
@@ -403,7 +413,7 @@ class Logger(commands.Cog):
                         [
                             f"**{a.filename}**: [Link]({a.url})"
                             for a in message.attachments
-                        ]
+                        ],
                     )
                     if len(message.attachments) > 0
                     else "None",
@@ -433,15 +443,18 @@ class Logger(commands.Cog):
             ]
             for field in fields:
                 embed.add_field(
-                    name=field["name"], value=field["value"], inline=field["inline"]
+                    name=field["name"],
+                    value=field["value"],
+                    inline=field["inline"],
                 )
 
             await edited_channel.send(embed=embed)
 
-        except Exception as _:  # No cached message is available
+        except Exception:  # No cached message is available
             message_now = await channel.fetch_message(payload.message_id)
             embed = discord.Embed(
-                title=":pencil: Edited Message", color=discord.Color.orange()
+                title=":pencil: Edited Message",
+                color=discord.Color.orange(),
             )
 
             fields = [
@@ -464,7 +477,7 @@ class Logger(commands.Cog):
                 {
                     "name": "Edited At",
                     "value": discord.utils.format_dt(message_now.edited_at, "R")
-                    if message_now.edited_at != None
+                    if message_now.edited_at is not None
                     else "Never",
                     "inline": True,
                 },
@@ -481,7 +494,7 @@ class Logger(commands.Cog):
                         [
                             f"**{a.filename}**: [Link]({a.url})"
                             for a in message_now.attachments
-                        ]
+                        ],
                     )
                     if len(message_now.attachments) > 0
                     else "None",
@@ -499,7 +512,9 @@ class Logger(commands.Cog):
             ]
             for field in fields:
                 embed.add_field(
-                    name=field["name"], value=field["value"], inline=field["inline"]
+                    name=field["name"],
+                    value=field["value"],
+                    inline=field["inline"],
                 )
 
             await edited_channel.send(embed=embed)
@@ -516,13 +531,14 @@ class Logger(commands.Cog):
             else channel.guild
         )
         deleted_channel: discord.TextChannel = discord.utils.get(
-            guild.text_channels, name=CHANNEL_DELETEDM
+            guild.text_channels,
+            name=CHANNEL_DELETEDM,
         )
 
         # Do not send a log for messages deleted out of the deleted messages
         # channel (could cause a possible bot recursion)
         if channel.type != discord.ChannelType.private and channel.name in [
-            CHANNEL_DELETEDM
+            CHANNEL_DELETEDM,
         ]:
             return
 
@@ -534,7 +550,8 @@ class Logger(commands.Cog):
                 else message.channel.mention
             )
             embed = discord.Embed(
-                title=":fire: Deleted Message", color=discord.Color.brand_red()
+                title=":fire: Deleted Message",
+                color=discord.Color.brand_red(),
             )
             fields = [
                 {"name": "Author", "value": message.author, "inline": True},
@@ -560,7 +577,7 @@ class Logger(commands.Cog):
                         [
                             f"**{a.filename}**: [Link]({a.url})"
                             for a in message.attachments
-                        ]
+                        ],
                     )
                     if len(message.attachments) > 0
                     else "None",
@@ -585,12 +602,14 @@ class Logger(commands.Cog):
             ]
             for field in fields:
                 embed.add_field(
-                    name=field["name"], value=field["value"], inline=field["inline"]
+                    name=field["name"],
+                    value=field["value"],
+                    inline=field["inline"],
                 )
 
             await deleted_channel.send(embed=embed)
 
-        except Exception as _:
+        except Exception:
 
             embed = discord.Embed(
                 title=":fire: Deleted Message",
@@ -617,7 +636,9 @@ class Logger(commands.Cog):
             ]
             for field in fields:
                 embed.add_field(
-                    name=field["name"], value=field["value"], inline=field["inline"]
+                    name=field["name"],
+                    value=field["value"],
+                    inline=field["inline"],
                 )
 
             await deleted_channel.send(embed=embed)

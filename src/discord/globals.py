@@ -103,7 +103,7 @@ RULES = [
         "voicing strong opinions."
     ),
     "Do not spam or flood (an excessive number of messages sent within a short timespan).",
-    "Avoid intentional repeating pinging of other users (saying another user’s name).",
+    "Avoid intentional repeating pinging of other users (saying another user`s name).",
     "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
     "Never name-drop (using a real name without permission) or dox another user.",
     "No witch-hunting (requests of kicks or bans for other users).",

@@ -1,11 +1,9 @@
-import asyncio
-
 import aiohttp
 import bs4
 
 
 async def make_results_template(url):
-    if not url.find("scilympiad.com") != -1:
+    if url.find("scilympiad.com") == -1:
         return False
     session = aiohttp.ClientSession()
     page = await session.get(url)
@@ -18,7 +16,7 @@ async def make_results_template(url):
     for col_title in table_header.find_all("th")[3:]:
         events.append(col_title.text)
     table_body = table.find("tbody")
-    rows = table_body.find_all("tr")
+    table_body.find_all("tr")
     for row in table_body.find_all("tr")[:-1]:
         name = row.find("td").text
         scores = []
@@ -39,7 +37,7 @@ async def make_results_template(url):
 
 
 async def get_points(url):
-    if not url.find("scilympiad.com") != -1:
+    if url.find("scilympiad.com") == -1:
         return False
     session = aiohttp.ClientSession()
     page = await session.get(url)

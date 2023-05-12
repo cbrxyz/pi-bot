@@ -6,12 +6,13 @@ from __future__ import annotations
 import asyncio
 import json
 import random
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 import discord
-from commandchecks import is_in_bot_spam
 from discord import app_commands
 from discord.ext import commands
+
+from commandchecks import is_in_bot_spam
 from src.discord.globals import SLASH_COMMAND_GUILDS
 
 if TYPE_CHECKING:
@@ -33,13 +34,15 @@ class FunCommands(commands.Cog, name="Fun"):
 
     @app_commands.command(description="Trout slaps yourself or another user!")
     @app_commands.describe(
-        member="The member to trout slap! If not given, Pi-Bot will trout slap you!"
+        member="The member to trout slap! If not given, Pi-Bot will trout slap you!",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def trout(
-        self, interaction: discord.Interaction, member: discord.Member | None = None
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member | None = None,
     ):
         """
         Slaps a user with a trout.
@@ -55,13 +58,13 @@ class FunCommands(commands.Cog, name="Fun"):
             member = member.mention
 
         await interaction.response.send_message(
-            f"{interaction.user.mention} slaps {member} with a giant trout!"
+            f"{interaction.user.mention} slaps {member} with a giant trout!",
         )
         await interaction.channel.send("http://gph.is/1URFXN9")
 
     @app_commands.command(description="Gives a treat to yourself or another user!")
     @app_commands.describe(
-        member="The member to give the treat to! Defaults to yourself!"
+        member="The member to give the treat to! Defaults to yourself!",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
@@ -189,7 +192,7 @@ class FunCommands(commands.Cog, name="Fun"):
             member = member.mention
 
         await interaction.response.send_message(
-            f"{interaction.user.mention} gives {member} {snacks[snack]['name']}!"
+            f"{interaction.user.mention} gives {member} {snacks[snack]['name']}!",
         )
         await interaction.channel.send(random.choice(snacks[snack]["gifs"]))
 
@@ -212,7 +215,7 @@ class FunCommands(commands.Cog, name="Fun"):
                 self.fish_count = 70
             return await interaction.response.send_message(
                 "Woah! Bear's fish is a little too high, so it unfortunately "
-                "has to be square rooted."
+                "has to be square rooted.",
             )
 
         if r > 0.9:
@@ -221,7 +224,7 @@ class FunCommands(commands.Cog, name="Fun"):
                 self.fish_count = 70
             return await interaction.response.send_message(
                 "Wow, you gave bear a super fish! Added 10 fish! Bear now "
-                f"has {self.fish_count} fish!"
+                f"has {self.fish_count} fish!",
             )
 
         if r > 0.1:
@@ -229,18 +232,18 @@ class FunCommands(commands.Cog, name="Fun"):
             if self.fish_count == 69:
                 self.fish_count = 70
                 return await interaction.response.send_message(
-                    f"You feed bear two fish. Bear now has {self.fish_count} fish!"
+                    f"You feed bear two fish. Bear now has {self.fish_count} fish!",
                 )
 
             return await interaction.response.send_message(
-                f"You feed bear one fish. Bear now has {self.fish_count} fish!"
+                f"You feed bear one fish. Bear now has {self.fish_count} fish!",
             )
 
         if r > 0.02:
             self.fish_count += 0
             return await interaction.response.send_message(
                 "You can't find any fish... and thus can't feed bear. Bear "
-                f"still has {self.fish_count} fish."
+                f"still has {self.fish_count} fish.",
             )
 
         self.fish_count = round(pow(self.fish_count, 0.5))
@@ -249,7 +252,7 @@ class FunCommands(commands.Cog, name="Fun"):
         return await interaction.response.send_message(
             ":sob:\n:sob:\n:sob:\nAww, bear's fish was accidentally square "
             f"root'ed. Bear now has {self.fish_count}"
-            " fish. \n:sob:\n:sob:\n:sob: "
+            " fish. \n:sob:\n:sob:\n:sob: ",
         )
 
     @app_commands.command(description="Steals some fish from bear!")
@@ -270,13 +273,13 @@ class FunCommands(commands.Cog, name="Fun"):
             self.fish_count = round(self.fish_count * (1 - ratio))
             per = round(ratio * 100)
             return await interaction.response.send_message(
-                f"You stole {per}% of bear's fish!"
+                f"You stole {per}% of bear's fish!",
             )
 
         if r >= 0.416:
             self.fish_count = round(self.fish_count * 0.99)
             return await interaction.response.send_message(
-                "You stole just 1% of bear's fish!"
+                "You stole just 1% of bear's fish!",
             )
 
         if r >= 0.25:
@@ -284,11 +287,11 @@ class FunCommands(commands.Cog, name="Fun"):
             self.fish_count = round(self.fish_count * ratio)
             per = round(ratio * 100) - 100
             return await interaction.response.send_message(
-                f"Uhh... something went wrong! You gave bear another {per}% of his fish!"
+                f"Uhh... something went wrong! You gave bear another {per}% of his fish!",
             )
 
         return await interaction.response.send_message(
-            "Hmm, nothing happened. *crickets*"
+            "Hmm, nothing happened. *crickets*",
         )
 
     @app_commands.command(description="Dog bombs another user!")
@@ -313,7 +316,7 @@ class FunCommands(commands.Cog, name="Fun"):
 
         if page.status > 400:
             return await interaction.response.send_message(
-                content="Sorry, I couldn't find a doggo to bomb with..."
+                content="Sorry, I couldn't find a doggo to bomb with...",
             )
 
         text = await page.content.read()
@@ -323,11 +326,11 @@ class FunCommands(commands.Cog, name="Fun"):
         doggo = jso["message"]
         if member == interaction.user:
             await interaction.response.send_message(
-                f"{member.mention} dog bombed themselves!!"
+                f"{member.mention} dog bombed themselves!!",
             )
         else:
             await interaction.response.send_message(
-                f"{member.mention}, {interaction.user.mention} dog bombed you!!"
+                f"{member.mention}, {interaction.user.mention} dog bombed you!!",
             )
         await interaction.channel.send(doggo)
 
@@ -349,7 +352,7 @@ class FunCommands(commands.Cog, name="Fun"):
 
         if page.status > 400:
             return await interaction.response.send_message(
-                content="Sorry, I couldn't find a shiba to bomb with..."
+                content="Sorry, I couldn't find a shiba to bomb with...",
             )
 
         text = await page.content.read()
@@ -359,11 +362,11 @@ class FunCommands(commands.Cog, name="Fun"):
         doggo = jso["message"]
         if member == interaction.user:
             await interaction.response.send_message(
-                f"{member.mention} shiba bombed themselves!!"
+                f"{member.mention} shiba bombed themselves!!",
             )
         else:
             await interaction.response.send_message(
-                f"{member.mention}, {interaction.user.mention} shiba bombed you!!"
+                f"{member.mention}, {interaction.user.mention} shiba bombed you!!",
             )
         await interaction.channel.send(doggo)
 
@@ -410,7 +413,7 @@ class FunCommands(commands.Cog, name="Fun"):
 
     @app_commands.command(description="Gets an xkcd comic!")
     @app_commands.describe(
-        num="The number of the xkcd comic to get. If not provided, gets a random comic."
+        num="The number of the xkcd comic to get. If not provided, gets a random comic.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
@@ -438,7 +441,7 @@ class FunCommands(commands.Cog, name="Fun"):
             return await interaction.response.send_message(f"https://xkcd.com/{num}")
 
         return await interaction.response.send_message(
-            "Invalid attempted number for xkcd."
+            "Invalid attempted number for xkcd.",
         )
 
 

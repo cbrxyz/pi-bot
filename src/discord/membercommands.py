@@ -7,16 +7,16 @@ from __future__ import annotations
 import datetime
 import random
 import re
-from typing import TYPE_CHECKING, List, Literal, Optional, Union
-
-import wikipedia as wikip
-from aioify import aioify
+from typing import TYPE_CHECKING, Literal
 
 import discord
-import src.discord.globals
-from commandchecks import is_in_bot_spam, is_staff_from_ctx
+import wikipedia as wikip
+from aioify import aioify
 from discord import app_commands
 from discord.ext import commands
+
+import src.discord.globals
+from commandchecks import is_in_bot_spam, is_staff_from_ctx
 from src.discord.globals import (
     CATEGORY_STAFF,
     CHANNEL_GAMES,
@@ -72,7 +72,8 @@ class MemberCommands(commands.Cog):
         """
         server = self.bot.get_guild(SERVER_ID)
         invitationals_channel = discord.utils.get(
-            server.text_channels, name=CHANNEL_INVITATIONALS
+            server.text_channels,
+            name=CHANNEL_INVITATIONALS,
         )
 
         # Type checking
@@ -117,23 +118,25 @@ class MemberCommands(commands.Cog):
         if pronoun_role in member.roles:
             await member.remove_roles(pronoun_role)
             await interaction.response.send_message(
-                content=f"Removed your `{pronouns}` role."
+                content=f"Removed your `{pronouns}` role.",
             )
         else:
             await member.add_roles(pronoun_role)
             await interaction.response.send_message(
-                content=f"Added the `{pronouns}` role to your profile."
+                content=f"Added the `{pronouns}` role to your profile.",
             )
 
     @app_commands.command(description="Gets the profile information for a username.")
     @app_commands.describe(
-        username="The username to get information about. Defaults to your nickname/username."
+        username="The username to get information about. Defaults to your nickname/username.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(10, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def profile(
-        self, interaction: discord.Interaction, username: str | None = None
+        self,
+        interaction: discord.Interaction,
+        username: str | None = None,
     ):
         """
         Allows a user to get information about a Scioly.org profile.
@@ -150,22 +153,24 @@ class MemberCommands(commands.Cog):
             username = interaction.user.nick or interaction.user.name
 
         async with self.bot.session.get(
-            f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}"
+            f"https://scioly.org/forums/memberlist.php?mode=viewprofile&un={username}",
         ) as page:
             if page.status > 400:
                 return await interaction.response.send_message(
-                    content=f"Sorry, I couldn't find a user by the username of `{username}`."
+                    content=f"Sorry, I couldn't find a user by the username of `{username}`.",
                 )
             text = await page.content.read()
             text = text.decode("utf-8")
 
         description = ""
         total_posts_matches = re.search(
-            r"(?:<dt>Total posts:<\/dt>\s+<dd>)(\d+)", text, re.MULTILINE
+            r"(?:<dt>Total posts:<\/dt>\s+<dd>)(\d+)",
+            text,
+            re.MULTILINE,
         )
         if total_posts_matches is None:
             return await interaction.response.send_message(
-                content=f"Sorry, I couldn't find a user by the username of `{username}`."
+                content=f"Sorry, I couldn't find a user by the username of `{username}`.",
             )
         else:
             description += f"**Total Posts:** `{total_posts_matches.group(1)} posts`\n"
@@ -174,7 +179,9 @@ class MemberCommands(commands.Cog):
         description += f"**Has Thanked:** `{has_thanked_matches.group(1)} times`\n"
 
         been_thanked_matches = re.search(
-            r"Been(?:&nbsp;)?thanked: <a.*?>(\d+)", text, re.MULTILINE
+            r"Been(?:&nbsp;)?thanked: <a.*?>(\d+)",
+            text,
+            re.MULTILINE,
         )
         description += f"**Been Thanked:** `{been_thanked_matches.group(1)} times`\n"
 
@@ -192,24 +199,29 @@ class MemberCommands(commands.Cog):
                 raw_dt_string = raw_dt_string.replace("th", "")
 
                 raw_dt = datetime.datetime.strptime(
-                    raw_dt_string, "%B %d, %Y, %I:%M %p"
+                    raw_dt_string,
+                    "%B %d, %Y, %I:%M %p",
                 )
                 description += (
                     f"**{pattern['name']}:** {discord.utils.format_dt(raw_dt, 'R')}\n"
                 )
-            except:
+            except Exception:
                 # Occurs if the time can't be parsed/found
                 pass
 
         for i in range(1, 7):
             stars_matches = re.search(
-                rf"<img src=\"./images/ranks/stars{i}\.gif\"", text, re.MULTILINE
+                rf"<img src=\"./images/ranks/stars{i}\.gif\"",
+                text,
+                re.MULTILINE,
             )
             if stars_matches is not None:
                 description += f"\n**Stars:** {i * ':star:'}"
                 break
             exalts_matches = re.search(
-                rf"<img src=\"./images/ranks/exalt{i}\.gif\"", text, re.MULTILINE
+                rf"<img src=\"./images/ranks/exalt{i}\.gif\"",
+                text,
+                re.MULTILINE,
             )
             if exalts_matches is not None:
                 description += (
@@ -225,11 +237,13 @@ class MemberCommands(commands.Cog):
         )
 
         avatar_matches = re.search(
-            r"<img class=\"avatar\" src=\"(.*?)\"", text, re.MULTILINE
+            r"<img class=\"avatar\" src=\"(.*?)\"",
+            text,
+            re.MULTILINE,
         )
         if avatar_matches is not None:
             profile_embed.set_thumbnail(
-                url="https://scioly.org/forums" + avatar_matches.group(1)[1:]
+                url="https://scioly.org/forums" + avatar_matches.group(1)[1:],
             )
 
         await interaction.response.send_message(embed=profile_embed)
@@ -250,7 +264,7 @@ class MemberCommands(commands.Cog):
         """
         guild = interaction.user.guild
         await interaction.response.send_message(
-            content=f"Currently, there are `{len(guild.members)}` members in the server."
+            content=f"Currently, there are `{len(guild.members)}` members in the server.",
         )
 
     @app_commands.command(description="Toggles the Alumni role.")
@@ -269,7 +283,7 @@ class MemberCommands(commands.Cog):
         """
         await self._assign_div(interaction, "Alumni")
         await interaction.response.send_message(
-            content="Assigned you the Alumni role, and removed all other division/alumni roles."
+            content="Assigned you the Alumni role, and removed all other division/alumni roles.",
         )
 
     @app_commands.command(description="Toggles division roles for the user.")
@@ -294,7 +308,7 @@ class MemberCommands(commands.Cog):
         if div != "None":
             await self._assign_div(interaction, div)
             await interaction.response.send_message(
-                content=f"Assigned you the {div} role, and removed all other division/alumni roles."
+                content=f"Assigned you the {div} role, and removed all other division/alumni roles.",
             )
         else:
             member = interaction.user
@@ -304,7 +318,7 @@ class MemberCommands(commands.Cog):
             alumni_role = discord.utils.get(member.guild.roles, name=ROLE_ALUMNI)
             await member.remove_roles(div_a_role, div_b_role, div_c_role, alumni_role)
             await interaction.response.send_message(
-                content="Removed all of your division/alumni roles."
+                content="Removed all of your division/alumni roles.",
             )
 
     async def _assign_div(
@@ -334,7 +348,9 @@ class MemberCommands(commands.Cog):
     @app_commands.command(description="Toggles the visibility of the #games channel.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(
-        2, 120, key=lambda i: (i.guild_id, i.user.id)
+        2,
+        120,
+        key=lambda i: (i.guild_id, i.user.id),
     )  # Allow people to toggle choice, but discourage them from toggling multiple times
     @app_commands.check(is_in_bot_spam)
     async def games(self, interaction: discord.Interaction):
@@ -348,7 +364,8 @@ class MemberCommands(commands.Cog):
             interaction (discord.Interaction): The interaction sent by Discord.
         """
         games_channel = discord.utils.get(
-            interaction.user.guild.text_channels, name=CHANNEL_GAMES
+            interaction.user.guild.text_channels,
+            name=CHANNEL_GAMES,
         )
         member = interaction.user
         role = discord.utils.get(member.guild.roles, name=ROLE_GAMES)
@@ -359,18 +376,18 @@ class MemberCommands(commands.Cog):
         if role in member.roles:
             await member.remove_roles(role)
             await interaction.response.send_message(
-                content="Removed you from the games club... feel free to come back anytime!"
+                content="Removed you from the games club... feel free to come back anytime!",
             )
             await games_channel.send(f"{member.mention} left the party.")
         else:
             await member.add_roles(role)
             await interaction.response.send_message(
-                content=f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:"
+                content=f"You are now in the channel. Come and have fun in {games_channel.mention}! :tada:",
             )
             await games_channel.send(f"Please welcome {member.mention} to the party!!")
 
     @app_commands.command(
-        description="Toggles the visibility of state roles and channels."
+        description="Toggles the visibility of state roles and channels.",
     )
     @app_commands.describe(
         state="The first state to add/remove from your profile.",
@@ -452,13 +469,13 @@ class MemberCommands(commands.Cog):
         # Construct a response only containing the needed pieces
         response_components = []
         response_components.append(
-            "Added states " + " ".join([f"`{arg}`" for arg in added_roles])
+            "Added states " + " ".join([f"`{arg}`" for arg in added_roles]),
         ) if added_roles else None
         response_components.append(
-            "removed states " + " ".join([f"`{arg}`" for arg in removed_roles])
+            "removed states " + " ".join([f"`{arg}`" for arg in removed_roles]),
         ) if removed_roles else None
         response_components.append(
-            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])
+            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle]),
         ) if could_not_handle else None
 
         # Assemble into message
@@ -480,7 +497,9 @@ class MemberCommands(commands.Cog):
     @states.autocomplete("state_nine")
     @states.autocomplete("state_ten")
     async def states_autocomplete(
-        self, interaction: discord.Interaction, current: str
+        self,
+        interaction: discord.Interaction,
+        current: str,
     ) -> list[app_commands.Choice[str]]:
         """
         Provides autocompletion for the states method/command.
@@ -534,7 +553,7 @@ class MemberCommands(commands.Cog):
         """
         if is_staff_from_ctx(interaction, no_raise=True):
             return await interaction.response.send_message(
-                "Staff members can't self mute! Sorry!"
+                "Staff members can't self mute! Sorry!",
             )
 
         member = interaction.user
@@ -575,7 +594,8 @@ class MemberCommands(commands.Cog):
             try:
                 role = discord.utils.get(member.guild.roles, name=ROLE_SELFMUTE)
                 unselfmute_channel = discord.utils.get(
-                    member.guild.text_channels, name=CHANNEL_UNSELFMUTE
+                    member.guild.text_channels,
+                    name=CHANNEL_UNSELFMUTE,
                 )
                 await member.add_roles(role)
                 await self.bot.mongo_database.insert(
@@ -593,20 +613,20 @@ class MemberCommands(commands.Cog):
                     embed=None,
                     view=None,
                 )
-            except:
+            except Exception:
                 pass
 
         return await interaction.edit_original_response(
-            content=f"The operation was cancelled, and you can still speak throughout the server.",
+            content="The operation was cancelled, and you can still speak throughout the server.",
             embed=None,
             view=None,
         )
 
     @app_commands.command(
-        description="Requests a new invitational channel! Note: This request will be sent to staff for approval."
+        description="Requests a new invitational channel! Note: This request will be sent to staff for approval.",
     )
     @app_commands.describe(
-        invitational="The official name of the invitational you would like to add."
+        invitational="The official name of the invitational you would like to add.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(3, 60, key=lambda i: (i.guild_id, i.user.id))
@@ -625,10 +645,11 @@ class MemberCommands(commands.Cog):
         """
         reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
         await reporter_cog.create_invitational_request_report(
-            interaction.user, invitational
+            interaction.user,
+            invitational,
         )
         await interaction.response.send_message(
-            f"Thanks for the request. Staff will review your request to add an invitational channel for `{invitational}`. In the meantime, please do not make additional requests."
+            f"Thanks for the request. Staff will review your request to add an invitational channel for `{invitational}`. In the meantime, please do not make additional requests.",
         )
 
     @app_commands.command(description="Returns information about the bot and server.")
@@ -655,7 +676,7 @@ class MemberCommands(commands.Cog):
         embed = discord.Embed(
             title=f"**Pi-Bot {self.bot.__version__}**",
             color=discord.Color(0xF86D5F),
-            description=f"""
+            description="""
             Hey there! I'm Pi-Bot, and I help to manage the Scioly.org forums, wiki, and chat. You'll often see me around this Discord server to help users get roles and information about Science Olympiad.
 
             I'm developed by the community. If you'd like to find more about development, you can find more by visiting the links below.
@@ -715,7 +736,7 @@ class MemberCommands(commands.Cog):
             "obb": "obb",
         }
         await interaction.response.send_message(
-            f"<https://scioly.org/{destination_dict[destination]}>"
+            f"<https://scioly.org/{destination_dict[destination]}>",
         )
 
     @app_commands.command(description="Returns a random number, inclusively.")
@@ -748,7 +769,7 @@ class MemberCommands(commands.Cog):
 
         num = random.randrange(minimum, maximum + 1)
         await interaction.response.send_message(
-            f"Random number between `{minimum}` and `{maximum}`: `{num}`"
+            f"Random number between `{minimum}` and `{maximum}`: `{num}`",
         )
 
     @app_commands.command(description="Returns information about a given rule.")
@@ -931,7 +952,7 @@ class MemberCommands(commands.Cog):
                         ),
                         "inline": False,
                     },
-                ]
+                ],
             )
 
         embed = discord.Embed(
@@ -953,7 +974,7 @@ class MemberCommands(commands.Cog):
 
     @wiki_group.command(name="summary", description="Returns a summary of a wiki page.")
     @app_commands.describe(
-        page="The name of the page to return a summary about. Correct caps must be used."
+        page="The name of the page to return a summary about. Correct caps must be used.",
     )
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
@@ -972,13 +993,14 @@ class MemberCommands(commands.Cog):
         command = await implement_command("summary", page)
         if not command:
             await interaction.response.send_message(
-                f"Unfortunately, the `{page}` page does not exist."
+                f"Unfortunately, the `{page}` page does not exist.",
             )
         else:
             await interaction.response.send_message(" ".join(command))
 
     @wiki_group.command(
-        name="search", description="Searches the wiki for a particular page."
+        name="search",
+        description="Searches the wiki for a particular page.",
     )
     @app_commands.describe(term="The term to search for across the wiki.")
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
@@ -998,11 +1020,11 @@ class MemberCommands(commands.Cog):
         command = await implement_command("search", term)
         if len(command):
             await interaction.response.send_message(
-                "\n".join([f"`{search}`" for search in command])
+                "\n".join([f"`{search}`" for search in command]),
             )
         else:
             await interaction.response.send_message(
-                f"No pages matching `{term}` were found."
+                f"No pages matching `{term}` were found.",
             )
 
     @wiki_group.command(name="link", description="Links to a particular wiki page.")
@@ -1024,7 +1046,7 @@ class MemberCommands(commands.Cog):
         command = await implement_command("link", page)
         if not command:
             await interaction.response.send_message(
-                f"The `{page}` page does not yet exist."
+                f"The `{page}` page does not yet exist.",
             )
         else:
             await interaction.response.send_message(f"<{self.wiki_url_fix(command)}>")
@@ -1033,7 +1055,7 @@ class MemberCommands(commands.Cog):
         return url.replace("%3A", ":").replace(r"%2F", "/")
 
     @app_commands.command(
-        description="Searches for information on Wikipedia, the free encyclopedia!"
+        description="Searches for information on Wikipedia, the free encyclopedia!",
     )
     @app_commands.describe(
         command="The command to execute.",
@@ -1066,8 +1088,8 @@ class MemberCommands(commands.Cog):
                     [
                         f"`{result}`"
                         for result in self.aiowikip.search(request, results=5)
-                    ]
-                )
+                    ],
+                ),
             )
 
         elif command == "summary":
@@ -1075,31 +1097,31 @@ class MemberCommands(commands.Cog):
                 page = await self.aiowikip.page(request)
                 return await interaction.response.send_message(
                     self.aiowikip.summary(request, sentences=3)
-                    + f"\n\nRead more on Wikipedia here: <{page.url}>!"
+                    + f"\n\nRead more on Wikipedia here: <{page.url}>!",
                 )
             except wikip.exceptions.DisambiguationError as e:
                 return await interaction.response.send_message(
                     f"Sorry, the `{request}` term could refer to multiple pages, try again using one of these terms:"
-                    + "\n".join([f"`{o}`" for o in e.options])
+                    + "\n".join([f"`{o}`" for o in e.options]),
                 )
-            except wikip.exceptions.PageError as _:
+            except wikip.exceptions.PageError:
                 return await interaction.response.send_message(
-                    f"Sorry, but the `{request}` page doesn't exist! Try another term!"
+                    f"Sorry, but the `{request}` page doesn't exist! Try another term!",
                 )
 
         elif command == "link":
             try:
                 page = await self.aiowikip.page(request)
                 return await interaction.response.send_message(
-                    f"Sure, here's the link: <{page.url}>"
+                    f"Sure, here's the link: <{page.url}>",
                 )
-            except wikip.exceptions.PageError as _:
+            except wikip.exceptions.PageError:
                 return await interaction.response.send_message(
-                    f"Sorry, but the `{request}` page doesn't exist! Try another term!"
+                    f"Sorry, but the `{request}` page doesn't exist! Try another term!",
                 )
-            except wikip.exceptions.DisambiguationError as _:
+            except wikip.exceptions.DisambiguationError:
                 return await interaction.response.send_message(
-                    f"Sorry, but the `{request}` page is a disambiguation page. Please try again!"
+                    f"Sorry, but the `{request}` page is a disambiguation page. Please try again!",
                 )
 
     @app_commands.command(description="Toggles event roles.")
@@ -1181,13 +1203,13 @@ class MemberCommands(commands.Cog):
         # Construct a response only containing the needed pieces
         response_components = []
         response_components.append(
-            "Added events " + " ".join([f"`{arg}`" for arg in added_roles])
+            "Added events " + " ".join([f"`{arg}`" for arg in added_roles]),
         ) if added_roles else None
         response_components.append(
-            "removed events " + " ".join([f"`{arg}`" for arg in removed_roles])
+            "removed events " + " ".join([f"`{arg}`" for arg in removed_roles]),
         ) if removed_roles else None
         response_components.append(
-            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle])
+            "could not handle " + " ".join([f"`{arg}`" for arg in could_not_handle]),
         ) if could_not_handle else None
 
         # Assemble into message
@@ -1210,7 +1232,9 @@ class MemberCommands(commands.Cog):
     @events.autocomplete("event_nine")
     @events.autocomplete("event_ten")
     async def events_autocomplete(
-        self, interaction: discord.Interaction, current: str
+        self,
+        interaction: discord.Interaction,
+        current: str,
     ) -> list[app_commands.Choice[str]]:
         """
         Provides autocompletion for the events method/command.
@@ -1248,7 +1272,7 @@ class MemberCommands(commands.Cog):
 
         if not len(src.discord.globals.TAGS):
             return await interaction.response.send_message(
-                "Apologies, tags do not appear to be working at the moment. Please try again in one minute."
+                "Apologies, tags do not appear to be working at the moment. Please try again in one minute.",
             )
 
         staff = is_staff_from_ctx(interaction, no_raise=True)
@@ -1265,14 +1289,16 @@ class MemberCommands(commands.Cog):
                     return await interaction.response.send_message(content=t["output"])
                 else:
                     return await interaction.response.send_message(
-                        content="Unfortunately, you do not have the permissions for this tag."
+                        content="Unfortunately, you do not have the permissions for this tag.",
                     )
 
         return await interaction.response.send_message("Tag not found.")
 
     @tag.autocomplete(name="tag_name")
     async def tag_autocomplete(
-        self, interaction: discord.Interaction, current: str
+        self,
+        interaction: discord.Interaction,
+        current: str,
     ) -> list[app_commands.Choice[str]]:
         """
         Serves as autocompletion for the /tag command. Returns the names of the

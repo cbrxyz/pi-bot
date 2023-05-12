@@ -1,7 +1,3 @@
-from dotenv import find_dotenv, load_dotenv
-
-load_dotenv(find_dotenv())
-
 import asyncio
 import logging
 import os
@@ -10,7 +6,9 @@ import re
 import pywikibot
 import wikitextparser as wtp
 from aioify import aioify
+from dotenv import find_dotenv, load_dotenv
 
+load_dotenv(find_dotenv())
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 site = None
@@ -21,7 +19,7 @@ async def init_wiki():
     """Initializes the wiki function."""
     with open("password.py", "w+") as f:
         f.write(
-            f"(\"{os.getenv('PI_BOT_WIKI_USERNAME')}\", \"{os.getenv('PI_BOT_WIKI_PASSWORD')}\")"
+            f"(\"{os.getenv('PI_BOT_WIKI_USERNAME')}\", \"{os.getenv('PI_BOT_WIKI_PASSWORD')}\")",
         )
     global site
     site = await aiopwb.Site()
@@ -67,7 +65,7 @@ async def implement_command(action, page_title):
         # If page redirects, get the page it redirects to
         page = await page.getRedirectTarget()
         page = aiopwb.Page(site, page.title())
-    except Exception as e:
+    except Exception:
         pass
 
     if action == "link":
@@ -88,7 +86,7 @@ async def implement_command(action, page_title):
         title = await page.title()
         link = site.base_url(site.article_path + title.replace(" ", "_"))
         return re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", pt)[:1] + [
-            "\n\nRead more on the Scioly.org Wiki here: <" + link + ">!"
+            "\n\nRead more on the Scioly.org Wiki here: <" + link + ">!",
         ]
 
     if action == "search":
@@ -101,7 +99,6 @@ async def implement_command(action, page_title):
 
 
 if "PI_BOT_WIKI_USERNAME" in os.environ:
-    event_loop = asyncio.get_event_loop()
-    asyncio.ensure_future(init_wiki(), loop=event_loop)
+    asyncio.run(init_wiki())
 else:
     logger.info("User did not supply keys for wiki functionality; not turned on.")

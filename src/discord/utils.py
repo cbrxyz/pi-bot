@@ -1,7 +1,4 @@
-from typing import Union
-
-
-async def lookup_role(name: str) -> Union[str, bool]:
+async def lookup_role(name: str) -> str | bool:
     """
     Gets the official state role name for a state name or abbreviation.
     """

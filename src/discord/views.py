@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
+
 from src.discord.globals import ROLE_SELFMUTE
 
 if TYPE_CHECKING:
@@ -36,7 +37,9 @@ class UnselfmuteView(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def unselfmute_button(
-        self, interaction: discord.Interaction, _: discord.ui.Button
+        self,
+        interaction: discord.Interaction,
+        _: discord.ui.Button,
     ):
         await interaction.response.defer(ephemeral=True)
         role = discord.utils.get(interaction.guild.roles, name=ROLE_SELFMUTE)
@@ -48,9 +51,10 @@ class UnselfmuteView(discord.ui.View):
                 if (x["type"] == "UNSELFMUTE" and x["user"] == interaction.user.id)
             ][0]
             await self.bot.mongo_database.remove_doc("data", "cron", item["_id"])
-        except:  # not in the database - maybe was removed!
+        except Exception:  # not in the database - maybe was removed!
             pass
 
         return await interaction.followup.send(
-            "I removed your selfmute role!", ephemeral=True
+            "I removed your selfmute role!",
+            ephemeral=True,
         )
