@@ -177,6 +177,22 @@ class StaffCommands(commands.Cog):
     def __init__(self, bot: PiBot):
         self.bot = bot
 
+    def time_str_to_datetime(self, time_string: str) -> datetime.datetime:
+        times = {
+            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
+            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
+            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
+            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
+            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
+            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
+            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
+            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
+            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
+            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
+            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
+        }
+        return times[time_string]
+
 
 class CronConfirm(discord.ui.View):
     def __init__(self, doc, bot: PiBot):
@@ -665,27 +681,15 @@ class StaffEssential(StaffCommands):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
 
-        # Possible times selectable by user
-        times = {
-            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
-            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
-            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
-            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
-            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
-            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
-            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
-            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
-            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
-            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
-            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
-        }
+        # Get selected time
+        selected_time = self.time_str_to_datetime(ban_length)
 
         # Generate time statement
         time_statement = None
         if ban_length == "Indefinitely":
             time_statement = f"{member.mention} will never be automatically unbanned."
         else:
-            time_statement = f"{member.mention} will be banned until {discord.utils.format_dt(times[ban_length], 'F')}."
+            time_statement = f"{member.mention} will be banned until {discord.utils.format_dt(selected_time)}."
 
         # Create confirmation embed to show to staff member
         original_shown_embed = discord.Embed(
@@ -740,8 +744,8 @@ class StaffEssential(StaffCommands):
                 pass
 
         if ban_length != "Indefinitely":
-            cron_tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
-            await cron_tasks_cog.schedule_unban(member, times[ban_length])
+            cron_tasks_cog = self.bot.get_cog("CronTasks")
+            await cron_tasks_cog.schedule_unban(member, selected_time)
 
         # Test
         guild = interaction.user.guild
@@ -794,23 +798,11 @@ class StaffEssential(StaffCommands):
         """
         commandchecks.is_staff_from_ctx(interaction)
 
-        times = {
-            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
-            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
-            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
-            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
-            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
-            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
-            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
-            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
-            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
-            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
-            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
-        }
+        selected_time = self.time_str_to_datetime(mute_length)
         if mute_length == "Indefinitely":
             time_statement = "The user will never be automatically unmuted."
         else:
-            time_statement = f"The user will be muted until {discord.utils.format_dt(times[mute_length], 'F')}."
+            time_statement = f"The user will be muted until {discord.utils.format_dt(selected_time)}."
 
         original_shown_embed = discord.Embed(
             title="Mute Confirmation",
@@ -862,7 +854,7 @@ class StaffEssential(StaffCommands):
 
         if mute_length != "Indefinitely":
             cron_tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
-            await cron_tasks_cog.schedule_unmute(member, times[mute_length])
+            await cron_tasks_cog.schedule_unmute(member, selected_time)
 
         # Test
         if role in member.roles:
@@ -935,7 +927,6 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             and interaction.channel.category.name == CATEGORY_INVITATIONALS
         ):
             # Handle for tournament channels
-
             test_vc: discord.VoiceChannel | None = discord.utils.get(
                 server.voice_channels,
                 name=interaction.channel.name,
@@ -1418,20 +1409,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         commandchecks.is_staff_from_ctx(interaction)
 
         # CRON functionality
-        times = {
-            "10 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=10),
-            "30 minutes": discord.utils.utcnow() + datetime.timedelta(minutes=30),
-            "1 hour": discord.utils.utcnow() + datetime.timedelta(hours=1),
-            "2 hours": discord.utils.utcnow() + datetime.timedelta(hours=2),
-            "4 hours": discord.utils.utcnow() + datetime.timedelta(hours=4),
-            "8 hours": discord.utils.utcnow() + datetime.timedelta(hours=8),
-            "1 day": discord.utils.utcnow() + datetime.timedelta(days=1),
-            "4 days": discord.utils.utcnow() + datetime.timedelta(days=4),
-            "7 days": discord.utils.utcnow() + datetime.timedelta(days=7),
-            "1 month": discord.utils.utcnow() + datetime.timedelta(days=30),
-            "1 year": discord.utils.utcnow() + datetime.timedelta(days=365),
-        }
-        selected_time = times[length]
+        selected_time = self.time_str_to_datetime(length)
 
         # Change settings
         await self.bot.update_setting(
