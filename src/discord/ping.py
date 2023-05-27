@@ -43,16 +43,8 @@ class PingManager(commands.GroupCog, name="ping"):
         Args:
             message (discord.Message): The message that was just sent by a user.
         """
-        # Do not ping for messages in a private channel
-        if message.channel.type == discord.ChannelType.private:
-            return
-
-        # Do not ping for messages from a bot
-        if message.author.bot:
-            return
-
-        # Do not ping for messages from webhooks
-        if message.author.discriminator == "0000":
+        # Do not ping for messages in a private channel or messages from bots
+        if (message.channel.type == discord.ChannelType.private) or message.author.bot:
             return
 
         # Do not ping if the message is coming from the botspam channel
@@ -81,25 +73,24 @@ class PingManager(commands.GroupCog, name="ping"):
             # Give up event loop to other coroutines in case ping list is long
             await asyncio.sleep(0)
 
-            # Do not ping the author of the message
-            if user["user_id"] == message.author.id:
-                continue
-
-            pings = [rf"\b({ping})\b" for ping in user["word_pings"]]
-
-            # Do not ping any users mentioned in the message
+            # Do not ping if:
+            #   User was author of message.
+            #   User was mentioned in the message.
+            #   User cannot see the channel.
+            #   User has DND enabled.
             user_is_mentioned = user["user_id"] in [m.id for m in message.mentions]
-            if user_is_mentioned:
-                continue
-
-            # Do not ping if the user cannot see the channel or has DND enabled
             user_can_see_channel = user["user_id"] in ids
             user_in_dnd = "dnd" in user and user["dnd"]
-            if not user_can_see_channel or user_in_dnd:
+            if (
+                user["user_id"] == message.author.id
+                or user_is_mentioned
+                or (not user_can_see_channel or user_in_dnd)
+            ):
                 continue
 
             # Count the number of pings in the message
             ping_count = 0
+            pings = [rf"\b({ping})\b" for ping in user["word_pings"]]
             for ping in pings:
                 if len(re.findall(ping, message.content, re.I)):
                     ping_count += 1

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import datetime
+import logging
 import re
 from typing import TYPE_CHECKING, Literal
 
@@ -45,6 +46,9 @@ if TYPE_CHECKING:
     from bot import PiBot
 
     from .tasks import CronTasks
+
+
+logger = logging.getLogger(__name__)
 
 
 class SlowMode(app_commands.Group):
@@ -625,8 +629,10 @@ class StaffEssential(StaffCommands):
 
         # Handle response
         if view.value:
-            with contextlib.suppress(Exception):
+            try:
                 await member.remove_roles(role)
+            except Exception:
+                logger.exception("Unable to remove the Muted role from a given user.")
 
         # Test user was unmuted
         if role not in member.roles:
