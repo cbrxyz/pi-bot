@@ -92,8 +92,13 @@ class PingManager(commands.GroupCog, name="ping"):
             ping_count = 0
             pings = [rf"\b({ping})\b" for ping in user["word_pings"]]
             for ping in pings:
-                if len(re.findall(ping, message.content, re.I)):
-                    ping_count += 1
+                try:
+                    if len(re.findall(ping, message.content, re.I)):
+                        ping_count += 1
+                except Exception as e:
+                    logger.error(
+                        f"Could not evaluate message content with ping {ping} of user {user['user_id']}: {str(e)}",
+                    )
 
             if ping_count:
                 user_obj = self.bot.get_user(user["user_id"])
