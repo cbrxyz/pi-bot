@@ -4,6 +4,7 @@ Holds functionality for members to manage their ping subscriptions.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime
 import logging
 import re
@@ -102,7 +103,9 @@ class PingManager(commands.GroupCog, name="ping"):
 
             if ping_count:
                 user_obj = self.bot.get_user(user["user_id"])
-                await self.send_ping_pm(user_obj, message, ping_count)
+                # Do not throw exception if the user has direct messages disabled
+                with contextlib.suppress(discord.Forbidden):
+                    await self.send_ping_pm(user_obj, message, ping_count)
 
     def format_text(
         self,
