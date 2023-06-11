@@ -1,18 +1,14 @@
 # Imports
-from dotenv import find_dotenv, load_dotenv
-
-load_dotenv(find_dotenv())
-
 import asyncio
-import time
 from collections import Counter
 from datetime import date
 
 import pywikibot
 import wikitextparser as wtp
 from aioify import aioify
-from pywikibot import pagegenerators
+from dotenv import find_dotenv, load_dotenv
 
+load_dotenv(find_dotenv())
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 site = 0
@@ -53,7 +49,7 @@ async def find_unsp(name):
     for i in contribs:
         title = i[0].title()
         # If the title includes the user's userpage, and is not a subpage, then add it to the list
-        if title.find("User:" + name) != -1 and not title.find("/") != -1:
+        if title.find("User:" + name) != -1 and title.find("/") == -1:
             userEdits += 1
 
     if edit_count > 0:
@@ -66,7 +62,7 @@ async def find_unsp(name):
 
 # Find the rank change of the user since the last run
 async def find_rank_change(name, cur_position):
-    user_obj = pywikibot.User(site, name)
+    pywikibot.User(site, name)
     for i in range(entry_count):
         if cur_table_wtp[i][2] == ("[[User:" + name + "|" + name + "]]"):
             return str(i - cur_position)
@@ -91,7 +87,7 @@ async def find_edit_percent(name, cur_edits):
                         * (int(cur_edits) - int(cur_table_wtp[i][3]))
                         / int(cur_table_wtp[i][3]),
                         1,
-                    )
+                    ),
                 )
                 + "%"
             )
@@ -103,7 +99,6 @@ async def find_most_edited(name):
     user_obj = pywikibot.User(site, name)
     contribs = user_obj.contributions(total=10000)
     edit_count = user_obj.editCount()
-    user_edits = 0
 
     if edit_count == 0:
         return "X"
@@ -139,7 +134,7 @@ async def run_table():
     # Constants
     global site
     site = await aiopwb.Site()
-    cat = aiopwb.Category(site, "Category:Event Pages")
+    aiopwb.Category(site, "Category:Event Pages")
     page = "User:Pi-Bot/Task 2/Most Edits Table"
     gen = site.allusers(total=10000)
 
@@ -148,7 +143,7 @@ async def run_table():
     tables = 0
     if await text.find("|}") == -1:
         print("!!!! NO MORE TABLE ENDINGS !!!!")
-    title = page.title()
+    page.title()
     tables += 1
     first_bracket = await text.find("{|")
     last_bracket = await text.find("|}")
@@ -226,7 +221,7 @@ async def run_table():
         position += 1
         if edit_increase != "X":
             increase_table.append(
-                {"name": str(user.name), "increase": int(edit_increase)}
+                {"name": str(user.name), "increase": int(edit_increase)},
             )
         await asyncio.sleep(0.2)
 

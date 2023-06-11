@@ -1,4 +1,3 @@
-import asyncio
 import json
 
 import aiohttp
@@ -39,7 +38,7 @@ async def get_school_listing(searchTerm, state):
                 + " "
                 + r["LZIP09"],
                 "zip": r["LZIP09"],
-            }
+            },
         )
     for r in return_obj:
         state = r["state"]

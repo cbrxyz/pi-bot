@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.0.9 - 2023-06-11
+### Added
+* [`ruff`](https://github.com/astral-sh/ruff) is now the main linter for the repository
+
+### Changed
+* Default supported version is now Python 3.10
+
+### Fixed
+* GitHub Actions runner now performs linting check as expected, rather than failing
+every time
+* Improper regular expressions would cause errors on each ping, now silently ignored
+
 ## 5.0.8 - 2023-03-15
 ### Changed
 * Logs no longer use `print()`, rather native Python `logging` features (closes [#460](https://github.com/cbrxyz/pi-bot/issues/460))

@@ -3,11 +3,12 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Literal
 
-import commandchecks
 import discord
-import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
+
+import commandchecks
+import src.discord.globals
 from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
@@ -32,7 +33,8 @@ class StaffEvents(commands.Cog):
     )
 
     @event_commands_group.command(
-        name="add", description="Staff command. Adds a new event."
+        name="add",
+        description="Staff command. Adds a new event.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
@@ -50,13 +52,13 @@ class StaffEvents(commands.Cog):
 
         # Send user notice that process has begun
         await interaction.response.send_message(
-            f"{EMOJI_LOADING} Attempting to add `{event_name}` as a new event..."
+            f"{EMOJI_LOADING} Attempting to add `{event_name}` as a new event...",
         )
 
         # Check to see if event has already been added.
         if event_name in [e["name"] for e in src.discord.globals.EVENT_INFO]:
             return await interaction.edit_original_response(
-                content=f"The `{event_name}` event has already been added."
+                content=f"The `{event_name}` event has already been added.",
             )
 
         # Construct dictionary to represent event; will be stored in database
@@ -81,7 +83,7 @@ class StaffEvents(commands.Cog):
 
         # Notify user of process completion
         await interaction.edit_original_response(
-            content=f"The `{event_name}` event was added."
+            content=f"The `{event_name}` event was added.",
         )
 
     @event_commands_group.command(
@@ -104,7 +106,7 @@ class StaffEvents(commands.Cog):
 
         # Send user notice that process has begun
         await interaction.response.send_message(
-            f"{EMOJI_LOADING} Attempting to remove the `{event_name}` event..."
+            f"{EMOJI_LOADING} Attempting to remove the `{event_name}` event...",
         )
 
         # Check to make sure event has previously been added
@@ -119,7 +121,7 @@ class StaffEvents(commands.Cog):
         if event_not_in_list and potential_role:
             # If no event in list and no role exists on server
             return await interaction.edit_original_response(
-                content=f"The `{event_name}` event does not exist."
+                content=f"The `{event_name}` event does not exist.",
             )
 
         # If staff member has selected to delete role from all users, delete role entirely
@@ -130,7 +132,7 @@ class StaffEvents(commands.Cog):
             await role.delete()
             if event_not_in_list:
                 return await interaction.edit_original_response(
-                    content=f"The `{event_name}` role was completely deleted from the server. All members with the role no longer have it."
+                    content=f"The `{event_name}` role was completely deleted from the server. All members with the role no longer have it.",
                 )
 
         # Complete operation of removing event
@@ -144,13 +146,13 @@ class StaffEvents(commands.Cog):
         if delete_role == "yes":
             await interaction.edit_original_response(
                 content=f"The `{event_name}` event was deleted entirely. The role has been removed from all users, "
-                f"and can not be added to new users. "
+                f"and can not be added to new users. ",
             )
         else:
             await interaction.edit_original_response(
                 content=f"The `{event_name}` event was deleted partially. Users who have the role currently will keep "
                 f"it, but new members can not access the role.\n\nTo delete the role entirely, re-run the "
-                f"command with `delete_role = yes`. "
+                f"command with `delete_role = yes`. ",
             )
 
 

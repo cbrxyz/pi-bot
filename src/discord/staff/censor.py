@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-import commandchecks
 import discord
-import src.discord.globals
 from discord import app_commands
 from discord.ext import commands
+
+import commandchecks
+import src.discord.globals
 from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
@@ -30,7 +31,8 @@ class StaffCensor(commands.Cog):
     )
 
     @censor_group.command(
-        name="add", description="Staff command. Adds a new entry into the censor."
+        name="add",
+        description="Staff command. Adds a new entry into the censor.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.describe(
@@ -48,13 +50,13 @@ class StaffCensor(commands.Cog):
 
         # Send notice message
         await interaction.response.send_message(
-            f"{EMOJI_LOADING} Attempting to add {censor_type} to censor list."
+            f"{EMOJI_LOADING} Attempting to add {censor_type} to censor list.",
         )
 
         if censor_type == "word":
             if phrase in src.discord.globals.CENSOR["words"]:
                 await interaction.edit_original_response(
-                    content=f"`{phrase}` is already in the censored words list. Operation cancelled."
+                    content=f"`{phrase}` is already in the censored words list. Operation cancelled.",
                 )
             else:
                 src.discord.globals.CENSOR["words"].append(phrase)
@@ -67,12 +69,12 @@ class StaffCensor(commands.Cog):
                 first_letter = phrase[0]
                 last_letter = phrase[-1]
                 await interaction.edit_original_response(
-                    content=f"Added `{first_letter}...{last_letter}` to the censor list."
+                    content=f"Added `{first_letter}...{last_letter}` to the censor list.",
                 )
         elif censor_type == "emoji":
             if phrase in src.discord.globals.CENSOR["emojis"]:
                 await interaction.edit_original_response(
-                    content=f"Emoji is already in the censored emoijs list. Operation cancelled."
+                    content="Emoji is already in the censored emoijs list. Operation cancelled.",
                 )
             else:
                 src.discord.globals.CENSOR["emojis"].append(phrase)
@@ -83,7 +85,7 @@ class StaffCensor(commands.Cog):
                     {"$push": {"emojis": phrase}},
                 )
                 await interaction.edit_original_response(
-                    content=f"Added emoji to the censor list."
+                    content="Added emoji to the censor list.",
                 )
 
     @censor_group.command(
@@ -106,13 +108,13 @@ class StaffCensor(commands.Cog):
 
         # Send notice message
         await interaction.response.send_message(
-            f"{EMOJI_LOADING} Attempting to remove {censor_type} from censor list."
+            f"{EMOJI_LOADING} Attempting to remove {censor_type} from censor list.",
         )
 
         if censor_type == "word":
             if phrase not in src.discord.globals.CENSOR["words"]:
                 await interaction.response.send_message(
-                    content=f"`{phrase}` is not in the list of censored words."
+                    content=f"`{phrase}` is not in the list of censored words.",
                 )
             else:
                 src.discord.globals.CENSOR["words"].remove(phrase)
@@ -123,12 +125,12 @@ class StaffCensor(commands.Cog):
                     {"$pull": {"words": phrase}},
                 )
                 await interaction.edit_original_response(
-                    content=f"Removed `{phrase}` from the censor list."
+                    content=f"Removed `{phrase}` from the censor list.",
                 )
         elif censor_type == "emoji":
             if phrase not in src.discord.globals.CENSOR["emojis"]:
                 await interaction.response.send_message(
-                    content=f"{phrase} is not in the list of censored emojis."
+                    content=f"{phrase} is not in the list of censored emojis.",
                 )
             else:
                 src.discord.globals.CENSOR["emojis"].remove(phrase)
@@ -139,7 +141,7 @@ class StaffCensor(commands.Cog):
                     {"$pull": {"emojis": phrase}},
                 )
                 await interaction.edit_original_response(
-                    content=f"Removed {phrase} from the emojis list."
+                    content=f"Removed {phrase} from the emojis list.",
                 )
 
 

@@ -4,16 +4,18 @@ Holds functionality for members to manage their ping subscriptions.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime
 import logging
 import re
 from typing import TYPE_CHECKING
 
 import discord
-import src.discord.globals
-from commandchecks import is_in_bot_spam
 from discord import app_commands
 from discord.ext import commands
+
+import src.discord.globals
+from commandchecks import is_in_bot_spam
 from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
 
 if TYPE_CHECKING:
@@ -42,21 +44,14 @@ class PingManager(commands.GroupCog, name="ping"):
         Args:
             message (discord.Message): The message that was just sent by a user.
         """
-        # Do not ping for messages in a private channel
-        if message.channel.type == discord.ChannelType.private:
-            return
-
-        # Do not ping for messages from a bot
-        if message.author.bot:
-            return
-
-        # Do not ping for messages from webhooks
-        if message.author.discriminator == "0000":
+        # Do not ping for messages in a private channel or messages from bots
+        if (message.channel.type == discord.ChannelType.private) or message.author.bot:
             return
 
         # Do not ping if the message is coming from the botspam channel
         botspam_channel = discord.utils.get(
-            message.guild.text_channels, name=CHANNEL_BOTSPAM
+            message.guild.text_channels,
+            name=CHANNEL_BOTSPAM,
         )
         if message.channel == botspam_channel:
             return
@@ -79,35 +74,44 @@ class PingManager(commands.GroupCog, name="ping"):
             # Give up event loop to other coroutines in case ping list is long
             await asyncio.sleep(0)
 
-            # Do not ping the author of the message
-            if user["user_id"] == message.author.id:
-                continue
-
-            pings = [rf"\b({ping})\b" for ping in user["word_pings"]]
-
-            # Do not ping any users mentioned in the message
+            # Do not ping if:
+            #   User was author of message.
+            #   User was mentioned in the message.
+            #   User cannot see the channel.
+            #   User has DND enabled.
             user_is_mentioned = user["user_id"] in [m.id for m in message.mentions]
-            if user_is_mentioned:
-                continue
-
-            # Do not ping if the user cannot see the channel or has DND enabled
             user_can_see_channel = user["user_id"] in ids
             user_in_dnd = "dnd" in user and user["dnd"]
-            if not user_can_see_channel or user_in_dnd:
+            if (
+                user["user_id"] == message.author.id
+                or user_is_mentioned
+                or (not user_can_see_channel or user_in_dnd)
+            ):
                 continue
 
             # Count the number of pings in the message
             ping_count = 0
+            pings = [rf"\b({ping})\b" for ping in user["word_pings"]]
             for ping in pings:
-                if len(re.findall(ping, message.content, re.I)):
-                    ping_count += 1
+                try:
+                    if len(re.findall(ping, message.content, re.I)):
+                        ping_count += 1
+                except Exception as e:
+                    logger.error(
+                        f"Could not evaluate message content with ping {ping} of user {user['user_id']}: {str(e)}",
+                    )
 
             if ping_count:
                 user_obj = self.bot.get_user(user["user_id"])
-                await self.send_ping_pm(user_obj, message, ping_count)
+                # Do not throw exception if the user has direct messages disabled
+                with contextlib.suppress(discord.Forbidden):
+                    await self.send_ping_pm(user_obj, message, ping_count)
 
     def format_text(
-        self, text: str, length: int, user: discord.Member | discord.User
+        self,
+        text: str,
+        length: int,
+        user: discord.Member | discord.User,
     ) -> str:
         """
         Highlights ping expressions in the message and shorten long messages
@@ -151,12 +155,15 @@ class PingManager(commands.GroupCog, name="ping"):
         for _, messages in self.recent_messages.items():
             for message in messages[:]:
                 if (discord.utils.utcnow() - message.created_at) > datetime.timedelta(
-                    hours=3
+                    hours=3,
                 ):
                     messages.remove(message)
 
     async def send_ping_pm(
-        self, user: discord.User, message: discord.Message, ping_count: int
+        self,
+        user: discord.User,
+        message: discord.Message,
+        ping_count: int,
     ) -> None:
         """
         Sends a direct message to the user about a message containing a relevant ping expression.
@@ -183,7 +190,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 [
                     f"{message.author.mention}: {self.format_text(message.content, 100, user)}"
                     for message in self.recent_messages[message.channel.id]
-                ]
+                ],
             )
         )
         description = (
@@ -199,7 +206,7 @@ class PingManager(commands.GroupCog, name="ping"):
         embed.set_thumbnail(url=message.author.display_avatar.url)
 
         embed.set_footer(
-            text=f"If you don't want this ping anymore, use /ping remove in the Scioly.org Discord server!"
+            text="If you don't want this ping anymore, use /ping remove in the Scioly.org Discord server!",
         )
 
         # Send the user an alert message
@@ -231,25 +238,26 @@ class PingManager(commands.GroupCog, name="ping"):
             if "dnd" not in user:
                 user["dnd"] = True
                 return await interaction.response.send_message(
-                    "Enabled DND mode for pings."
+                    "Enabled DND mode for pings.",
                 )
             elif user["dnd"]:
                 user["dnd"] = False
                 return await interaction.response.send_message(
-                    "Disabled DND mode for pings."
+                    "Disabled DND mode for pings.",
                 )
             else:
                 user["dnd"] = True
                 return await interaction.response.send_message(
-                    "Enabled DND mode for pings."
+                    "Enabled DND mode for pings.",
                 )
         else:
             return await interaction.response.send_message(
-                "You can't enter DND mode without any pings!"
+                "You can't enter DND mode without any pings!",
             )
 
     @app_commands.command(
-        name="add", description="Adds a new ping to notify you about."
+        name="add",
+        description="Adds a new ping to notify you about.",
     )
     @app_commands.describe(word="The new word to add a ping for.")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
@@ -270,7 +278,7 @@ class PingManager(commands.GroupCog, name="ping"):
         """
         member = interaction.user
         if any(
-            [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id]
+            [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id],
         ):
             # User already has an object in the PING_INFO dictionary
             user = next(
@@ -280,13 +288,13 @@ class PingManager(commands.GroupCog, name="ping"):
             pings = user["word_pings"]
             try:
                 re.findall(word, "test phrase")
-            except:
+            except Exception:
                 return await interaction.response.send_message(
-                    f"Ignoring adding the `{word}` ping because it uses illegal characters."
+                    f"Ignoring adding the `{word}` ping because it uses illegal characters.",
                 )
             if f"({word})" in pings or f"\\b({word})\\b" in pings or word in pings:
                 return await interaction.response.send_message(
-                    f"Ignoring adding the `{word}` ping because you already have a ping currently set as that."
+                    f"Ignoring adding the `{word}` ping because you already have a ping currently set as that.",
                 )
             else:
                 logger.debug(f"adding word: {re.escape(word)}")
@@ -297,7 +305,10 @@ class PingManager(commands.GroupCog, name="ping"):
                 ][0]
                 relevant_doc["word_pings"].append(word)
                 await self.bot.mongo_database.update(
-                    "data", "pings", user["_id"], {"$push": {"word_pings": word}}
+                    "data",
+                    "pings",
+                    user["_id"],
+                    {"$push": {"word_pings": word}},
                 )
         else:
             # User does not already have an object in the PING_INFO dictionary
@@ -316,11 +327,12 @@ class PingManager(commands.GroupCog, name="ping"):
                 "result in you being temporarily disallowed from using or receiving pings.**"
             )
         return await interaction.response.send_message(
-            f"Great! You will now receive an alert for messages that contain the `{word}` word.{small_ping_message}"
+            f"Great! You will now receive an alert for messages that contain the `{word}` word.{small_ping_message}",
         )
 
     @app_commands.command(
-        name="test", description="Tests your pings on an example message."
+        name="test",
+        description="Tests your pings on an example message.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.describe(test="The phrase to test your pings against.")
@@ -364,13 +376,14 @@ class PingManager(commands.GroupCog, name="ping"):
 
         if not matched:
             return await interaction.response.send_message(
-                f"`{test}` matched `0` pings."
+                f"`{test}` matched `0` pings.",
             )
         else:
             return await interaction.response.send_message(response)
 
     @app_commands.command(
-        name="list", description="Lists all of your registered pings."
+        name="list",
+        description="Lists all of your registered pings.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
@@ -395,24 +408,25 @@ class PingManager(commands.GroupCog, name="ping"):
         # User has no pings
         if user is None or len(user["word_pings"]) == 0:
             return await interaction.response.send_message(
-                "You have no registered pings."
+                "You have no registered pings.",
             )
 
         else:
             response = ""
             if len(user["word_pings"]) > 0:
                 response += "Your pings are: " + ", ".join(
-                    [f"`{word}`" for word in user["word_pings"]]
+                    [f"`{word}`" for word in user["word_pings"]],
                 )
             if not response:
                 response = "You have no registered pings."
             await interaction.response.send_message(response)
 
     @app_commands.command(
-        name="remove", description="Removes a ping from your list of registered pings."
+        name="remove",
+        description="Removes a ping from your list of registered pings.",
     )
     @app_commands.describe(
-        word="The word to remove a ping for. Or use 'all' to remove all pings."
+        word="The word to remove a ping for. Or use 'all' to remove all pings.",
     )
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
@@ -439,7 +453,7 @@ class PingManager(commands.GroupCog, name="ping"):
         # The user has no pings
         if user is None or len(user["word_pings"]) == 0:
             return await interaction.response.send_message(
-                "You have no registered pings."
+                "You have no registered pings.",
             )
 
         # Remove all of user's pings
@@ -452,17 +466,20 @@ class PingManager(commands.GroupCog, name="ping"):
                 {"$pull": {"word_pings": {}}},
             )
             return await interaction.response.send_message(
-                "I removed all of your pings."
+                "I removed all of your pings.",
             )
 
         # Attempt to remove a word ping
         if word in user["word_pings"]:
             user["word_pings"].remove(word)
             await self.bot.mongo_database.update(
-                "data", "pings", user["_id"], {"$pull": {"word_pings": word}}
+                "data",
+                "pings",
+                user["_id"],
+                {"$pull": {"word_pings": word}},
             )
             return await interaction.response.send_message(
-                f"I removed the `{word}` ping you were referencing."
+                f"I removed the `{word}` ping you were referencing.",
             )
 
         # Attempt to remove a word ping with extra formatting
@@ -475,23 +492,26 @@ class PingManager(commands.GroupCog, name="ping"):
                 {"$pull": {"word_pings": f"\\e({word})\\b"}},
             )
             return await interaction.response.send_message(
-                f"I removed the `{word}` ping you were referencing."
+                f"I removed the `{word}` ping you were referencing.",
             )
 
         # Attempt to remove a word ping with alternate extra formatting
         elif f"({word})" in user["word_pings"]:
             user["word_pings"].remove(f"({word})")
             await self.bot.mongo_database.update(
-                "data", "pings", user["_id"], {"$pull": {"word_pings": f"({word})"}}
+                "data",
+                "pings",
+                user["_id"],
+                {"$pull": {"word_pings": f"({word})"}},
             )
             return await interaction.response.send_message(
-                f"I removed the `{word}` RegEx ping you were referencing."
+                f"I removed the `{word}` RegEx ping you were referencing.",
             )
 
         else:
             return await interaction.response.send_message(
                 f"I can't find the **`{word}`** ping you are referencing, sorry. Try another ping, or see all of your "
-                f"pings with `/ping list`. "
+                f"pings with `/ping list`. ",
             )
 
 

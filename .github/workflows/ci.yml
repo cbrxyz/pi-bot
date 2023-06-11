@@ -9,7 +9,7 @@ env:
   # Cache version to control pre-commit caches
   CACHE_VERSION: 0
   # 3.9 is recent enough
-  DEFAULT_PYTHON: 3.9.7
+  DEFAULT_PYTHON: 3.10.11
   # Location of the pre-commit cache. This is set by pre-commit, not us!
   PRE_COMMIT_CACHE: ~/.cache/pre-commit
 

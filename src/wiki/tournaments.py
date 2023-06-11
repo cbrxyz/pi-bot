@@ -1,8 +1,5 @@
-import time
-
 import wikitextparser as wtp
 from aioify import aioify
-from tabulate import tabulate
 
 from src.wiki.wiki import get_page_text
 

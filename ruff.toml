@@ -1,0 +1,25 @@
+extend-select = [
+    "UP", # pyupgrade
+    "I", # isort
+    "RUF", # ruff-specific rules
+    "RSE", # flake8-raise (exceptions)
+    "COM", # flake8-comma
+    "C4", # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+
+target-version = "py310"
+
+ignore = [
+    "E501", # Line length
+    "F405", # Unknown import
+    "F403", # Unknown names
+    "SIM115", # too many for now...
+]
+
+[per-file-ignores]
+"__init__.py" = ["F401"]
+"user-config.py" = ["F821"] # undefined names in user-config file
+
+[pydocstyle]
+convention = "google"

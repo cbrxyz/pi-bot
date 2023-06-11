@@ -9,11 +9,11 @@ import re
 from typing import TYPE_CHECKING
 
 import discord
-import src.discord.globals
 from discord.ext import commands
+
+import src.discord.globals
 from src.discord.globals import (
     CATEGORY_STAFF,
-    CENSOR,
     CHANNEL_SUPPORT,
     DISCORD_INVITE_ENDINGS,
     ROLE_UC,
@@ -58,7 +58,7 @@ class Censor(commands.Cog):
         if self.censor_needed(content):
             logger.debug(
                 f"Censoring message by {message.author} because it contained "
-                "a word or emoji on the censor list."
+                "a word or emoji on the censor list.",
             )
 
             await message.delete()
@@ -68,18 +68,19 @@ class Censor(commands.Cog):
         if self.discord_invite_censor_needed(content):
             logger.debug(
                 f"Censoring message by {message.author} because of the it mentioned "
-                "a Discord invite link."
+                "a Discord invite link.",
             )
 
             await message.delete()
             support_channel = discord.utils.get(
-                message.author.guild.text_channels, name=CHANNEL_SUPPORT
+                message.author.guild.text_channels,
+                name=CHANNEL_SUPPORT,
             )
             assert isinstance(support_channel, discord.TextChannel)
             await message.channel.send(
                 f"*Links to external Discord servers can not be sent in accordance "
                 "with rule 12. If you have "
-                f"questions, please ask in {support_channel.mention}.* "
+                f"questions, please ask in {support_channel.mention}.* ",
             )
 
     def censor_needed(self, content: str) -> bool:
@@ -123,7 +124,10 @@ class Censor(commands.Cog):
         # Actually replace content found on the censored words/emojis list
         for word in src.discord.globals.CENSOR["words"]:
             content = re.sub(
-                rf"\b({word})\b", "<censored>", content, flags=re.IGNORECASE
+                rf"\b({word})\b",
+                "<censored>",
+                content,
+                flags=re.IGNORECASE,
             )
         for emoji in src.discord.globals.CENSOR["emojis"]:
             content = re.sub(emoji, "<censored>", content, flags=re.I)
@@ -157,8 +161,9 @@ class Censor(commands.Cog):
         # Log edit event
         logger.info(
             "Message from {0.author} edited to: {0.content}, from: {1.content}".format(
-                after, before
-            )
+                after,
+                before,
+            ),
         )
 
         # Stop the event here for DM's (no need to censor, as author is the
@@ -178,7 +183,7 @@ class Censor(commands.Cog):
                 "You recently edited a message, but it **contained a censored "
                 "word**! Therefore, I unfortunately had to delete it. In the "
                 "future, please do not edit innapropriate words into your "
-                "messages, and they will not be deleted."
+                "messages, and they will not be deleted.",
             )
 
         # Delete messages that have Discord invite links in them
@@ -189,7 +194,7 @@ class Censor(commands.Cog):
                 "You recently edited a message, but it **contained a link to "
                 "another Discord server**! Therefore, I unfortunately had to "
                 "delete it. In the future, please do not edit Discord invite "
-                "links into your messages and they will not be deleted."
+                "links into your messages and they will not be deleted.",
             )
 
     @commands.Cog.listener()

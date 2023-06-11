@@ -6,7 +6,7 @@ status or a list of relevant events.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import motor.motor_asyncio  # MongoDB AsyncIO driver
 from bson.objectid import ObjectId
@@ -24,7 +24,8 @@ class MongoDatabase:
 
     def __init__(self, bot):
         self.client = motor.motor_asyncio.AsyncIOMotorClient(
-            os.getenv("MONGO_URL"), tz_aware=True
+            os.getenv("MONGO_URL"),
+            tz_aware=True,
         )
         self.bot = bot
 
@@ -45,7 +46,10 @@ class MongoDatabase:
         await collection.delete_one({"_id": iden})
 
     async def delete_by(
-        self, db_name: str, collection_name: str, spec: dict[str, Any]
+        self,
+        db_name: str,
+        collection_name: str,
+        spec: dict[str, Any],
     ) -> None:
         """
         Deletes all documents in a collection matching a specific spec.
@@ -59,7 +63,10 @@ class MongoDatabase:
         await collection.delete_many(spec)
 
     async def get_entire_collection(
-        self, db_name: str, collection_name: str, return_one: bool = False
+        self,
+        db_name: str,
+        collection_name: str,
+        return_one: bool = False,
     ):
         """
         Gets an entire collection of documents.
@@ -127,7 +134,10 @@ class MongoDatabase:
         return await self.get_entire_collection("data", "settings", return_one=True)
 
     async def insert(
-        self, db_name: str, collection_name: str, insert_dict: dict[str, Any]
+        self,
+        db_name: str,
+        collection_name: str,
+        insert_dict: dict[str, Any],
     ):
         """
         Inserts a new document into a collection using a dictionary of document to
@@ -150,7 +160,11 @@ class MongoDatabase:
         await collection.update_one({"_id": doc_id}, update_dict)
 
     async def update_many(
-        self, db_name: str, collection_name: str, docs: Any, update_dict: dict[str, Any]
+        self,
+        db_name: str,
+        collection_name: str,
+        docs: Any,
+        update_dict: dict[str, Any],
     ) -> None:
         """
         Updates several documents in a collection with a specific dictionary holding
@@ -161,7 +175,10 @@ class MongoDatabase:
         await collection.update_many({"_id": {"$in": ids}}, update_dict)
 
     async def remove_doc(
-        self, db_name: str, collection_name: str, doc_id: ObjectId
+        self,
+        db_name: str,
+        collection_name: str,
+        doc_id: ObjectId,
     ) -> None:
         """
         Deletes a document (from its ID) from a collection.

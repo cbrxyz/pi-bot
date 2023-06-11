@@ -4,11 +4,12 @@ import datetime
 import logging
 import random
 import traceback
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 import discord
-import src.discord.globals
 from discord.ext import commands, tasks
+
+import src.discord.globals
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import UnselfmuteView
 
@@ -29,15 +30,15 @@ class CronTasks(commands.Cog):
     async def on_ready(self) -> None:
         try:
             await self.pull_prev_info()
-        except Exception as e:
+        except Exception:
             logger.error(
-                "Error in starting function with pulling previous information:"
+                "Error in starting function with pulling previous information:",
             )
             traceback.print_exc()
 
         try:
             await update_invitational_list(self.bot, {})
-        except Exception as e:
+        except Exception:
             logger.error("Error in starting function with updating tournament list:")
             traceback.print_exc()
 
@@ -50,7 +51,8 @@ class CronTasks(commands.Cog):
     async def send_unselfmute(self):
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         unselfmute_channel = discord.utils.get(
-            guild.text_channels, name=src.discord.globals.CHANNEL_UNSELFMUTE
+            guild.text_channels,
+            name=src.discord.globals.CHANNEL_UNSELFMUTE,
         )
         assert isinstance(unselfmute_channel, discord.TextChannel)
         messages = [msg async for msg in unselfmute_channel.history()]
@@ -58,7 +60,7 @@ class CronTasks(commands.Cog):
             await messages[0].edit(view=UnselfmuteView(self.bot))
         else:  # No message exists in the channel yet!
             embed = discord.Embed(
-                description=f"""
+                description="""
                                   Clicking the reaction below will remove your selfmute, allowing you access back to the server. All of the remaining time on your selfmute will be removed. If you have questions, please DM a moderator.
                                   """,
                 color=discord.Color.brand_red(),
@@ -94,7 +96,9 @@ class CronTasks(commands.Cog):
         await self.bot.mongo_database.delete("data", "cron", doc_id)
 
     async def schedule_unban(
-        self, user: discord.Member | discord.User, time: datetime.datetime
+        self,
+        user: discord.Member | discord.User,
+        time: datetime.datetime,
     ) -> None:
         """
         Schedules for a particular Discord user to be unbanned at a particular time.
@@ -103,7 +107,9 @@ class CronTasks(commands.Cog):
         await self.add_to_cron(item_dict)
 
     async def schedule_unmute(
-        self, user: discord.Member | discord.User, time: datetime.datetime
+        self,
+        user: discord.Member | discord.User,
+        time: datetime.datetime,
     ) -> None:
         """
         Schedules for a particular Discord user to be unmuted at a particular time.
@@ -112,7 +118,9 @@ class CronTasks(commands.Cog):
         await self.add_to_cron(item_dict)
 
     async def schedule_unselfmute(
-        self, user: discord.Member | discord.User, time: datetime.datetime
+        self,
+        user: discord.Member | discord.User,
+        time: datetime.datetime,
     ) -> None:
         """
         Schedules for a particular Discord user to be un-selfmuted at a particular time.
@@ -152,10 +160,12 @@ class CronTasks(commands.Cog):
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         channel_prefix = "Members"
         vc = discord.utils.find(
-            lambda c: channel_prefix in c.name, guild.voice_channels
+            lambda c: channel_prefix in c.name,
+            guild.voice_channels,
         )
         left_channel = discord.utils.get(
-            guild.text_channels, name=src.discord.globals.CHANNEL_LEAVE
+            guild.text_channels,
+            name=src.discord.globals.CHANNEL_LEAVE,
         )
 
         # Type checking
@@ -171,7 +181,7 @@ class CronTasks(commands.Cog):
                 for m in guild.members
                 if isinstance(m.joined_at, datetime.datetime)
                 and m.joined_at.date() == discord.utils.utcnow().date()
-            ]
+            ],
         )
         left_messages = [c async for c in left_channel.history(limit=200)]
         left_today = len(
@@ -179,7 +189,7 @@ class CronTasks(commands.Cog):
                 m
                 for m in left_messages
                 if m.created_at.date() == discord.utils.utcnow().date()
-            ]
+            ],
         )
 
         # Edit the voice channel
@@ -211,7 +221,7 @@ class CronTasks(commands.Cog):
                         logger.error("ERROR:")
                         reporter_cog = self.bot.get_cog("Reporter")
                         await reporter_cog.create_cron_task_report(task)
-                except Exception as _:
+                except Exception:
                     traceback.print_exc()
                     reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
                     await reporter_cog.create_cron_task_report(task)
@@ -237,11 +247,13 @@ class CronTasks(commands.Cog):
             already_unbanned = False
             try:
                 await server.unban(member)
-            except:
+            except Exception:
                 # The unbanning failed (likely the user was already unbanned)
                 already_unbanned = True
             await reporter_cog.create_cron_unban_auto_notice(
-                member, is_present=False, already_unbanned=already_unbanned
+                member,
+                is_present=False,
+                already_unbanned=already_unbanned,
             )
 
         # Remove cron task.
@@ -255,7 +267,8 @@ class CronTasks(commands.Cog):
         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
         reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
         muted_role = discord.utils.get(
-            server.roles, name=src.discord.globals.ROLE_MUTED
+            server.roles,
+            name=src.discord.globals.ROLE_MUTED,
         )
 
         # Type checking
@@ -281,9 +294,10 @@ class CronTasks(commands.Cog):
         """
         # Get the necessary resources
         server = self.bot.get_guild(src.discord.globals.SERVER_ID)
-        reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
+        self.bot.get_cog("Reporter")
         muted_role = discord.utils.get(
-            server.roles, name=src.discord.globals.ROLE_SELFMUTE
+            server.roles,
+            name=src.discord.globals.ROLE_SELFMUTE,
         )
 
         # Type checking
@@ -349,7 +363,7 @@ class CronTasks(commands.Cog):
             {"type": "watching", "text": "Jmol tutorials"},
         ]
         bot_status = None
-        if self.bot.settings["custom_bot_status_type"] == None:
+        if self.bot.settings["custom_bot_status_type"] is None:
             bot_status = random.choice(statuses)
         else:
             bot_status = {
@@ -359,19 +373,21 @@ class CronTasks(commands.Cog):
 
         if bot_status["type"] == "playing":
             await self.bot.change_presence(
-                activity=discord.Game(name=bot_status["text"])
+                activity=discord.Game(name=bot_status["text"]),
             )
         elif bot_status["type"] == "listening":
             await self.bot.change_presence(
                 activity=discord.Activity(
-                    type=discord.ActivityType.listening, name=bot_status["text"]
-                )
+                    type=discord.ActivityType.listening,
+                    name=bot_status["text"],
+                ),
             )
         elif bot_status["type"] == "watching":
             await self.bot.change_presence(
                 activity=discord.Activity(
-                    type=discord.ActivityType.watching, name=bot_status["text"]
-                )
+                    type=discord.ActivityType.watching,
+                    name=bot_status["text"],
+                ),
             )
         logger.info("Changed the bot's status.")
 

@@ -1,14 +1,8 @@
 ---
 default_language_version:
-  python: python3.8
+  python: python3.10
 
 repos:
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        name: isort (python)
-        args: ['--profile', 'black']
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.27.1
     hooks:
@@ -17,11 +11,17 @@ repos:
     rev: 22.3.0
     hooks:
       - id: black
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Ruff version.
+    rev: 'v0.0.260'
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.37.1
     hooks:
       - id: pyupgrade
-        args: [--py38-plus]
+        args: [--py310-plus]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
-import src.discord.globals
 from discord.ext import commands
+
 from src.discord.globals import (
     CATEGORY_ARCHIVE,
     CATEGORY_INVITATIONALS,
@@ -69,7 +69,8 @@ class AllInvitationalsView(discord.ui.View):
         if all_invitationals_role in member.roles:
             await member.remove_roles(all_invitationals_role)
             await interaction.response.send_message(
-                content="I have removed your `All Invitationals` role!", ephemeral=True
+                content="I have removed your `All Invitationals` role!",
+                ephemeral=True,
             )
         else:
             await member.add_roles(all_invitationals_role)
@@ -81,7 +82,10 @@ class AllInvitationalsView(discord.ui.View):
 
 class InvitationalDropdown(discord.ui.Select):
     def __init__(
-        self, month_invitationals: list[Invitational], bot: PiBot, voting=False
+        self,
+        month_invitationals: list[Invitational],
+        bot: PiBot,
+        voting=False,
     ):
 
         final_options = []
@@ -89,11 +93,11 @@ class InvitationalDropdown(discord.ui.Select):
             final_options.append(
                 discord.SelectOption(
                     label=tourney.official_name
-                    if not tourney.status == "archived"
+                    if tourney.status != "archived"
                     else f"{tourney.official_name} (archived)",
                     description=f"Occurs on {str(tourney.tourney_date.date())}.",
                     emoji=tourney.emoji,
-                )
+                ),
             )
 
         super().__init__(
@@ -146,7 +150,8 @@ class InvitationalDropdown(discord.ui.Select):
             for value in self.values:
                 # For each invitational selected
                 invitational = discord.utils.get(
-                    self.invitationals, official_name=value
+                    self.invitationals,
+                    official_name=value,
                 )
                 if member.id in invitational.voters:
                     # This user has already voted for this invitational.
@@ -185,7 +190,7 @@ class InvitationalDropdownView(discord.ui.View):
         super().__init__(timeout=None)
         self.voting = voting
         self.add_item(
-            InvitationalDropdown(month_invitationals, bot, voting=self.voting)
+            InvitationalDropdown(month_invitationals, bot, voting=self.voting),
         )
 
 
@@ -209,14 +214,17 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
     assert isinstance(server, discord.Guild)
 
     invitational_channel = discord.utils.get(
-        server.text_channels, name=CHANNEL_INVITATIONALS
+        server.text_channels,
+        name=CHANNEL_INVITATIONALS,
     )
     invitational_category = discord.utils.get(
-        server.categories, name=CATEGORY_INVITATIONALS
+        server.categories,
+        name=CATEGORY_INVITATIONALS,
     )
     bot_spam_channel = discord.utils.get(server.text_channels, name=CHANNEL_BOTSPAM)
     server_support_channel = discord.utils.get(
-        server.text_channels, name=CHANNEL_SUPPORT
+        server.text_channels,
+        name=CHANNEL_SUPPORT,
     )
     assert isinstance(invitational_channel, discord.TextChannel)
     assert isinstance(invitational_category, discord.CategoryChannel)
@@ -258,7 +266,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
         day_diff = (t.tourney_date - now).days
 
         logger.info(
-            f"Invitational List: Handling {t.official_name} (Day diff: {day_diff} days)"
+            f"Invitational List: Handling {t.official_name} (Day diff: {day_diff} days)",
         )
 
         if isinstance(channel, discord.TextChannel) and t.status == "archived":
@@ -270,13 +278,16 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             if channel_category.name != CATEGORY_ARCHIVE:
                 # If channel is not in category archive, then archive it
                 archive_category = discord.utils.get(
-                    server.categories, name=CATEGORY_ARCHIVE
+                    server.categories,
+                    name=CATEGORY_ARCHIVE,
                 )
                 competitions_channel = discord.utils.get(
-                    server.text_channels, name=CHANNEL_COMPETITIONS
+                    server.text_channels,
+                    name=CHANNEL_COMPETITIONS,
                 )
                 invitational_role = discord.utils.get(
-                    server.roles, name=t.official_name
+                    server.roles,
+                    name=t.official_name,
                 )
 
                 # Type checking
@@ -296,10 +307,14 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
 
                 # Send embed and update channel permissions
                 await channel.set_permissions(
-                    invitational_role, send_messages=False, view_channel=True
+                    invitational_role,
+                    send_messages=False,
+                    view_channel=True,
                 )
                 await channel.set_permissions(
-                    all_invitationals_role, send_messages=False, view_channel=True
+                    all_invitationals_role,
+                    send_messages=False,
+                    view_channel=True,
                 )
                 await channel.edit(category=archive_category, position=1000)
                 await channel.send(embed=embed)
@@ -311,13 +326,14 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             assert isinstance(channel_category, discord.CategoryChannel)
             assert isinstance(role, discord.Role)
 
-            if day_diff < -after_days:
+            if day_diff < -after_days and channel_category.name != CATEGORY_ARCHIVE:
                 # If past invitational date, now out of range - make warning report to archive
-                if channel_category.name != CATEGORY_ARCHIVE:
-                    reporter_cog: commands.Cog | Reporter = bot.get_cog("Reporter")
-                    await reporter_cog.create_invitational_archive_report(
-                        t, channel, role
-                    )
+                reporter_cog: commands.Cog | Reporter = bot.get_cog("Reporter")
+                await reporter_cog.create_invitational_archive_report(
+                    t,
+                    channel,
+                    role,
+                )
 
             # Fix channel attributes in case changed/broken
             to_change = {}
@@ -331,7 +347,8 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
 
             if channel_category.name == CATEGORY_ARCHIVE:
                 to_change["category"] = discord.utils.get(
-                    server.categories, name=CATEGORY_INVITATIONALS
+                    server.categories,
+                    name=CATEGORY_INVITATIONALS,
                 )
 
             if len(to_change):
@@ -344,7 +361,9 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
                 or not invitational_role_perms.send_messages
             ):
                 await channel.set_permissions(
-                    role, send_messages=True, read_messages=True
+                    role,
+                    send_messages=True,
+                    read_messages=True,
                 )
 
             all_tourney_role_perms = channel.permissions_for(all_invitationals_role)
@@ -353,7 +372,9 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
                 or not all_tourney_role_perms.send_messages
             ):
                 await channel.set_permissions(
-                    all_invitationals_role, send_messages=True, read_messages=True
+                    all_invitationals_role,
+                    send_messages=True,
+                    read_messages=True,
                 )
 
         elif channel is None and t.status == "open":
@@ -361,7 +382,8 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             logger.info(f"Creating new channel for #{t.channel_name}.")
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(
-                t.channel_name, category=invitational_category
+                t.channel_name,
+                category=invitational_category,
             )
 
             await new_channel.edit(
@@ -370,7 +392,8 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             )
             await new_channel.set_permissions(new_role, read_messages=True)
             await new_channel.set_permissions(
-                all_invitationals_role, read_messages=True
+                all_invitationals_role,
+                read_messages=True,
             )
             await new_channel.set_permissions(server.default_role, read_messages=False)
             logger.info(f"Created new channel for #{t.channel_name}.")
@@ -428,7 +451,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             # No invitationals in the given month :(
             if not month["optional"]:
                 await invitational_channel.send(
-                    f"Sorry, there are no channels opened for invitationals in **{month['name']} {month['year']}**."
+                    f"Sorry, there are no channels opened for invitationals in **{month['name']} {month['year']}**.",
                 )
 
     voting_invitationals = [t for t in invitationals if t.status == "voting"]
@@ -445,7 +468,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
         )
     else:
         await invitational_channel.send(
-            "Sorry, there no invitationals are currently being voted on."
+            "Sorry, there no invitationals are currently being voted on.",
         )
 
     # Give user option to enable/disable visibility of all invitationals

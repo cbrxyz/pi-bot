@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+
 from src.discord.globals import ROLE_MUTED, SERVER_ID
 
 if TYPE_CHECKING:
@@ -58,12 +59,12 @@ class SpamManager(commands.Cog):
 
             # Send info message to channel about mute
             info_message = await message.channel.send(
-                f"Successfully muted {message.author.mention} for 1 hour."
+                f"Successfully muted {message.author.mention} for 1 hour.",
             )
 
             # Send info message to staff about mute
             staff_embed_message = discord.Embed(
-                title=f"Automatic mute occurred",
+                title="Automatic mute occurred",
                 color=discord.Color.yellow(),
                 description=f"""
                 {message.author.mention} was automatically muted in {message.channel} for **repeatedly spamming similar messages**. The user was **repeatedly warned**, and sent **{self.mute_limit} messages** before a mute was applied.
@@ -77,7 +78,7 @@ class SpamManager(commands.Cog):
             await reporter_cog.create_staff_message(staff_embed_message)
         elif matching_messages_count >= self.warning_limit:
             await message.author.send(
-                f"{message.author.mention}, please avoid spamming. Additional spam will lead to your account being temporarily muted."
+                f"{message.author.mention}, please avoid spamming. Additional spam will lead to your account being temporarily muted.",
             )
 
     async def check_for_caps(self, message: discord.Message) -> None:
@@ -100,12 +101,12 @@ class SpamManager(commands.Cog):
 
             # Send info message to channel about mute
             info_message = await message.channel.send(
-                f"Successfully muted {message.author.mention} for 1 hour."
+                f"Successfully muted {message.author.mention} for 1 hour.",
             )
 
             # Send info message to staff about mute
             staff_embed_message = discord.Embed(
-                title=f"Automatic mute occurred",
+                title="Automatic mute occurred",
                 color=discord.Color.yellow(),
                 description=f"""
                 {message.author.mention} was automatically muted in {message.channel} for **repeatedly using caps** in their messages. The user was **repeatedly warned**, and sent **{self.caps_limit} messages** before a mute was applied.
@@ -119,7 +120,7 @@ class SpamManager(commands.Cog):
             await reporter_cog.create_staff_message(staff_embed_message)
         elif caps_messages_count >= self.warning_limit and self.has_caps(message):
             await message.author.send(
-                f"{message.author.mention}, please avoid using all caps in your messages. Repeatedly doing so will cause your account to be temporarily muted."
+                f"{message.author.mention}, please avoid using all caps in your messages. Repeatedly doing so will cause your account to be temporarily muted.",
             )
 
     async def mute(self, member: discord.Member) -> None:

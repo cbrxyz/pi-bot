@@ -1,10 +1,10 @@
 """
 Stores various checks for specific commands, including privileged commands.
 """
-from typing import Union
 
 import discord
 from discord.ext import commands
+
 from src.discord.globals import ROLE_STAFF, ROLE_VIP
 
 
@@ -19,13 +19,14 @@ def is_in_bot_spam(interaction: discord.Interaction):
     if staff_role in interaction.user.roles or vip_role in interaction.user.roles:
         return True
 
-    if isinstance(interaction.channel, (discord.abc.GuildChannel, discord.Thread)):
+    if isinstance(interaction.channel, discord.abc.GuildChannel | discord.Thread):
         return interaction.channel.name in ["bot-spam", "welcome"]
     return False
 
 
 def is_staff_from_ctx(
-    ctx: Union[commands.Context, discord.Interaction], no_raise: bool = False
+    ctx: commands.Context | discord.Interaction,
+    no_raise: bool = False,
 ) -> bool:
     """
     Checks to see whether the user is a staff member from the provided context.
@@ -55,7 +56,8 @@ def is_staff_from_ctx(
     if isinstance(member, discord.User):
         member = guild.get_member(member.id)
         assert isinstance(
-            member, discord.Member
+            member,
+            discord.Member,
         )  # If this fails, user isn't in server anyways
 
     if any(r in [staff_role, vip_role] for r in member.roles):
