@@ -132,6 +132,28 @@ class Censor(commands.Cog):
         for emoji in src.discord.globals.CENSOR["emojis"]:
             content = re.sub(emoji, "<censored>", content, flags=re.I)
 
+        reply = (
+            (message.reference.resolved or message.reference.cached_message)
+            if message.reference
+            else None
+        )
+        if isinstance(reply, discord.Message):
+            post_bar = "╭────────"
+            logger.warn(reply.content)
+            if reply.content.startswith(post_bar):
+                reply.content = reply.content[reply.content.find("\n") + 1 :]
+            stripped_content = (
+                f"{reply.content[:50]}..." if len(reply.content) > 50 else reply.content
+            )
+            remove_chars = ["\n", "\t", post_bar, r"*"]
+            for char in remove_chars:
+                stripped_content = stripped_content.replace(char, " ")
+            stripped_content = stripped_content.strip()
+            logger.warn(repr(stripped_content))
+            content = (
+                f"{post_bar} {reply.author.mention}: *{stripped_content}*\n{content}"
+            )
+
         # Make sure pinging through @everyone, @here, or any role can not happen
         mention_perms = discord.AllowedMentions(everyone=False, users=True, roles=False)
         await webhook.send(
@@ -139,6 +161,7 @@ class Censor(commands.Cog):
             username=f"{author} (auto-censor)",
             avatar_url=avatar,
             allowed_mentions=mention_perms,
+            silent=isinstance(reply, discord.Message),
         )
         await webhook.delete()
 
