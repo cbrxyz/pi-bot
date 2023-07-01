@@ -333,62 +333,132 @@ class CronTasks(commands.Cog):
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):
-        statuses = [
-            {"type": "playing", "text": "Game On"},
-            {"type": "listening", "text": "my SoM instrument"},
-            {"type": "playing", "text": "with Pi-Bot Beta"},
-            {"type": "playing", "text": "with my gravity vehicle"},
-            {"type": "watching", "text": "the WS trials"},
-            {"type": "watching", "text": "birbs"},
-            {"type": "watching", "text": "2018 Nationals again"},
-            {"type": "watching", "text": "the sparkly stars"},
-            {"type": "watching", "text": "over the week"},
-            {"type": "watching", "text": "for tourney results"},
-            {"type": "listening", "text": "birb sounds"},
-            {"type": "playing", "text": "with proteins"},
-            {"type": "playing", "text": "with my detector"},
-            {"type": "playing", "text": "Minecraft"},
-            {"type": "playing", "text": "with circuits"},
-            {"type": "watching", "text": "my PPP fall"},
-            {"type": "playing", "text": "a major scale"},
-            {"type": "listening", "text": "clinking medals"},
-            {"type": "watching", "text": "the world learn"},
-            {"type": "watching", "text": "SciOly grow"},
-            {"type": "watching", "text": "tutorials"},
-            {"type": "playing", "text": "with wiki templates"},
-            {"type": "playing", "text": "the flute"},
-            {"type": "watching", "text": "bear eat users"},
-            {"type": "watching", "text": "xkcd"},
-            {"type": "playing", "text": "with wiki templates"},
-            {"type": "watching", "text": "Jmol tutorials"},
+        member_count = (
+            self.bot.get_guild(src.discord.globals.SERVER_ID).member_count or 0
+        )
+        activities = [
+            discord.Activity(type=discord.ActivityType.playing, name="Game On"),
+            discord.Activity(type=discord.ActivityType.watching, name="bear eat users"),
+            discord.Activity(type=discord.ActivityType.listening, name="lofi"),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="my balsa plane fly",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.listening,
+                name="#announcements",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="Assassinator's next move",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="the Recent Changes page",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name=f"over {member_count} members",
+            ),
+            discord.Activity(type=discord.ActivityType.playing, name="Tetris"),
+            discord.Activity(type=discord.ActivityType.playing, name="Minecraft"),
+            discord.Activity(type=discord.ActivityType.listening, name="birb calls"),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="the sky for stars",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="anatomical explanations",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="ES training videos",
+            ),
+            discord.Activity(type=discord.ActivityType.watching, name="birbs"),
+            discord.Activity(type=discord.ActivityType.playing, name="with circuits"),
+            discord.Activity(
+                type=discord.ActivityType.listening,
+                name="clinking medals",
+            ),
+            discord.Activity(type=discord.ActivityType.listening, name="Taylor Swift"),
+            discord.Activity(
+                type=discord.ActivityType.playing,
+                name="with wiki templates",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.listening,
+                name="my SoM instrument",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="my succulents grow",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.listening,
+                name="voices in the wind",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.listening,
+                name="voices in my head",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.listening,
+                name="your suggestions",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="cute cat videos",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="physics lectures",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="out for new staff",
+            ),
+            discord.Activity(type=discord.ActivityType.playing, name="with my bridge"),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="Earth get hotter",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.playing,
+                name="with my WiFi antenna",
+            ),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="for new forum posts",
+            ),
+            discord.Activity(type=discord.ActivityType.listening, name="the teachings"),
+            discord.Activity(type=discord.ActivityType.listening, name="alumni advice"),
+            discord.Activity(type=discord.ActivityType.watching, name="for bad words"),
+            discord.Activity(
+                type=discord.ActivityType.watching,
+                name="for tourney results",
+            ),
         ]
-        bot_status = None
+        activity = None
         if self.bot.settings["custom_bot_status_type"] is None:
-            bot_status = random.choice(statuses)
+            activity = random.choice(activities)
         else:
-            bot_status = {
-                "type": self.bot.settings["custom_bot_status_type"],
-                "text": self.bot.settings["custom_bot_status_text"],
-            }
-
-        if bot_status["type"] == "playing":
-            await self.bot.change_presence(
-                activity=discord.Game(name=bot_status["text"]),
-            )
-        elif bot_status["type"] == "listening":
-            await self.bot.change_presence(
-                activity=discord.Activity(
-                    type=discord.ActivityType.listening,
-                    name=bot_status["text"],
-                ),
-            )
-        elif bot_status["type"] == "watching":
-            await self.bot.change_presence(
-                activity=discord.Activity(
+            try:
+                activity_type = getattr(
+                    discord.ActivityType,
+                    self.bot.settings["custom_bot_status_type"],
+                )
+                activity = discord.Activity(
+                    type=activity_type,
+                    text=self.bot.settings["custom_bot_status_text"],
+                )
+            except Exception:
+                activity = discord.Activity(
                     type=discord.ActivityType.watching,
-                    name=bot_status["text"],
-                ),
-            )
+                    text="Error with custom s.",
+                )
+
+        await self.bot.change_presence(activity=activity)
         logger.info("Changed the bot's status.")
 
 
