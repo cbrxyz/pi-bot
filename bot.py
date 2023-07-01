@@ -220,7 +220,7 @@ class PiBot(commands.Bot):
         if isinstance(message.channel, discord.DMChannel) and message.author != bot:
             logger_cog: commands.Cog | Logger = self.get_cog("Logger")
             await logger_cog.send_to_dm_log(message)
-            logger.debug(
+            logger.info(
                 f"Message from {message.author} through DM's: {message.content}",
             )
         else:
@@ -231,7 +231,7 @@ class PiBot(commands.Bot):
                 in [CHANNEL_EDITEDM, CHANNEL_DELETEDM, CHANNEL_DMLOG]
             ):
                 # avoid sending logs for messages in log channels
-                logger.debug(
+                logger.info(
                     f"Message from {message.author} in #{message.channel}: {message.content}",
                 )
 
