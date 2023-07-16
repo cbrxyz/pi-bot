@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SelectionDropdown(discord.ui.Select):
+class SelectionDropdown(discord.ui.Select["Chooser"]):
     def __init__(self, item_type: str, options: list[str]):
         first_letter = options[0][0].title()
         last_letter = options[-1][0].title()
@@ -31,16 +31,19 @@ class SelectionDropdown(discord.ui.Select):
             max_values=len(prepared_options),
         )
 
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(
-            f"Selected {self.values[0]}",
-            ephemeral=True,
-        )
+    async def callback(self, interaction: discord.Interaction):
+        assert self.view is not None
+        self.view.chosen_values = self.values
+        self.view.stop()
 
 
 class Chooser(discord.ui.View):
+
+    chosen_values: list[str]  # List of values the user chose
+
     def __init__(self, item_type: str, options: list[str]):
         super().__init__()
+        self.chosen_values = []
         self.add_item(SelectionDropdown(item_type, options))
 
     async def on_timeout(self):
@@ -50,9 +53,13 @@ class Chooser(discord.ui.View):
 class InitialView(discord.ui.View):
     menus = [
         Chooser("state", ["Alabama", "Alaska", "Arizona", "Arkansas"]),
+        Chooser("event", ["Anatomy", "Astronomy", "Boomilever", "Chem Lab"]),
     ]
 
-    @discord.ui.button(label="Gain server access")
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Gain server access", custom_id="welcome:request_access")
     async def request_access(
         self,
         interaction: discord.Interaction,
@@ -63,6 +70,14 @@ class InitialView(discord.ui.View):
             view=self.menus[0],
             ephemeral=True,
         )
+        await self.menus[0].wait()
+        print(f"User chose: {self.menus[0].chosen_values}")
+        await interaction.edit_original_response(
+            content="Next, select the events you do.",
+            view=self.menus[1],
+        )
+        await self.menus[1].wait()
+        print(f"User chose: {self.menus[1].chosen_values}")
 
 
 class WelcomeCog(commands.GroupCog, name="welcome"):
@@ -119,3 +134,4 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
 async def setup(bot: PiBot):
     cog = WelcomeCog(bot)
     await bot.add_cog(cog)
+    bot.add_view(InitialView())
