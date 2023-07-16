@@ -163,6 +163,7 @@ class PiBot(commands.Bot):
         extensions = (
             "src.discord.censor",
             "src.discord.ping",
+            "src.discord.welcome",
             "src.discord.staffcommands",
             "src.discord.staff.invitationals",
             "src.discord.staff.censor",
