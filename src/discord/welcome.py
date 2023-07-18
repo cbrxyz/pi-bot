@@ -4,7 +4,8 @@ Holds functionality for the welcome system.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Generator
+from typing import TYPE_CHECKING, TypeVar
 
 import discord
 from discord.ext import commands, tasks
@@ -16,19 +17,23 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+V = TypeVar("V")
+
+
+def batch(iter: list[V], n: int) -> Generator[list[V], None, None]:
+    length = len(iter)
+    for ndx in range(0, length, n):
+        yield iter[ndx : min(ndx + n, length)]
 
 
 class SelectionDropdown(discord.ui.Select["Chooser"]):
-    def __init__(self, item_type: str, options: list[str]):
-        first_letter = options[0][0].title()
-        last_letter = options[-1][0].title()
-        prepared_options = [
-            discord.SelectOption(label=option, value=option) for option in options
-        ]
+    def __init__(self, item_type: str, options: list[discord.SelectOption]):
+        first_letter = options[0].label[0].title()
+        last_letter = options[-1].label[0].title()
         super().__init__(
             placeholder=f"{item_type.title()}s {first_letter}-{last_letter}...",
-            options=prepared_options,
-            max_values=len(prepared_options),
+            options=options,
+            max_values=len(options),
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -37,47 +42,97 @@ class SelectionDropdown(discord.ui.Select["Chooser"]):
         self.view.stop()
 
 
+class AcceptButton(discord.ui.Button["Chooser"]):
+    def __init__(self):
+        super().__init__(style=discord.ButtonStyle.green, label="Accept", row=4)
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.view:
+            self.view.stop()
+
+
+class SkipButton(discord.ui.Button["Chooser"]):
+    def __init__(self):
+        super().__init__(style=discord.ButtonStyle.gray, label="Skip", row=4)
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.view:
+            self.view.chosen_values = []
+            self.view.stop()
+
+
 class Chooser(discord.ui.View):
 
     chosen_values: list[str]  # List of values the user chose
 
-    def __init__(self, item_type: str, options: list[str]):
+    def __init__(
+        self,
+        item_type: str,
+        options: list[discord.SelectOption],
+        count: int = 25,
+    ):
         super().__init__()
         self.chosen_values = []
-        self.add_item(SelectionDropdown(item_type, options))
+        for options_batch in batch(options, count):
+            self.add_item(SelectionDropdown(item_type, options_batch))
+        if self.chosen_values:
+            self.add_item(AcceptButton())
+        self.add_item(SkipButton())
 
     async def on_timeout(self):
         pass
 
 
 class InitialView(discord.ui.View):
-    menus = [
-        Chooser("state", ["Alabama", "Alaska", "Arizona", "Arkansas"]),
-        Chooser("event", ["Anatomy", "Astronomy", "Boomilever", "Chem Lab"]),
-    ]
-
-    def __init__(self):
+    def __init__(self, bot: PiBot):
         super().__init__(timeout=None)
+        self.bot = bot
 
     @discord.ui.button(label="Gain server access", custom_id="welcome:request_access")
     async def request_access(
         self,
         interaction: discord.Interaction,
-        button: discord.ui.Button,
+        _: discord.ui.Button,
     ):
+        STATES_GUILD = 1
+        emoji_guild = self.bot.get_guild(STATES_GUILD)
+        if emoji_guild is None:
+            emoji_guild = await self.bot.fetch_guild(STATES_GUILD)
+        assert isinstance(emoji_guild, discord.Guild)
+
+        state_options: list[discord.SelectOption] = []
+        for emoji in emoji_guild.emojis:
+            if emoji.name != "california":  # handle california later
+                state_options.append(
+                    discord.SelectOption(
+                        label=emoji.name.replace("_", " ").title(),
+                        emoji=emoji,
+                    ),
+                )
+
+        # Handle California
+        california_emoji = discord.utils.get(emoji_guild.emojis, name="california")
+        assert isinstance(california_emoji, discord.Emoji)
+        state_options.append(
+            discord.SelectOption(label="California (North)", emoji=california_emoji),
+        )
+        state_options.append(
+            discord.SelectOption(label="California (South)", emoji=california_emoji),
+        )
+        state_options.sort(key=lambda x: x.label)
+
+        state_chooser = Chooser(
+            "state",
+            state_options,
+            count=19,
+        )
         await interaction.response.send_message(
             "Select your state to gain access to the server.",
-            view=self.menus[0],
+            view=state_chooser,
             ephemeral=True,
         )
-        await self.menus[0].wait()
-        print(f"User chose: {self.menus[0].chosen_values}")
-        await interaction.edit_original_response(
-            content="Next, select the events you do.",
-            view=self.menus[1],
-        )
-        await self.menus[1].wait()
-        print(f"User chose: {self.menus[1].chosen_values}")
+        await state_chooser.wait()
+        print(f"User chose: {state_chooser.chosen_values}")
 
 
 class WelcomeCog(commands.GroupCog, name="welcome"):
@@ -121,7 +176,7 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
 
         history = [m async for m in channel.history(limit=1)]
         embed = self.generate_welcome_embed()
-        view = InitialView()
+        view = InitialView(self.bot)
         if not history:
             await channel.send(embed=embed, view=view)
         elif (
@@ -134,4 +189,4 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
 async def setup(bot: PiBot):
     cog = WelcomeCog(bot)
     await bot.add_cog(cog)
-    bot.add_view(InitialView())
+    bot.add_view(InitialView(bot))
