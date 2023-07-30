@@ -145,20 +145,23 @@ class InitialView(discord.ui.View):
         )
         profile_embed.set_thumbnail(url=interaction.user.display_avatar.url)
         interaction.user.display_avatar
-        formatted_states = []
         for k, v in self.chosen_roles.items():
+            formatted_items = []
             v.sort(key=lambda x: x.name)
-            states_added = 0
+            items_added = 0
             for item in v:
-                total_length = sum(len(format) for format in formatted_states)
+                total_length = sum(len(format) for format in formatted_items)
                 print(f"processing {item}: {total_length}")
                 if total_length < 925:
-                    formatted_states.append(f"{item.emoji} **{item.name}**")
-                    states_added += 1
-            states_list = "\n".join(formatted_states)
-            if states_added < len(v):
-                states_list += f"\n_... {len(v) - states_added} not shown_"
-            profile_embed.add_field(name=k, value=states_list)
+                    formatted_items.append(f"{item.emoji} **{item.name}**")
+                    items_added += 1
+            items_list = "\n".join(formatted_items)
+            if items_added < len(v):
+                items_list += f"\n_... {len(v) - items_added} not shown_"
+            profile_embed.add_field(
+                name=k if len(v) == 1 else f"{k}s",
+                value=items_list,
+            )
         return {
             "content": "Great start to your profile!",
             "embed": profile_embed,
@@ -176,10 +179,8 @@ class InitialView(discord.ui.View):
         _: discord.ui.Button,
     ):
         STATES_GUILD = 1
-        self.emoji_guild = self.bot.get_guild(STATES_GUILD)
-        if self.emoji_guild is None:
-            self.emoji_guild = await self.bot.fetch_guild(STATES_GUILD)
-        assert isinstance(self.emoji_guild, discord.Guild)
+        emoji_guild = self.bot.get_guild(STATES_GUILD)
+        self.emoji_guild = emoji_guild or await self.bot.fetch_guild(STATES_GUILD)
 
         state_options: list[discord.SelectOption] = []
         for emoji in self.emoji_guild.emojis:
@@ -215,6 +216,61 @@ class InitialView(discord.ui.View):
             ephemeral=True,
         )
         await state_chooser.wait()
+
+        event_options: list[discord.SelectOption] = []
+        for event in src.discord.globals.EVENT_INFO:
+            event_options.append(
+                discord.SelectOption(label=event["name"], emoji=event["emoji"]),
+            )
+        event_chooser = Chooser(
+            "event",
+            event_options,
+            self.generate_profile_message,
+            self.update_chosen_roles,
+            count=19,
+        )
+        await interaction.edit_original_response(
+            content="Good job adding some states to your profile. Now, how about adding some events that you participate in or enjoy? Event roles allow you to show off your interests on your profile!",
+            view=event_chooser,
+        )
+        await event_chooser.wait()
+
+        pronoun_options = [
+            discord.SelectOption(label="He/Him", emoji="👨"),
+            discord.SelectOption(label="She/Her", emoji="👩"),
+            discord.SelectOption(label="They/Them", emoji="🧑"),
+        ]
+        pronouns_chooser = Chooser(
+            "pronoun",
+            pronoun_options,
+            self.generate_profile_message,
+            self.update_chosen_roles,
+            count=19,
+        )
+        await interaction.edit_original_response(
+            content="Now, how about adding your pronouns to your profile? Pronouns help others identify you correctly.",
+            view=pronouns_chooser,
+        )
+        await pronouns_chooser.wait()
+
+        division_options = [
+            discord.SelectOption(label="Division A", emoji="\U0001F1E6"),
+            discord.SelectOption(label="Division B", emoji="\U0001F1E7"),
+            discord.SelectOption(label="Division C", emoji="\U0001F1E8"),
+            discord.SelectOption(label="Division D", emoji="\U0001F1E9"),
+        ]
+        divisions_chooser = Chooser(
+            "division",
+            division_options,
+            self.generate_profile_message,
+            self.update_chosen_roles,
+            count=19,
+        )
+        await interaction.edit_original_response(
+            content="Finally, do you want to add the division you compete in?",
+            view=divisions_chooser,
+        )
+        await divisions_chooser.wait()
 
 
 class WelcomeCog(commands.GroupCog, name="welcome"):
