@@ -4,8 +4,9 @@ Holds functionality for the welcome system.
 from __future__ import annotations
 
 import logging
-from collections.abc import Generator
-from typing import TYPE_CHECKING, TypeVar
+from collections.abc import Callable, Generator
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 import discord
 from discord.ext import commands, tasks
@@ -26,8 +27,15 @@ def batch(iter: list[V], n: int) -> Generator[list[V], None, None]:
         yield iter[ndx : min(ndx + n, length)]
 
 
+@dataclass()
+class RoleItem:
+    name: str
+    emoji: discord.Emoji | discord.PartialEmoji
+
+
 class SelectionDropdown(discord.ui.Select["Chooser"]):
     def __init__(self, item_type: str, options: list[discord.SelectOption]):
+        self.item_type = item_type
         first_letter = options[0].label[0].title()
         last_letter = options[-1].label[0].title()
         super().__init__(
@@ -38,8 +46,31 @@ class SelectionDropdown(discord.ui.Select["Chooser"]):
 
     async def callback(self, interaction: discord.Interaction):
         assert self.view is not None
-        self.view.chosen_values = self.values
-        self.view.stop()
+        for value in self.values:
+            if value in [x.name for x in self.view.chosen_values]:
+                self.view.chosen_values = [
+                    x for x in self.view.chosen_values if x.name != value
+                ]
+            else:
+                option = discord.utils.get(self.options, value=value)
+                assert option is not None and option.emoji is not None
+                self.view.chosen_values.append(RoleItem(value, option.emoji))
+        self.view.update_values(self.item_type.title(), self.view.chosen_values)
+
+        # Update accept/skip buttons
+        if self.view.chosen_values:
+            if not any(isinstance(child, AcceptButton) for child in self.view.children):
+                self.view.add_item(AcceptButton())
+        else:
+            for child in self.view.children:
+                if isinstance(child, AcceptButton):
+                    self.view.remove_item(child)
+
+        # Actually update message
+        await interaction.response.edit_message(
+            **self.view.profile_message(interaction),
+            view=self.view,
+        )
 
 
 class AcceptButton(discord.ui.Button["Chooser"]):
@@ -63,16 +94,23 @@ class SkipButton(discord.ui.Button["Chooser"]):
 
 class Chooser(discord.ui.View):
 
-    chosen_values: list[str]  # List of values the user chose
+    chosen_values: list[RoleItem]  # List of values the user chose
 
     def __init__(
         self,
         item_type: str,
         options: list[discord.SelectOption],
+        profile_message: Callable[
+            [discord.Interaction],
+            dict[Literal["content", "embed"], str | discord.Embed],
+        ],
+        update_values: Callable[[str, list[RoleItem]], None],
         count: int = 25,
     ):
         super().__init__()
         self.chosen_values = []
+        self.profile_message = profile_message
+        self.update_values = update_values
         for options_batch in batch(options, count):
             self.add_item(SelectionDropdown(item_type, options_batch))
         if self.chosen_values:
@@ -84,24 +122,67 @@ class Chooser(discord.ui.View):
 
 
 class InitialView(discord.ui.View):
+
+    emoji_guild: discord.Guild
+    chosen_roles: dict[str, list[RoleItem]]
+
     def __init__(self, bot: PiBot):
         super().__init__(timeout=None)
         self.bot = bot
+        self.chosen_roles = {}
 
-    @discord.ui.button(label="Gain server access", custom_id="welcome:request_access")
+    def update_chosen_roles(self, name: str, roles: list[RoleItem]) -> None:
+        self.chosen_roles[name] = roles
+
+    def generate_profile_message(
+        self,
+        interaction: discord.Interaction,
+    ) -> dict[Literal["content", "embed"], str | discord.Embed]:
+        profile_embed = discord.Embed(
+            title="Your Profile",
+            description="This is your server profile. You can change your roles using the dropdowns below.\n\nClicking on a role in a dropdown will add it to your profile if you do not have it already, or it will remove it if you already have it.",
+            color=discord.Color(0x2E66B6),
+        )
+        profile_embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        interaction.user.display_avatar
+        formatted_states = []
+        for k, v in self.chosen_roles.items():
+            v.sort(key=lambda x: x.name)
+            states_added = 0
+            for item in v:
+                total_length = sum(len(format) for format in formatted_states)
+                print(f"processing {item}: {total_length}")
+                if total_length < 925:
+                    formatted_states.append(f"{item.emoji} **{item.name}**")
+                    states_added += 1
+            states_list = "\n".join(formatted_states)
+            if states_added < len(v):
+                states_list += f"\n_... {len(v) - states_added} not shown_"
+            profile_embed.add_field(name=k, value=states_list)
+        return {
+            "content": "Great start to your profile!",
+            "embed": profile_embed,
+        }
+
+    @discord.ui.button(
+        label="Enter the server",
+        custom_id="welcome:request_access",
+        emoji="✅",
+        style=discord.ButtonStyle.green,
+    )
     async def request_access(
         self,
         interaction: discord.Interaction,
         _: discord.ui.Button,
     ):
         STATES_GUILD = 1
-        emoji_guild = self.bot.get_guild(STATES_GUILD)
-        if emoji_guild is None:
-            emoji_guild = await self.bot.fetch_guild(STATES_GUILD)
-        assert isinstance(emoji_guild, discord.Guild)
+        self.emoji_guild = self.bot.get_guild(STATES_GUILD)
+        if self.emoji_guild is None:
+            self.emoji_guild = await self.bot.fetch_guild(STATES_GUILD)
+        assert isinstance(self.emoji_guild, discord.Guild)
 
         state_options: list[discord.SelectOption] = []
-        for emoji in emoji_guild.emojis:
+        for emoji in self.emoji_guild.emojis:
             if emoji.name != "california":  # handle california later
                 state_options.append(
                     discord.SelectOption(
@@ -111,7 +192,7 @@ class InitialView(discord.ui.View):
                 )
 
         # Handle California
-        california_emoji = discord.utils.get(emoji_guild.emojis, name="california")
+        california_emoji = discord.utils.get(self.emoji_guild.emojis, name="california")
         assert isinstance(california_emoji, discord.Emoji)
         state_options.append(
             discord.SelectOption(label="California (North)", emoji=california_emoji),
@@ -124,6 +205,8 @@ class InitialView(discord.ui.View):
         state_chooser = Chooser(
             "state",
             state_options,
+            self.generate_profile_message,
+            self.update_chosen_roles,
             count=19,
         )
         await interaction.response.send_message(
@@ -132,7 +215,6 @@ class InitialView(discord.ui.View):
             ephemeral=True,
         )
         await state_chooser.wait()
-        print(f"User chose: {state_chooser.chosen_values}")
 
 
 class WelcomeCog(commands.GroupCog, name="welcome"):
@@ -163,7 +245,6 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
 
     @tasks.loop(seconds=5)
     async def update_welcome_channel(self):
-        print("running")
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         if not guild:
             return  # bot is still starting up
