@@ -353,18 +353,22 @@ class Logger(commands.Cog):
         """
         # Get the required resources for logging
         channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
+            channel = await self.bot.fetch_channel(payload.channel_id)
         guild = (
             self.bot.get_guild(SERVER_ID)
-            if channel.type == discord.ChannelType.private
+            if isinstance(channel, discord.abc.PrivateChannel)
             else channel.guild
         )
-        edited_channel: discord.TextChannel = discord.utils.get(
+        if not guild:
+            guild = await self.bot.fetch_guild(SERVER_ID)
+        edited_channel = discord.utils.get(
             guild.text_channels,
             name=CHANNEL_EDITEDM,
         )
 
         # Ignore payloads for events in logging channels (which would cause recursion)
-        if channel.type != discord.ChannelType.private and channel.name in [
+        if not isinstance(channel, discord.abc.PrivateChannel) and channel.name in [
             CHANNEL_EDITEDM,
             CHANNEL_DELETEDM,
             CHANNEL_DMLOG,
@@ -451,7 +455,12 @@ class Logger(commands.Cog):
             await edited_channel.send(embed=embed)
 
         except Exception:  # No cached message is available
-            message_now = await channel.fetch_message(payload.message_id)
+            try:
+                message_now = await channel.fetch_message(payload.message_id)
+            except Exception:
+                # Chances are the message was deleted before we could fetch it
+                # or it comes from an ephemeral response
+                return
             embed = discord.Embed(
                 title=":pencil: Edited Message",
                 color=discord.Color.orange(),
