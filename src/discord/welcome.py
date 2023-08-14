@@ -88,7 +88,6 @@ class SkipButton(discord.ui.Button["Chooser"]):
 
     async def callback(self, interaction: discord.Interaction):
         if self.view:
-            self.view.chosen_values = []
             self.view.stop()
 
 
@@ -134,6 +133,11 @@ class InitialView(discord.ui.View):
     def update_chosen_roles(self, name: str, roles: list[RoleItem]) -> None:
         self.chosen_roles[name] = roles
 
+    def get_guild(self) -> discord.Guild:
+        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        assert isinstance(guild, discord.Guild)
+        return guild
+
     def generate_profile_message(
         self,
         interaction: discord.Interaction,
@@ -151,7 +155,6 @@ class InitialView(discord.ui.View):
             items_added = 0
             for item in v:
                 total_length = sum(len(format) for format in formatted_items)
-                print(f"processing {item}: {total_length}")
                 if total_length < 925:
                     formatted_items.append(f"{item.emoji} **{item.name}**")
                     items_added += 1
@@ -272,6 +275,24 @@ class InitialView(discord.ui.View):
         )
         await divisions_chooser.wait()
 
+        # Finalize user's request
+        member_role = discord.utils.get(self.get_guild().roles, name="Member")
+        assert isinstance(member_role, discord.Role)
+        self.needed_roles: list[discord.Role] = [member_role]
+        for role_list in self.chosen_roles.values():
+            for role in role_list:
+                role_obj = discord.utils.get(self.get_guild().roles, name=role.name)
+                if role_obj:
+                    self.needed_roles.append(role_obj)
+
+        assert isinstance(interaction.user, discord.Member)
+        await interaction.user.edit(roles=self.needed_roles)
+        await interaction.edit_original_response(
+            content=f"{interaction.user.mention}, you are now confirmed. Welcome to the Scioly.org Discord chat server! To make further adjustments to your roles, please visit the bot-spam channel.",
+            view=None,
+            embed=None,
+        )
+
 
 class WelcomeCog(commands.GroupCog, name="welcome"):
     def __init__(self, bot: PiBot):
@@ -292,11 +313,13 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
     def generate_welcome_embed(self) -> discord.Embed:
         rules_channel = self.get_channel(src.discord.globals.CHANNEL_RULES)
         embed = discord.Embed(
-            title="Welcome to the Scioly.org chat server!",
-            description=f"We're so excited to have you here; we hope this community can help advance your passion for Science Olympiad.\n\nPlease read the rules in {rules_channel.mention}.",
-            color=discord.Color(0xFEE372),
+            title="Welcome to the Scioly.org Discord chat server!",
+            description=f"We're so excited to have you here; we hope this community can help advance your passion for Science Olympiad.\n\nRight now, you don't have access to all channels and messages. To get access to these resources, please click the big green button below.\n\nPlease read the rules in {rules_channel.mention} before starting the verification process. The verification process helps to ensure you are a legitimate user, and allows you to get some roles for your new profile!",
+            color=discord.Color(0x2E66B6),
         )
-        embed.set_thumbnail(url=self.get_guild().icon.url)
+        embed.set_image(
+            url="https://cdn.discordapp.com/attachments/743632821448474706/1140487039704383508/Scioly.org_Google_Forms_Banner.png",
+        )
         return embed
 
     @tasks.loop(seconds=5)
