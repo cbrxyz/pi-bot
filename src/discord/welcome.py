@@ -3,6 +3,7 @@ Holds functionality for the welcome system.
 """
 from __future__ import annotations
 
+import datetime
 import logging
 from collections.abc import Callable, Generator
 from dataclasses import dataclass
@@ -138,6 +139,12 @@ class InitialView(discord.ui.View):
         assert isinstance(guild, discord.Guild)
         return guild
 
+    def get_channel(self, name: str) -> discord.TextChannel:
+        guild = self.get_guild()
+        channel = discord.utils.get(guild.channels, name=name)
+        assert isinstance(channel, discord.TextChannel)
+        return channel
+
     def generate_profile_message(
         self,
         interaction: discord.Interaction,
@@ -181,6 +188,18 @@ class InitialView(discord.ui.View):
         interaction: discord.Interaction,
         _: discord.ui.Button,
     ):
+        # Make sure user has been in server for 10 minutes
+        assert isinstance(interaction.user, discord.Member)
+        if (
+            interaction.user.joined_at
+            and (discord.utils.utcnow() - interaction.user.joined_at).total_seconds()
+            < 600
+        ):
+            available_time = interaction.user.joined_at + datetime.timedelta(minutes=10)
+            return await interaction.response.send_message(
+                f"Again, welcome! To prevent spam, you must wait 10 minutes after joining before you can complete your confirmation. You can complete your confirmation at {discord.utils.format_dt(available_time, 't')} ({discord.utils.format_dt(available_time, 'R')})!",
+            )
+
         STATES_GUILD = 1
         emoji_guild = self.bot.get_guild(STATES_GUILD)
         self.emoji_guild = emoji_guild or await self.bot.fetch_guild(STATES_GUILD)
@@ -287,8 +306,10 @@ class InitialView(discord.ui.View):
 
         assert isinstance(interaction.user, discord.Member)
         await interaction.user.edit(roles=self.needed_roles)
+
+        bot_spam_channel = self.get_channel("bot-spam")
         await interaction.edit_original_response(
-            content=f"{interaction.user.mention}, you are now confirmed. Welcome to the Scioly.org Discord chat server! To make further adjustments to your roles, please visit the bot-spam channel.",
+            content=f"{interaction.user.mention}, you are now confirmed. Welcome to the Scioly.org Discord chat server! To make further adjustments to your roles, please visit the {bot_spam_channel.mention} channel.",
             view=None,
             embed=None,
         )

@@ -86,29 +86,11 @@ class Logger(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         """
         Executes when a member joins. Completes the following actions:
-            * Sends a welcome message to the #welcome channel.
             * Sends a message to #lounge if the number of members ends with two zeros.
 
         Args:
             member (discord.Member): The member who just joined the server.
         """
-        join_channel = discord.utils.get(
-            member.guild.text_channels,
-            name=CHANNEL_WELCOME,
-        )
-        assert isinstance(join_channel, discord.TextChannel)
-        await join_channel.send(
-            f"{member.mention}, welcome to the Scioly.org Discord Server! "
-            "You can add roles here, using the commands shown at the top of "
-            "this channel. If you have any questions, please just ask here, "
-            "and a helper or moderator will answer you ASAP."
-            "\n\n"
-            "**Please add roles by typing the commands above into the text box,"
-            " and if you have a question, please type it here. After adding "
-            "roles, a moderator will give you access to the rest of the server to "
-            "chat with other members!**",
-        )
-
         # Send fun alert message on every 100 members who join
         member_count = len(member.guild.members)
         lounge_channel = discord.utils.get(
