@@ -7,7 +7,7 @@ import datetime
 import logging
 from collections.abc import Callable, Generator
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, TypeVar
+from typing import TYPE_CHECKING, TypedDict, TypeVar
 
 import discord
 from discord.ext import commands, tasks
@@ -20,6 +20,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 V = TypeVar("V")
+
+
+class ProfileMessage(TypedDict):
+    content: str
+    embed: discord.Embed
 
 
 def batch(iter: list[V], n: int) -> Generator[list[V], None, None]:
@@ -35,12 +40,18 @@ class RoleItem:
 
 
 class SelectionDropdown(discord.ui.Select["Chooser"]):
-    def __init__(self, item_type: str, options: list[discord.SelectOption]):
+    def __init__(
+        self,
+        item_type: str,
+        options: list[discord.SelectOption],
+        placeholder: str | None = None,
+    ):
         self.item_type = item_type
         first_letter = options[0].label[0].title()
         last_letter = options[-1].label[0].title()
         super().__init__(
-            placeholder=f"{item_type.title()}s {first_letter}-{last_letter}...",
+            placeholder=placeholder
+            or f"{item_type.title()}s {first_letter}-{last_letter}...",
             options=options,
             max_values=len(options),
         )
@@ -84,11 +95,14 @@ class AcceptButton(discord.ui.Button["Chooser"]):
 
 
 class SkipButton(discord.ui.Button["Chooser"]):
-    def __init__(self):
+    def __init__(self, item_type: str):
+        self.item_type = item_type
         super().__init__(style=discord.ButtonStyle.gray, label="Skip", row=4)
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         if self.view:
+            self.view.update_values(self.item_type.title(), [])
             self.view.stop()
 
 
@@ -102,20 +116,21 @@ class Chooser(discord.ui.View):
         options: list[discord.SelectOption],
         profile_message: Callable[
             [discord.Interaction],
-            dict[Literal["content", "embed"], str | discord.Embed],
+            ProfileMessage,
         ],
         update_values: Callable[[str, list[RoleItem]], None],
         count: int = 25,
+        placeholder: str | None = None,
     ):
         super().__init__()
         self.chosen_values = []
         self.profile_message = profile_message
         self.update_values = update_values
         for options_batch in batch(options, count):
-            self.add_item(SelectionDropdown(item_type, options_batch))
+            self.add_item(SelectionDropdown(item_type, options_batch, placeholder))
         if self.chosen_values:
             self.add_item(AcceptButton())
-        self.add_item(SkipButton())
+        self.add_item(SkipButton(item_type))
 
     async def on_timeout(self):
         pass
@@ -148,7 +163,7 @@ class InitialView(discord.ui.View):
     def generate_profile_message(
         self,
         interaction: discord.Interaction,
-    ) -> dict[Literal["content", "embed"], str | discord.Embed]:
+    ) -> ProfileMessage:
         profile_embed = discord.Embed(
             title="Your Profile",
             description="This is your server profile. You can change your roles using the dropdowns below.\n\nClicking on a role in a dropdown will add it to your profile if you do not have it already, or it will remove it if you already have it.",
@@ -160,6 +175,8 @@ class InitialView(discord.ui.View):
             formatted_items = []
             v.sort(key=lambda x: x.name)
             items_added = 0
+            if not v:
+                continue
             for item in v:
                 total_length = sum(len(format) for format in formatted_items)
                 if total_length < 925:
@@ -200,9 +217,10 @@ class InitialView(discord.ui.View):
                 f"Again, welcome! To prevent spam, you must wait 10 minutes after joining before you can complete your confirmation. You can complete your confirmation at {discord.utils.format_dt(available_time, 't')} ({discord.utils.format_dt(available_time, 'R')})!",
             )
 
-        STATES_GUILD = 1
-        emoji_guild = self.bot.get_guild(STATES_GUILD)
-        self.emoji_guild = emoji_guild or await self.bot.fetch_guild(STATES_GUILD)
+        emoji_guild = self.bot.get_guild(src.discord.globals.STATES_SERVER_ID)
+        self.emoji_guild = emoji_guild or await self.bot.fetch_guild(
+            src.discord.globals.STATES_SERVER_ID,
+        )
 
         state_options: list[discord.SelectOption] = []
         for emoji in self.emoji_guild.emojis:
@@ -233,7 +251,7 @@ class InitialView(discord.ui.View):
             count=19,
         )
         await interaction.response.send_message(
-            "Select your state to gain access to the server.",
+            "Before you enter the server, you can add some optional roles to your profile. These help other members understand your background and can help add context to your messages.\n\nFirst, how about choosing some state roles?",
             view=state_chooser,
             ephemeral=True,
         )
@@ -251,9 +269,11 @@ class InitialView(discord.ui.View):
             self.update_chosen_roles,
             count=19,
         )
+        embed = self.generate_profile_message(interaction)["embed"]
         await interaction.edit_original_response(
-            content="Good job adding some states to your profile. Now, how about adding some events that you participate in or enjoy? Event roles allow you to show off your interests on your profile!",
+            content="Now, how about adding some events that you participate in or enjoy? Event roles allow you to show off your interests on your profile!",
             view=event_chooser,
+            embed=embed,
         )
         await event_chooser.wait()
 
@@ -268,10 +288,13 @@ class InitialView(discord.ui.View):
             self.generate_profile_message,
             self.update_chosen_roles,
             count=19,
+            placeholder="Choose your pronouns...",
         )
+        embed = self.generate_profile_message(interaction)["embed"]
         await interaction.edit_original_response(
             content="Now, how about adding your pronouns to your profile? Pronouns help others identify you correctly.",
             view=pronouns_chooser,
+            embed=embed,
         )
         await pronouns_chooser.wait()
 
@@ -287,10 +310,13 @@ class InitialView(discord.ui.View):
             self.generate_profile_message,
             self.update_chosen_roles,
             count=19,
+            placeholder="Divisions A-D...",
         )
+        embed = self.generate_profile_message(interaction)["embed"]
         await interaction.edit_original_response(
             content="Finally, do you want to add the division you compete in?",
             view=divisions_chooser,
+            embed=embed,
         )
         await divisions_chooser.wait()
 
