@@ -58,6 +58,7 @@ class SelectionDropdown(discord.ui.Select["Chooser"]):
 
     async def callback(self, interaction: discord.Interaction):
         assert self.view is not None
+        assert isinstance(interaction.user, discord.Member)  # Guild-only interaction
         for value in self.values:
             if value in [x.name for x in self.view.chosen_values]:
                 self.view.chosen_values = [
@@ -67,7 +68,11 @@ class SelectionDropdown(discord.ui.Select["Chooser"]):
                 option = discord.utils.get(self.options, value=value)
                 assert option is not None and option.emoji is not None
                 self.view.chosen_values.append(RoleItem(value, option.emoji))
-        self.view.update_values(self.item_type.title(), self.view.chosen_values)
+        self.view.update_values(
+            interaction.user,
+            self.item_type.title(),
+            self.view.chosen_values,
+        )
 
         # Update accept/skip buttons
         if self.view.chosen_values:
@@ -90,6 +95,7 @@ class AcceptButton(discord.ui.Button["Chooser"]):
         super().__init__(style=discord.ButtonStyle.green, label="Accept", row=4)
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         if self.view:
             self.view.stop()
 
@@ -101,14 +107,16 @@ class SkipButton(discord.ui.Button["Chooser"]):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
+        assert isinstance(interaction.user, discord.Member)  # Guild-only interaction
         if self.view:
-            self.view.update_values(self.item_type.title(), [])
+            self.view.update_values(interaction.user, self.item_type.title(), [])
             self.view.stop()
 
 
 class Chooser(discord.ui.View):
 
     chosen_values: list[RoleItem]  # List of values the user chose
+    message: discord.Message
 
     def __init__(
         self,
@@ -118,7 +126,7 @@ class Chooser(discord.ui.View):
             [discord.Interaction],
             ProfileMessage,
         ],
-        update_values: Callable[[str, list[RoleItem]], None],
+        update_values: Callable[[discord.Member, str, list[RoleItem]], None],
         count: int = 25,
         placeholder: str | None = None,
     ):
@@ -133,21 +141,41 @@ class Chooser(discord.ui.View):
         self.add_item(SkipButton(item_type))
 
     async def on_timeout(self):
-        pass
+        for item in self.children:
+            item.disabled = True
+
+        await self.message.edit(view=self)
+
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        exception: Exception,
+        item: discord.ui.Item,
+    ):
+        logger.exception(f"Error in the {item} item in Chooser view.")
+        await interaction.response.send_message(
+            "An error occurred while processing your interaction. Please try again.",
+            ephemeral=True,
+        )
 
 
 class InitialView(discord.ui.View):
 
     emoji_guild: discord.Guild
-    chosen_roles: dict[str, list[RoleItem]]
+    chosen_roles: dict[discord.Member, dict[str, list[RoleItem]]]
 
     def __init__(self, bot: PiBot):
         super().__init__(timeout=None)
         self.bot = bot
         self.chosen_roles = {}
 
-    def update_chosen_roles(self, name: str, roles: list[RoleItem]) -> None:
-        self.chosen_roles[name] = roles
+    def update_chosen_roles(
+        self,
+        member: discord.Member,
+        name: str,
+        roles: list[RoleItem],
+    ) -> None:
+        self.chosen_roles.setdefault(member, {})[name] = roles
 
     def get_guild(self) -> discord.Guild:
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
@@ -170,8 +198,8 @@ class InitialView(discord.ui.View):
             color=discord.Color(0x2E66B6),
         )
         profile_embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        interaction.user.display_avatar
-        for k, v in self.chosen_roles.items():
+        assert isinstance(interaction.user, discord.Member)  # Guild-only interaction
+        for k, v in self.chosen_roles[interaction.user].items():
             formatted_items = []
             v.sort(key=lambda x: x.name)
             items_added = 0
@@ -214,7 +242,7 @@ class InitialView(discord.ui.View):
         ):
             available_time = interaction.user.joined_at + datetime.timedelta(minutes=10)
             return await interaction.response.send_message(
-                f"Again, welcome! To prevent spam, you must wait 10 minutes after joining before you can complete your confirmation. You can complete your confirmation at {discord.utils.format_dt(available_time, 't')} ({discord.utils.format_dt(available_time, 'R')})!",
+                f"Again, welcome! To keep our server safe, you must be in the server for at least 10 minutes before you can complete your confirmation. This means you can complete your confirmation at {discord.utils.format_dt(available_time, 't')} ({discord.utils.format_dt(available_time, 'R')})!",
             )
 
         emoji_guild = self.bot.get_guild(src.discord.globals.STATES_SERVER_ID)
@@ -255,7 +283,9 @@ class InitialView(discord.ui.View):
             view=state_chooser,
             ephemeral=True,
         )
-        await state_chooser.wait()
+        state_chooser.message = await interaction.original_response()
+        if await state_chooser.wait():  # If view timed out, exit
+            return
 
         event_options: list[discord.SelectOption] = []
         for event in src.discord.globals.EVENT_INFO:
@@ -275,7 +305,9 @@ class InitialView(discord.ui.View):
             view=event_chooser,
             embed=embed,
         )
-        await event_chooser.wait()
+        event_chooser.message = await interaction.original_response()
+        if await event_chooser.wait():
+            return
 
         pronoun_options = [
             discord.SelectOption(label="He/Him", emoji="👨"),
@@ -296,7 +328,9 @@ class InitialView(discord.ui.View):
             view=pronouns_chooser,
             embed=embed,
         )
-        await pronouns_chooser.wait()
+        pronouns_chooser.message = await interaction.original_response()
+        if await pronouns_chooser.wait():
+            return
 
         division_options = [
             discord.SelectOption(label="Division A", emoji="\U0001F1E6"),
@@ -318,13 +352,15 @@ class InitialView(discord.ui.View):
             view=divisions_chooser,
             embed=embed,
         )
-        await divisions_chooser.wait()
+        divisions_chooser.message = await interaction.original_response()
+        if await divisions_chooser.wait():
+            return
 
         # Finalize user's request
         member_role = discord.utils.get(self.get_guild().roles, name="Member")
         assert isinstance(member_role, discord.Role)
         self.needed_roles: list[discord.Role] = [member_role]
-        for role_list in self.chosen_roles.values():
+        for role_list in self.chosen_roles[interaction.user].values():
             for role in role_list:
                 role_obj = discord.utils.get(self.get_guild().roles, name=role.name)
                 if role_obj:
@@ -339,6 +375,8 @@ class InitialView(discord.ui.View):
             view=None,
             embed=None,
         )
+
+        self.chosen_roles.pop(interaction.user)
 
 
 class WelcomeCog(commands.GroupCog, name="welcome"):
