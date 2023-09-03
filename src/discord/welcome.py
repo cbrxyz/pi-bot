@@ -292,6 +292,7 @@ class InitialView(discord.ui.View):
             event_options.append(
                 discord.SelectOption(label=event["name"], emoji=event["emoji"]),
             )
+        event_options.sort(key=lambda x: x.label)
         event_chooser = Chooser(
             "event",
             event_options,
