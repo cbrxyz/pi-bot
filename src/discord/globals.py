@@ -63,7 +63,7 @@ ROLE_ALL_STATES = "All States"
 # Channels
 CHANNEL_INVITATIONALS = "invitationals"
 CHANNEL_BOTSPAM = "bot-spam"
-CHANNEL_SUPPORT = "site-support"
+CHANNEL_SUPPORT = "support-and-suggestions"
 CHANNEL_GAMES = "games"
 CHANNEL_DMLOG = "dm-log"
 CHANNEL_WELCOME = "welcome"
