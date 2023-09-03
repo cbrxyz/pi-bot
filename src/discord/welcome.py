@@ -243,6 +243,7 @@ class InitialView(discord.ui.View):
             available_time = interaction.user.joined_at + datetime.timedelta(minutes=10)
             return await interaction.response.send_message(
                 f"Again, welcome! To keep our server safe, you must be in the server for at least 10 minutes before you can complete your confirmation. This means you can complete your confirmation at {discord.utils.format_dt(available_time, 't')} ({discord.utils.format_dt(available_time, 'R')})!",
+                ephemeral=True,
             )
 
         emoji_guild = self.bot.get_guild(src.discord.globals.STATES_SERVER_ID)
