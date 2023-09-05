@@ -221,7 +221,7 @@ class PiBot(commands.Bot):
             view.add_item(
                 discord.ui.Button(
                     url="https://scioly.org/rules",
-                    label="Rules",
+                    label="Complete Scioly.org rules",
                     style=discord.ButtonStyle.link,
                 ),
             )
