@@ -4,6 +4,7 @@ server.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from typing import TYPE_CHECKING
@@ -55,7 +56,7 @@ class Censor(commands.Cog):
 
         # Get the content and attempt to find any words on the censor list
         content = message.content
-        if self.censor_needed(content):
+        if await self.censor_needed(content):
             logger.debug(
                 f"Censoring message by {message.author} because it contained "
                 "a word or emoji on the censor list.",
@@ -83,13 +84,22 @@ class Censor(commands.Cog):
                 f"questions, please ask in {support_channel.mention}.* ",
             )
 
-    def censor_needed(self, content: str) -> bool:
+    def word_present(self, content: str, word: str) -> bool:
+        return bool(re.findall(rf"\b({word})\b", content, re.I))
+
+    async def censor_needed(self, content: str) -> bool:
         """
         Determines whether the message has content that needs to be censored.
         """
         for word in src.discord.globals.CENSOR["words"]:
-            if len(re.findall(rf"\b({word})\b", content, re.I)):
-                return True
+            try:
+                if await asyncio.wait_for(
+                    asyncio.to_thread(self.word_present, content, word),
+                    timeout=1,
+                ):
+                    return True
+            except TimeoutError:
+                logger.warn(f"TimeoutError while checking for {word} in {content}")
         for emoji in src.discord.globals.CENSOR["emojis"]:
             if len(re.findall(emoji, content)):
                 return True
