@@ -90,27 +90,28 @@ class Censor(commands.Cog):
                 f"questions, please ask in {support_channel.mention}.* ",
             )
 
-    def word_present(self, content: str, word: str) -> bool:
+    def word_present(self, content: str) -> bool:
         with contextlib.suppress(asyncio.CancelledError):
-            return bool(re.findall(rf"\b({word})\b", content, re.I))
+            for word in src.discord.globals.CENSOR["words"]:
+                if re.findall(rf"\b({word})\b", content, re.I):
+                    return True
+            for emoji in src.discord.globals.CENSOR["emojis"]:
+                if len(re.findall(emoji, content)):
+                    return True
         return False
 
     async def censor_needed(self, content: str) -> bool:
         """
         Determines whether the message has content that needs to be censored.
         """
-        for word in src.discord.globals.CENSOR["words"]:
-            try:
-                if await asyncio.wait_for(
-                    asyncio.to_thread(self.word_present, content, word),
-                    timeout=0.2,
-                ):
-                    return True
-            except asyncio.TimeoutError:
-                logger.warn(f"TimeoutError while checking for {word} in {content}")
-        for emoji in src.discord.globals.CENSOR["emojis"]:
-            if len(re.findall(emoji, content)):
+        try:
+            if await asyncio.wait_for(
+                asyncio.to_thread(self.word_present, content),
+                timeout=1.5,
+            ):
                 return True
+        except asyncio.TimeoutError:
+            logger.warn(f"TimeoutError while checking for censored words in {content}")
         return False
 
     def discord_invite_censor_needed(self, content: str) -> bool:
