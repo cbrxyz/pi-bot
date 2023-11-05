@@ -99,37 +99,39 @@ EMOJI_LOADING = "<a:loading:909706909404237834>"
 RULES = [
     "Treat *all* users with respect.",
     "No profanity or inappropriate language, content, or links.",
+    "Do not spam or flood.",
+    "Avoid intentional repeating pinging of other users.",
+    "Avoid excessive use of caps, which constitutes yelling.",
+    "Never name-drop, dox, or share personal information about another user without their permission.",
+    "No witch-hunting (requests of kicks or bans for other users), personal attacks, or malicious rumors.",
     (
-        "Treat delicate subjects delicately. When discussing religion, politics, "
-        "instruments, or other similar topics, please remain objective and avoid "
-        "voicing strong opinions."
+        "Treat delicate subjects delicately. When discussing "
+        "religion, politics, instruments, or other similar topics, please "
+        "remain objective and avoid voicing strong opinions."
     ),
-    "Do not spam or flood (an excessive number of messages sent within a short timespan).",
-    "Avoid intentional repeating pinging of other users (saying another user`s name).",
-    "Avoid excessive use of caps, which constitutes yelling and is disruptive.",
-    "Never name-drop (using a real name without permission) or dox another user.",
-    "No witch-hunting (requests of kicks or bans for other users).",
+    "Do not try to circumvent built-in restrictions (e.g. censors) or punishments.",
+    "Avoid assuming the username of or otherwise impersonating another active user.",
+    "Do not use multiple accounts unless specially permitted (e.g. <@&739640429896663040> rank/role).",
     (
-        "While you are not required to use your Scioly.org username as your "
-        "nickname for this Server, please avoid assuming the username of or "
-        "otherwise impersonating another active user."
+        "In accordance with the Scioly.org Disclaimer, "
+        "Scioly.org is not a place to get the rules, official rules clarifications, or FAQs.",
     ),
+    "Do not violate Science Olympiad Inc. copyrights (including any Rules Manual).",
     (
-        "Do not use multiple accounts within this Server, unless specifically "
-        "permitted. A separate tournament account may be operated alongside a "
-        "personal account."
-    ),
-    (
-        "Do not violate Science Olympiad Inc. copyrights. In accordance with "
-        "the Scioly.org Resource Policy, all sharing of tests on Scioly.org "
-        "must occur in the designated Test Exchanges. Do not solicit test "
-        "trades on this Server.",
+        "All sharing of resources on Scioly.org must occur in the designated Test Exchanges. "
+        "Do not solicit trades of private resources. See the Scioly.org Resource Policy."
     ),
     "Do not advertise other servers or paid services with which you have an affiliation.",
     (
-        "Use good judgment when deciding what content to leave in and take out."
-        " As a general rule of thumb: 'When in doubt, leave it out.'"
+        "Students should never use Scioly.org as an alternative to official platforms for scoring "
+        "inquiries and appeals. Tournament directors are discouraged from using Scioly.org as their "
+        "primary means of communication."
     ),
+    (
+        "Use good judgment when deciding what content to leave in and take out. As a general rule of thumb: "
+        '"When in doubt, leave it out."'
+    ),
+    "Issues not addressed by these rules are left to the discretion of Scioly.org Staff.",
 ]
 
 ##############
