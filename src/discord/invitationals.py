@@ -441,6 +441,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             for t in invitationals
             if t.tourney_date.month == month["number"]
             and t.tourney_date.year == month["year"]
+            and t.status == "open"
         ][:25]
         if len(month_invitationals) > 0:
             await invitational_channel.send(

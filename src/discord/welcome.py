@@ -409,7 +409,7 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
         )
         return embed
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=15)
     async def update_welcome_channel(self):
         guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
         if not guild:
