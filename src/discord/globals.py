@@ -14,6 +14,7 @@ dev_mode = os.getenv("DEV_MODE") == "TRUE"
 
 # Use the dev server, else the official Scioly.org server
 SERVER_ID = int(os.getenv("DEV_SERVER_ID")) if dev_mode else 698306997287780363
+STATES_SERVER_ID = int(os.getenv("STATES_SERVER_ID"))
 BOT_PREFIX = "?" if dev_mode else "!"
 
 ##############
@@ -62,10 +63,11 @@ ROLE_ALL_STATES = "All States"
 # Channels
 CHANNEL_INVITATIONALS = "invitationals"
 CHANNEL_BOTSPAM = "bot-spam"
-CHANNEL_SUPPORT = "site-support"
+CHANNEL_SUPPORT = "support-and-suggestions"
 CHANNEL_GAMES = "games"
 CHANNEL_DMLOG = "dm-log"
 CHANNEL_WELCOME = "welcome"
+CHANNEL_RULES = "rules"
 CHANNEL_LOUNGE = "lounge"
 CHANNEL_LEAVE = "member-leave"
 CHANNEL_DELETEDM = "deleted-messages"

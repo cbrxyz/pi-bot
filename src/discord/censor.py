@@ -4,6 +4,8 @@ server.
 """
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 import re
 from typing import TYPE_CHECKING
@@ -21,6 +23,8 @@ from src.discord.globals import (
 
 if TYPE_CHECKING:
     from bot import PiBot
+
+    from .reporter import Reporter
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +47,11 @@ class Censor(commands.Cog):
         """
         # Type checking - Assume messages come from a text channel where the author
         # is a member of the server
-        assert isinstance(message.channel, discord.TextChannel)
-        assert isinstance(message.author, discord.Member)
+        if not isinstance(message.channel, discord.TextChannel) or not isinstance(
+            message.author,
+            discord.Member,
+        ):
+            return
 
         # Do not act on messages in staff channels
         if (
@@ -55,7 +62,7 @@ class Censor(commands.Cog):
 
         # Get the content and attempt to find any words on the censor list
         content = message.content
-        if self.censor_needed(content):
+        if await self.censor_needed(content):
             logger.debug(
                 f"Censoring message by {message.author} because it contained "
                 "a word or emoji on the censor list.",
@@ -83,16 +90,28 @@ class Censor(commands.Cog):
                 f"questions, please ask in {support_channel.mention}.* ",
             )
 
-    def censor_needed(self, content: str) -> bool:
+    def word_present(self, content: str) -> bool:
+        with contextlib.suppress(asyncio.CancelledError):
+            for word in src.discord.globals.CENSOR["words"]:
+                if re.findall(rf"\b({word})\b", content, re.I):
+                    return True
+            for emoji in src.discord.globals.CENSOR["emojis"]:
+                if len(re.findall(emoji, content)):
+                    return True
+        return False
+
+    async def censor_needed(self, content: str) -> bool:
         """
         Determines whether the message has content that needs to be censored.
         """
-        for word in src.discord.globals.CENSOR["words"]:
-            if len(re.findall(rf"\b({word})\b", content, re.I)):
+        try:
+            if await asyncio.wait_for(
+                asyncio.to_thread(self.word_present, content),
+                timeout=1.5,
+            ):
                 return True
-        for emoji in src.discord.globals.CENSOR["emojis"]:
-            if len(re.findall(emoji, content)):
-                return True
+        except asyncio.TimeoutError:
+            logger.warn(f"TimeoutError while checking for censored words in {content}")
         return False
 
     def discord_invite_censor_needed(self, content: str) -> bool:
@@ -199,7 +218,7 @@ class Censor(commands.Cog):
             return
 
         # Delete messages that contain censored words
-        censor_found = self.censor_needed(after.content)
+        censor_found = await self.censor_needed(after.content)
         if censor_found:
             await after.delete()
             await after.author.send(
@@ -229,9 +248,10 @@ class Censor(commands.Cog):
 
         # Check to see if user's name is innapropriate
         name = member.name
-        if self.censor_needed(name):
+        if await self.censor_needed(name):
             # If name contains a censored link
             reporter_cog = self.bot.get_cog("Reporter")
+            assert isinstance(reporter_cog, Reporter)
             await reporter_cog.create_inappropriate_username_report(member, member.name)
 
     @commands.Cog.listener()
@@ -249,10 +269,11 @@ class Censor(commands.Cog):
             return  # No need to check if user does not have a new nickname set
 
         # Get the Censor cog
-        censor_found = self.censor_needed(after.nick)
+        censor_found = await self.censor_needed(after.nick)
         if censor_found:
             # If name contains a censored link
             reporter_cog = self.bot.get_cog("Reporter")
+            assert isinstance(reporter_cog, Reporter)
             await reporter_cog.create_inappropriate_username_report(after, after.nick)
 
     @commands.Cog.listener()
@@ -265,10 +286,11 @@ class Censor(commands.Cog):
             after (discord.Member): The member after updating their profile.
         """
         # Get the Censor cog and see if user's new username is offending censor
-        censor_found = self.censor_needed(after.name)
+        censor_found = await self.censor_needed(after.name)
         if censor_found:
             # If name contains a censored link
             reporter_cog = self.bot.get_cog("Reporter")
+            assert isinstance(reporter_cog, Reporter)
             await reporter_cog.create_inappropriate_username_report(after, after.name)
 
     @commands.Cog.listener()

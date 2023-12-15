@@ -25,7 +25,9 @@ from src.discord.globals import (
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
+    CHANNEL_RULES,
     DEV_TOKEN,
+    SERVER_ID,
     TOKEN,
     dev_mode,
 )
@@ -151,7 +153,7 @@ class PiBot(commands.Bot):
             str,
             dict[str, Any],
         ] = {}  # name differentiation between internal _listeners attribute
-        self.__version__ = "v5.0.9"
+        self.__version__ = "v5.1.0"
         self.session = None
         self.mongo_database = MongoDatabase(self)
 
@@ -163,6 +165,7 @@ class PiBot(commands.Bot):
         extensions = (
             "src.discord.censor",
             "src.discord.ping",
+            "src.discord.welcome",
             "src.discord.staffcommands",
             "src.discord.staff.invitationals",
             "src.discord.staff.censor",
@@ -205,6 +208,24 @@ class PiBot(commands.Bot):
         #     import traceback
         #     traceback.print_exc()
         logger.info(f"{self.user} has connected!")
+
+        # Add message to rules channel
+        server = self.get_guild(SERVER_ID)
+        assert isinstance(server, discord.Guild)
+        rules_channel = discord.utils.get(server.text_channels, name=CHANNEL_RULES)
+        assert isinstance(rules_channel, discord.TextChannel)
+        rules_message = [m async for m in rules_channel.history(limit=1)]
+        if rules_message:
+            rules_message = rules_message[0]
+            view = discord.ui.View()
+            view.add_item(
+                discord.ui.Button(
+                    url="https://scioly.org/rules",
+                    label="Complete Scioly.org rules",
+                    style=discord.ButtonStyle.link,
+                ),
+            )
+            await rules_message.edit(view=view)
 
     async def on_message(self, message: discord.Message) -> None:
         # Nothing needs to be done to the bot's own messages

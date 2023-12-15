@@ -4,6 +4,7 @@ Holds functionality for members to manage their ping subscriptions.
 from __future__ import annotations
 
 import asyncio
+import collections
 import contextlib
 import datetime
 import logging
@@ -30,7 +31,7 @@ class PingManager(commands.GroupCog, name="ping"):
     Specific cog for holding ping-related functionality.
     """
 
-    recent_messages = {}
+    recent_messages: dict[int, collections.deque[discord.Message]]
 
     def __init__(self, bot: PiBot):
         self.bot = bot
@@ -57,16 +58,10 @@ class PingManager(commands.GroupCog, name="ping"):
             return
 
         # Store the message to generate recent message history
-        if message.channel.id not in self.recent_messages:
-            self.recent_messages[message.channel.id] = [message]
-        else:
-            self.recent_messages[message.channel.id].append(message)
-            if len(self.recent_messages[message.channel.id]) > 5:
-                self.recent_messages[message.channel.id] = self.recent_messages[
-                    message.channel.id
-                ][
-                    1:
-                ]  # Cut off the message from the longest time ago if there are too many messages stored
+        self.recent_messages.setdefault(
+            message.channel.id,
+            collections.deque(maxlen=5),
+        ).append(message)
 
         # Send a ping alert to the relevant users
         ids = [m.id for m in message.channel.members]
@@ -153,7 +148,7 @@ class PingManager(commands.GroupCog, name="ping"):
         Currently, this is called whenever a ping PM is sent.
         """
         for _, messages in self.recent_messages.items():
-            for message in messages[:]:
+            for message in messages.copy():
                 if (discord.utils.utcnow() - message.created_at) > datetime.timedelta(
                     hours=3,
                 ):
