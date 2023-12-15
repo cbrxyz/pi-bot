@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * New welcome system:
     * Members must wait 10 minutes before being confirmed
     * Visual layout to select appropriate roles for the user
+* Rules message now contains link to full Scioly.org rules
+* Censoring messages now consumes less memory and is less likely to block internal bot event loop
+* Reduced errors in edit message logging
+* Recent messages in ping subsystem are now stored using a `collections.deque`.
 
 ## 5.0.9 - 2023-06-11
 ### Added
