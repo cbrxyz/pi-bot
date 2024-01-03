@@ -652,6 +652,16 @@ class StaffInvitational(commands.Cog):
                 self.bot.settings["invitational_season"] + 1,
             )
 
+            # Remove voters from all tourneys
+            invitationals = await self.bot.mongo_database.get_invitationals()
+            for invitational in invitationals:
+                await self.bot.mongo_database.update(
+                    "data",
+                    "tournaments",
+                    invitational["_id"],
+                    {"$set": {"voters": []}},
+                )
+
             # Update the invitational list to reflect
             await update_invitational_list(self.bot, {})
 
