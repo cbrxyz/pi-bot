@@ -104,7 +104,7 @@ into an account.
     ```
 
 At this point you should be ready to develop! If you have any questions, don't
-hesistate to reach out to me on the Pi-Bot Discord server listed above.
+hesitate to reach out to me on the Pi-Bot Discord server listed above.
 
 ## Docker
 

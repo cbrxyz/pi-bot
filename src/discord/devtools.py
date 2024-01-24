@@ -74,7 +74,7 @@ class DevCommands(commands.Cog):
         """
         role = discord.utils.get(interaction.guild.roles, name=name)
         if role is not None:
-            await interaction.response.send_message(f"{str(role)}: `{role.mention}`")
+            await interaction.response.send_message(f"{role!s}: `{role.mention}`")
         else:
             await interaction.response.send_message(
                 f"No role named `{name}` was found.",
@@ -98,7 +98,7 @@ class DevCommands(commands.Cog):
         if not member:
             member = interaction.user
 
-        await interaction.response.send_message(f"{str(member)}: `{member.id}`")
+        await interaction.response.send_message(f"{member!s}: `{member.id}`")
 
     @app_commands.command(description="Says hello!")
     @app_commands.guilds(*SLASH_COMMAND_GUILDS)

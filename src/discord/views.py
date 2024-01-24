@@ -45,11 +45,11 @@ class UnselfmuteView(discord.ui.View):
         role = discord.utils.get(interaction.guild.roles, name=ROLE_SELFMUTE)
         await interaction.user.remove_roles(role)
         try:
-            item = [
+            item = next(
                 x
                 for x in await self.bot.mongo_database.get_cron()
                 if (x["type"] == "UNSELFMUTE" and x["user"] == interaction.user.id)
-            ][0]
+            )
             await self.bot.mongo_database.remove_doc("data", "cron", item["_id"])
         except Exception:  # not in the database - maybe was removed!
             pass

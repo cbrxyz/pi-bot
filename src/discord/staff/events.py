@@ -45,7 +45,7 @@ class StaffEvents(commands.Cog):
         self,
         interaction: discord.Interaction,
         event_name: str,
-        event_aliases: str = None,
+        event_aliases: str | None = None,
     ):
         # Check for staff permissions
         commandchecks.is_staff_from_ctx(interaction)
@@ -78,7 +78,7 @@ class StaffEvents(commands.Cog):
         await server.create_role(
             name=event_name,
             color=discord.Color(0x82A3D3),
-            reason=f"Created by {str(interaction.user)} using /eventadd with Pi-Bot.",
+            reason=f"Created by {interaction.user!s} using /eventadd with Pi-Bot.",
         )
 
         # Notify user of process completion
@@ -136,9 +136,9 @@ class StaffEvents(commands.Cog):
                 )
 
         # Complete operation of removing event
-        event = [e for e in src.discord.globals.EVENT_INFO if e["name"] == event_name][
-            0
-        ]
+        event = next(
+            e for e in src.discord.globals.EVENT_INFO if e["name"] == event_name
+        )
         src.discord.globals.EVENT_INFO.remove(event)
         await self.bot.mongo_database.delete("data", "events", event["_id"])
 

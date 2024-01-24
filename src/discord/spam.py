@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class SpamManager(commands.Cog):
 
-    recent_messages = []
+    recent_messages: list[discord.Message]
 
     # Limits
     recent_messages_limit = 20  # The number of recent messages that are stored

@@ -11,7 +11,7 @@ import logging.handlers
 import re
 import traceback
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import aiohttp
 import discord
@@ -134,7 +134,7 @@ class PiBot(commands.Bot):
 
     session: aiohttp.ClientSession | None
     mongo_database: MongoDatabase
-    settings = {
+    settings: ClassVar[dict[str, str | int | None]] = {
         "_id": None,
         "custom_bot_status_type": None,
         "custom_bot_status_text": None,

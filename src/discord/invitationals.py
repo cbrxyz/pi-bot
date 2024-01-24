@@ -95,7 +95,7 @@ class InvitationalDropdown(discord.ui.Select):
                     label=tourney.official_name
                     if tourney.status != "archived"
                     else f"{tourney.official_name} (archived)",
-                    description=f"Occurs on {str(tourney.tourney_date.date())}.",
+                    description=f"Occurs on {tourney.tourney_date.date()!s}.",
                     emoji=tourney.emoji,
                 ),
             )

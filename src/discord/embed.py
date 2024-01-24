@@ -119,7 +119,7 @@ class EmbedFieldManagerButton(discord.ui.Button["EmbedFieldManagerView"]):
                 timeout=120,
             )
 
-            # After 120 seconds or the user repsonds, delete the prompt
+            # After 120 seconds or the user responds, delete the prompt
             await info_message.delete()
 
             # If the user didn't response, the embed field failed
@@ -496,11 +496,8 @@ class EmbedButton(discord.ui.Button["EmbedView"]):
 
 class EmbedView(discord.ui.View):
     # This will be updated when the user updates an embed property
-    embed_update: dict[
-        str,
-        Any,
-    ] = {}  # Keeps track of what was updated by a button press
-    embed_dict: dict[str, Any] = {}
+    embed_update: dict[str, Any]  # Keeps track of what was updated by a button press
+    embed_dict: dict[str, Any]
     user: discord.Member
     channel: discord.TextChannel
     stopped_status: str | None
@@ -816,7 +813,7 @@ class EmbedCommands(commands.Cog):
         self,
         interaction: discord.Interaction,
         channel: discord.TextChannel,
-        message_id: str = None,
+        message_id: str | None = None,
     ):
         """
         Allows staff to send a new embed or edit an existing embed.
@@ -897,12 +894,12 @@ class EmbedCommands(commands.Cog):
                         # Switch to field manager mode
                         embed_field_manager = True
                         embed_field_index = view.embed_update[
-                            list(view.embed_update.items())[0][0]
+                            next(iter(view.embed_update.items()))[0]
                         ]["index"]
 
                     if "remove_field" in view.embed_update:
                         embed_field_index = view.embed_update[
-                            list(view.embed_update.items())[0][0]
+                            next(iter(view.embed_update.items()))[0]
                         ]["index"]
                         embed_dict["fields"].pop(embed_field_index)
 

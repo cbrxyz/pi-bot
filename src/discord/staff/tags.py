@@ -131,7 +131,7 @@ class StaffTags(commands.Cog):
             )
 
         # Get relevant tag
-        tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
+        tag = next(t for t in src.discord.globals.TAGS if t["name"] == tag_name)
 
         # Send info message about updating tag
         await interaction.edit_original_response(
@@ -209,7 +209,7 @@ class StaffTags(commands.Cog):
             )
 
         # Get tag
-        tag = [t for t in src.discord.globals.TAGS if t["name"] == tag_name][0]
+        tag = next(t for t in src.discord.globals.TAGS if t["name"] == tag_name)
         # and remove it!
         src.discord.globals.TAGS.remove(tag)
         # and delete it from the DB!

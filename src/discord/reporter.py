@@ -94,7 +94,7 @@ class CompletedButton(discord.ui.Button):
 
 class ChangeInappropriateUsername(discord.ui.Button):
     """
-    A button that changes the username of a user. This caues the report message
+    A button that changes the username of a user. This causes the report message
     to be deleted, an informational message to be posted in #closed-reports,
     and the report database to be updated.
     """
@@ -554,7 +554,7 @@ class Reporter(commands.Cog):
         self,
         user: discord.User,
         is_present: bool,
-        already_unbanned: bool = None,
+        already_unbanned: bool | None = None,
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically
@@ -581,11 +581,11 @@ class Reporter(commands.Cog):
             )
         elif not is_present and not already_unbanned:
             await closed_reports_channel.send(
-                f"**User was automatically unbanned by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON has unbanned the user. The user is free to join the server at any time.",
+                f"**User was automatically unbanned by CRON.** A previous timed ban on {user!s} expired, and therefore, CRON has unbanned the user. The user is free to join the server at any time.",
             )
         elif not is_present and already_unbanned:
             await closed_reports_channel.send(
-                f"**Attempt to automatically unban user by CRON.** A previous timed ban on {str(user)} expired, and therefore, CRON attempted to unban the user. However, the user was already unbanned. The user remains free to join the server at any time.",
+                f"**Attempt to automatically unban user by CRON.** A previous timed ban on {user!s} expired, and therefore, CRON attempted to unban the user. However, the user was already unbanned. The user remains free to join the server at any time.",
             )
 
     async def create_cron_unmute_auto_notice(
@@ -618,7 +618,7 @@ class Reporter(commands.Cog):
             )
         elif not is_present:
             await closed_reports_channel.send(
-                f"**Attempt to automatically unmute user by CRON.** A previous timed mute on {str(user)} expired, "
+                f"**Attempt to automatically unmute user by CRON.** A previous timed mute on {user!s} expired, "
                 f"and therefore, CRON attempted to unmute the user. "
                 f"However, because the user is no longer present in the server, no unmute could occur.",
             )

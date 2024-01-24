@@ -93,7 +93,7 @@ class PingManager(commands.GroupCog, name="ping"):
                         ping_count += 1
                 except Exception as e:
                     logger.error(
-                        f"Could not evaluate message content with ping {ping} of user {user['user_id']}: {str(e)}",
+                        f"Could not evaluate message content with ping {ping} of user {user['user_id']}: {e!s}",
                     )
 
             if ping_count:
@@ -120,11 +120,11 @@ class PingManager(commands.GroupCog, name="ping"):
                 with respect to. This is used to get relevant ping info about the
                 specific user.
         """
-        user_ping_obj = [
+        user_ping_obj = next(
             user_obj
             for user_obj in src.discord.globals.PING_INFO
             if user_obj["user_id"] == user.id
-        ][0]
+        )
         assert isinstance(user_ping_obj, dict)
 
         pings = [rf"\b({ping})\b" for ping in user_ping_obj["word_pings"]]
@@ -273,7 +273,7 @@ class PingManager(commands.GroupCog, name="ping"):
         """
         member = interaction.user
         if any(
-            [True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id],
+            (True for u in src.discord.globals.PING_INFO if u["user_id"] == member.id),
         ):
             # User already has an object in the PING_INFO dictionary
             user = next(
@@ -293,11 +293,11 @@ class PingManager(commands.GroupCog, name="ping"):
                 )
             else:
                 logger.debug(f"adding word: {re.escape(word)}")
-                relevant_doc = [
+                relevant_doc = next(
                     doc
                     for doc in src.discord.globals.PING_INFO
                     if doc["user_id"] == member.id
-                ][0]
+                )
                 relevant_doc["word_pings"].append(word)
                 await self.bot.mongo_database.update(
                     "data",

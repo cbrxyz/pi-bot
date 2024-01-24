@@ -139,7 +139,7 @@ class StaffInvitational(commands.Cog):
                         )
                         created_emoji = True
                         emoji_creation_message = await interaction.channel.send(
-                            f"Created {emoji} (`{str(emoji)}`) emoji in guild `{guild_id}`. (Guild {i + 1}/{len(EMOJI_GUILDS)})",
+                            f"Created {emoji} (`{emoji!s}`) emoji in guild `{guild_id}`. (Guild {i + 1}/{len(EMOJI_GUILDS)})",
                         )
                         await emoji_creation_message.delete(delay=10)
                         break
