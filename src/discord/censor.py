@@ -15,7 +15,6 @@ from discord.ext import commands
 
 import src.discord.globals
 from src.discord.globals import (
-    CATEGORY_STAFF,
     CHANNEL_SUPPORT,
     DISCORD_INVITE_ENDINGS,
     ROLE_UC,
@@ -47,16 +46,13 @@ class Censor(commands.Cog):
         """
         # Type checking - Assume messages come from a text channel where the author
         # is a member of the server
-        if not isinstance(message.channel, discord.TextChannel) or not isinstance(
-            message.author,
-            discord.Member,
-        ):
-            return
-
-        # Do not act on messages in staff channels
         if (
-            message.channel.category is not None
-            and message.channel.category.name == CATEGORY_STAFF
+            not isinstance(message.channel, discord.TextChannel)
+            or not isinstance(
+                message.author,
+                discord.Member,
+            )
+            or message.channel.category == self.bot.staff_category
         ):
             return
 

@@ -25,7 +25,6 @@ from src.discord.globals import (
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
-    CHANNEL_RULES,
     DEV_TOKEN,
     SERVER_ID,
     TOKEN,
@@ -141,6 +140,10 @@ class PiBot(commands.Bot):
         "invitational_season": None,
     }
 
+    active_guild: discord.Guild
+
+    staff_category: discord.CategoryChannel
+
     def __init__(self):
         super().__init__(
             command_prefix=BOT_PREFIX,
@@ -198,34 +201,29 @@ class PiBot(commands.Bot):
                 {"$set": values},
             )
 
+    def fetch_resources(self) -> None:
+        """
+        Fetches resources from the database and sets them to the bot.
+        """
+        active_guild = self.get_guild(SERVER_ID)
+        if active_guild is None:
+            raise ValueError("The active guild could not be found.")
+        self.active_guild = active_guild
+
+        staff_category = discord.utils.get(
+            self.active_guild.categories,
+            name="staff",
+        )
+        if staff_category is None:
+            raise ValueError("The staff category could not be found.")
+        self.staff_category = staff_category
+
     async def on_ready(self) -> None:
         """
         Called when the bot is enabled and ready to be run.
         """
-        # try:
-        #     await self.tree.sync(guild=discord.Object(749057176756027414))
-        # except:
-        #     import traceback
-        #     traceback.print_exc()
         logger.info(f"{self.user} has connected!")
-
-        # Add message to rules channel
-        server = self.get_guild(SERVER_ID)
-        assert isinstance(server, discord.Guild)
-        rules_channel = discord.utils.get(server.text_channels, name=CHANNEL_RULES)
-        assert isinstance(rules_channel, discord.TextChannel)
-        rules_message = [m async for m in rules_channel.history(limit=1)]
-        if rules_message:
-            rules_message = rules_message[0]
-            view = discord.ui.View()
-            view.add_item(
-                discord.ui.Button(
-                    url="https://scioly.org/rules",
-                    label="Complete Scioly.org rules",
-                    style=discord.ButtonStyle.link,
-                ),
-            )
-            await rules_message.edit(view=view)
+        self.fetch_resources()
 
     async def on_message(self, message: discord.Message) -> None:
         # Nothing needs to be done to the bot's own messages
