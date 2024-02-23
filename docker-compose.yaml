@@ -12,7 +12,7 @@ services:
     build: ./src/mongo
     restart: unless-stopped
     volumes:
-      - ./mongodata:/data/db
+      - mongodata:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS}

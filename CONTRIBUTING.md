@@ -112,12 +112,17 @@ To develop the bot using Docker, you can use `docker-compose`. Compose will
 build two containers for the bot: one for MongoDB and one for the bot itself, which
 depends on the MongoDB container.
 
-To make Docker work, you will need to update your MongoDB URL to include the default
-database credentials and the proper host address.
-
 ```bash
 $ docker-compose up
 ```
+
+To make Docker work, you will need to update your MongoDB URL to include the default
+database credentials and the proper host address. To connect to the Mongo database
+spun up by Docker, you can set `MONOGO_URL` to `mongodb://mongodb:27017`.
+
+If you want to connect to the database from your host machine, in cases you wish to use
+tools like `mongosh` to connect to the database for inspection and debugging, then you
+can connect using the following URI: `mongodb://localhost:28017`.
 
 ## Contributing changes
 
