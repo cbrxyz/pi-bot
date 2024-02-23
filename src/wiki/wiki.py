@@ -1,25 +1,24 @@
 import asyncio
 import logging
-import os
 import re
 
 import pywikibot
 import wikitextparser as wtp
 from aioify import aioify
-from dotenv import find_dotenv, load_dotenv
 
-load_dotenv(find_dotenv())
+from env import env
+
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 site = None
 logger = logging.getLogger(__name__)
 
 
-async def init_wiki():
+async def init_wiki(username: str, password: str):
     """Initializes the wiki function."""
     with open("password.py", "w+") as f:
         f.write(
-            f"(\"{os.getenv('PI_BOT_WIKI_USERNAME')}\", \"{os.getenv('PI_BOT_WIKI_PASSWORD')}\")",
+            f'("{username}", "{password}")',
         )
     global site
     site = await aiopwb.Site()
@@ -98,7 +97,7 @@ async def implement_command(action, page_title):
         return res[:5]
 
 
-if "PI_BOT_WIKI_USERNAME" in os.environ:
-    asyncio.run(init_wiki())
+if env.pi_bot_wiki_username and env.pi_bot_wiki_password:
+    asyncio.run(init_wiki(env.pi_bot_wiki_username, env.pi_bot_wiki_password))
 else:
     logger.info("User did not supply keys for wiki functionality; not turned on.")

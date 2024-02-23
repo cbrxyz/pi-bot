@@ -2,19 +2,16 @@
 Holds global variables shared between cogs and variables that are initialized when
 the bot is first setup.
 """
-import os
 
-from dotenv import load_dotenv
+from env import env
 
-load_dotenv()
-
-TOKEN = os.getenv("DISCORD_TOKEN")
-DEV_TOKEN = os.getenv("DISCORD_DEV_TOKEN")
-dev_mode = os.getenv("DEV_MODE") == "TRUE"
+TOKEN = env.discord_token
+DEV_TOKEN = env.discord_dev_token
+dev_mode = env.dev_mode
 
 # Use the dev server, else the official Scioly.org server
-SERVER_ID = int(os.getenv("DEV_SERVER_ID")) if dev_mode else 698306997287780363
-STATES_SERVER_ID = int(os.getenv("STATES_SERVER_ID"))
+SERVER_ID = env.dev_server_id if dev_mode else 698306997287780363
+STATES_SERVER_ID = env.states_server_id
 BOT_PREFIX = "?" if dev_mode else "!"
 
 ##############
@@ -30,10 +27,8 @@ DISCORD_INVITE_ENDINGS = [
     "RnkqUbK",
     "scioly",
 ]
-SLASH_COMMAND_GUILDS = [
-    int(iden) for iden in os.getenv("SLASH_COMMAND_GUILDS").split(",")
-]
-EMOJI_GUILDS = [int(iden) for iden in os.getenv("EMOJI_GUILDS").split(",")]
+SLASH_COMMAND_GUILDS = env.slash_command_guilds
+EMOJI_GUILDS = env.emoji_guilds
 
 # Roles
 ROLE_WM = "Wiki/Gallery Moderator"

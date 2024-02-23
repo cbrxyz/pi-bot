@@ -3,11 +3,9 @@ import asyncio
 import pywikibot
 import wikitextparser as wtp
 from aioify import aioify
-from dotenv import find_dotenv, load_dotenv
 
 from src.wiki.wiki import all_pages, set_page_text
 
-load_dotenv(find_dotenv())
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 

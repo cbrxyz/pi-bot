@@ -3,16 +3,15 @@ Adds all functionality for working with a MongoDB database. This database should
 power several core features of the bot, including temporary information, such as a custom
 status or a list of relevant events.
 """
+
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import motor.motor_asyncio  # MongoDB AsyncIO driver
 from bson.objectid import ObjectId
-from dotenv import load_dotenv
 
-load_dotenv()
+from env import env
 
 
 class MongoDatabase:
@@ -24,7 +23,7 @@ class MongoDatabase:
 
     def __init__(self, bot):
         self.client = motor.motor_asyncio.AsyncIOMotorClient(
-            os.getenv("MONGO_URL"),
+            env.mongo_url,
             tz_aware=True,
         )
         self.bot = bot
