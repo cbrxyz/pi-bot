@@ -11,16 +11,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class _Env(BaseSettings):
     """
-    THIS IS AN INTERNAL CLASS. DO NOT IMPORT THIS. INSTEAD USE THE `env`
-    INSTANCE FROM THIS SAME MODULE LIKE SO:
-
-    ```
-    from env import env
-    ```
-
-    A Pydantic settings class that handles validation of environment variables.
-    Reads in a .env file and ensures each variable fits the criteria. All
-    variables are required unless there is a default value assigned.
+    An internal Pydantic settings class that handles validation of environment
+    variables. Reads in a .env file and ensures each variable fits the criteria.
+    All variables are required unless there is a default value assigned.
 
     If an error occurs during parsing, then an ValidationError will throw and
     will terminate the program.
