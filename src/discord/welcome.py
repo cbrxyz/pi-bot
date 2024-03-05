@@ -1,6 +1,7 @@
 """
 Holds functionality for the welcome system.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -13,6 +14,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.discord.globals
+from env import env
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -246,9 +248,9 @@ class InitialView(discord.ui.View):
                 ephemeral=True,
             )
 
-        emoji_guild = self.bot.get_guild(src.discord.globals.STATES_SERVER_ID)
+        emoji_guild = self.bot.get_guild(env.states_server_id)
         self.emoji_guild = emoji_guild or await self.bot.fetch_guild(
-            src.discord.globals.STATES_SERVER_ID,
+            env.states_server_id,
         )
 
         state_options: list[discord.SelectOption] = []

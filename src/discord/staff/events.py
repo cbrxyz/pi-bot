@@ -9,12 +9,12 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
+from env import env
 from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
     SERVER_ID,
-    SLASH_COMMAND_GUILDS,
 )
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ class StaffEvents(commands.Cog):
     event_commands_group = app_commands.Group(
         name="event",
         description="Updates the bot's list of events.",
-        guild_ids=SLASH_COMMAND_GUILDS,
+        guild_ids=env.slash_command_guilds,
         default_permissions=discord.Permissions(manage_roles=True),
     )
 

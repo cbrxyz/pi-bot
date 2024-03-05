@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from commandchecks import is_in_bot_spam
-from src.discord.globals import SLASH_COMMAND_GUILDS
+from env import env
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -23,7 +23,7 @@ class DevCommands(commands.Cog):
         self.bot = bot
 
     @app_commands.command(description="Returns the current channel ID.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(channel="The channel to get the ID of.")
     @app_commands.check(is_in_bot_spam)
     async def getchannelid(
@@ -45,7 +45,7 @@ class DevCommands(commands.Cog):
         await interaction.response.send_message(f"{channel.mention}: `{channel.id}`")
 
     @app_commands.command(description="Returns the ID ")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(emoji="The emoji to get the ID of.")
     @app_commands.check(is_in_bot_spam)
     async def getemojiid(self, interaction: discord.Interaction, emoji: str):
@@ -58,7 +58,7 @@ class DevCommands(commands.Cog):
         await interaction.response.send_message(f"{emoji}: `{emoji}`")
 
     @app_commands.command(description="Returns the ID ")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(name="The name of the role to get the ID of.")
     @app_commands.check(is_in_bot_spam)
     async def getroleid(
@@ -81,7 +81,7 @@ class DevCommands(commands.Cog):
             )
 
     @app_commands.command(description="Returns the ID of a user (or yourself).")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(member="The member to get the ID of.")
     @app_commands.check(is_in_bot_spam)
     async def getuserid(
@@ -101,7 +101,7 @@ class DevCommands(commands.Cog):
         await interaction.response.send_message(f"{member!s}: `{member.id}`")
 
     @app_commands.command(description="Says hello!")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.check(is_in_bot_spam)
     async def hello(self, interaction: discord.Interaction):
         """

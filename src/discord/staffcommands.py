@@ -14,6 +14,7 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
+from env import env
 from src.discord.globals import (
     CATEGORY_GENERAL,
     CATEGORY_INVITATIONALS,
@@ -37,7 +38,6 @@ from src.discord.globals import (
     ROLE_VIP,
     ROLE_WM,
     SERVER_ID,
-    SLASH_COMMAND_GUILDS,
 )
 from src.discord.invitationals import update_invitational_list
 from src.wiki.mosteditstable import run_table
@@ -58,7 +58,7 @@ class SlowMode(app_commands.Group):
             name="slowmode",
             description="Manages slowmode for a channel.",
             default_permissions=discord.Permissions(manage_channels=True),
-            guild_ids=SLASH_COMMAND_GUILDS,
+            guild_ids=env.slash_command_guilds,
         )
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -395,7 +395,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(member="The member to confirm.")
     async def confirm(self, interaction: discord.Interaction, member: discord.Member):
         """Allows a staff member to confirm a user."""
@@ -422,7 +422,7 @@ class StaffEssential(StaffCommands):
 
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def confirm_user(
         self,
         interaction: discord.Interaction,
@@ -449,7 +449,7 @@ class StaffEssential(StaffCommands):
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.describe(count="The amount of messages to nuke.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def nuke(self, interaction, count: app_commands.Range[int, 1, 100]):
         """
         Nukes (deletes) a specified amount of messages in a channel.
@@ -502,7 +502,7 @@ class StaffEssential(StaffCommands):
     @app_commands.command(description="Staff command. Kicks user from the server.")
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(kick_members=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(
         member="The user to kick from the server.",
         reason="The reason to kick the member for.",
@@ -591,7 +591,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(member="The user to unmute.")
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """Unmutes a user."""
@@ -654,7 +654,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(ban_members=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(
         member="The user to ban.",
         reason="The reason to ban the user for.",
@@ -772,7 +772,7 @@ class StaffEssential(StaffCommands):
     @app_commands.command(description="Staff command. Mutes a user.")
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(
         member="The user to mute.",
         reason="The reason to mute the user.",
@@ -876,7 +876,7 @@ class StaffEssential(StaffCommands):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_roles=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def cron(self, interaction: discord.Interaction):
         """
         Allows staff to manipulate the CRON list.
@@ -923,7 +923,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_channels=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def vc(self, interaction: discord.Interaction):
         commandchecks.is_staff_from_ctx(interaction)
 
@@ -1110,7 +1110,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         description="Staff command. Finds a user by their ID.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(iden="The ID to lookup.")
     async def userfromid(self, interaction: discord.Interaction, iden: str):
         """Mentions a user with the given ID."""
@@ -1124,7 +1124,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_channels=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def lock(self, interaction: discord.Interaction):
         """Locks a channel to Member access."""
         # Check permissions
@@ -1198,7 +1198,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.default_permissions(manage_channels=True)
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def unlock(self, interaction: discord.Interaction):
         """Unlocks a channel to Member access."""
         # Check permissions
@@ -1281,7 +1281,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(moderate_members=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     async def met(self, interaction: discord.Interaction):
         """Runs Pi-Bot's Most Edits Table"""
         commandchecks.is_staff_from_ctx(interaction)
@@ -1334,7 +1334,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
     @app_commands.default_permissions(manage_webhooks=True)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(system="The system to refresh.")
     async def refresh(
         self,
@@ -1378,7 +1378,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
     change_status_group = app_commands.Group(
         name="status",
         description="Updates the bot's status.",
-        guild_ids=SLASH_COMMAND_GUILDS,
+        guild_ids=env.slash_command_guilds,
         default_permissions=discord.Permissions(manage_webhooks=True),
     )
 

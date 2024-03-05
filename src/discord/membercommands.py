@@ -17,6 +17,7 @@ from discord.ext import commands
 
 import src.discord.globals
 from commandchecks import is_in_bot_spam, is_staff_from_ctx
+from env import env
 from src.discord.globals import (
     CATEGORY_STAFF,
     CHANNEL_GAMES,
@@ -32,7 +33,6 @@ from src.discord.globals import (
     ROLE_SELFMUTE,
     RULES,
     SERVER_ID,
-    SLASH_COMMAND_GUILDS,
 )
 from src.discord.views import YesNo
 from src.lists import get_state_list
@@ -57,7 +57,7 @@ class MemberCommands(commands.Cog):
         self.aiowikip = aioify(obj=wikip)
 
     @app_commands.command(description="Looking for help? Try this!")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(2, 20, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def help(self, interaction: discord.Interaction):
@@ -95,7 +95,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles your pronoun roles.")
     @app_commands.describe(pronouns="The pronoun to add/remove from your account.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(2, 20, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def pronouns(
@@ -130,7 +130,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         username="The username to get information about. Defaults to your nickname/username.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(10, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def profile(
@@ -249,7 +249,7 @@ class MemberCommands(commands.Cog):
         await interaction.response.send_message(embed=profile_embed)
 
     @app_commands.command(description="Returns the number of members in the server.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def count(self, interaction: discord.Interaction):
@@ -268,7 +268,7 @@ class MemberCommands(commands.Cog):
         )
 
     @app_commands.command(description="Toggles the Alumni role.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def alumni(self, interaction: discord.Interaction):
@@ -288,7 +288,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Toggles division roles for the user.")
     @app_commands.describe(div="The division to assign the user with.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def division(
@@ -346,7 +346,7 @@ class MemberCommands(commands.Cog):
         return role
 
     @app_commands.command(description="Toggles the visibility of the #games channel.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(
         2,
         120,
@@ -401,7 +401,7 @@ class MemberCommands(commands.Cog):
         state_nine="The ninth state to add/remove from your profile.",
         state_ten="The tenth state to add/remove from your profile.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def states(
@@ -521,7 +521,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def selfmute(
@@ -628,7 +628,7 @@ class MemberCommands(commands.Cog):
     @app_commands.describe(
         invitational="The official name of the invitational you would like to add.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(3, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def request(self, interaction: discord.Interaction, invitational: str):
@@ -653,7 +653,7 @@ class MemberCommands(commands.Cog):
         )
 
     @app_commands.command(description="Returns information about the bot and server.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(2, 20, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def about(self, interaction: discord.Interaction):
@@ -690,7 +690,7 @@ class MemberCommands(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(description="Returns the Discord server invite.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def invite(self, interaction: discord.Interaction):
@@ -709,7 +709,7 @@ class MemberCommands(commands.Cog):
         description="Returns a link to the Scioly.org forums.",
     )
     @app_commands.describe(destination="The area of the site to link to.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def link(
@@ -744,7 +744,7 @@ class MemberCommands(commands.Cog):
         minimum="The minimum number to choose from. Defaults to 0.",
         maximum="The maximum number to choose from. Defaults to 10.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def random(
@@ -774,7 +774,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Returns information about a given rule.")
     @app_commands.describe(rule="The rule to cite.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def rule(
@@ -812,7 +812,7 @@ class MemberCommands(commands.Cog):
         return await interaction.response.send_message(f"**Rule {num}:**\n> {rule}")
 
     @app_commands.command(description="Information about gaining the @Coach role.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def coach(self, interaction: discord.Interaction):
@@ -832,7 +832,7 @@ class MemberCommands(commands.Cog):
         )
 
     @app_commands.command(description="Information about the current server.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def info(self, interaction: discord.Interaction):
@@ -968,7 +968,7 @@ class MemberCommands(commands.Cog):
     wiki_group = app_commands.Group(
         name="wiki",
         description="Get information from the community-sourced wiki, available at scioly.org/wiki",
-        guild_ids=SLASH_COMMAND_GUILDS,
+        guild_ids=env.slash_command_guilds,
         default_permissions=discord.Permissions(send_messages=True),
     )
 
@@ -1061,7 +1061,7 @@ class MemberCommands(commands.Cog):
         command="The command to execute.",
         request="The request to execute the command upon. What to search or summarize, etc.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def wikipedia(
@@ -1137,7 +1137,7 @@ class MemberCommands(commands.Cog):
         event_nine="The ninth event to add/remove from your profile.",
         event_ten="The tenth event to add/remove from your profile.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def events(
@@ -1254,7 +1254,7 @@ class MemberCommands(commands.Cog):
 
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def tag(self, interaction: discord.Interaction, tag_name: str):

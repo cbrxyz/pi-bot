@@ -9,15 +9,14 @@ from discord import app_commands
 from discord.ext import commands
 
 import commandchecks
+from env import env
 from src.discord.globals import (
     CATEGORY_ARCHIVE,
     CATEGORY_INVITATIONALS,
-    EMOJI_GUILDS,
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
     SERVER_ID,
-    SLASH_COMMAND_GUILDS,
 )
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import YesNo
@@ -34,7 +33,7 @@ class StaffInvitational(commands.Cog):
     invitational_status_group = app_commands.Group(
         name="invitational",
         description="Updates the bot's invitational system.",
-        guild_ids=SLASH_COMMAND_GUILDS,
+        guild_ids=env.slash_command_guilds,
         default_permissions=discord.Permissions(manage_channels=True),
     )
 
@@ -125,7 +124,7 @@ class StaffInvitational(commands.Cog):
 
                 # Check for emoji creation in guilds
                 created_emoji = False
-                for i, guild_id in enumerate(EMOJI_GUILDS):
+                for i, guild_id in enumerate(env.emoji_guilds):
                     guild = self.bot.get_guild(guild_id)
                     assert isinstance(guild, discord.Guild)
 
@@ -139,7 +138,7 @@ class StaffInvitational(commands.Cog):
                         )
                         created_emoji = True
                         emoji_creation_message = await interaction.channel.send(
-                            f"Created {emoji} (`{emoji!s}`) emoji in guild `{guild_id}`. (Guild {i + 1}/{len(EMOJI_GUILDS)})",
+                            f"Created {emoji} (`{emoji!s}`) emoji in guild `{guild_id}`. (Guild {i + 1}/{len(env.emoji_guilds)})",
                         )
                         await emoji_creation_message.delete(delay=10)
                         break
@@ -408,7 +407,7 @@ class StaffInvitational(commands.Cog):
 
                         # Create new emoji, delete old emoji
                         created_emoji = False
-                        for guild_id in EMOJI_GUILDS:
+                        for guild_id in env.emoji_guilds:
                             guild = self.bot.get_guild(guild_id)
                             for emoji in guild.emojis:
                                 if (

@@ -5,14 +5,8 @@ the bot is first setup.
 
 from env import env
 
-TOKEN = env.discord_token
-DEV_TOKEN = env.discord_dev_token
-dev_mode = env.dev_mode
-
 # Use the dev server, else the official Scioly.org server
-SERVER_ID = env.dev_server_id if dev_mode else 698306997287780363
-STATES_SERVER_ID = env.states_server_id
-BOT_PREFIX = "?" if dev_mode else "!"
+SERVER_ID = env.dev_server_id if env.dev_mode else 698306997287780363
 
 ##############
 # CONSTANTS
@@ -27,8 +21,6 @@ DISCORD_INVITE_ENDINGS = [
     "RnkqUbK",
     "scioly",
 ]
-SLASH_COMMAND_GUILDS = env.slash_command_guilds
-EMOJI_GUILDS = env.emoji_guilds
 
 # Roles
 ROLE_WM = "Wiki/Gallery Moderator"
