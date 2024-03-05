@@ -27,7 +27,10 @@ from src.discord.globals import (
     CHANNEL_EDITEDM,
     CHANNEL_RULES,
     DEV_TOKEN,
+    ROLE_STAFF,
+    ROLE_VIP,
     SERVER_ID,
+    SLASH_COMMAND_GUILDS,
     TOKEN,
     dev_mode,
 )
@@ -321,6 +324,23 @@ class PiBot(commands.Bot):
                 return message
         return None
 
+    async def sync_commands(
+        self,
+    ) -> tuple[list[app_commands.AppCommand], dict[int, list[app_commands.AppCommand]]]:
+        logger.info("Beginning to sync commands ...")
+        global_cmds_synced = await self.tree.sync()
+        logger.info(f"{len(global_cmds_synced)} global commands were synced")
+        guild_commands = {}
+        for command_guild in SLASH_COMMAND_GUILDS:
+            guild_cmds_synced = await self.tree.sync(
+                guild=discord.Object(id=command_guild),
+            )
+            guild_commands[command_guild] = guild_cmds_synced
+            logger.info(
+                f"{len(guild_cmds_synced)} guild commands were synced for guild with id {command_guild}",
+            )
+        return (global_cmds_synced, guild_commands)
+
 
 bot = PiBot()
 KB = 1024
@@ -332,6 +352,35 @@ handler = logging.handlers.RotatingFileHandler(
     backupCount=5,
 )
 discord.utils.setup_logging(handler=handler)
+
+
+@bot.tree.command(
+    description="Syncs command list. Any new commands will be available for use.",
+)
+@app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
+async def sync(interaction: discord.Interaction):
+    """
+    Syncs and registers and new commands with Discord. This command is a
+    top-level command to prevent disabled cogs from disabling sync
+    functionality.
+
+    Note: Any changes to this command's signature will require
+    `Pibot.sync_commands()` which can be done by running:
+    ```
+    python sync_commands.py
+    ```
+    within your venv.
+    """
+    await interaction.response.defer(ephemeral=True, thinking=False)
+    global_cmds_synced, guild_cmds_synced = await bot.sync_commands()
+    res_msg = f"{len(global_cmds_synced)} global commands were synced."
+    for guild_id, cmds in guild_cmds_synced.items():
+        guild_info = bot.get_guild(guild_id)
+        guild_name_id = f"guild with id {guild_id}"
+        if guild_info:
+            guild_name_id = f'"{guild_info.name}" (id: {guild_id})'
+        res_msg += f"\n{len(cmds)} guild commands were synced in {guild_name_id}."
+    await interaction.followup.send(res_msg)
 
 
 async def main(token: str):
