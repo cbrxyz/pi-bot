@@ -12,6 +12,7 @@ import discord
 from discord.ext import commands
 
 from commanderrors import CommandNotAllowedInChannel
+from env import env
 from src.discord.globals import (
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
@@ -20,7 +21,6 @@ from src.discord.globals import (
     CHANNEL_LOUNGE,
     CHANNEL_WELCOME,
     ROLE_UC,
-    SERVER_ID,
 )
 
 if TYPE_CHECKING:
@@ -46,7 +46,7 @@ class Logger(commands.Cog):
         messages sent directly to the bot by a user.
         """
         # Get the relevant objects
-        guild = self.bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         assert isinstance(guild, discord.Guild)
 
         dm_channel = discord.utils.get(guild.text_channels, name=CHANNEL_DMLOG)
@@ -338,12 +338,12 @@ class Logger(commands.Cog):
         if not channel:
             channel = await self.bot.fetch_channel(payload.channel_id)
         guild = (
-            self.bot.get_guild(SERVER_ID)
+            self.bot.get_guild(env.server_id)
             if isinstance(channel, discord.abc.PrivateChannel)
             else channel.guild
         )
         if not guild:
-            guild = await self.bot.fetch_guild(SERVER_ID)
+            guild = await self.bot.fetch_guild(env.server_id)
         edited_channel = discord.utils.get(
             guild.text_channels,
             name=CHANNEL_EDITEDM,
@@ -517,7 +517,7 @@ class Logger(commands.Cog):
         # Get the required resources
         channel = self.bot.get_channel(payload.channel_id)
         guild = (
-            self.bot.get_guild(SERVER_ID)
+            self.bot.get_guild(env.server_id)
             if channel.type == discord.ChannelType.private
             else channel.guild
         )

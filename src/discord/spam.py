@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from src.discord.globals import ROLE_MUTED, SERVER_ID
+from env import env
+from src.discord.globals import ROLE_MUTED
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -127,7 +128,7 @@ class SpamManager(commands.Cog):
         """
         Mutes the user and schedules an unmute for an hour later in CRON.
         """
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        guild: discord.Guild = self.bot.get_guild(env.server_id)
         muted_role = discord.utils.get(guild.roles, name=ROLE_MUTED)
         unmute_time = discord.utils.utcnow() + datetime.timedelta(hours=1)
 

@@ -3,11 +3,6 @@ Holds global variables shared between cogs and variables that are initialized wh
 the bot is first setup.
 """
 
-from env import env
-
-# Use the dev server, else the official Scioly.org server
-SERVER_ID = env.dev_server_id if env.dev_mode else 698306997287780363
-
 ##############
 # CONSTANTS
 ##############

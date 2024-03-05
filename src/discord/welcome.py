@@ -180,7 +180,7 @@ class InitialView(discord.ui.View):
         self.chosen_roles.setdefault(member, {})[name] = roles
 
     def get_guild(self) -> discord.Guild:
-        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         assert isinstance(guild, discord.Guild)
         return guild
 
@@ -389,7 +389,7 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
         self.update_welcome_channel.start()
 
     def get_guild(self) -> discord.Guild:
-        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         assert isinstance(guild, discord.Guild)
         return guild
 
@@ -413,7 +413,7 @@ class WelcomeCog(commands.GroupCog, name="welcome"):
 
     @tasks.loop(seconds=15)
     async def update_welcome_channel(self):
-        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         if not guild:
             return  # bot is still starting up
         assert isinstance(guild, discord.Guild)

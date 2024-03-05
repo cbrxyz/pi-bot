@@ -12,7 +12,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
+from env import env
+from src.discord.globals import CHANNEL_CLOSED_REPORTS
 from src.discord.invitationals import Invitational, update_invitational_list
 
 if TYPE_CHECKING:
@@ -361,7 +362,7 @@ class Reporter(commands.Cog):
         cog uses this command to send non-actionable embeds containing info about
         spam on the server.
         """
-        guild = self.bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         assert isinstance(guild, discord.Guild)
 
         reports_channel = discord.utils.get(guild.text_channels, name="reports")
@@ -383,7 +384,7 @@ class Reporter(commands.Cog):
                 is supplied in case the member's username changes before staff members examine
                 the report.
         """
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        guild: discord.Guild = self.bot.get_guild(env.server_id)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels,
             name="reports",
@@ -414,7 +415,7 @@ class Reporter(commands.Cog):
         Args:
             task: The dictionary containing the CRON task.
         """
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        guild: discord.Guild = self.bot.get_guild(env.server_id)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels,
             name="reports",
@@ -450,7 +451,7 @@ class Reporter(commands.Cog):
         """
         Reports a command error to staff.
         """
-        guild = self.bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         assert isinstance(guild, discord.Guild)
 
         reports_channel = discord.utils.get(guild.text_channels, name="reports")
@@ -495,7 +496,7 @@ class Reporter(commands.Cog):
             invitational_name: The name of the invitational channel requested by the
                 user.
         """
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        guild: discord.Guild = self.bot.get_guild(env.server_id)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels,
             name="reports",
@@ -530,7 +531,7 @@ class Reporter(commands.Cog):
             channel (discord.TextChannel): The channel associated with the invitational.
             role (discord.Role): The role associated with the invitational.
         """
-        guild: discord.Guild = self.bot.get_guild(SERVER_ID)
+        guild: discord.Guild = self.bot.get_guild(env.server_id)
         reports_channel: discord.TextChannel = discord.utils.get(
             guild.text_channels,
             name="reports",
@@ -565,7 +566,7 @@ class Reporter(commands.Cog):
             is_present: Whether the user was present in the server when the unbanning occurred.
             already_unbanned: Whether the user has already been unbanned.
         """
-        guild = self.bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         closed_reports_channel = discord.utils.get(
             guild.text_channels,
             name=CHANNEL_CLOSED_REPORTS,
@@ -601,7 +602,7 @@ class Reporter(commands.Cog):
             user: The user to make the auto notice about.
             is_present: Whether the user was present in the server when the unmuting occurred.
         """
-        guild = self.bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         closed_reports_channel = discord.utils.get(
             guild.text_channels,
             name=CHANNEL_CLOSED_REPORTS,

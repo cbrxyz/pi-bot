@@ -16,7 +16,6 @@ from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
-    SERVER_ID,
 )
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import YesNo
@@ -556,7 +555,7 @@ class StaffInvitational(commands.Cog):
             invitational = found_invitationals[0]
 
             # Get the relevant channel and role
-            server = self.bot.get_guild(SERVER_ID)
+            server = self.bot.get_guild(env.server_id)
             ch = discord.utils.get(
                 server.text_channels,
                 name=invitational["channel_name"],

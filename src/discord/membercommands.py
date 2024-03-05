@@ -32,7 +32,6 @@ from src.discord.globals import (
     ROLE_MR,
     ROLE_SELFMUTE,
     RULES,
-    SERVER_ID,
 )
 from src.discord.views import YesNo
 from src.lists import get_state_list
@@ -70,7 +69,7 @@ class MemberCommands(commands.Cog):
         Args:
             interaction (discord.Interaction): The interaction sent from Discord.
         """
-        server = self.bot.get_guild(SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         invitationals_channel = discord.utils.get(
             server.text_channels,
             name=CHANNEL_INVITATIONALS,

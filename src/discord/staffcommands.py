@@ -37,7 +37,6 @@ from src.discord.globals import (
     ROLE_UC,
     ROLE_VIP,
     ROLE_WM,
-    SERVER_ID,
 )
 from src.discord.invitationals import update_invitational_list
 from src.wiki.mosteditstable import run_table
@@ -222,7 +221,7 @@ class CronConfirm(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button,
     ):
-        server = self.bot.get_guild(SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         if self.doc["type"] == "UNBAN":
             # User needs to be unbanned
             with contextlib.suppress(Exception):
