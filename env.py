@@ -14,7 +14,7 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class _Env(BaseSettings):
+class _Env(BaseSettings, extra="ignore"):
     """
     An internal Pydantic settings class that handles validation of environment
     variables. Reads in a .env file and ensures each variable fits the criteria.
