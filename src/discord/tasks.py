@@ -10,6 +10,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.discord.globals
+from env import env
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import UnselfmuteView
 
@@ -49,7 +50,7 @@ class CronTasks(commands.Cog):
 
     @tasks.loop(minutes=10)
     async def send_unselfmute(self):
-        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         unselfmute_channel = discord.utils.get(
             guild.text_channels,
             name=src.discord.globals.CHANNEL_UNSELFMUTE,
@@ -157,7 +158,7 @@ class CronTasks(commands.Cog):
         Autonomous task which updates the member count shown on a voice channel hidden to staff.
         """
         # Get the voice channel
-        guild = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        guild = self.bot.get_guild(env.server_id)
         channel_prefix = "Members"
         vc = discord.utils.find(
             lambda c: channel_prefix in c.name,
@@ -231,7 +232,7 @@ class CronTasks(commands.Cog):
         Handles serving CRON tasks with the type of 'UNBAN'.
         """
         # Get the necessary resources
-        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
 
         # Type checking
@@ -264,7 +265,7 @@ class CronTasks(commands.Cog):
         Handles serving CRON tasks with the type of 'UNMUTE'.
         """
         # Get the necessary resources
-        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
         muted_role = discord.utils.get(
             server.roles,
@@ -293,7 +294,7 @@ class CronTasks(commands.Cog):
         Handles serving CRON tasks with the type of 'UNSELFMUTE'.
         """
         # Get the necessary resources
-        server = self.bot.get_guild(src.discord.globals.SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         self.bot.get_cog("Reporter")
         muted_role = discord.utils.get(
             server.roles,
@@ -333,9 +334,7 @@ class CronTasks(commands.Cog):
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):
-        member_count = (
-            self.bot.get_guild(src.discord.globals.SERVER_ID).member_count or 0
-        )
+        member_count = self.bot.get_guild(env.server_id).member_count or 0
         activities = [
             discord.Activity(type=discord.ActivityType.playing, name="Game On"),
             discord.Activity(type=discord.ActivityType.watching, name="bear eat users"),

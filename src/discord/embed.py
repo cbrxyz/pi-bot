@@ -1,6 +1,7 @@
 """
 Handles all functionality regarding constructing and editing embeds.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,11 +19,11 @@ if TYPE_CHECKING:
     from bot import PiBot
 
 import commandchecks
+from env import env
 from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
-    SLASH_COMMAND_GUILDS,
 )
 
 
@@ -803,7 +804,7 @@ class EmbedCommands(commands.Cog):
         description="Staff command. Assembles an embed in a particular channel.",
     )
     @app_commands.checks.has_any_role(ROLE_STAFF, ROLE_VIP)
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(
         channel="The channel to send the message to. If editing an embed, the message's channel.",
         message_id="The ID of the message to edit the embed of.",

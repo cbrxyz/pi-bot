@@ -8,11 +8,11 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
+from env import env
 from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
-    SLASH_COMMAND_GUILDS,
 )
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ class StaffCensor(commands.Cog):
     censor_group = app_commands.Group(
         name="censor",
         description="Controls Pi-Bot's censor.",
-        guild_ids=SLASH_COMMAND_GUILDS,
+        guild_ids=env.slash_command_guilds,
         default_permissions=discord.Permissions(manage_messages=True),
     )
 

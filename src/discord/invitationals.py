@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
+from env import env
 from src.discord.globals import (
     CATEGORY_ARCHIVE,
     CATEGORY_INVITATIONALS,
@@ -16,7 +17,6 @@ from src.discord.globals import (
     ROLE_AD,
     ROLE_AT,
     ROLE_GM,
-    SERVER_ID,
 )
 
 if TYPE_CHECKING:
@@ -210,7 +210,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
     INVITATIONAL_INFO = invitationals
 
     # Get guild and channels
-    server = bot.get_guild(SERVER_ID)
+    server = bot.get_guild(env.server_id)
     assert isinstance(server, discord.Guild)
 
     invitational_channel = discord.utils.get(

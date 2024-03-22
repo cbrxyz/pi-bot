@@ -19,17 +19,13 @@ from discord import app_commands
 from discord.ext import commands
 from rich.logging import RichHandler
 
+from env import env
 from src.discord.globals import (
-    BOT_PREFIX,
     CHANNEL_BOTSPAM,
     CHANNEL_DELETEDM,
     CHANNEL_DMLOG,
     CHANNEL_EDITEDM,
     CHANNEL_RULES,
-    DEV_TOKEN,
-    SERVER_ID,
-    TOKEN,
-    dev_mode,
 )
 from src.discord.reporter import Reporter
 from src.mongo.mongo import MongoDatabase
@@ -41,6 +37,8 @@ if TYPE_CHECKING:
 
 intents = discord.Intents.all()
 logger = logging.getLogger(__name__)
+
+BOT_PREFIX = "?" if env.dev_mode else "!"
 
 
 class PiBotCommandTree(app_commands.CommandTree):
@@ -210,7 +208,7 @@ class PiBot(commands.Bot):
         logger.info(f"{self.user} has connected!")
 
         # Add message to rules channel
-        server = self.get_guild(SERVER_ID)
+        server = self.get_guild(env.dev_server_id)
         assert isinstance(server, discord.Guild)
         rules_channel = discord.utils.get(server.text_channels, name=CHANNEL_RULES)
         assert isinstance(rules_channel, discord.TextChannel)
@@ -346,11 +344,11 @@ async def main(token: str):
 
 
 if __name__ == "__main__":
-    if dev_mode:
+    if env.dev_mode:
         # If in development, also print to console
         logger = logging.getLogger()
         logger.addHandler(RichHandler(rich_tracebacks=True))
 
-        asyncio.run(main(DEV_TOKEN))
+        asyncio.run(main(env.discord_dev_token))
     else:
-        asyncio.run(main(TOKEN))
+        asyncio.run(main(env.discord_token))

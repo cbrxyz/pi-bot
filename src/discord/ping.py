@@ -17,7 +17,8 @@ from discord.ext import commands
 
 import src.discord.globals
 from commandchecks import is_in_bot_spam
-from src.discord.globals import CHANNEL_BOTSPAM, SLASH_COMMAND_GUILDS
+from env import env
+from src.discord.globals import CHANNEL_BOTSPAM
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -208,7 +209,7 @@ class PingManager(commands.GroupCog, name="ping"):
         await user.send(embed=embed)
 
     @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(2, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def dnd(self, interaction: discord.Interaction):
@@ -255,7 +256,7 @@ class PingManager(commands.GroupCog, name="ping"):
         description="Adds a new ping to notify you about.",
     )
     @app_commands.describe(word="The new word to add a ping for.")
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def pingadd(self, interaction: discord.Interaction, word: str):
@@ -329,7 +330,7 @@ class PingManager(commands.GroupCog, name="ping"):
         name="test",
         description="Tests your pings on an example message.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(test="The phrase to test your pings against.")
     @app_commands.checks.cooldown(10, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
@@ -380,7 +381,7 @@ class PingManager(commands.GroupCog, name="ping"):
         name="list",
         description="Lists all of your registered pings.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def pinglist(self, interaction: discord.Interaction):
@@ -423,7 +424,7 @@ class PingManager(commands.GroupCog, name="ping"):
     @app_commands.describe(
         word="The word to remove a ping for. Or use 'all' to remove all pings.",
     )
-    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.check(is_in_bot_spam)
     async def pingremove(self, interaction: discord.Interaction, word: str):

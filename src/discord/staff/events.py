@@ -9,12 +9,11 @@ from discord.ext import commands
 
 import commandchecks
 import src.discord.globals
+from env import env
 from src.discord.globals import (
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
-    SERVER_ID,
-    SLASH_COMMAND_GUILDS,
 )
 
 if TYPE_CHECKING:
@@ -28,7 +27,7 @@ class StaffEvents(commands.Cog):
     event_commands_group = app_commands.Group(
         name="event",
         description="Updates the bot's list of events.",
-        guild_ids=SLASH_COMMAND_GUILDS,
+        guild_ids=env.slash_command_guilds,
         default_permissions=discord.Permissions(manage_roles=True),
     )
 
@@ -73,7 +72,7 @@ class StaffEvents(commands.Cog):
         await self.bot.mongo_database.insert("data", "events", new_dict)
 
         # Create role on server
-        server = self.bot.get_guild(SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         assert isinstance(server, discord.Guild)
         await server.create_role(
             name=event_name,
@@ -115,7 +114,7 @@ class StaffEvents(commands.Cog):
         ]
 
         # Check to see if role exists on server
-        server = self.bot.get_guild(SERVER_ID)
+        server = self.bot.get_guild(env.server_id)
         potential_role = discord.utils.get(server.roles, name=event_name)
 
         if event_not_in_list and potential_role:
@@ -126,7 +125,7 @@ class StaffEvents(commands.Cog):
 
         # If staff member has selected to delete role from all users, delete role entirely
         if delete_role == "yes":
-            server = self.bot.get_guild(SERVER_ID)
+            server = self.bot.get_guild(env.server_id)
             role = discord.utils.get(server.roles, name=event_name)
             assert isinstance(role, discord.Role)
             await role.delete()

@@ -6,14 +6,13 @@ from datetime import date
 import pywikibot
 import wikitextparser as wtp
 from aioify import aioify
-from dotenv import find_dotenv, load_dotenv
 
-load_dotenv(find_dotenv())
 aiopwb = aioify(obj=pywikibot, name="aiopwb")
 
 site = 0
 entry_count = 500
 cur_table_wtp = 0
+
 
 # Define a class for storing user information
 class User:
