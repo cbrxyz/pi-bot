@@ -1,6 +1,7 @@
 """
 Holds functionality for members to manage their ping subscriptions.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -459,7 +460,7 @@ class PingManager(commands.GroupCog, name="ping"):
                 "data",
                 "pings",
                 user["_id"],
-                {"$pull": {"word_pings": {}}},
+                {"$set": {"word_pings": []}},
             )
             return await interaction.response.send_message(
                 "I removed all of your pings.",
