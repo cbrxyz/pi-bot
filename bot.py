@@ -389,13 +389,6 @@ async def sync(ctx: commands.Context, only_guild_commands: bool = False):
     Syncs and registers and new commands with Discord. This command is a
     top-level command to prevent disabled cogs from disabling sync
     functionality.
-
-    Note: Any changes to this command's signature will require
-    `Pibot.sync_commands()` which can be done by running:
-    ```
-    python sync_commands.py
-    ```
-    within your venv.
     """
     async with ctx.typing(ephemeral=True):
         global_cmds_synced, guild_cmds_synced = await bot.sync_commands(
