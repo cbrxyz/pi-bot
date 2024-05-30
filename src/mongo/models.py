@@ -1,6 +1,7 @@
 """
 Contains all database models
 """
+
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -21,4 +22,14 @@ class Cron(Document):
 
     class Settings:
         name = "cron"
+        use_cache = False
+
+
+class Ping(Document):
+    user_id: Annotated[int, Indexed()]
+    word_pings: list[str]
+    dnd: bool
+
+    class Settings:
+        name = "pings"
         use_cache = False

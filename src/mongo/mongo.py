@@ -95,12 +95,6 @@ class MongoDatabase:
         """
         return await self.get_entire_collection("data", "censor", return_one=True)
 
-    async def get_pings(self):
-        """
-        Gets all documents in the pings collection.
-        """
-        return await self.get_entire_collection("data", "pings")
-
     async def get_tags(self):
         """
         Gets all documents in the tags collection.

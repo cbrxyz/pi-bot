@@ -179,6 +179,7 @@ class PiBot(commands.Bot):
             database=self.mongo_database.client["data"],
             document_models=[
                 src.mongo.models.Cron,
+                src.mongo.models.Ping,
                 # TODO
             ],
         )

@@ -14,6 +14,7 @@ from env import env
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import UnselfmuteView
 from src.mongo.models import Cron
+from src.mongo.models import Ping
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -76,7 +77,7 @@ class CronTasks(commands.Cog):
 
     async def pull_prev_info(self):
         src.discord.globals.REPORTS = await self.bot.mongo_database.get_reports()
-        src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
+        src.discord.globals.PING_INFO = await Ping.find_all().to_list()
         src.discord.globals.TAGS = await self.bot.mongo_database.get_tags()
         src.discord.globals.EVENT_INFO = await self.bot.mongo_database.get_events()
         self.bot.settings = await self.bot.mongo_database.get_settings()
