@@ -13,6 +13,7 @@ import src.discord.globals
 from env import env
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import UnselfmuteView
+from src.mongo.models import Cron
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -204,19 +205,19 @@ class CronTasks(commands.Cog):
         """
         logger.debug("Executing CRON...")
         # Get the relevant tasks
-        cron_list = await self.bot.mongo_database.get_cron()
+        cron_list = await Cron.find_all().to_list()
 
         for task in cron_list:
             # If the date has passed, execute task
-            if discord.utils.utcnow() > task["time"]:
+            if discord.utils.utcnow() > task.time:
                 try:
-                    if task["type"] == "UNBAN":
+                    if task.cron_type == "UNBAN":
                         await self.cron_handle_unban(task)
-                    elif task["type"] == "UNMUTE":
+                    elif task.cron_type == "UNMUTE":
                         await self.cron_handle_unmute(task)
-                    elif task["type"] == "UNSELFMUTE":
+                    elif task.cron_type == "UNSELFMUTE":
                         await self.cron_handle_unselfmute(task)
-                    elif task["type"] == "REMOVE_STATUS":
+                    elif task.cron_type == "REMOVE_STATUS":
                         await self.cron_handle_remove_status(task)
                     else:
                         logger.error("ERROR:")
@@ -227,7 +228,7 @@ class CronTasks(commands.Cog):
                     reporter_cog: commands.Cog | Reporter = self.bot.get_cog("Reporter")
                     await reporter_cog.create_cron_task_report(task)
 
-    async def cron_handle_unban(self, task: dict):
+    async def cron_handle_unban(self, task: Cron):
         """
         Handles serving CRON tasks with the type of 'UNBAN'.
         """
@@ -239,7 +240,7 @@ class CronTasks(commands.Cog):
         assert isinstance(server, discord.Guild)
 
         # Attempt to unban user
-        member = await self.bot.fetch_user(task["user"])
+        member = await self.bot.fetch_user(task.user)
         if member in server.members:
             # User is still in server, thus already unbanned
             await reporter_cog.create_cron_unban_auto_notice(member, is_present=True)
@@ -258,9 +259,9 @@ class CronTasks(commands.Cog):
             )
 
         # Remove cron task.
-        await self.delete_from_cron(task["_id"])
+        await task.delete()
 
-    async def cron_handle_unmute(self, task: dict):
+    async def cron_handle_unmute(self, task: Cron):
         """
         Handles serving CRON tasks with the type of 'UNMUTE'.
         """
@@ -277,7 +278,7 @@ class CronTasks(commands.Cog):
         assert isinstance(muted_role, discord.Role)
 
         # Attempt to unmute user
-        member = server.get_member(task["user"])
+        member = server.get_member(task.user)
         if member in server.members:
             # User is still in server, thus can be unmuted
             await member.remove_roles(muted_role)
@@ -287,9 +288,9 @@ class CronTasks(commands.Cog):
             await reporter_cog.create_cron_unmute_auto_notice(member, is_present=False)
 
         # Remove cron task.
-        await self.delete_from_cron(task["_id"])
+        await task.delete()
 
-    async def cron_handle_unselfmute(self, task: dict):
+    async def cron_handle_unselfmute(self, task: Cron):
         """
         Handles serving CRON tasks with the type of 'UNSELFMUTE'.
         """
@@ -306,18 +307,19 @@ class CronTasks(commands.Cog):
         assert isinstance(muted_role, discord.Role)
 
         # Attempt to unmute user
-        member = server.get_member(task["user"])
+        member = server.get_member(task.user)
         if member in server.members:
             # User is still in server, thus can be unmuted
             await member.remove_roles(muted_role)
 
         # Remove cron task.
-        await self.delete_from_cron(task["_id"])
+        await task.delete()
 
-    async def cron_handle_remove_status(self, task: dict):
+    async def cron_handle_remove_status(self, task: Cron):
         """
         Handles serving CRON tasks with the type of 'REMOVE_STATUS'.
         """
+        # FIXME: Subject to premature removal of status if two /status commands are run with different expirations
         # Attempt to remove status
         self.bot.settings["custom_bot_status_type"] = None  # reset local settings
         self.bot.settings["custom_bot_status_text"] = None  # reset local settings
@@ -330,7 +332,7 @@ class CronTasks(commands.Cog):
         self.change_bot_status.restart()  # update bot now
 
         # Remove cron task.
-        await self.delete_from_cron(task["_id"])
+        await task.delete()
 
     @tasks.loop(hours=1)
     async def change_bot_status(self):

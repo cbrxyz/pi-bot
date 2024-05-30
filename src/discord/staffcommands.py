@@ -39,6 +39,7 @@ from src.discord.globals import (
     ROLE_WM,
 )
 from src.discord.invitationals import update_invitational_list
+from src.mongo.models import Cron
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -887,7 +888,7 @@ class StaffEssential(StaffCommands):
         """
         commandchecks.is_staff_from_ctx(interaction)
 
-        cron_list = await self.bot.mongo_database.get_cron()
+        cron_list = await Cron.find_all().to_list()
         if not len(cron_list):
             return await interaction.response.send_message(
                 "Unfortunately, there are no items in the CRON list to manage.",

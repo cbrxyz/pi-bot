@@ -22,6 +22,7 @@ from discord import app_commands
 from discord.ext import commands
 from rich.logging import RichHandler
 
+import src.mongo.models
 from env import env
 from src.discord.globals import (
     CHANNEL_BOTSPAM,
@@ -177,6 +178,7 @@ class PiBot(commands.Bot):
         await init_beanie(
             database=self.mongo_database.client["data"],
             document_models=[
+                src.mongo.models.Cron,
                 # TODO
             ],
         )

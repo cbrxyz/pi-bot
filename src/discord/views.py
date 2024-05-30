@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import discord
 
 from src.discord.globals import ROLE_SELFMUTE
+from src.mongo.models import Cron
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -47,10 +48,10 @@ class UnselfmuteView(discord.ui.View):
         try:
             item = next(
                 x
-                for x in await self.bot.mongo_database.get_cron()
-                if (x["type"] == "UNSELFMUTE" and x["user"] == interaction.user.id)
+                for x in await Cron.find_all().to_list()
+                if (x.cron_type == "UNSELFMUTE" and x.user == interaction.user.id)
             )
-            await self.bot.mongo_database.remove_doc("data", "cron", item["_id"])
+            await item.delete()
         except Exception:  # not in the database - maybe was removed!
             pass
 
