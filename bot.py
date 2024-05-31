@@ -183,6 +183,7 @@ class PiBot(commands.Bot):
                 src.mongo.models.Tag,
                 src.mongo.models.Invitational,
                 src.mongo.models.Event,
+                src.mongo.models.Censor,
                 # TODO
             ],
         )

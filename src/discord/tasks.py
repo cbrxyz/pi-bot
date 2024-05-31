@@ -13,7 +13,7 @@ import src.discord.globals
 from env import env
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import UnselfmuteView
-from src.mongo.models import Cron, Event, Ping, Tag
+from src.mongo.models import Censor, Cron, Event, Ping, Tag
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -82,7 +82,11 @@ class CronTasks(commands.Cog):
         self.bot.settings = await self.bot.mongo_database.get_settings()
         assert isinstance(self.bot.settings, dict)
 
-        src.discord.globals.CENSOR = await self.bot.mongo_database.get_censor()
+        src.discord.globals.CENSOR = await Censor.find_one({})
+
+        if not src.discord.globals.CENSOR:
+            src.discord.globals.CENSOR = Censor(words=[], emojis=[])
+            await src.discord.globals.CENSOR.save()
         logger.info("Fetched previous variables.")
 
     async def schedule_unban(

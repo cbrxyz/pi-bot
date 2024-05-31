@@ -83,12 +83,6 @@ class MongoDatabase:
             result.append(doc)
         return result
 
-    async def get_censor(self):
-        """
-        Gets the document containing censor information from the censor collection.
-        """
-        return await self.get_entire_collection("data", "censor", return_one=True)
-
     async def get_reports(self):
         """
         Gets all documents in the reports collection.

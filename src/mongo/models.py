@@ -75,3 +75,12 @@ class Event(Document):
     class Settings:
         name = "events"
         use_cache = True
+
+
+class Censor(Document):
+    words: list[str]
+    emojis: list[str]
+
+    class Settings:
+        name = "censor"
+        use_cache = True
