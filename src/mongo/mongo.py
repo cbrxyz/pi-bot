@@ -95,12 +95,6 @@ class MongoDatabase:
         """
         return await self.get_entire_collection("data", "censor", return_one=True)
 
-    async def get_tags(self):
-        """
-        Gets all documents in the tags collection.
-        """
-        return await self.get_entire_collection("data", "tags")
-
     async def get_reports(self):
         """
         Gets all documents in the reports collection.

@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from beanie import Document, Indexed
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 class Cron(Document):
@@ -32,4 +32,20 @@ class Ping(Document):
 
     class Settings:
         name = "pings"
+        use_cache = False
+
+
+class TagPermissions(BaseModel):
+    launch_helpers: bool
+    members: bool
+    staff: bool
+
+
+class Tag(Document):
+    name: str
+    permissions: TagPermissions
+    output: str
+
+    class Settings:
+        name = "tags"
         use_cache = False

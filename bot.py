@@ -180,6 +180,7 @@ class PiBot(commands.Bot):
             document_models=[
                 src.mongo.models.Cron,
                 src.mongo.models.Ping,
+                src.mongo.models.Tag,
                 # TODO
             ],
         )
