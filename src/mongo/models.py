@@ -49,3 +49,19 @@ class Tag(Document):
     class Settings:
         name = "tags"
         use_cache = False
+
+
+class Invitational(Document):
+    official_name: str
+    channel_name: str
+    emoji: str | None
+    aliases: list[str]
+    tourney_date: datetime
+    open_days: int
+    closed_days: int
+    voters: list[int]
+    status: Literal["voting", "open", "archived"]
+
+    class Settings:
+        name = "invitationals"
+        use_cache = True

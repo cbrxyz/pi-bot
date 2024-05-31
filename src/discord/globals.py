@@ -3,7 +3,7 @@ Holds global variables shared between cogs and variables that are initialized wh
 the bot is first setup.
 """
 
-from src.mongo.models import Ping, Tag
+from src.mongo.models import Invitational, Ping, Tag
 
 ##############
 # CONSTANTS
@@ -125,7 +125,7 @@ fish_now = 0
 CENSOR = {}
 EVENT_INFO = []
 PING_INFO: list[Ping] = []
-INVITATIONAL_INFO = []
+INVITATIONAL_INFO: list[Invitational] = []
 REPORTS = []
 TAGS: list[Tag] = []
 CURRENT_WIKI_PAGE = None
