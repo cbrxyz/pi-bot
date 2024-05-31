@@ -14,6 +14,7 @@ from src.discord.globals import (
     CHANNEL_COMPETITIONS,
     CHANNEL_INVITATIONALS,
     CHANNEL_SUPPORT,
+    DISCORD_AUTOCOMPLETE_MAX_ENTRIES,
     ROLE_AD,
     ROLE_AT,
     ROLE_GM,
@@ -442,7 +443,7 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
             if t.tourney_date.month == month["number"]
             and t.tourney_date.year == month["year"]
             and t.status in ["open", "archived"]
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
         if len(month_invitationals) > 0:
             await invitational_channel.send(
                 f"Invitationals in **{month['name']} {month['year']}**:",

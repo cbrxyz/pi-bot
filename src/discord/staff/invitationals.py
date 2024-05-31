@@ -13,6 +13,7 @@ from env import env
 from src.discord.globals import (
     CATEGORY_ARCHIVE,
     CATEGORY_INVITATIONALS,
+    DISCORD_AUTOCOMPLETE_MAX_ENTRIES,
     EMOJI_LOADING,
     ROLE_STAFF,
     ROLE_VIP,
@@ -737,7 +738,7 @@ class StaffInvitational(commands.Cog):
             )
             for i in invitationals
             if current.lower() in i["channel_name"].lower() and i["status"] == "voting"
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @invitational_edit.autocomplete("short_name")
     @invitational_delete.autocomplete("short_name")
@@ -754,7 +755,7 @@ class StaffInvitational(commands.Cog):
             )
             for i in invitationals
             if current.lower() in i["channel_name"].lower()
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @invitational_archive.autocomplete("short_name")
     async def short_name_archive_autocomplete(
@@ -770,7 +771,7 @@ class StaffInvitational(commands.Cog):
             )
             for i in invitationals
             if current.lower() in i["channel_name"].lower() and i["status"] == "open"
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @invitational_renew.autocomplete("short_name")
     async def short_name_renew_autocomplete(
@@ -787,7 +788,7 @@ class StaffInvitational(commands.Cog):
             for i in invitationals
             if current.lower() in i["channel_name"].lower()
             and i["status"] == "archived"
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
 
 async def setup(bot: PiBot):

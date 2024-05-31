@@ -129,7 +129,7 @@ class Chooser(discord.ui.View):
             ProfileMessage,
         ],
         update_values: Callable[[discord.Member, str, list[RoleItem]], None],
-        count: int = 25,
+        count: int = src.discord.globals.DISCORD_AUTOCOMPLETE_MAX_ENTRIES,
         placeholder: str | None = None,
     ):
         super().__init__()
