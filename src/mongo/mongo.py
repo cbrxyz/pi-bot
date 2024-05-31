@@ -89,13 +89,6 @@ class MongoDatabase:
         """
         return await self.get_entire_collection("data", "reports")
 
-    async def get_settings(self):
-        """
-        Gets the one document containing settings information from the settings
-        database collection.
-        """
-        return await self.get_entire_collection("data", "settings", return_one=True)
-
     async def insert(
         self,
         db_name: str,

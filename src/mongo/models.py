@@ -84,3 +84,13 @@ class Censor(Document):
     class Settings:
         name = "censor"
         use_cache = True
+
+
+class Settings(Document):
+    custom_bot_status_type: str | None
+    custom_bot_status_text: str | None
+    invitational_season: int
+
+    class Settings:
+        name = "settings"
+        use_cache = True
