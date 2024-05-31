@@ -30,6 +30,12 @@ class StaffCensor(commands.Cog):
         default_permissions=discord.Permissions(manage_messages=True),
     )
 
+    @classmethod
+    def censorify_word(cls, phrase_to_bleep: str) -> str:
+        first_letter = phrase_to_bleep[0]
+        last_letter = phrase_to_bleep[-1]
+        return f"{first_letter}...{last_letter}"
+
     @censor_group.command(
         name="add",
         description="Staff command. Adds a new entry into the censor.",
@@ -56,7 +62,7 @@ class StaffCensor(commands.Cog):
         if censor_type == "word":
             if phrase in src.discord.globals.CENSOR["words"]:
                 await interaction.edit_original_response(
-                    content=f"`{phrase}` is already in the censored words list. Operation cancelled.",
+                    content=f"`{StaffCensor.censorify_word(phrase)}` is already in the censored words list. Operation cancelled.",
                 )
             else:
                 src.discord.globals.CENSOR["words"].append(phrase)
@@ -66,10 +72,8 @@ class StaffCensor(commands.Cog):
                     src.discord.globals.CENSOR["_id"],
                     {"$push": {"words": phrase}},
                 )
-                first_letter = phrase[0]
-                last_letter = phrase[-1]
                 await interaction.edit_original_response(
-                    content=f"Added `{first_letter}...{last_letter}` to the censor list.",
+                    content=f"Added `{StaffCensor.censorify_word(phrase)}` to the censor list.",
                 )
         elif censor_type == "emoji":
             if phrase in src.discord.globals.CENSOR["emojis"]:
