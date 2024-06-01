@@ -36,6 +36,7 @@ from src.discord.globals import (
 )
 from src.discord.views import YesNo
 from src.lists import get_state_list
+from src.mongo.models import Cron
 from src.wiki.wiki import implement_command
 
 if TYPE_CHECKING:
@@ -598,16 +599,12 @@ class MemberCommands(commands.Cog):
                     name=CHANNEL_UNSELFMUTE,
                 )
                 await member.add_roles(role)
-                await self.bot.mongo_database.insert(
-                    "data",
-                    "cron",
-                    {
-                        "type": "UNSELFMUTE",
-                        "user": member.id,
-                        "time": times[mute_length],
-                        "tag": str(member),
-                    },
-                )
+                await Cron(
+                    type="UNSELFMUTE",
+                    user=member.id,
+                    time=times[mute_length],
+                    tag=str(member),
+                ).insert()
                 return await interaction.edit_original_response(
                     content=f"You have been muted. You may use the button in the {unselfmute_channel.mention} channel to unmute.",
                     embed=None,

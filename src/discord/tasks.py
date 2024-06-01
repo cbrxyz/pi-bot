@@ -85,18 +85,6 @@ class CronTasks(commands.Cog):
         src.discord.globals.CENSOR = await self.bot.mongo_database.get_censor()
         logger.info("Fetched previous variables.")
 
-    async def add_to_cron(self, item_dict: dict) -> None:
-        """
-        Adds the given document to the CRON list.
-        """
-        await self.bot.mongo_database.insert("data", "cron", item_dict)
-
-    async def delete_from_cron(self, doc_id: str) -> None:
-        """
-        Deletes a CRON task from the CRON list.
-        """
-        await self.bot.mongo_database.delete("data", "cron", doc_id)
-
     async def schedule_unban(
         self,
         user: discord.Member | discord.User,
@@ -105,8 +93,7 @@ class CronTasks(commands.Cog):
         """
         Schedules for a particular Discord user to be unbanned at a particular time.
         """
-        item_dict = {"type": "UNBAN", "user": user.id, "time": time, "tag": str(user)}
-        await self.add_to_cron(item_dict)
+        await Cron(type="UNBAN", user=user.id, time=time, tag=str(user)).insert()
 
     async def schedule_unmute(
         self,
@@ -116,8 +103,7 @@ class CronTasks(commands.Cog):
         """
         Schedules for a particular Discord user to be unmuted at a particular time.
         """
-        item_dict = {"type": "UNMUTE", "user": user.id, "time": time, "tag": str(user)}
-        await self.add_to_cron(item_dict)
+        await Cron(type="UNMUTE", user=user.id, time=time, tag=str(user)).insert()
 
     async def schedule_unselfmute(
         self,
@@ -127,20 +113,18 @@ class CronTasks(commands.Cog):
         """
         Schedules for a particular Discord user to be un-selfmuted at a particular time.
         """
-        item_dict = {
-            "type": "UNSELFMUTE",
-            "user": user.id,
-            "time": time,
-            "tag": str(user),
-        }
-        await self.add_to_cron(item_dict)
+        await Cron(type="UNSELFMUTE", user=user.id, time=time, tag=str(user)).insert()
 
     async def schedule_status_remove(self, time: datetime.datetime) -> None:
         """
         Schedules Pi-Bot's status to be removed at a specific time.
         """
-        item_dict = {"type": "REMOVE_STATUS", "time": time}
-        await self.add_to_cron(item_dict)
+        await Cron(
+            type="REMOVE_STATUS",
+            time=time,
+            user=0,
+            tag="",
+        ).insert()  # FIXME: Make user and time fields somehow depend on `type`
 
     async def update_setting(self, setting_name: str, value: Any) -> None:
         """

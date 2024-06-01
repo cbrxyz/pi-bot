@@ -45,15 +45,12 @@ class UnselfmuteView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         role = discord.utils.get(interaction.guild.roles, name=ROLE_SELFMUTE)
         await interaction.user.remove_roles(role)
-        try:
-            item = next(
-                x
-                for x in await Cron.find_all().to_list()
-                if (x.cron_type == "UNSELFMUTE" and x.user == interaction.user.id)
-            )
-            await item.delete()
-        except Exception:  # not in the database - maybe was removed!
-            pass
+
+        await (
+            Cron.find(Cron.user == interaction.user.id)
+            .find(Cron.cron_type == "UNSELFMUTE")
+            .delete()
+        )
 
         return await interaction.followup.send(
             "I removed your selfmute role!",
