@@ -9,11 +9,14 @@ from pydantic import Field
 
 
 class Cron(Document):
-    cron_type: Literal["UNMUTE", "UNBAN", "UNSELFMUTE", "REMOVE_STATUS"] = Field(
+    cron_type: Annotated[
+        Literal["UNMUTE", "UNBAN", "UNSELFMUTE", "REMOVE_STATUS"],
+        Indexed(),
+    ] = Field(
         alias="type",
     )
     time: Annotated[datetime, Indexed()]
-    user: Annotated[int, Indexed()]
+    user: int
     tag: str
 
     class Settings:
