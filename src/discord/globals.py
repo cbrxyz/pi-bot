@@ -114,6 +114,8 @@ RULES = [
     ),
 ]
 
+DISCORD_AUTOCOMPLETE_MAX_ENTRIES = 25
+
 ##############
 # VARIABLES
 ##############

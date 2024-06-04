@@ -23,6 +23,7 @@ from src.discord.globals import (
     CHANNEL_GAMES,
     CHANNEL_INVITATIONALS,
     CHANNEL_UNSELFMUTE,
+    DISCORD_AUTOCOMPLETE_MAX_ENTRIES,
     ROLE_ALUMNI,
     ROLE_DIV_A,
     ROLE_DIV_B,
@@ -516,7 +517,7 @@ class MemberCommands(commands.Cog):
             app_commands.Choice(name=state, value=state)
             for state in states
             if current.lower() in state.lower()
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
@@ -1249,7 +1250,7 @@ class MemberCommands(commands.Cog):
             app_commands.Choice(name=e["name"], value=e["name"])
             for e in src.discord.globals.EVENT_INFO
             if current.lower() in e["name"].lower()
-        ][:25]
+        ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @app_commands.command(description="Gets a tag.")
     @app_commands.describe(tag_name="The name of the tag to get.")
