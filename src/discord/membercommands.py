@@ -685,6 +685,7 @@ class MemberCommands(commands.Cog):
         embed.add_field(name="Code Repository", value=repo, inline=False)
         embed.add_field(name="Wiki Page", value=wiki_link, inline=False)
         embed.add_field(name="Forums Page", value=forums_link, inline=False)
+        embed.set_footer(text=f"Version Commit: {self.bot.__commit__ or 'Unknown'}")
         embed.set_thumbnail(url=avatar_url)
 
         await interaction.response.send_message(embed=embed)
