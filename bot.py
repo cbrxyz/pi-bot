@@ -382,6 +382,7 @@ discord.utils.setup_logging(handler=handler)
 @bot.command(
     name=SYNC_COMMAND_NAME,
     description="Syncs command list. Any new commands will be available for use.",
+    help="The command has an optional second argument to state whether to sync all or only guild commands. Please specify it by either mentioning {}.",
 )
 @commands.check(is_staff_from_ctx)
 async def sync(ctx: commands.Context, only_guild_commands: bool = False):
@@ -407,6 +408,22 @@ async def sync(ctx: commands.Context, only_guild_commands: bool = False):
             res_msg += f"\n{len(cmds)} guild commands were synced in {guild_name_id}."
         res_msg = res_msg.strip("\n")
         await ctx.send(res_msg)
+
+
+@sync.error
+async def sync_error(ctx: commands.Context, err: commands.CommandError):
+    logging.error(err)
+    if isinstance(err, commands.MissingAnyRole):
+        return await ctx.send(str(err))
+    if isinstance(err, commands.BadLiteralArgument):
+        literals = list(err.literals)
+        for literal in literals:
+            literal = f'"{literal}"'
+        literals[-1] = f"or {literals[-1]}"
+        assert sync.help is not None
+        msg = sync.help.format((", " if len(literals) > 2 else " ").join(literals))
+        return await ctx.send(msg)
+    await ctx.send(f"An unknown error occurred when syncing: {err}")
 
 
 async def main(token: str):
