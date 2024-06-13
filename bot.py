@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import aiohttp
 import discord
+from beanie import init_beanie
 from discord import app_commands
 from discord.ext import commands
 from rich.logging import RichHandler
@@ -173,6 +174,12 @@ class PiBot(commands.Bot):
         Called when the bot is being setup. Currently sets up a connection to the
         database and initializes all extensions.
         """
+        await init_beanie(
+            database=self.mongo_database.client["data"],
+            document_models=[
+                # TODO
+            ],
+        )
         extensions = (
             "src.discord.censor",
             "src.discord.ping",
