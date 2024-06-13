@@ -42,7 +42,6 @@ if TYPE_CHECKING:
 
 intents = discord.Intents.all()
 logger = logging.getLogger(__name__)
-SYNC_COMMAND_NAME = "sync"
 
 BOT_PREFIX = "?" if env.dev_mode else "!"
 
@@ -288,7 +287,7 @@ class PiBot(commands.Bot):
 
         legacy_command: list[str] = re.findall(r"^[!\?]\s*(\w+)", message.content)
         if message.content and len(legacy_command):
-            if legacy_command[0].startswith(SYNC_COMMAND_NAME):
+            if legacy_command[0].startswith(sync.name):
                 await bot.process_commands(message)
                 return
             botspam_channel = discord.utils.get(
@@ -380,7 +379,6 @@ discord.utils.setup_logging(handler=handler)
 
 
 @bot.command(
-    name=SYNC_COMMAND_NAME,
     description="Syncs command list. Any new commands will be available for use.",
     help="The command has an optional second argument to state whether to sync all or only guild commands. Please specify it by either mentioning {}.",
 )
