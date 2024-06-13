@@ -2,6 +2,7 @@
 Serves as the initial file to launch the bot. Loads all needed extensions and maintains
 core functionality.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -9,6 +10,7 @@ import datetime
 import logging
 import logging.handlers
 import re
+import subprocess
 import traceback
 import uuid
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -152,8 +154,19 @@ class PiBot(commands.Bot):
             dict[str, Any],
         ] = {}  # name differentiation between internal _listeners attribute
         self.__version__ = "v5.1.0"
+        self.__commit__ = self.get_commit()
         self.session = None
         self.mongo_database = MongoDatabase(self)
+
+    def get_commit(self) -> str | None:
+        with subprocess.Popen(
+            ["git", "rev-parse", "--short", "HEAD"],
+            stdout=subprocess.PIPE,
+        ) as proc:
+            if proc.stdout:
+                hash = proc.stdout.read()
+                return hash.decode("utf-8")
+        return None
 
     async def setup_hook(self) -> None:
         """
@@ -279,6 +292,9 @@ class PiBot(commands.Bot):
             await reply_message.delete(delay=10)
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
+        if self.__commit__ is None:
+            # Logging is set up at this point so we can now prompt a warning message for a missing commit hash
+            logging.warning("Version commit could not be found")
         self.session = aiohttp.ClientSession()
         await super().start(token=token, reconnect=reconnect)
 
