@@ -113,7 +113,7 @@ class StaffCensor(commands.Cog):
 
         if censor_type == "word":
             if phrase not in src.discord.globals.CENSOR["words"]:
-                await interaction.response.send_message(
+                await interaction.edit_original_response(
                     content=f"`{phrase}` is not in the list of censored words.",
                 )
             else:
@@ -129,7 +129,7 @@ class StaffCensor(commands.Cog):
                 )
         elif censor_type == "emoji":
             if phrase not in src.discord.globals.CENSOR["emojis"]:
-                await interaction.response.send_message(
+                await interaction.edit_original_response(
                     content=f"{phrase} is not in the list of censored emojis.",
                 )
             else:
