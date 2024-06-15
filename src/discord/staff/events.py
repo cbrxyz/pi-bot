@@ -15,6 +15,7 @@ from src.discord.globals import (
     ROLE_STAFF,
     ROLE_VIP,
 )
+from src.mongo.models import Event
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -55,7 +56,7 @@ class StaffEvents(commands.Cog):
         )
 
         # Check to see if event has already been added.
-        if event_name in [e["name"] for e in src.discord.globals.EVENT_INFO]:
+        if event_name in [e.name for e in src.discord.globals.EVENT_INFO]:
             return await interaction.edit_original_response(
                 content=f"The `{event_name}` event has already been added.",
             )
@@ -65,11 +66,11 @@ class StaffEvents(commands.Cog):
         aliases_array = []
         if event_aliases:
             aliases_array = re.findall(r"\w+", event_aliases)
-        new_dict = {"name": event_name, "aliases": aliases_array}
+        new_dict = Event(name=event_name, aliases=aliases_array, emoji=None)
 
         # Add dict into events container
+        await new_dict.insert()
         src.discord.globals.EVENT_INFO.append(new_dict)
-        await self.bot.mongo_database.insert("data", "events", new_dict)
 
         # Create role on server
         server = self.bot.get_guild(env.server_id)
@@ -110,7 +111,7 @@ class StaffEvents(commands.Cog):
 
         # Check to make sure event has previously been added
         event_not_in_list = event_name not in [
-            e["name"] for e in src.discord.globals.EVENT_INFO
+            e.name for e in src.discord.globals.EVENT_INFO
         ]
 
         # Check to see if role exists on server
@@ -135,11 +136,9 @@ class StaffEvents(commands.Cog):
                 )
 
         # Complete operation of removing event
-        event = next(
-            e for e in src.discord.globals.EVENT_INFO if e["name"] == event_name
-        )
+        event = next(e for e in src.discord.globals.EVENT_INFO if e.name == event_name)
+        await event.delete()
         src.discord.globals.EVENT_INFO.remove(event)
-        await self.bot.mongo_database.delete("data", "events", event["_id"])
 
         # Notify staff member of completion
         if delete_role == "yes":

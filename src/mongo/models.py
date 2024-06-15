@@ -65,3 +65,13 @@ class Invitational(Document):
     class Settings:
         name = "invitationals"
         use_cache = True
+
+
+class Event(Document):
+    name: str
+    aliases: list[str]
+    emoji: str | None
+
+    class Settings:
+        name = "events"
+        use_cache = True

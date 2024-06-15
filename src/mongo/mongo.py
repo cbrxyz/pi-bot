@@ -95,12 +95,6 @@ class MongoDatabase:
         """
         return await self.get_entire_collection("data", "reports")
 
-    async def get_events(self):
-        """
-        Gets all documents in the events collection.
-        """
-        return await self.get_entire_collection("data", "events")
-
     async def get_settings(self):
         """
         Gets the one document containing settings information from the settings

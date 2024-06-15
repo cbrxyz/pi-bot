@@ -182,6 +182,7 @@ class PiBot(commands.Bot):
                 src.mongo.models.Ping,
                 src.mongo.models.Tag,
                 src.mongo.models.Invitational,
+                src.mongo.models.Event,
                 # TODO
             ],
         )
