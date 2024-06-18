@@ -285,7 +285,10 @@ class PiBot(commands.Bot):
             spam: commands.Cog | SpamManager = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
-        legacy_command: list[str] = re.findall(r"^[!\?]\s*(\w+)", message.content)
+        legacy_command: list[str] = re.findall(
+            rf"^{re.escape(BOT_PREFIX)}\s*(\w+)",
+            message.content,
+        )
         if message.content and len(legacy_command):
             if legacy_command[0].startswith(sync.name):
                 await bot.process_commands(message)
