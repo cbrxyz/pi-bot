@@ -44,6 +44,64 @@ if TYPE_CHECKING:
     from .reporter import Reporter
 
 
+class LatexModal(discord.ui.Modal):
+    def __init__(self, bot: PiBot, message: discord.Message):
+        self.bot = bot
+        super().__init__(title="Edit Your LaTeX")
+        self._message = message
+
+        self.edited_latex = self.add_item(
+            discord.ui.TextInput(
+                label="Your LaTeX",
+                default=self._message.content.split(r"{\color{Gray}")[1][:-1].replace(
+                    r"&space;", " "
+                ),
+                style=discord.TextStyle.short,
+            )
+        )
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        _item = self.children[0]
+        assert isinstance(_item, discord.ui.TextInput)
+        url = (
+            r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}"
+            + f"{_item.value}"
+            + r"}"
+        )
+        await self._message.edit(content=url.replace(" ", r"&space;"))
+        await interaction.response.defer()
+
+
+class LatexView(discord.ui.View):
+    def __init__(self, bot: PiBot, _interaction: discord.Interaction):
+        super().__init__(timeout=120)
+        self.bot: PiBot = bot
+        self._interaction: discord.Interaction = _interaction
+
+    async def on_timeout(self) -> None:
+        self.clear_items()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return interaction.user == self._interaction.user
+
+    @discord.ui.button(label="✏️", style=discord.ButtonStyle.blurple)
+    async def edit_button(self, interaction: discord.Interaction, _: discord.ui.Button):
+        message = interaction.message
+        modal = LatexModal(self.bot, message)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="🗑️️", style=discord.ButtonStyle.red)
+    async def delete_button(
+        self, interaction: discord.Interaction, _: discord.ui.Button
+    ):
+        await interaction.response.defer()
+        await interaction.delete_original_message()
+
+    @discord.ui.button(label="✅", style=discord.ButtonStyle.green)
+    async def save_button(self, interaction: discord.Interaction, _: discord.ui.Button):
+        await interaction.response.edit_message(view=None)
+
+
 class MemberCommands(commands.Cog):
     """
     Class containing several commands meant to be executed by members to control
@@ -486,6 +544,25 @@ class MemberCommands(commands.Cog):
         state_res += "."
         await interaction.response.send_message(state_res)
 
+
+    @app_commands.command(
+        description="produces a LaTeX (math-formatted) output based on given code"
+    )
+    @app_commands.describe(code="LaTeX code to run")
+    @app_commands.guilds(*SLASH_COMMAND_GUILDS)
+    async def latex(self, interaction: discord.Interaction, code: str):
+        print(code)
+        new_args = code.replace(" ", r"&space;")
+        print(new_args)
+        url = (
+            r"https://latex.codecogs.com/png.latex?\dpi{150}{\color{Gray}"
+            + new_args
+            + "}"
+        )
+        await interaction.response.send_message(
+            content=url, view=LatexView(self.bot, _interaction=interaction)
+        )
+
     @states.autocomplete("state")
     @states.autocomplete("state_two")
     @states.autocomplete("state_three")
@@ -518,6 +595,7 @@ class MemberCommands(commands.Cog):
             for state in states
             if current.lower() in state.lower()
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
+
 
     @app_commands.command(description="Mutes yourself.")
     @app_commands.describe(mute_length="How long to mute yourself for.")
