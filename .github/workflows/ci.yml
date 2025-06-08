@@ -99,4 +99,4 @@ jobs:
         with:
           file: prod.Dockerfile
           push: true
-          tags: scioly/pi-bot:${{ github.sha }}
+          tags: ghcr.io/scioly/pi-bot:${{ github.sha }}
