@@ -1,0 +1,36 @@
+---
+services:
+  bot:
+    image: pi-bot:prod # ghcr.io/scioly.org/pi-bot
+    secrets:
+      - pibot_env
+    entrypoint: [
+      '/bin/sh',
+      '-c',
+      'cp /run/secrets/pibot_env /usr/src/app/.env; python3 -u bot.py'
+    ]
+    depends_on:
+      - mongodb
+    networks:
+      - pibot_internal
+
+  mongodb:
+    image: docker.io/mongo:5.0.10
+    volumes:
+      - mongodata:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS}
+      MONGO_INITDB_DATABASE: data
+      MONGO_DATA_DIR: /data/db
+      MONGODB_LOG_DIR: /dev/null
+    networks:
+      - pibot_internal
+
+secrets:
+  pibot_env:
+    file: ./.env
+volumes:
+  mongodata:
+networks:
+  pibot_internal:
