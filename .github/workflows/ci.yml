@@ -85,7 +85,7 @@ jobs:
         uses: docker/login-action@v3.4.0
         with:
           registry: ghcr.io
-          username: scioly
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker meta
@@ -99,4 +99,4 @@ jobs:
         with:
           file: prod.Dockerfile
           push: true
-          tags: ghcr.io/scioly/pi-bot:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository_owner }}/pi-bot:${{ github.sha }}
