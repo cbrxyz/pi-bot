@@ -1,4 +1,4 @@
-git+https://github.com/Rapptz/discord.py
+discord==2.3.2
 webcolors==1.11.1
 requests==2.23.0
 asyncio==3.4.3
