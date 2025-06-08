@@ -25,10 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Python
-        uses: actions/setup-python@v4.1.0
+        uses: actions/setup-python@v5.6.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON}}
           cache: "pip"
@@ -47,7 +47,7 @@ jobs:
 
       - name: Restore base pre-commit environment
         id: cache-pre-commmit
-        uses: actions/cache@v3.0.4
+        uses: actions/cache@v4.2.0
         with:
           path: ${{ env.PRE_COMMIT_CACHE }}
           key: >
