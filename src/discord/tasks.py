@@ -76,7 +76,6 @@ class CronTasks(commands.Cog):
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
-        src.discord.globals.REPORTS = await self.bot.mongo_database.get_reports()
         src.discord.globals.PING_INFO = await Ping.find_all().to_list()
         src.discord.globals.TAGS = await Tag.find_all().to_list()
         src.discord.globals.EVENT_INFO = await Event.find_all().to_list()
