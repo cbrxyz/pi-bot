@@ -44,23 +44,6 @@ class MongoDatabase:
 
         await collection.delete_one({"_id": iden})
 
-    async def delete_by(
-        self,
-        db_name: str,
-        collection_name: str,
-        spec: dict[str, Any],
-    ) -> None:
-        """
-        Deletes all documents in a collection matching a specific spec.
-
-        Args:
-            db_name: The name of the database.
-            collection_name: The name of the collection.
-            spec: The specification to delete by.
-        """
-        collection = self.client[db_name][collection_name]
-        await collection.delete_many(spec)
-
     async def get_entire_collection(
         self,
         db_name: str,
@@ -82,12 +65,6 @@ class MongoDatabase:
         async for doc in collection.find():
             result.append(doc)
         return result
-
-    async def get_reports(self):
-        """
-        Gets all documents in the reports collection.
-        """
-        return await self.get_entire_collection("data", "reports")
 
     async def insert(
         self,
