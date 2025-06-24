@@ -20,6 +20,7 @@ import discord
 from beanie import init_beanie
 from discord import app_commands
 from discord.ext import commands
+from motor.motor_asyncio import AsyncIOMotorClient
 from rich.logging import RichHandler
 
 import src.mongo.models
@@ -32,7 +33,6 @@ from src.discord.globals import (
     CHANNEL_RULES,
 )
 from src.discord.reporter import Reporter
-from src.mongo.mongo import MongoDatabase
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
@@ -135,7 +135,7 @@ class PiBot(commands.Bot):
     """
 
     session: aiohttp.ClientSession | None
-    mongo_database: MongoDatabase
+    mongo_client: AsyncIOMotorClient
     settings: src.mongo.models.Settings
 
     def __init__(self):
@@ -153,7 +153,10 @@ class PiBot(commands.Bot):
         self.__version__ = "v5.1.0"
         self.__commit__ = self.get_commit()
         self.session = None
-        self.mongo_database = MongoDatabase(self)
+        self.mongo_client = AsyncIOMotorClient(
+            env.mongo_url,
+            tz_aware=True,
+        )
 
     def get_commit(self) -> str | None:
         with subprocess.Popen(
@@ -171,7 +174,7 @@ class PiBot(commands.Bot):
         database and initializes all extensions.
         """
         await init_beanie(
-            database=self.mongo_database.client["data"],
+            database=self.mongo_client["data"],
             document_models=[
                 src.mongo.models.Cron,
                 src.mongo.models.Ping,
