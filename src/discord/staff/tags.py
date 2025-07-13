@@ -14,6 +14,7 @@ from src.discord.globals import (
     ROLE_STAFF,
     ROLE_VIP,
 )
+from src.mongo.models import Tag, TagPermissions
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -56,7 +57,7 @@ class StaffTags(commands.Cog):
         )
 
         # Check if tag has already been added
-        if tag_name in [t["name"] for t in src.discord.globals.TAGS]:
+        if tag_name in [t.name for t in src.discord.globals.TAGS]:
             return await interaction.edit_original_response(
                 content=f"The `{tag_name}` tag has already been added. To edit this tag, please use `/tagedit` instead.",
             )
@@ -82,19 +83,19 @@ class StaffTags(commands.Cog):
         await content_message.delete()
 
         # Construct dict to represent tag
-        new_dict = {
-            "name": tag_name,
-            "output": text,
-            "permissions": {
-                "staff": True,
-                "launch_helpers": launch_helpers == "yes",
-                "members": members == "yes",
-            },
-        }
+        new_tag = Tag(
+            name=tag_name,
+            output=text,
+            permissions=TagPermissions(
+                staff=True,
+                launch_helpers=launch_helpers == "yes",
+                members=members == "yes",
+            ),
+        )
 
         # Add tag to logs
-        src.discord.globals.TAGS.append(new_dict)
-        await self.bot.mongo_database.insert("data", "tags", new_dict)
+        await new_tag.save()
+        src.discord.globals.TAGS.append(new_tag)
         await interaction.edit_original_response(
             content=f"The `{tag_name}` tag was added!",
         )
@@ -125,17 +126,17 @@ class StaffTags(commands.Cog):
         )
 
         # Check that tag exists.
-        if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
+        if tag_name not in [t.name for t in src.discord.globals.TAGS]:
             return await interaction.edit_original_response(
                 content=f"No tag with name `{tag_name}` could be found.",
             )
 
         # Get relevant tag
-        tag = next(t for t in src.discord.globals.TAGS if t["name"] == tag_name)
+        tag = next(t for t in src.discord.globals.TAGS if t.name == tag_name)
 
         # Send info message about updating tag
         await interaction.edit_original_response(
-            content=f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag['output']}\n----------\n"
+            content=f"{EMOJI_LOADING}The current content of the tag is:\n----------\n{tag.output}\n----------\n"
             + "Please send the new text for the tag below:",
         )
 
@@ -156,29 +157,18 @@ class StaffTags(commands.Cog):
         text = content_message.content
         await content_message.delete()
 
-        # update_dict will contain values that need to be updated in DB
-        update_dict = {}
-
         # Changing tag object changes tag locally
         # Always set the new text of tag
-        tag["output"] = text
-        update_dict["output"] = text
+        tag.output = text
 
         # Change permissions if desired
         if launch_helpers != "do not change":
-            tag["permissions"]["launch_helpers"] = launch_helpers == "yes"
-            update_dict["permissions.launch_helpers"] = launch_helpers == "yes"
+            tag.permissions.launch_helpers = launch_helpers == "yes"
         if members != "do not change":
-            tag["permissions"]["members"] = members == "yes"
-            update_dict["permissions.members"] = members == "yes"
+            tag.permissions.members = members == "yes"
 
         # Update tag
-        await self.bot.mongo_database.update(
-            "data",
-            "tags",
-            tag["_id"],
-            {"$set": update_dict},
-        )
+        await tag.sync()
         await interaction.edit_original_response(
             content=f"The `{tag_name}` tag was updated.",
         )
@@ -203,17 +193,17 @@ class StaffTags(commands.Cog):
         )
 
         # If tag does not exist
-        if tag_name not in [t["name"] for t in src.discord.globals.TAGS]:
+        if tag_name not in [t.name for t in src.discord.globals.TAGS]:
             return await interaction.edit_original_response(
                 content=f"No tag with the name of `{tag_name}` was found.",
             )
 
         # Get tag
-        tag = next(t for t in src.discord.globals.TAGS if t["name"] == tag_name)
-        # and remove it!
+        tag = next(t for t in src.discord.globals.TAGS if t.name == tag_name)
+        # delete it from the DB first!
+        await tag.delete()
+        # then remove it from the cache!
         src.discord.globals.TAGS.remove(tag)
-        # and delete it from the DB!
-        await self.bot.mongo_database.delete("data", "tags", tag["_id"])
 
         # Send confirmation message
         return await interaction.edit_original_response(

@@ -14,7 +14,8 @@ from discord.ext import commands
 
 from env import env
 from src.discord.globals import CHANNEL_CLOSED_REPORTS
-from src.discord.invitationals import Invitational, update_invitational_list
+from src.discord.invitationals import update_invitational_list
+from src.mongo.models import Invitational
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -207,12 +208,7 @@ class InvitationalArchiveButton(discord.ui.Button):
         await interaction.message.delete()
 
         # Update the invitationals database
-        await self.report_view.bot.mongo_database.update(
-            "data",
-            "invitationals",
-            self.report_view.invitational_obj.doc_id,
-            {"$set": {"status": "archived"}},
-        )
+        await self.report_view.invitational_obj.set({Invitational.status: "archived"})
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(
@@ -251,12 +247,7 @@ class InvitationalExtendButton(discord.ui.Button):
         await interaction.message.delete()
 
         # Update the invitationals database
-        await self.report_view.bot.mongo_database.update(
-            "data",
-            "invitationals",
-            self.report_view.invitational_obj.doc_id,
-            {"$inc": {"closed_days": 15}},
-        )
+        await self.report_view.invitational_obj.inc({Invitational.closed_days: 15})
 
         # Send an informational message about the report being updated
         closed_reports = discord.utils.get(

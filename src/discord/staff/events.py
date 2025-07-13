@@ -15,6 +15,7 @@ from src.discord.globals import (
     ROLE_STAFF,
     ROLE_VIP,
 )
+from src.mongo.models import Event
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -55,7 +56,7 @@ class StaffEvents(commands.Cog):
         )
 
         # Check to see if event has already been added.
-        if event_name in [e["name"] for e in src.discord.globals.EVENT_INFO]:
+        if event_name in [e.name for e in src.discord.globals.EVENT_INFO]:
             return await interaction.edit_original_response(
                 content=f"The `{event_name}` event has already been added.",
             )
@@ -65,11 +66,11 @@ class StaffEvents(commands.Cog):
         aliases_array = []
         if event_aliases:
             aliases_array = re.findall(r"\w+", event_aliases)
-        new_dict = {"name": event_name, "aliases": aliases_array}
+        new_dict = Event(name=event_name, aliases=aliases_array, emoji=None)
 
         # Add dict into events container
+        await new_dict.insert()
         src.discord.globals.EVENT_INFO.append(new_dict)
-        await self.bot.mongo_database.insert("data", "events", new_dict)
 
         # Create role on server
         server = self.bot.get_guild(env.server_id)
@@ -109,49 +110,62 @@ class StaffEvents(commands.Cog):
         )
 
         # Check to make sure event has previously been added
-        event_not_in_list = event_name not in [
-            e["name"] for e in src.discord.globals.EVENT_INFO
-        ]
+        event = next(
+            (e for e in src.discord.globals.EVENT_INFO if e.name == event_name),
+            None,
+        )
 
         # Check to see if role exists on server
         server = self.bot.get_guild(env.server_id)
         potential_role = discord.utils.get(server.roles, name=event_name)
 
-        if event_not_in_list and potential_role:
+        # If staff member has selected to delete role from all users, delete role entirely
+        if potential_role:
+            if delete_role == "yes":
+                if not event:
+                    return await interaction.edit_original_response(
+                        content=f"The event `{event_name}` role was found on the Discord server,"
+                        "but was partially deleted. However, to prevent deletion of"
+                        "incorrect/potentially privileged roles, no action was taken. To clean up"
+                        "the role, go into the Discord server's role settings, and delete the role"
+                        "manually.",
+                    )
+                await potential_role.delete()
+                await event.delete()
+                src.discord.globals.EVENT_INFO.remove(event)
+                return await interaction.edit_original_response(
+                    content=f"The `{event_name}` role was completely deleted from the server. All"
+                    "members with the role no longer have it.",
+                )
+            if not event:
+                return await interaction.edit_original_response(
+                    content=f"The `{event_name}` event was previously deleted partially. There still "
+                    "exists a role for the event.\n\nTo delete the role entirely, go into the"
+                    "Discord server's role settings and delete the role manually.",
+                )
+
+        if not event:
             # If no event in list and no role exists on server
             return await interaction.edit_original_response(
                 content=f"The `{event_name}` event does not exist.",
             )
 
-        # If staff member has selected to delete role from all users, delete role entirely
-        if delete_role == "yes":
-            server = self.bot.get_guild(env.server_id)
-            role = discord.utils.get(server.roles, name=event_name)
-            assert isinstance(role, discord.Role)
-            await role.delete()
-            if event_not_in_list:
-                return await interaction.edit_original_response(
-                    content=f"The `{event_name}` role was completely deleted from the server. All members with the role no longer have it.",
-                )
-
         # Complete operation of removing event
-        event = next(
-            e for e in src.discord.globals.EVENT_INFO if e["name"] == event_name
-        )
+        await event.delete()
         src.discord.globals.EVENT_INFO.remove(event)
-        await self.bot.mongo_database.delete("data", "events", event["_id"])
 
         # Notify staff member of completion
-        if delete_role == "yes":
+        if not potential_role:
             await interaction.edit_original_response(
-                content=f"The `{event_name}` event was deleted entirely. The role has been removed from all users, "
-                f"and can not be added to new users. ",
+                content=f"The `{event_name}` event was deleted entirely. No role for the event was"
+                "found, so no role was deleted.",
             )
-        else:
+        if delete_role == "no":
             await interaction.edit_original_response(
-                content=f"The `{event_name}` event was deleted partially. Users who have the role currently will keep "
-                f"it, but new members can not access the role.\n\nTo delete the role entirely, re-run the "
-                f"command with `delete_role = yes`. ",
+                content=f"The `{event_name}` event was deleted partially. Users who have the role"
+                "currently will keep it, but new members can not access the role.\n\nTo delete the"
+                "role entirely, go into the Discord server's role settings and delete the role"
+                "manually.",
             )
 
 

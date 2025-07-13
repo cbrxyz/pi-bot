@@ -36,6 +36,7 @@ from src.discord.globals import (
 )
 from src.discord.views import YesNo
 from src.lists import get_state_list
+from src.mongo.models import Cron
 from src.wiki.wiki import implement_command
 
 if TYPE_CHECKING:
@@ -598,16 +599,12 @@ class MemberCommands(commands.Cog):
                     name=CHANNEL_UNSELFMUTE,
                 )
                 await member.add_roles(role)
-                await self.bot.mongo_database.insert(
-                    "data",
-                    "cron",
-                    {
-                        "type": "UNSELFMUTE",
-                        "user": member.id,
-                        "time": times[mute_length],
-                        "tag": str(member),
-                    },
-                )
+                await Cron(
+                    type="UNSELFMUTE",
+                    user=member.id,
+                    time=times[mute_length],
+                    tag=str(member),
+                ).insert()
                 return await interaction.edit_original_response(
                     content=f"You have been muted. You may use the button in the {unselfmute_channel.mention} channel to unmute.",
                     embed=None,
@@ -1184,7 +1181,7 @@ class MemberCommands(commands.Cog):
             event_ten,
         ]
         param_list = [p for p in param_list if p is not None]
-        event_names = [e["name"] for e in src.discord.globals.EVENT_INFO]
+        event_names = [e.name for e in src.discord.globals.EVENT_INFO]
 
         selected_roles = [
             discord.utils.get(member.guild.roles, name=e)
@@ -1248,9 +1245,9 @@ class MemberCommands(commands.Cog):
             List[app_commands.Choice[str]]: A list of string choices to choose from.
         """
         return [
-            app_commands.Choice(name=e["name"], value=e["name"])
+            app_commands.Choice(name=e.name, value=e.name)
             for e in src.discord.globals.EVENT_INFO
-            if current.lower() in e["name"].lower()
+            if current.lower() in e.name.lower()
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @app_commands.command(description="Gets a tag.")
@@ -1281,13 +1278,13 @@ class MemberCommands(commands.Cog):
         member_role = discord.utils.get(member.guild.roles, name=ROLE_MR)
 
         for t in src.discord.globals.TAGS:
-            if t["name"] == tag_name:
+            if t.name == tag_name:
                 if (
                     staff
-                    or (t["permissions"]["launch_helpers"] and lh_role in member.roles)
-                    or (t["permissions"]["members"] and member_role in member.roles)
+                    or (t.permissions.launch_helpers and lh_role in member.roles)
+                    or (t.permissions.members and member_role in member.roles)
                 ):
-                    return await interaction.response.send_message(content=t["output"])
+                    return await interaction.response.send_message(content=t.output)
                 else:
                     return await interaction.response.send_message(
                         content="Unfortunately, you do not have the permissions for this tag.",
@@ -1325,10 +1322,10 @@ class MemberCommands(commands.Cog):
 
         # Send the tags
         tags: list[str] = [
-            t["name"]
+            t.name
             for t in src.discord.globals.TAGS
-            if (t["permissions"]["staff"] and is_staff)
-            or (t["permissions"]["members"] and is_member)
+            if (t.permissions.staff and is_staff)
+            or (t.permissions.members and is_member)
         ]
         return [
             app_commands.Choice(name=t, value=t)
