@@ -92,10 +92,10 @@ class Censor(commands.Cog):
 
     def word_present(self, content: str) -> bool:
         with contextlib.suppress(asyncio.CancelledError):
-            for word in src.discord.globals.CENSOR["words"]:
+            for word in src.discord.globals.CENSOR.words:
                 if re.findall(rf"\b({word})\b", content, re.I):
                     return True
-            for emoji in src.discord.globals.CENSOR["emojis"]:
+            for emoji in src.discord.globals.CENSOR.emojis:
                 if len(re.findall(emoji, content)):
                     return True
         return False
@@ -141,14 +141,14 @@ class Censor(commands.Cog):
         author = message.author.nick or message.author.name
 
         # Actually replace content found on the censored words/emojis list
-        for word in src.discord.globals.CENSOR["words"]:
+        for word in src.discord.globals.CENSOR.words:
             content = re.sub(
                 rf"\b({word})\b",
                 "<censored>",
                 content,
                 flags=re.IGNORECASE,
             )
-        for emoji in src.discord.globals.CENSOR["emojis"]:
+        for emoji in src.discord.globals.CENSOR.emojis:
             content = re.sub(emoji, "<censored>", content, flags=re.I)
 
         reply = (
@@ -301,7 +301,7 @@ class Censor(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload to use for the message.
         """
-        if str(payload.emoji) in src.discord.globals.CENSOR["emojis"]:
+        if str(payload.emoji) in src.discord.globals.CENSOR.emojis:
             channel = self.bot.get_channel(payload.channel_id)
             assert isinstance(channel, discord.TextChannel)
 

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal
 
 import discord
 import matplotlib.pyplot as plt
+from beanie.odm.operators.update.general import Set
 from discord import app_commands
 from discord.ext import commands
 
@@ -39,7 +40,7 @@ from src.discord.globals import (
     ROLE_WM,
 )
 from src.discord.invitationals import update_invitational_list
-from src.mongo.models import Cron
+from src.mongo.models import Cron, Ping, Settings
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -1366,7 +1367,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Updating all users' pings.",
             )
-            src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
+            src.discord.globals.PING_INFO = Ping.find_all().to_list()
             await interaction.edit_original_response(
                 content=":white_check_mark: Updated all users' pings.",
             )
@@ -1414,8 +1415,13 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         selected_time = self.time_str_to_datetime(length)
 
         # Change settings
-        await self.bot.update_setting(
-            {"custom_bot_status_text": message, "custom_bot_status_type": activity},
+        await self.bot.settings.update(
+            Set(
+                {
+                    Settings.custom_bot_status_text: message,
+                    Settings.custom_bot_status_type: activity,
+                },
+            ),
         )
 
         # Delete any relevant documents
@@ -1462,8 +1468,14 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to resetting status...",
         )
-        await self.bot.update_setting(
-            {"custom_bot_status_text": None, "custom_bot_status_type": None},
+
+        await self.bot.settings.update(
+            Set(
+                {
+                    Settings.custom_bot_status_text: None,
+                    Settings.custom_bot_status_type: None,
+                },
+            ),
         )
         await interaction.edit_original_response(content="Reset the bot's status.")
 

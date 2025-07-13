@@ -4,16 +4,17 @@ import datetime
 import logging
 import random
 import traceback
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
+from beanie.odm.operators.update.general import Set
 from discord.ext import commands, tasks
 
 import src.discord.globals
 from env import env
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import UnselfmuteView
-from src.mongo.models import Cron
+from src.mongo.models import Censor, Cron, Event, Ping, Settings, Tag
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -75,14 +76,38 @@ class CronTasks(commands.Cog):
         self.update_member_count.cancel()
 
     async def pull_prev_info(self):
-        src.discord.globals.REPORTS = await self.bot.mongo_database.get_reports()
-        src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
-        src.discord.globals.TAGS = await self.bot.mongo_database.get_tags()
-        src.discord.globals.EVENT_INFO = await self.bot.mongo_database.get_events()
-        self.bot.settings = await self.bot.mongo_database.get_settings()
-        assert isinstance(self.bot.settings, dict)
+        src.discord.globals.PING_INFO = await Ping.find_all().to_list()
+        src.discord.globals.TAGS = await Tag.find_all().to_list()
+        src.discord.globals.EVENT_INFO = await Event.find_all().to_list()
+        settings = await Settings.find_one({})
 
-        src.discord.globals.CENSOR = await self.bot.mongo_database.get_censor()
+        if not settings:
+            logger.warn(
+                "Settings were not found in database. Going to prompt user for info to construct a minimal config ...",
+            )
+            # TODO: Add env options to override these settings
+            while True:
+                try:
+                    season_str = input("Please enter the year for the current season: ")
+                    season = int(season_str)
+                    break
+                except ValueError:
+                    print(f"{season_str} is not a valid year!")
+                    pass
+            settings = Settings(
+                custom_bot_status_type=None,
+                custom_bot_status_text=None,
+                invitational_season=season,
+            )
+            await settings.save()
+
+        self.bot.settings = settings
+
+        src.discord.globals.CENSOR = await Censor.find_one({})
+
+        if not src.discord.globals.CENSOR:
+            src.discord.globals.CENSOR = Censor(words=[], emojis=[])
+            await src.discord.globals.CENSOR.save()
         logger.info("Fetched previous variables.")
 
     async def schedule_unban(
@@ -125,17 +150,6 @@ class CronTasks(commands.Cog):
             user=0,
             tag="",
         ).insert()  # FIXME: Make user and time fields somehow depend on `type`
-
-    async def update_setting(self, setting_name: str, value: Any) -> None:
-        """
-        Updates the value of a setting.
-        """
-        await self.bot.mongo_database.update(
-            "data",
-            "settings",
-            self.bot.settings["_id"],
-            {"$set": {setting_name: value}},
-        )
 
     @tasks.loop(minutes=5)
     async def update_member_count(self):
@@ -305,14 +319,14 @@ class CronTasks(commands.Cog):
         """
         # FIXME: Subject to premature removal of status if two /status commands are run with different expirations
         # Attempt to remove status
-        self.bot.settings["custom_bot_status_type"] = None  # reset local settings
-        self.bot.settings["custom_bot_status_text"] = None  # reset local settings
-        await self.bot.mongo_database.update(
-            "data",
-            "settings",
-            self.bot.settings["_id"],
-            {"$set": {"custom_bot_status_type": None, "custom_bot_status_text": None}},
-        )  # update cloud settings
+        await self.bot.settings.update(
+            Set(
+                {
+                    Settings.custom_bot_status_type: None,
+                    Settings.custom_bot_status_text: None,
+                },
+            ),
+        )
         self.change_bot_status.restart()  # update bot now
 
         # Remove cron task.
@@ -425,17 +439,17 @@ class CronTasks(commands.Cog):
             ),
         ]
         activity = None
-        if self.bot.settings["custom_bot_status_type"] is None:
+        if self.bot.settings.custom_bot_status_type is None:
             activity = random.choice(activities)
         else:
             try:
                 activity_type = getattr(
                     discord.ActivityType,
-                    self.bot.settings["custom_bot_status_type"],
+                    self.bot.settings.custom_bot_status_type,
                 )
                 activity = discord.Activity(
                     type=activity_type,
-                    text=self.bot.settings["custom_bot_status_text"],
+                    text=self.bot.settings.custom_bot_status_text,
                 )
             except Exception:
                 activity = discord.Activity(

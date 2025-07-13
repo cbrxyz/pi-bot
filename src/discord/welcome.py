@@ -293,7 +293,7 @@ class InitialView(discord.ui.View):
         event_options: list[discord.SelectOption] = []
         for event in src.discord.globals.EVENT_INFO:
             event_options.append(
-                discord.SelectOption(label=event["name"], emoji=event["emoji"]),
+                discord.SelectOption(label=event.name, emoji=event.emoji),
             )
         event_options.sort(key=lambda x: x.label)
         event_chooser = Chooser(
