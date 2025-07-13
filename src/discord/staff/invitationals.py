@@ -5,7 +5,8 @@ import re
 from typing import TYPE_CHECKING, Literal
 
 import discord
-from discord import app_commands
+from beanie.odm.operators.update.general import Inc
+from discord import Emoji, Guild, app_commands
 from discord.ext import commands
 
 import commandchecks
@@ -20,10 +21,10 @@ from src.discord.globals import (
 )
 from src.discord.invitationals import update_invitational_list
 from src.discord.views import YesNo
+from src.mongo.models import Invitational, Settings
 
 if TYPE_CHECKING:
     from bot import PiBot
-    from src.discord.tasks import CronTasks
 
 
 class StaffInvitational(commands.Cog):
@@ -60,16 +61,17 @@ class StaffInvitational(commands.Cog):
         commandchecks.is_staff_from_ctx(interaction)
 
         # Create invitational doc
-        new_tourney_doc = {
-            "official_name": official_name,
-            "channel_name": channel_name,
-            "tourney_date": datetime.datetime.strptime(tourney_date, "%Y-%m-%d"),
-            "aliases": [],
-            "open_days": 10,
-            "closed_days": 30,
-            "voters": [],
-            "status": "open" if status == "add_immediately" else "voting",
-        }
+        new_tourney_doc = Invitational(
+            official_name=official_name,
+            channel_name=channel_name,
+            tourney_date=datetime.datetime.strptime(tourney_date, "%Y-%m-%d"),
+            emoji=None,
+            aliases=[],
+            open_days=10,
+            closed_days=30,
+            voters=[],
+            status="open" if status == "add_immediately" else "voting",
+        )
 
         # Send default message
         await interaction.response.send_message(f"{EMOJI_LOADING} Loading...")
@@ -159,8 +161,8 @@ class StaffInvitational(commands.Cog):
         description = f"""
             **Official Name:** {official_name}
             **Channel Name:** `#{channel_name}`
-            **Tournament Date:** {discord.utils.format_dt(new_tourney_doc['tourney_date'], 'D')}
-            **Closes After:** {new_tourney_doc['closed_days']} days (the invitational channel is expected to close on {discord.utils.format_dt(new_tourney_doc['tourney_date'] + datetime.timedelta(days=new_tourney_doc['closed_days']), 'D')})
+            **Tournament Date:** {discord.utils.format_dt(new_tourney_doc.tourney_date, 'D')}
+            **Closes After:** {new_tourney_doc.closed_days} days (the invitational channel is expected to close on {discord.utils.format_dt(new_tourney_doc.tourney_date + datetime.timedelta(days=new_tourney_doc.closed_days), 'D')})
             **Emoji:** {emoji}
             """
 
@@ -195,12 +197,8 @@ class StaffInvitational(commands.Cog):
         await view.wait()
         if view.value:
             # Staff member responded with "Yes"
-            new_tourney_doc["emoji"] = str(emoji)
-            await self.bot.mongo_database.insert(
-                "data",
-                "invitationals",
-                new_tourney_doc,
-            )
+            new_tourney_doc.emoji = str(emoji)
+            await new_tourney_doc.insert()
             await interaction.edit_original_response(
                 content="The invitational was added successfully! The invitational list will now be refreshed.",
                 embed=None,
@@ -235,45 +233,34 @@ class StaffInvitational(commands.Cog):
             f"{EMOJI_LOADING} Attempting to approve...",
         )
 
-        invitationals = await self.bot.mongo_database.get_invitationals()
-        found_invitationals = [
-            i for i in invitationals if i["channel_name"] == short_name
-        ]
+        invitational = await Invitational.find_one(
+            Invitational.channel_name == short_name,
+            ignore_cache=True,
+        )
 
         # If invitational is not found
-        if len(found_invitationals) < 1:
-            await interaction.edit_original_response(
+        if not invitational:
+            return await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`.",
             )
 
         # If an invitational is found
-        elif len(found_invitationals) == 1:
-
-            # Check to see if invitational is already open
-            if found_invitationals[0]["status"] == "open":
-                await interaction.edit_original_response(
-                    content=f"The `{short_name}` invitational is already open.",
-                )
-
-            # If not, update invitational to be open
-            await self.bot.mongo_database.update(
-                "data",
-                "invitationals",
-                found_invitationals[0]["_id"],
-                {"$set": {"status": "open"}},
-            )
+        # Check to see if invitational is already open
+        if invitational.status == "open":
             await interaction.edit_original_response(
-                content=f"The status of the `{short_name}` invitational was updated.",
+                content=f"The `{short_name}` invitational is already open.",
             )
 
-            # Update invitational list
-            await update_invitational_list(self.bot, {})
+        # If not, update invitational to be open
+        invitational.status = "open"
+        await invitational.save()
 
-        else:
-            await interaction.edit_original_response(
-                content="I found more than one invitational with a matching name. Contact an administrator - "
-                "something is wrong. ",
-            )
+        await interaction.edit_original_response(
+            content=f"The status of the `{short_name}` invitational was updated.",
+        )
+
+        # Update invitational list
+        await update_invitational_list(self.bot, {})
 
     @invitational_status_group.command(
         name="edit",
@@ -304,175 +291,154 @@ class StaffInvitational(commands.Cog):
         )
 
         # Attempt to find invitational
-        invitationals = await self.bot.mongo_database.get_invitationals()
-        found_invitationals = [
-            i for i in invitationals if i["channel_name"] == short_name
-        ]
+        invitational = await Invitational.find_one(
+            Invitational.channel_name == short_name,
+            ignore_cache=True,
+        )
 
         # If no invitational was found
-        if len(found_invitationals) < 1:
-            await interaction.edit_original_response(
+        if not invitational:
+            return await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with the short name of `{short_name}`.",
             )
 
         # If one invitational was found
-        elif len(found_invitationals) == 1:
-            invitational = found_invitationals[0]
 
-            # Send notice to user about editing invitational
-            info_message_text = f"{EMOJI_LOADING} Please send the new {feature_to_edit} relevant to the invitational."
-            if feature_to_edit == "emoji":
-                info_message_text += (
-                    "\n\nTo use a custom image as the new emoji for the invitational, please send a "
-                    "file that is no larger than 256KB. If you would like to use a new standard "
-                    "emoji for the invitational, please send only the new standard emoji. "
-                )
-            elif feature_to_edit == "tournament date":
-                info_message_text += (
-                    "\n\nTo update the tournament date, please send the date formatted as "
-                    "YYYY-mm-dd, such as `2022-01-12`. "
-                )
-            await interaction.edit_original_response(content=info_message_text)
-
-            # Ask user for the new content!
-            content_message = await self.bot.listen_for_response(
-                follow_id=interaction.user.id,
-                timeout=120,
+        # Send notice to user about editing invitational
+        info_message_text = f"{EMOJI_LOADING} Please send the new {feature_to_edit} relevant to the invitational."
+        if feature_to_edit == "emoji":
+            info_message_text += (
+                "\n\nTo use a custom image as the new emoji for the invitational, please send a "
+                "file that is no larger than 256KB. If you would like to use a new standard "
+                "emoji for the invitational, please send only the new standard emoji. "
             )
+        elif feature_to_edit == "tournament date":
+            info_message_text += (
+                "\n\nTo update the tournament date, please send the date formatted as "
+                "YYYY-mm-dd, such as `2022-01-12`. "
+            )
+        await interaction.edit_original_response(content=info_message_text)
 
-            # If a message was found
-            if content_message:
-                rename_dict = {}
-                await content_message.delete()
+        # Ask user for the new content!
+        content_message = await self.bot.listen_for_response(
+            follow_id=interaction.user.id,
+            timeout=120,
+        )
 
-                # If editing invitational's name
-                if feature_to_edit == "official name":
-                    # Make sure to rename the roles
-                    rename_dict = {
-                        "roles": {
-                            invitational["official_name"]: content_message.content,
-                        },
-                    }
-                    # and update the DB
-                    await self.bot.mongo_database.update(
-                        "data",
-                        "invitationals",
-                        invitational["_id"],
-                        {"$set": {"official_name": content_message.content}},
-                    )
-                    await interaction.edit_original_response(
-                        content=f"`{invitational['official_name']}` was renamed to **`{content_message.content}`**.",
-                    )
+        # If a message was found
+        if content_message:
+            rename_dict = {}
+            await content_message.delete()
 
-                # If editing invitational's short name
-                elif feature_to_edit == "short name":
-                    # Make sure to rename the channel
-                    rename_dict = {
-                        "channels": {
-                            invitational["channel_name"]: content_message.content,
-                        },
-                    }
-                    # and update the DB
-                    await self.bot.mongo_database.update(
-                        "data",
-                        "invitationals",
-                        invitational["_id"],
-                        {"$set": {"channel_name": content_message.content}},
-                    )
-                    await interaction.edit_original_response(
-                        content=f"The channel for {invitational['official_name']} was renamed from `{invitational['channel_name']}` to **`{content_message.content}`**.",
-                    )
-
-                # If editing invitational's emoji
-                elif feature_to_edit == "emoji":
-                    emoji = None
-                    if len(content_message.attachments):
-
-                        # User provided custom emoji
-                        emoji_attachment = content_message.attachments[0]
-                        if emoji_attachment.size > 256000:
-                            await interaction.edit_original_response(
-                                content="Please use an emoji that is less than 256KB. Operation cancelled.",
-                            )
-
-                        # Check for type
-                        if emoji_attachment.content_type not in [
-                            "image/gif",
-                            "image/jpeg",
-                            "image/png",
-                        ]:
-                            await interaction.edit_original_response(
-                                content="Please use a file that is a GIF, JPEG, or PNG. Operation cancelled.",
-                            )
-
-                        # Create new emoji, delete old emoji
-                        created_emoji = False
-                        for guild_id in env.emoji_guilds:
-                            guild = self.bot.get_guild(guild_id)
-                            for emoji in guild.emojis:
-                                if (
-                                    emoji.name
-                                    == f"tournament_{invitational['channel_name']}"
-                                ):
-                                    await emoji.delete(
-                                        reason=f"Replaced with alternate emoji by {interaction.user}.",
-                                    )
-                            if (
-                                len(guild.emojis) < guild.emoji_limit
-                                and not created_emoji
-                            ):
-                                # The guild can fit more custom emojis
-                                emoji = await guild.create_custom_emoji(
-                                    name=f"tournament_{invitational['channel_name']}",
-                                    image=await emoji_attachment.read(),
-                                    reason=f"Created by {interaction.user}.",
-                                )
-                                created_emoji = True
-
-                        if not created_emoji:
-                            return await interaction.edit_original_response(
-                                content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot "
-                                f"administrator will need to add more emoji guilds. ",
-                            )
-
-                    # User provided standard emoji
-                    else:
-                        emoji = content_message.content
-
-                    # Update the DB with info
-                    await self.bot.mongo_database.update(
-                        "data",
-                        "invitationals",
-                        invitational["_id"],
-                        {"$set": {"emoji": emoji}},
-                    )
-
-                    # Send confirmation message
-                    await interaction.edit_original_response(
-                        content=f"The emoji for `{invitational['official_name']}` was updated to: {emoji}.",
-                    )
-
-                # If editing the invitational date
-                elif feature_to_edit == "tournament date":
-                    # Get vars
-                    date_str = content_message.content
-                    date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-                    # and update DB
-                    await self.bot.mongo_database.update(
-                        "data",
-                        "invitationals",
-                        invitational["_id"],
-                        {"$set": {"tourney_date": date_dt}},
-                    )
-                    # and send user confirmation
-                    await interaction.edit_original_response(
-                        content=f"The tournament date for `{invitational['official_name']}` was updated to {discord.utils.format_dt(date_dt, 'D')}.",
-                    )
-                await update_invitational_list(self.bot, rename_dict)
-            else:
+            # If editing invitational's name
+            if feature_to_edit == "official name":
+                # Make sure to rename the roles
+                rename_dict = {
+                    "roles": {
+                        invitational.official_name: content_message.content,
+                    },
+                }
+                # and update the DB
+                invitational.official_name = content_message.content
+                await invitational.save()
                 await interaction.edit_original_response(
-                    content="No message was provided. Operation timed out after 120 seconds.",
+                    content=f"`{invitational.official_name}` was renamed to **`{content_message.content}`**.",
                 )
+
+            # If editing invitational's short name
+            elif feature_to_edit == "short name":
+                # Make sure to rename the channel
+                rename_dict = {
+                    "channels": {
+                        invitational.channel_name: content_message.content,
+                    },
+                }
+                # and update the DB
+                invitational.channel_name = content_message.content
+                await invitational.save()
+                await interaction.edit_original_response(
+                    content=f"The channel for {invitational.official_name} was renamed from `{invitational.channel_name}` to **`{content_message.content}`**.",
+                )
+
+            # If editing invitational's emoji
+            elif feature_to_edit == "emoji":
+                emoji = None
+                if len(content_message.attachments):
+
+                    # User provided custom emoji
+                    emoji_attachment = content_message.attachments[0]
+                    if emoji_attachment.size > 256000:
+                        await interaction.edit_original_response(
+                            content="Please use an emoji that is less than 256KB. Operation cancelled.",
+                        )
+
+                    # Check for type
+                    if emoji_attachment.content_type not in [
+                        "image/gif",
+                        "image/jpeg",
+                        "image/png",
+                    ]:
+                        await interaction.edit_original_response(
+                            content="Please use a file that is a GIF, JPEG, or PNG. Operation cancelled.",
+                        )
+
+                    # Create new emoji, delete old emoji
+                    created_emoji = False
+                    for guild_id in env.emoji_guilds:
+                        guild: Guild = self.bot.get_guild(guild_id)
+                        for emoji in guild.emojis:
+                            if emoji.name == f"tournament_{invitational.channel_name}":
+                                await emoji.delete(
+                                    reason=f"Replaced with alternate emoji by {interaction.user}.",
+                                )
+                        if len(guild.emojis) < guild.emoji_limit and not created_emoji:
+                            # The guild can fit more custom emojis
+                            emoji = await guild.create_custom_emoji(
+                                name=f"tournament_{invitational.channel_name}",
+                                image=await emoji_attachment.read(),
+                                reason=f"Created by {interaction.user}.",
+                            )
+                            created_emoji = True
+
+                    if not created_emoji:
+                        return await interaction.edit_original_response(
+                            content=f"Sorry {interaction.user}! The emoji guilds are currently full; a bot "
+                            f"administrator will need to add more emoji guilds. ",
+                        )
+
+                # User provided standard emoji
+                else:
+                    emoji = content_message.content
+
+                if isinstance(emoji, Emoji):
+                    invitational.emoji = str(emoji)
+                else:
+                    invitational.emoji = emoji
+                # Update the DB with info
+                await invitational.save()
+
+                # Send confirmation message
+                await interaction.edit_original_response(
+                    content=f"The emoji for `{invitational.official_name}` was updated to: {emoji}.",
+                )
+
+            # If editing the invitational date
+            elif feature_to_edit == "tournament date":
+                # Get vars
+                date_str = content_message.content
+                date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                # and update DB
+                invitational.tourney_date = date_dt
+                await invitational.save()
+                # and send user confirmation
+                await interaction.edit_original_response(
+                    content=f"The tournament date for `{invitational.official_name}` was updated to {discord.utils.format_dt(date_dt, 'D')}.",
+                )
+            await update_invitational_list(self.bot, rename_dict)
+        else:
+            await interaction.edit_original_response(
+                content="No message was provided. Operation timed out after 120 seconds.",
+            )
 
     @invitational_status_group.command(
         name="archive",
@@ -495,27 +461,21 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to archive the `{short_name}` invitational...",
         )
 
-        invitationals = await self.bot.mongo_database.get_invitationals()
-        found_invitationals = [
-            i for i in invitationals if i["channel_name"] == short_name
-        ]
-        if not len(found_invitationals):
-            await interaction.edit_original_response(
+        invitational = await Invitational.find_one(
+            Invitational.channel_name == short_name,
+            ignore_cache=True,
+        )
+        if not invitational:
+            return await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}.",
             )
 
-        # Invitational was found
-        invitational = found_invitationals[0]
-
         # Update the database and invitational list
-        await self.bot.mongo_database.update(
-            "data",
-            "invitationals",
-            invitational["_id"],
-            {"$set": {"status": "archived"}},
-        )
+        invitational.status = "archived"
+        await invitational.save()
+
         await interaction.edit_original_response(
-            content=f"The **`{invitational['official_name']}`** is now being archived.",
+            content=f"The **`{invitational.official_name}`** is now being archived.",
         )
         await update_invitational_list(self.bot, {})
 
@@ -541,61 +501,53 @@ class StaffInvitational(commands.Cog):
         )
 
         # Attempt to find invitational
-        invitationals = await self.bot.mongo_database.get_invitationals()
-        found_invitationals = [
-            i for i in invitationals if i["channel_name"] == short_name
-        ]
+        invitational = await Invitational.find_one(
+            Invitational.channel_name == short_name,
+            ignore_cache=True,
+        )
 
-        if not len(found_invitationals):
-            await interaction.edit_original_response(
+        if not invitational:
+            return await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}.",
             )
 
-        else:
-            # Find the relevant invitational
-            invitational = found_invitationals[0]
+        # Get the relevant channel and role
+        server = self.bot.get_guild(env.server_id)
+        ch = discord.utils.get(
+            server.text_channels,
+            name=invitational.channel_name,
+        )
+        r = discord.utils.get(server.roles, name=invitational.official_name)
 
-            # Get the relevant channel and role
-            server = self.bot.get_guild(env.server_id)
-            ch = discord.utils.get(
-                server.text_channels,
-                name=invitational["channel_name"],
-            )
-            r = discord.utils.get(server.roles, name=invitational["official_name"])
+        # Delete the channel and role
+        if (
+            ch
+            and ch.category
+            and ch.category.name
+            in [
+                CATEGORY_ARCHIVE,
+                CATEGORY_INVITATIONALS,
+            ]
+        ):
+            await ch.delete()
+        if r:
+            await r.delete()
 
-            # Delete the channel and role
-            if (
-                ch
-                and ch.category
-                and ch.category.name
-                in [
-                    CATEGORY_ARCHIVE,
-                    CATEGORY_INVITATIONALS,
-                ]
-            ):
-                await ch.delete()
-            if r:
-                await r.delete()
+        # Delete the invitational emoji
+        search = re.findall(r"<:.*:\d+>", invitational.emoji)
+        if len(search):
+            emoji = self.bot.get_emoji(search[0])
+            if emoji:
+                await emoji.delete()
 
-            # Delete the invitational emoji
-            search = re.findall(r"<:.*:\d+>", invitational["emoji"])
-            if len(search):
-                emoji = self.bot.get_emoji(search[0])
-                if emoji:
-                    await emoji.delete()
+        # Delete from the DB
+        await invitational.delete()
+        await interaction.edit_original_response(
+            content=f"Deleted the **`{invitational.official_name}`**.",
+        )
 
-            # Delete from the DB
-            await self.bot.mongo_database.delete(
-                "data",
-                "invitationals",
-                invitational["_id"],
-            )
-            await interaction.edit_original_response(
-                content=f"Deleted the **`{invitational['official_name']}`**.",
-            )
-
-            # Update the invitational list to reflect
-            await update_invitational_list(self.bot, {})
+        # Update the invitational list to reflect
+        await update_invitational_list(self.bot, {})
 
     @invitational_status_group.command(
         name="season",
@@ -611,9 +563,8 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to run command...",
         )
 
-        assert isinstance(self.bot.settings["invitational_season"], int)
         description = f"""
-        This will update the season for the invitational season from `{self.bot.settings['invitational_season']}` to `{self.bot.settings['invitational_season'] + 1}`.
+        This will update the season for the invitational season from `{self.bot.settings.invitational_season}` to `{self.bot.settings.invitational_season + 1}`.
 
         This **will not remove any data**, but the invitational display in the invitationals channel will be updated to only display invitationals relevant to the new season.
 
@@ -644,22 +595,10 @@ class StaffInvitational(commands.Cog):
             )
 
             # Actually update season
-            self.bot.settings["invitational_season"] += 1
-            tasks_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
-            await tasks_cog.update_setting(
-                "invitational_season",
-                self.bot.settings["invitational_season"] + 1,
-            )
+            await self.bot.settings.update(Inc({Settings.invitational_season: 1}))
 
             # Remove voters from all tourneys
-            invitationals = await self.bot.mongo_database.get_invitationals()
-            for invitational in invitationals:
-                await self.bot.mongo_database.update(
-                    "data",
-                    "tournaments",
-                    invitational["_id"],
-                    {"$set": {"voters": []}},
-                )
+            await Invitational.update_all({Invitational.voters: []})
 
             # Update the invitational list to reflect
             await update_invitational_list(self.bot, {})
@@ -698,22 +637,18 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to renew the `{short_name}` invitational...",
         )
 
-        invitationals = await self.bot.mongo_database.get_invitationals()
-        found_invitationals = [
-            i for i in invitationals if i["channel_name"] == short_name
-        ]
+        invitational = await Invitational.find_one(
+            Invitational.channel_name == short_name,
+            ignore_cache=True,
+        )
 
-        if not len(found_invitationals):
-            await interaction.edit_original_response(
+        if not invitational:
+            return await interaction.edit_original_response(
                 content=f"Sorry, I couldn't find an invitational with a short name of {short_name}.",
             )
 
-        invitational = found_invitationals[0]
-        await self.bot.mongo_database.update(
-            "data",
-            "invitationals",
-            invitational["_id"],
-            {"$set": {"status": "voting" if voting == "yes" else "open"}},
+        await invitational.set(
+            {Invitational.status: "voting" if voting == "yes" else "open"},
         )
 
         # Update the invitational list to reflect
@@ -730,14 +665,14 @@ class StaffInvitational(commands.Cog):
         interaction: discord.Interaction,
         current: str,
     ) -> list[discord.app_commands.Choice[str]]:
-        invitationals = await self.bot.mongo_database.get_invitationals()
+        invitationals = await Invitational.find_all().to_list()
         return [
             discord.app_commands.Choice(
-                name=f"#{i['channel_name']} ({len(i['voters'])} voters)",
-                value=i["channel_name"],
+                name=f"#{i.channel_name} ({len(i.voters)} voters)",
+                value=i.channel_name,
             )
             for i in invitationals
-            if current.lower() in i["channel_name"].lower() and i["status"] == "voting"
+            if current.lower() in i.channel_name.lower() and i.status == "voting"
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @invitational_edit.autocomplete("short_name")
@@ -747,14 +682,14 @@ class StaffInvitational(commands.Cog):
         interaction: discord.Interaction,
         current: str,
     ) -> list[discord.app_commands.Choice[str]]:
-        invitationals = await self.bot.mongo_database.get_invitationals()
+        invitationals = await Invitational.find_all().to_list()
         return [
             discord.app_commands.Choice(
-                name=f"#{i['channel_name']}",
-                value=i["channel_name"],
+                name=f"#{i.channel_name}",
+                value=i.channel_name,
             )
             for i in invitationals
-            if current.lower() in i["channel_name"].lower()
+            if current.lower() in i.channel_name.lower()
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @invitational_archive.autocomplete("short_name")
@@ -763,31 +698,31 @@ class StaffInvitational(commands.Cog):
         interaction: discord.Interaction,
         current: str,
     ) -> list[discord.app_commands.Choice[str]]:
-        invitationals = await self.bot.mongo_database.get_invitationals()
+        invitationals = await Invitational.find_all().to_list()
         return [
             discord.app_commands.Choice(
-                name=f"#{i['channel_name']}",
-                value=i["channel_name"],
+                name=f"#{i.channel_name}",
+                value=i.channel_name,
             )
             for i in invitationals
             if current.lower() in i["channel_name"].lower() and i["status"] == "open"
+            if current.lower() in i.channel_name.lower() and i.status == "open"
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @invitational_renew.autocomplete("short_name")
     async def short_name_renew_autocomplete(
         self,
-        interaction: discord.Interaction,
+        _interaction: discord.Interaction,
         current: str,
     ) -> list[discord.app_commands.Choice[str]]:
-        invitationals = await self.bot.mongo_database.get_invitationals()
+        invitationals = await Invitational.find_all().to_list()
         return [
             discord.app_commands.Choice(
-                name=f"#{i['channel_name']}",
-                value=i["channel_name"],
+                name=f"#{i.channel_name}",
+                value=i.channel_name,
             )
             for i in invitationals
-            if current.lower() in i["channel_name"].lower()
-            and i["status"] == "archived"
+            if current.lower() in i.channel_name.lower() and i.status == "archived"
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
 

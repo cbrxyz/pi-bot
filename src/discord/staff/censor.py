@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 import discord
+from beanie.odm.operators.update.array import Pull, Push
 from discord import app_commands
 from discord.ext import commands
 
@@ -14,6 +15,7 @@ from src.discord.globals import (
     ROLE_STAFF,
     ROLE_VIP,
 )
+from src.mongo.models import Censor
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -54,36 +56,24 @@ class StaffCensor(commands.Cog):
         )
 
         if censor_type == "word":
-            if phrase in src.discord.globals.CENSOR["words"]:
+            if phrase in src.discord.globals.CENSOR.words:
                 await interaction.edit_original_response(
                     content=f"`{phrase}` is already in the censored words list. Operation cancelled.",
                 )
             else:
-                src.discord.globals.CENSOR["words"].append(phrase)
-                await self.bot.mongo_database.update(
-                    "data",
-                    "censor",
-                    src.discord.globals.CENSOR["_id"],
-                    {"$push": {"words": phrase}},
-                )
+                await src.discord.globals.CENSOR.update(Push({Censor.words: phrase}))
                 first_letter = phrase[0]
                 last_letter = phrase[-1]
                 await interaction.edit_original_response(
                     content=f"Added `{first_letter}...{last_letter}` to the censor list.",
                 )
         elif censor_type == "emoji":
-            if phrase in src.discord.globals.CENSOR["emojis"]:
+            if phrase in src.discord.globals.CENSOR.emojis:
                 await interaction.edit_original_response(
                     content="Emoji is already in the censored emoijs list. Operation cancelled.",
                 )
             else:
-                src.discord.globals.CENSOR["emojis"].append(phrase)
-                await self.bot.mongo_database.update(
-                    "data",
-                    "censor",
-                    src.discord.globals.CENSOR["_id"],
-                    {"$push": {"emojis": phrase}},
-                )
+                await src.discord.globals.CENSOR.update(Push({Censor.emojis: phrase}))
                 await interaction.edit_original_response(
                     content="Added emoji to the censor list.",
                 )
@@ -112,34 +102,22 @@ class StaffCensor(commands.Cog):
         )
 
         if censor_type == "word":
-            if phrase not in src.discord.globals.CENSOR["words"]:
+            if phrase not in src.discord.globals.CENSOR.words:
                 await interaction.edit_original_response(
                     content=f"`{phrase}` is not in the list of censored words.",
                 )
             else:
-                src.discord.globals.CENSOR["words"].remove(phrase)
-                await self.bot.mongo_database.update(
-                    "data",
-                    "censor",
-                    src.discord.globals.CENSOR["_id"],
-                    {"$pull": {"words": phrase}},
-                )
+                await src.discord.globals.CENSOR.update(Pull({Censor.words: phrase}))
                 await interaction.edit_original_response(
                     content=f"Removed `{phrase}` from the censor list.",
                 )
         elif censor_type == "emoji":
-            if phrase not in src.discord.globals.CENSOR["emojis"]:
+            if phrase not in src.discord.globals.CENSOR.emojis:
                 await interaction.edit_original_response(
                     content=f"{phrase} is not in the list of censored emojis.",
                 )
             else:
-                src.discord.globals.CENSOR["emojis"].remove(phrase)
-                await self.bot.mongo_database.update(
-                    "data",
-                    "censor",
-                    src.discord.globals.CENSOR["_id"],
-                    {"$pull": {"emojis": phrase}},
-                )
+                await src.discord.globals.CENSOR.update(Pull({Censor.emojis: phrase}))
                 await interaction.edit_original_response(
                     content=f"Removed {phrase} from the emojis list.",
                 )
