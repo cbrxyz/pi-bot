@@ -458,7 +458,7 @@ class PingManager(commands.GroupCog, name="ping"):
 
         # Attempt to remove a word ping with extra formatting
         elif f"\\b({word})\\b" in user.word_pings:
-            user.word_pings.remove(f"\\e({word})\\b")  # FIXME: Is this \\e a typo?
+            user.word_pings.remove(f"\\b({word})\\b")
             await user.save()
             return await interaction.response.send_message(
                 f"I removed the `{word}` ping you were referencing.",
