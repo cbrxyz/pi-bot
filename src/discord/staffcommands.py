@@ -22,6 +22,7 @@ from src.discord.globals import (
     CATEGORY_SO,
     CATEGORY_STATES,
     CHANNEL_WELCOME,
+    DISCORD_SELECT_MAX_OPTIONS,
     EMOJI_LOADING,
     INVITATIONAL_INFO,
     ROLE_AD,
@@ -275,7 +276,7 @@ class CronSelect(discord.ui.Select):
         options = []
         docs.sort(key=lambda d: d.time)
         counts = {}
-        for doc in docs[:20]:  # FIXME: Magic number
+        for doc in docs[:DISCORD_SELECT_MAX_OPTIONS]:
             timeframe = (doc.time - discord.utils.utcnow()).days
             if abs(timeframe) < 1:
                 timeframe = f"{(doc.time - discord.utils.utcnow()).total_seconds() // 3600} hours"

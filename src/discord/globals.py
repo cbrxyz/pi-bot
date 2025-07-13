@@ -117,6 +117,8 @@ RULES = [
 ]
 
 DISCORD_AUTOCOMPLETE_MAX_ENTRIES = 25
+# The maximum number of options that can be passed into a discord.ui.Select
+DISCORD_SELECT_MAX_OPTIONS = 20
 
 ##############
 # VARIABLES
