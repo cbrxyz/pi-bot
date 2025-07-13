@@ -128,6 +128,5 @@ CENSOR: Censor = {}
 EVENT_INFO: list[Event] = []
 PING_INFO: list[Ping] = []
 INVITATIONAL_INFO: list[Invitational] = []
-REPORTS = []
 TAGS: list[Tag] = []
 CURRENT_WIKI_PAGE = None
