@@ -13,14 +13,17 @@ import re
 import subprocess
 import traceback
 import uuid
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import discord
+from beanie import init_beanie
 from discord import app_commands
 from discord.ext import commands
+from motor.motor_asyncio import AsyncIOMotorClient
 from rich.logging import RichHandler
 
+import src.mongo.models
 from env import env
 from src.discord.globals import (
     CHANNEL_BOTSPAM,
@@ -30,7 +33,6 @@ from src.discord.globals import (
     CHANNEL_RULES,
 )
 from src.discord.reporter import Reporter
-from src.mongo.mongo import MongoDatabase
 
 if TYPE_CHECKING:
     from src.discord.censor import Censor
@@ -133,13 +135,8 @@ class PiBot(commands.Bot):
     """
 
     session: aiohttp.ClientSession | None
-    mongo_database: MongoDatabase
-    settings: ClassVar[dict[str, str | int | None]] = {
-        "_id": None,
-        "custom_bot_status_type": None,
-        "custom_bot_status_text": None,
-        "invitational_season": None,
-    }
+    mongo_client: AsyncIOMotorClient
+    settings: src.mongo.models.Settings
 
     def __init__(self):
         super().__init__(
@@ -156,7 +153,10 @@ class PiBot(commands.Bot):
         self.__version__ = "v5.1.0"
         self.__commit__ = self.get_commit()
         self.session = None
-        self.mongo_database = MongoDatabase(self)
+        self.mongo_client = AsyncIOMotorClient(
+            env.mongo_url,
+            tz_aware=True,
+        )
 
     def get_commit(self) -> str | None:
         with subprocess.Popen(
@@ -173,6 +173,19 @@ class PiBot(commands.Bot):
         Called when the bot is being setup. Currently sets up a connection to the
         database and initializes all extensions.
         """
+        await init_beanie(
+            database=self.mongo_client["data"],
+            document_models=[
+                src.mongo.models.Cron,
+                src.mongo.models.Ping,
+                src.mongo.models.Tag,
+                src.mongo.models.Invitational,
+                src.mongo.models.Event,
+                src.mongo.models.Censor,
+                src.mongo.models.Settings,
+                # TODO
+            ],
+        )
         extensions = (
             "src.discord.censor",
             "src.discord.ping",
@@ -198,16 +211,6 @@ class PiBot(commands.Bot):
             except commands.ExtensionError:
                 logger.error(f"Failed to load extension {extension}!")
                 traceback.print_exc()
-
-    async def update_setting(self, values: dict[str, Any]):
-        for k, v in values.items():
-            self.settings[k] = v
-            await self.mongo_database.update(
-                "data",
-                "settings",
-                self.settings["_id"],
-                {"$set": values},
-            )
 
     async def on_ready(self) -> None:
         """

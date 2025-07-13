@@ -3,6 +3,8 @@ Holds global variables shared between cogs and variables that are initialized wh
 the bot is first setup.
 """
 
+from src.mongo.models import Censor, Event, Invitational, Ping, Tag
+
 ##############
 # CONSTANTS
 ##############
@@ -69,10 +71,10 @@ CATEGORY_ARCHIVE = "archives"
 CATEGORY_STAFF = "staff"
 
 # Emoji reference
-EMOJI_FAST_REVERSE = "\U000023EA"
-EMOJI_LEFT_ARROW = "\U00002B05"
-EMOJI_RIGHT_ARROW = "\U000027A1"
-EMOJI_FAST_FORWARD = "\U000023E9"
+EMOJI_FAST_REVERSE = "\U000023ea"
+EMOJI_LEFT_ARROW = "\U00002b05"
+EMOJI_RIGHT_ARROW = "\U000027a1"
+EMOJI_FAST_FORWARD = "\U000023e9"
 EMOJI_UNSELFMUTE = "click_to_unmute"
 EMOJI_FULL_UNSELFMUTE = "<:click_to_unmute:799389279385026610>"
 EMOJI_LOADING = "<a:loading:909706909404237834>"
@@ -120,10 +122,11 @@ DISCORD_AUTOCOMPLETE_MAX_ENTRIES = 25
 # VARIABLES
 ##############
 fish_now = 0
-CENSOR = {}
-EVENT_INFO = []
-PING_INFO = []
-INVITATIONAL_INFO = []
-REPORTS = []
-TAGS = []
+CENSOR: Censor = {}
+# FIXME: CENSOR for now has to be a dummy value since Beanie does
+# not get initialized at the global scope before importing globals.py
+EVENT_INFO: list[Event] = []
+PING_INFO: list[Ping] = []
+INVITATIONAL_INFO: list[Invitational] = []
+TAGS: list[Tag] = []
 CURRENT_WIKI_PAGE = None

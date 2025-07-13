@@ -4,6 +4,8 @@ import logging
 from typing import TYPE_CHECKING
 
 import discord
+from beanie import SortDirection
+from beanie.odm.operators.update.array import Push
 from discord.ext import commands
 
 from env import env
@@ -19,6 +21,7 @@ from src.discord.globals import (
     ROLE_AT,
     ROLE_GM,
 )
+from src.mongo.models import Invitational
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -27,24 +30,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-class Invitational:
-    official_name: str
-    voters: list
-
-    def __init__(self, objects):
-        self._properties = objects
-        self.doc_id = objects.get("_id")
-        self.official_name = objects.get("official_name")
-        self.channel_name = objects.get("channel_name")
-        self.emoji = objects.get("emoji")
-        self.aliases = objects.get("aliases")
-        self.tourney_date = objects.get("tourney_date")
-        self.open_days = objects.get("open_days")
-        self.closed_days = objects.get("closed_days")
-        self.voters = objects.get("voters")
-        self.status = objects.get("status")
 
 
 class AllInvitationalsView(discord.ui.View):
@@ -145,7 +130,7 @@ class InvitationalDropdown(discord.ui.Select):
 
         else:
             # This dropdown is being used for voting
-            need_to_update = []
+            need_to_update: list[Invitational] = []
             already_voted_for = []
 
             for value in self.values:
@@ -154,6 +139,8 @@ class InvitationalDropdown(discord.ui.Select):
                     self.invitationals,
                     official_name=value,
                 )
+                if not invitational:
+                    continue
                 if member.id in invitational.voters:
                     # This user has already voted for this invitational.
                     already_voted_for.append(invitational)
@@ -165,13 +152,9 @@ class InvitationalDropdown(discord.ui.Select):
             # Update invitationals DB
             if len(need_to_update) > 0:
                 # Some docs need to be updated
-                docs_to_update = [t._properties for t in need_to_update]
-                await self.bot.mongo_database.update_many(
-                    "data",
-                    "invitationals",
-                    docs_to_update,
-                    {"$push": {"voters": member.id}},
-                )
+
+                for invy in need_to_update:
+                    invy.update(Push({Invitational.voters: member.id}))
 
             # Format output
             result_string = ""
@@ -202,9 +185,10 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
     :param rename_dict: A dictionary containing renames of channels and roles that need to be completed.
     """
     # Fetch invitationals
-    invitationals = await bot.mongo_database.get_invitationals()
-    invitationals = [Invitational(t) for t in invitationals]
-    invitationals.sort(key=lambda t: t.official_name)
+    invitationals = await Invitational.find_all(
+        sort=[(Invitational.official_name, SortDirection.ASCENDING)],
+        ignore_cache=True,
+    ).to_list()
 
     # Update global invitational info
     global INVITATIONAL_INFO
@@ -416,12 +400,8 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
     await invitational_channel.purge()  # Delete all messages to make way for new messages/views
     await invitational_channel.send(embed=help_embed)
 
-    # Occasionally, MongoDB can write ints as floats in the db
-    if isinstance(bot.settings["invitational_season"], float):
-        bot.settings["invitational_season"] = int(bot.settings["invitational_season"])
-    assert isinstance(bot.settings["invitational_season"], int)
-    first_year = bot.settings["invitational_season"] - 1
-    second_year = bot.settings["invitational_season"]
+    first_year = bot.settings.invitational_season - 1
+    second_year = bot.settings.invitational_season
     months = [
         {"name": "September", "number": 9, "year": first_year, "optional": True},
         {"name": "October", "number": 10, "year": first_year, "optional": False},

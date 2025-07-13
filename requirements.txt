@@ -1,4 +1,4 @@
-git+https://github.com/Rapptz/discord.py
+discord==2.3.2
 webcolors==1.11.1
 requests==2.23.0
 asyncio==3.4.3
@@ -18,9 +18,10 @@ gspread-asyncio==1.1.0
 aiohttp<4,>=3.7.4
 aiodns==2.0.0
 pytz==2020.4
-pymongo<5,>=4.1
+pymongo<4.9,>=4.1
 pymongo[srv]<5,>=4.1
 motor==3.1.1
 rich==13.7.0
 pydantic<2.7,>=2.6
 pydantic-settings==2.2.1
+beanie==1.26.0
