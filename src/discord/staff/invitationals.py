@@ -563,7 +563,6 @@ class StaffInvitational(commands.Cog):
             content=f"{EMOJI_LOADING} Attempting to run command...",
         )
 
-        assert isinstance(self.bot.settings.invitational_season, int)
         description = f"""
         This will update the season for the invitational season from `{self.bot.settings.invitational_season}` to `{self.bot.settings.invitational_season + 1}`.
 
