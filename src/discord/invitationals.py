@@ -400,12 +400,8 @@ async def update_invitational_list(bot: PiBot, rename_dict: dict = {}) -> None:
     await invitational_channel.purge()  # Delete all messages to make way for new messages/views
     await invitational_channel.send(embed=help_embed)
 
-    # Occasionally, MongoDB can write ints as floats in the db
-    if isinstance(bot.settings["invitational_season"], float):
-        bot.settings["invitational_season"] = int(bot.settings["invitational_season"])
-    assert isinstance(bot.settings["invitational_season"], int)
-    first_year = bot.settings["invitational_season"] - 1
-    second_year = bot.settings["invitational_season"]
+    first_year = bot.settings.invitational_season - 1
+    second_year = bot.settings.invitational_season
     months = [
         {"name": "September", "number": 9, "year": first_year, "optional": True},
         {"name": "October", "number": 10, "year": first_year, "optional": False},

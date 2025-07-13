@@ -65,3 +65,32 @@ class Invitational(Document):
     class Settings:
         name = "invitationals"
         use_cache = True
+
+
+class Event(Document):
+    name: str
+    aliases: list[str]
+    emoji: str | None
+
+    class Settings:
+        name = "events"
+        use_cache = True
+
+
+class Censor(Document):
+    words: list[str]
+    emojis: list[str]
+
+    class Settings:
+        name = "censor"
+        use_cache = True
+
+
+class Settings(Document):
+    custom_bot_status_type: str | None
+    custom_bot_status_text: str | None
+    invitational_season: int
+
+    class Settings:
+        name = "settings"
+        use_cache = True
