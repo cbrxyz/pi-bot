@@ -1181,7 +1181,7 @@ class MemberCommands(commands.Cog):
             event_ten,
         ]
         param_list = [p for p in param_list if p is not None]
-        event_names = [e["name"] for e in src.discord.globals.EVENT_INFO]
+        event_names = [e.name for e in src.discord.globals.EVENT_INFO]
 
         selected_roles = [
             discord.utils.get(member.guild.roles, name=e)
@@ -1245,9 +1245,9 @@ class MemberCommands(commands.Cog):
             List[app_commands.Choice[str]]: A list of string choices to choose from.
         """
         return [
-            app_commands.Choice(name=e["name"], value=e["name"])
+            app_commands.Choice(name=e.name, value=e.name)
             for e in src.discord.globals.EVENT_INFO
-            if current.lower() in e["name"].lower()
+            if current.lower() in e.name.lower()
         ][:DISCORD_AUTOCOMPLETE_MAX_ENTRIES]
 
     @app_commands.command(description="Gets a tag.")
