@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal
 
 import discord
 import matplotlib.pyplot as plt
+from beanie.odm.operators.update.general import Set
 from discord import app_commands
 from discord.ext import commands
 
@@ -39,6 +40,7 @@ from src.discord.globals import (
     ROLE_WM,
 )
 from src.discord.invitationals import update_invitational_list
+from src.mongo.models import Cron, Ping, Settings
 from src.wiki.mosteditstable import run_table
 
 if TYPE_CHECKING:
@@ -198,7 +200,7 @@ class StaffCommands(commands.Cog):
 
 
 class CronConfirm(discord.ui.View):
-    def __init__(self, doc, bot: PiBot):
+    def __init__(self, doc: Cron, bot: PiBot):
         super().__init__()
         self.doc = doc
         self.bot = bot
@@ -209,7 +211,7 @@ class CronConfirm(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button,
     ):
-        await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
+        await self.doc.delete()
         await interaction.response.edit_message(
             content="Awesome! I successfully removed the action from the CRON list.",
             view=None,
@@ -222,27 +224,27 @@ class CronConfirm(discord.ui.View):
         button: discord.ui.Button,
     ):
         server = self.bot.get_guild(env.server_id)
-        if self.doc["type"] == "UNBAN":
+        if self.doc.type == "UNBAN":
             # User needs to be unbanned
             with contextlib.suppress(Exception):
-                await server.unban(self.doc["user"])
+                await server.unban(self.doc.user)
             await interaction.response.edit_message(
                 content="Attempted to unban the user. Checking to see if operation was successful...",
                 view=None,
             )
             bans = [b async for b in server.bans()]
             for ban in bans:
-                if ban.user.id == self.doc["user"]:
+                if ban.user.id == self.doc.user:
                     return await interaction.edit_original_response(
                         content="Uh oh! The operation was not successful - the user remains banned.",
                     )
-            await self.bot.mongo_database.remove_doc("data", "cron", self.doc["_id"])
+            await self.doc.delete()
             return await interaction.edit_original_response(
                 content="The operation was verified - the user can now rejoin the server.",
             )
-        elif self.doc["type"] == "UNMUTE":
+        elif self.doc.type == "UNMUTE":
             # User needs to be unmuted.
-            member = server.get_member(self.doc["user"])
+            member = server.get_member(self.doc.user)
             if member is None:
                 return await interaction.response.edit_message(
                     content="The user is no longer in the server, so I was not able to unmute them. The task remains "
@@ -258,11 +260,7 @@ class CronConfirm(discord.ui.View):
                     view=None,
                 )
                 if role not in member.roles:
-                    await self.bot.mongo_database.remove_doc(
-                        "data",
-                        "cron",
-                        self.doc["_id"],
-                    )
+                    await self.doc.delete()
                     return await interaction.edit_original_response(
                         content="The operation was verified - the user can now speak in the server again.",
                     )
@@ -273,17 +271,17 @@ class CronConfirm(discord.ui.View):
 
 
 class CronSelect(discord.ui.Select):
-    def __init__(self, docs, bot: PiBot):
+    def __init__(self, docs: list[Cron], bot: PiBot):
         options = []
-        docs.sort(key=lambda d: d["time"])
+        docs.sort(key=lambda d: d.time)
         counts = {}
-        for doc in docs[:20]:
-            timeframe = (doc["time"] - discord.utils.utcnow()).days
+        for doc in docs[:20]:  # FIXME: Magic number
+            timeframe = (doc.time - discord.utils.utcnow()).days
             if abs(timeframe) < 1:
-                timeframe = f"{(doc['time'] - discord.utils.utcnow()).total_seconds() // 3600} hours"
+                timeframe = f"{(doc.time - discord.utils.utcnow()).total_seconds() // 3600} hours"
             else:
-                timeframe = f"{(doc['time'] - discord.utils.utcnow()).days} days"
-            tag_name = f"{doc['type'].title()} {doc['tag']}"
+                timeframe = f"{(doc.time - discord.utils.utcnow()).days} days"
+            tag_name = f"{doc.cron_type.title()} {doc.tag}"
             if tag_name in counts:
                 counts[tag_name] = counts[tag_name] + 1
             else:
@@ -310,7 +308,7 @@ class CronSelect(discord.ui.Select):
         num = re.findall(r"\(#(\d*)", value)
         value = re.sub(r" \(#\d*\)", "", value)
         relevant_doc = [
-            d for d in self.docs if f"{d['type'].title()} {d['tag']}" == value
+            d for d in self.docs if f"{d.cron_type.title()} {d.tag}" == value
         ]
         if len(relevant_doc) == 1 or not len(num):
             relevant_doc = relevant_doc[0]
@@ -326,7 +324,7 @@ class CronSelect(discord.ui.Select):
 
 
 class CronView(discord.ui.View):
-    def __init__(self, docs, bot: PiBot):
+    def __init__(self, docs: list[Cron], bot: PiBot):
         super().__init__()
 
         self.add_item(CronSelect(docs, bot))
@@ -887,7 +885,7 @@ class StaffEssential(StaffCommands):
         """
         commandchecks.is_staff_from_ctx(interaction)
 
-        cron_list = await self.bot.mongo_database.get_cron()
+        cron_list = await Cron.find_all().to_list()
         if not len(cron_list):
             return await interaction.response.send_message(
                 "Unfortunately, there are no items in the CRON list to manage.",
@@ -1369,7 +1367,7 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
             await interaction.edit_original_response(
                 content=f"{EMOJI_LOADING} Updating all users' pings.",
             )
-            src.discord.globals.PING_INFO = await self.bot.mongo_database.get_pings()
+            src.discord.globals.PING_INFO = Ping.find_all().to_list()
             await interaction.edit_original_response(
                 content=":white_check_mark: Updated all users' pings.",
             )
@@ -1417,16 +1415,17 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         selected_time = self.time_str_to_datetime(length)
 
         # Change settings
-        await self.bot.update_setting(
-            {"custom_bot_status_text": message, "custom_bot_status_type": activity},
+        await self.bot.settings.update(
+            Set(
+                {
+                    Settings.custom_bot_status_text: message,
+                    Settings.custom_bot_status_type: activity,
+                },
+            ),
         )
 
         # Delete any relevant documents
-        await self.bot.mongo_database.delete_by(
-            "data",
-            "cron",
-            {"type": "REMOVE_STATUS"},
-        )
+        await Cron.find(Cron.cron_type == "REMOVE_STATUS").delete()
 
         # Insert time length into CRON
         cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")
@@ -1469,17 +1468,19 @@ class StaffNonessential(StaffCommands, name="StaffNonesntl"):
         await interaction.response.send_message(
             f"{EMOJI_LOADING} Attempting to resetting status...",
         )
-        await self.bot.update_setting(
-            {"custom_bot_status_text": None, "custom_bot_status_type": None},
+
+        await self.bot.settings.update(
+            Set(
+                {
+                    Settings.custom_bot_status_text: None,
+                    Settings.custom_bot_status_type: None,
+                },
+            ),
         )
         await interaction.edit_original_response(content="Reset the bot's status.")
 
         # Delete any relevant documents
-        await self.bot.mongo_database.delete_by(
-            "data",
-            "cron",
-            {"type": "REMOVE_STATUS"},
-        )
+        await Cron.find(Cron.cron_type == "REMOVE_STATUS").delete()
 
         # Reset bot status to regularly update
         cron_cog: commands.Cog | CronTasks = self.bot.get_cog("CronTasks")

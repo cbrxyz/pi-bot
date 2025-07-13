@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import discord
 
 from src.discord.globals import ROLE_SELFMUTE
+from src.mongo.models import Cron
 
 if TYPE_CHECKING:
     from bot import PiBot
@@ -44,15 +45,12 @@ class UnselfmuteView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         role = discord.utils.get(interaction.guild.roles, name=ROLE_SELFMUTE)
         await interaction.user.remove_roles(role)
-        try:
-            item = next(
-                x
-                for x in await self.bot.mongo_database.get_cron()
-                if (x["type"] == "UNSELFMUTE" and x["user"] == interaction.user.id)
-            )
-            await self.bot.mongo_database.remove_doc("data", "cron", item["_id"])
-        except Exception:  # not in the database - maybe was removed!
-            pass
+
+        await (
+            Cron.find(Cron.user == interaction.user.id)
+            .find(Cron.cron_type == "UNSELFMUTE")
+            .delete()
+        )
 
         return await interaction.followup.send(
             "I removed your selfmute role!",
