@@ -664,7 +664,7 @@ class MemberCommands(commands.Cog):
             interaction (discord.Interaction): The interaction sent by Discord.
         """
         repo = "https://github.com/scioly/pi-bot"
-        wiki_link = "https://scioly.org/wiki/index.php/User:Pi-Bot"
+        wiki_link = "https://scioly.org/wiki/User:Pi-Bot"
         forums_link = (
             "https://scioly.org/forums/memberlist.php?mode=viewprofile&u=62443"
         )

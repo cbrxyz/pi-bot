@@ -530,7 +530,7 @@ class EmbedView(discord.ui.View):
                 "proper_name": "Color",
                 "dict_values": ["color"],
                 "row": 0,
-                "help": "Please send the color formatted as a hex color. For Scioly.org-related color codes, see <https://scioly.org/wiki/index.php/Scioly.org:Design>. To remove the color, simply respond with `remove`.",
+                "help": "Please send the color formatted as a hex color. For Scioly.org-related color codes, see <https://scioly.org/wiki/Scioly.org:Design>. To remove the color, simply respond with `remove`.",
             },
             {
                 "proper_name": "Thumbnail Image (from URL)",
