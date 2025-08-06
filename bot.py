@@ -13,7 +13,7 @@ import re
 import subprocess
 import traceback
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import aiohttp
 import discord
@@ -24,6 +24,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from rich.logging import RichHandler
 
 import src.mongo.models
+from commandchecks import is_staff_from_ctx
 from env import env
 from src.discord.globals import (
     CHANNEL_BOTSPAM,
@@ -284,7 +285,16 @@ class PiBot(commands.Bot):
             spam: commands.Cog | SpamManager = self.get_cog("SpamManager")
             await spam.store_and_validate(message)
 
-        if message.content and len(re.findall(r"^[!\?]\s*\w+$", message.content)):
+        legacy_command: list[str] = re.findall(
+            rf"^{re.escape(BOT_PREFIX)}\s*(\w+)",
+            message.content,
+        )
+        if message.content and len(legacy_command):
+            if legacy_command[0] == sync.name or legacy_command[0].startswith(
+                f"{sync.name} ",
+            ):
+                await bot.process_commands(message)
+                return
             botspam_channel = discord.utils.get(
                 message.guild.channels,
                 name=CHANNEL_BOTSPAM,
@@ -338,6 +348,28 @@ class PiBot(commands.Bot):
                 return message
         return None
 
+    async def sync_commands(
+        self,
+        only_guild_commands: bool,
+    ) -> tuple[list[app_commands.AppCommand], dict[int, list[app_commands.AppCommand]]]:
+        logger.info(
+            f"Beginning to sync {'guild-only' if only_guild_commands else 'all'} commands ...",
+        )
+        global_cmds_synced = []
+        if not only_guild_commands:
+            global_cmds_synced = await self.tree.sync()
+            logger.info(f"{len(global_cmds_synced)} global commands were synced")
+        guild_commands = {}
+        for command_guild in env.slash_command_guilds:
+            guild_cmds_synced = await self.tree.sync(
+                guild=discord.Object(id=command_guild),
+            )
+            guild_commands[command_guild] = guild_cmds_synced
+            logger.info(
+                f"{len(guild_cmds_synced)} guild commands were synced for guild with id {command_guild}",
+            )
+        return (global_cmds_synced, guild_commands)
+
 
 bot = PiBot()
 KB = 1024
@@ -349,6 +381,67 @@ handler = logging.handlers.RotatingFileHandler(
     backupCount=5,
 )
 discord.utils.setup_logging(handler=handler)
+
+
+@bot.command(
+    description="Syncs command list. Any new commands will be available for use.",
+    help="The command has an optional second argument to state whether to sync all or only guild commands. Please specify it by either mentioning {}.",
+)
+@commands.cooldown(1, 60, commands.BucketType.guild)
+@commands.check(is_staff_from_ctx)
+async def sync(ctx: commands.Context, sync_type: Literal["all", "guild"] = "all"):
+    """
+    Syncs and registers and new commands with Discord. This command is a
+    top-level command to prevent disabled cogs from disabling sync
+    functionality.
+    """
+    match sync_type:
+        case "all":
+            only_guild_commands = False
+        case "guild":
+            only_guild_commands = True
+    async with ctx.typing(ephemeral=True):
+        global_cmds_synced, guild_cmds_synced = await bot.sync_commands(
+            only_guild_commands,
+        )
+        res_msg = (
+            f"{len(global_cmds_synced)} global commands were synced."
+            if not only_guild_commands
+            else ""
+        )
+        for guild_id, cmds in guild_cmds_synced.items():
+            guild_info = bot.get_guild(guild_id)
+            guild_name_id = f"guild with id {guild_id}"
+            if guild_info:
+                guild_name_id = f'"{guild_info.name}" (id: {guild_id})'
+            res_msg += f"\n{len(cmds)} guild commands were synced in {guild_name_id}."
+        res_msg = res_msg.strip("\n")
+        await ctx.send(res_msg)
+
+
+@sync.error
+async def sync_error(ctx: commands.Context, err: commands.CommandError):
+    logging.error(err)
+    if isinstance(err, commands.CommandOnCooldown):
+        return await ctx.send(
+            "`{}{}` is on cooldown since the API endpoint for syncing commands to Discord is "
+            "ratelimited. Please try again in {:.2f} seconds.".format(
+                BOT_PREFIX,
+                sync.name,
+                err.retry_after,
+            ),
+        )
+    if isinstance(err, commands.MissingAnyRole):
+        return await ctx.send(str(err))
+    if isinstance(err, commands.BadLiteralArgument):
+        literals = list(err.literals)
+        for i, literal in enumerate(literals):
+            literals[i] = f"`{literal}`"
+        literals[-1] = f"or {literals[-1]}"
+        assert sync.help is not None
+        msg = sync.help.format((", " if len(literals) > 2 else " ").join(literals))
+        return await ctx.send(msg)
+    await ctx.send(f"An unknown error occurred when syncing: {err}")
 
 
 async def main(token: str):
