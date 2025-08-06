@@ -21,7 +21,7 @@ Here are some commands that can be run on the Discord server:
 |... |...
 
 ## Issues
-If you find an issue with the bot, you are welcome to [open an issue](https://github.com/cbrxyz/pi-bot/issues/new) and it will be handled as soon as possible!
+If you find an issue with the bot, you are welcome to [open an issue](https://github.com/scioly/pi-bot/issues/new) and it will be handled as soon as possible!
 
 ## Contributing
 If you'd like to contribute to the bot, please see [CONTRIBUTING.md](CONTRIBUTING.md)! Pull requests are open!

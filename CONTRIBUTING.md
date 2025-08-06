@@ -21,7 +21,7 @@ There are many components to Pi-Bot that you will need to set up before you can 
 To begin, first clone the repo:
 
 ```sh
-$ git clone https://github.com/cbrxyz/pi-bot
+$ git clone https://github.com/scioly/pi-bot
 $ cd pi-bot
 ```
 
