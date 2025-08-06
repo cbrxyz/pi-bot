@@ -3,7 +3,11 @@ name: Pi-Bot CI
 
 # yamllint disable-line rule:truthy
 on:
-  [push, workflow_dispatch]
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
 
 env:
   # Cache version to control pre-commit caches
