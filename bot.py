@@ -456,11 +456,10 @@ async def main(token: str):
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
     if env.dev_mode:
-        # If in development, also print to console
-        logger = logging.getLogger()
-        logger.addHandler(RichHandler(rich_tracebacks=True))
-
+        logger.addHandler(RichHandler(level=logging.DEBUG, rich_tracebacks=True))
         asyncio.run(main(env.discord_dev_token))
     else:
+        logger.addHandler(RichHandler(level=logging.INFO, rich_tracebacks=False))
         asyncio.run(main(env.discord_token))
