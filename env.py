@@ -58,7 +58,11 @@ class _Env(BaseSettings, extra="ignore"):
             return [raw]
         return [int(id) for id in raw.split(",")]
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        secrets_dir="/run/secrets/",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
 
 env = _Env()  # pyright: ignore
