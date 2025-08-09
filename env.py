@@ -25,8 +25,7 @@ class _Env(BaseSettings, extra="ignore"):
     """
 
     dev_mode: bool = True
-    discord_token: str
-    discord_dev_token: str = Field(min_length=1)
+    discord_token: str = Field(min_length=1)
     dev_server_id: int | None = None
     states_server_id: int = Field(gt=0)
     slash_command_guilds: list[int]

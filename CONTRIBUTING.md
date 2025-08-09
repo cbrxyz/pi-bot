@@ -93,8 +93,7 @@ into an account.
    to get your bot setup. You will need to update the file with the following variables.
     ```
     DEV_MODE=TRUE
-    DISCORD_TOKEN=<not needed since you will be developing only>
-    DISCORD_DEV_TOKEN=<bot token from step 1>
+    DISCORD_TOKEN=<bot token from step 1>
     DEV_SERVER_ID=<your development server ID>
     SLASH_COMMAND_GUILDS=<your development server ID>
     EMOJI_GUILDS=<your emoji guild ID>
