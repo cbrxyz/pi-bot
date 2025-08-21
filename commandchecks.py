@@ -8,6 +8,10 @@ from discord.ext import commands
 from src.discord.globals import ROLE_STAFF, ROLE_VIP
 
 
+def is_in_dms(interaction: discord.Interaction):
+    return isinstance(interaction.channel, discord.DMChannel)
+
+
 def is_in_bot_spam(interaction: discord.Interaction):
     guild = interaction.guild
     assert isinstance(guild, discord.Guild)

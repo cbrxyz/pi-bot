@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
+from discord.app_commands import AppCommandContext
 from discord.ext import commands
 
 import src.discord.globals
-from commandchecks import is_in_bot_spam
-from env import env
+from commandchecks import is_in_dms
 from src.discord.globals import CHANNEL_BOTSPAM
 from src.mongo.models import Ping
 
@@ -28,11 +28,25 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+NOT_IN_DM_MESSAGE = (
+    "Ping commands now only work within Pi-Bot's DMs. Please rerun the command there."
+)
 
-class PingManager(commands.GroupCog, name="ping"):
+
+class PingManager(commands.Cog):
     """
     Specific cog for holding ping-related functionality.
     """
+
+    ping_group = app_commands.Group(
+        name="ping",
+        description="Ping commands",
+        allowed_contexts=AppCommandContext(
+            guild=True,  # TODO: change guild to False. See https://github.com/scioly/pi-bot/issues/12
+            dm_channel=True,
+            private_channel=False,
+        ),
+    )
 
     recent_messages: dict[int, collections.deque[discord.Message]]
 
@@ -210,10 +224,8 @@ class PingManager(commands.GroupCog, name="ping"):
         # Send the user an alert message
         await user.send(embed=embed)
 
-    @app_commands.command(description="Toggles 'Do Not Disturb' mode.")
-    @app_commands.guilds(*env.slash_command_guilds)
+    @ping_group.command(description="Toggles 'Do Not Disturb' mode.")
     @app_commands.checks.cooldown(2, 60, key=lambda i: (i.guild_id, i.user.id))
-    @app_commands.check(is_in_bot_spam)
     async def dnd(self, interaction: discord.Interaction):
         """
         Discord command allowing members to sent their ping mode to DND.
@@ -225,6 +237,12 @@ class PingManager(commands.GroupCog, name="ping"):
             interaction (discord.Interaction): The discord app command which triggered
                 the command.
         """
+        if not is_in_dms(interaction):
+            return await interaction.response.send_message(
+                content=NOT_IN_DM_MESSAGE,
+                ephemeral=True,
+            )
+
         user = [
             u for u in src.discord.globals.PING_INFO if u.user_id == interaction.user.id
         ]
@@ -248,14 +266,12 @@ class PingManager(commands.GroupCog, name="ping"):
                 "You can't enter DND mode without any pings!",
             )
 
-    @app_commands.command(
+    @ping_group.command(
         name="add",
         description="Adds a new ping to notify you about.",
     )
     @app_commands.describe(word="The new word to add a ping for.")
-    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
-    @app_commands.check(is_in_bot_spam)
     async def pingadd(self, interaction: discord.Interaction, word: str):
         """
         Discord command allowing members to add a ping keyword to their list of
@@ -269,6 +285,12 @@ class PingManager(commands.GroupCog, name="ping"):
                 the command.
             word (str): The new word to ping on.
         """
+        if not is_in_dms(interaction):
+            return await interaction.response.send_message(
+                content=NOT_IN_DM_MESSAGE,
+                ephemeral=True,
+            )
+
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u.user_id == member.id),
@@ -313,14 +335,12 @@ class PingManager(commands.GroupCog, name="ping"):
             f"Great! You will now receive an alert for messages that contain the `{word}` word.{small_ping_message}",
         )
 
-    @app_commands.command(
+    @ping_group.command(
         name="test",
         description="Tests your pings on an example message.",
     )
-    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.describe(test="The phrase to test your pings against.")
     @app_commands.checks.cooldown(10, 60, key=lambda i: (i.guild_id, i.user.id))
-    @app_commands.check(is_in_bot_spam)
     async def pingtest(self, interaction: discord.Interaction, test: str):
         """
         Discord command allowing members to test their ping list against a specific phrase.
@@ -333,6 +353,12 @@ class PingManager(commands.GroupCog, name="ping"):
                 command.
             test (str): The phrase to test the list of pings against.
         """
+        if not is_in_dms(interaction):
+            return await interaction.response.send_message(
+                content=NOT_IN_DM_MESSAGE,
+                ephemeral=True,
+            )
+
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u.user_id == member.id),
@@ -369,13 +395,11 @@ class PingManager(commands.GroupCog, name="ping"):
         else:
             return await interaction.response.send_message(response)
 
-    @app_commands.command(
+    @ping_group.command(
         name="list",
         description="Lists all of your registered pings.",
     )
-    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
-    @app_commands.check(is_in_bot_spam)
     async def pinglist(self, interaction: discord.Interaction):
         """
         Discord command which lists the user's pings.
@@ -387,6 +411,12 @@ class PingManager(commands.GroupCog, name="ping"):
             interaction (discord.Interaction): The app command which triggered this
                 command.
         """
+        if not is_in_dms(interaction):
+            return await interaction.response.send_message(
+                content=NOT_IN_DM_MESSAGE,
+                ephemeral=True,
+            )
+
         member = interaction.user
         user = next(
             (u for u in src.discord.globals.PING_INFO if u.user_id == member.id),
@@ -405,16 +435,14 @@ class PingManager(commands.GroupCog, name="ping"):
             )
             await interaction.response.send_message(response)
 
-    @app_commands.command(
+    @ping_group.command(
         name="remove",
         description="Removes a ping from your list of registered pings.",
     )
     @app_commands.describe(
         word="The word to remove a ping for. Or use 'all' to remove all pings.",
     )
-    @app_commands.guilds(*env.slash_command_guilds)
     @app_commands.checks.cooldown(5, 60, key=lambda i: (i.guild_id, i.user.id))
-    @app_commands.check(is_in_bot_spam)
     async def pingremove(self, interaction: discord.Interaction, word: str):
         """
         Discord command that allows a user to remove a word from their list of pings.
@@ -427,6 +455,12 @@ class PingManager(commands.GroupCog, name="ping"):
                 command.
             word (str): The word to attempt to remove from the user's list of pings.
         """
+        if not is_in_dms(interaction):
+            return await interaction.response.send_message(
+                content=NOT_IN_DM_MESSAGE,
+                ephemeral=True,
+            )
+
         # Get the user's info
         member = interaction.user
         user = next(
