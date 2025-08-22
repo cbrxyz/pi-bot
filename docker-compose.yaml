@@ -13,14 +13,43 @@ services:
     restart: unless-stopped
     volumes:
       - mongodata:/data/db
+      - mongoconfig:/data/configdb
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS}
       MONGO_INITDB_DATABASE: data
       MONGO_DATA_DIR: /data/db
       MONGODB_LOG_DIR: /dev/null
+    command: ["--replSet", "pibotReplicaSet"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: >-
+        echo "
+        try {
+          rs.status()
+        } catch (err) {
+          rs.initiate(
+            {
+              _id:'pibotReplicaSet',
+              members:[
+                {
+                  _id:0,
+                  host:'host.docker.internal:27017'
+                }
+              ]
+            }
+          )
+        }" |
+        mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
     ports:
-      - 28017:27017  # In case already an instance of mongo running on 27017
+      - 27017:27017
 
 volumes:
   mongodata:
+  mongoconfig:
